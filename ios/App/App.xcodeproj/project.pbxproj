@@ -200,7 +200,7 @@
                         );
                         runOnlyForDeploymentPostprocessing = 0;
                         shellPath = /bin/sh;
-                        shellScript = "echo \"Forcing app version to 1.0.1 build 30\"\n/usr/bin/xcrun agvtool new-marketing-version 1.0.1 || echo \"agvtool marketing version failed\"\n/usr/bin/xcrun agvtool new-version -all 30 || echo \"agvtool build version failed\"\necho \"Version forcing complete\"";
+                        shellScript = "echo \"Forcing app version to 1.0.1 build 35\"\necho \"Updating Info.plist directly...\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString 1.0.1\" \"$BUILT_PRODUCTS_DIR/$INFOPLIST_PATH\" 2>/dev/null || echo \"PlistBuddy version update failed\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion 35\" \"$BUILT_PRODUCTS_DIR/$INFOPLIST_PATH\" 2>/dev/null || echo \"PlistBuddy build update failed\"\necho \"Direct Info.plist update complete\"\nexit 0";
                         showEnvVarsInLog = 1;
                 };
                 9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */ = {
