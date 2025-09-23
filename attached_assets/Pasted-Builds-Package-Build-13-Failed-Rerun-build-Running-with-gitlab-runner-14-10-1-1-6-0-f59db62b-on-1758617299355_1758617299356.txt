@@ -1,0 +1,443 @@
+Builds
+Package Build #13
+Failed
+Rerun build
+Running with gitlab-runner 14.10.1/1.6.0 (f59db62b)
+  on ANKA_RUNNER 161fa1c3
+Preparing the "anka" executor
+Opening a connection to the Anka Cloud Controller: https://controller.red.us-west-2.apple-orchard.net:443
+Starting Anka VM using:
+  - VM Template UUID: 4e82f4f5-40db-4bd4-93d1-81ec458d4325
+  - VM Template Tag Name: v2
+Please be patient...
+You can check the status of starting your Instance on the Anka Cloud Controller: https://controller.red.us-west-2.apple-orchard.net:443/#/instances
+Verifying connectivity to the VM: build_stack_2025.06_arm64-1758617056629115000 (77d96379-1226-4e64-b951-7f64cff9b532) | Controller Instance ID: a37353db-bb2e-4860-6238-1ea1b7297548 | Host: 10.2.183.221 | Port: 10001 
+VM "build_stack_2025.06_arm64-1758617056629115000" (77d96379-1226-4e64-b951-7f64cff9b532) / Controller Instance ID a37353db-bb2e-4860-6238-1ea1b7297548 running on Node ip-10-2-183-221.us-west-2.compute.internal (10.2.183.221), is ready for work (10.2.183.221:10001)
+Preparing environment
+Running on ip-192-168-64-23.us-west-2.compute.internal via ip-10-2-129-83.us-west-2.compute.internal...
+Getting source from Git repository
+$ pre-clone
+[08:44:57]: Cloning repository...
+Fetching changes...
+Initialized empty Git repository in /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/.git/
+Created fresh repository.
+Checking out c7b9595c as main...
+Updating/initializing submodules...
+$ post-clone
+[08:44:59]: Cloning complete...
+Restoring cache
+Not downloading cache 3f2249d3/node-cache-stack-package-ios-2025.06-arm64.zip due to policy
+Executing "step_script" stage of the job script
+$ pre-build
+[08:45:00]: Building project....
+$ fetch-updates || true
+Checking for build process updates...
+$ build-ios
+Building from: /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile
+[08:45:05]: ---------------------------------
+[08:45:05]: --- Step: add_extra_platforms ---
+[08:45:05]: ---------------------------------
+[08:45:05]: Setting '[:web]' as extra SupportedPlatforms
+/Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/fastlane/outsystems/errors/detectors/pdm_plugins.rb:8: warning: character class has '-' without escape
+/Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/fastlane/outsystems/errors/detectors/pdm_plugins.rb:15: warning: character class has '-' without escape
+[08:45:05]: ------------------------------
+[08:45:05]: --- Step: default_platform ---
+[08:45:05]: ------------------------------
+[08:45:05]: Driving the lane 'ios build_capacitor' 🚀
+[08:45:05]: ---------------------------------
+[08:45:05]: --- Step: prepare_environment ---
+[08:45:05]: ---------------------------------
+[08:45:05]: Setting default environment variables to tidy up logs. These can be overridden by setting them in Appflow.
+[08:45:05]: 
+[08:45:05]: No changes needed - logs are already tidy! 🧹
+[08:45:05]: -------------------------
+[08:45:05]: --- Step: sentry_init ---
+[08:45:05]: -------------------------
+[08:45:05]: ----------------------------
+[08:45:05]: --- Step: begin_building ---
+[08:45:05]: ----------------------------
+[08:45:05]: Began building @ 2025-09-23T08:45:05
+[08:45:05]: ---------------------------
+[08:45:05]: --- Step: build_summary ---
+[08:45:05]: ---------------------------
+
++---------------------------------------------------+
+|                   Build Summary                   |
++---------------------+-----------------------------+
+| Runners Revision    | 18b13bd                     |
+| Job ID              | 10454561                    |
+| Node.js version     | v20.19.3                    |
+| Cordova CLI version | 12.0.0 (cordova-lib@12.0.2) |
+| npm version         | 10.8.2                      |
+| yarn version        | 1.22.19                     |
+| macOS version       | 15.4                        |
+| Xcode version       | Xcode 16.4                  |
+|                     | Build version 16F6          |
+| Fastlane version    | fastlane (2.228.0)          |
++---------------------+-----------------------------+
+
+[08:45:09]: -----------------------------
+[08:45:09]: --- Step: create_keychain ---
+[08:45:09]: -----------------------------
+[08:45:09]: $ security list-keychains -d user
+[08:45:09]: ▸ "/Users/ionic-cloud-team/Library/Keychains/login.keychain-db"
+[08:45:09]: ------------------------------------------
+[08:45:09]: --- Step: get_ios_credentials_from_api ---
+[08:45:09]: ------------------------------------------
+[08:45:09]: Fetching certificate and profile(s) from Ionic Appflow
+[08:45:09]: ---------------------------------
+[08:45:09]: --- Step: set_ios_credentials ---
+[08:45:09]: ---------------------------------
+[08:45:09]: Installing provisioning profile...
+[08:45:12]: /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/af65fd0f-3a86-4155-a963-a80afc7b64e3.mobileprovision
+
++--------------------------------------------------------------------+
+|                       Installed Certificate                        |
++-------------------+------------------------------------------------+
+| User ID           | 8WZHH537SU                                     |
+| Common Name       | iPhone Distribution: Tim Carlisle (8WZHH537SU) |
+| Organization Unit | 8WZHH537SU                                     |
+| Organization      | Tim Carlisle                                   |
+| Country           | US                                             |
++-------------------+------------------------------------------------+
+
+[08:45:12]: --------------------------------
+[08:45:12]: --- Step: import_certificate ---
+[08:45:12]: --------------------------------
+[08:45:12]: Setting key partition list... (this can take a minute if there are a lot of keys installed)
+[08:45:12]: ---------------------------
+[08:45:12]: --- Step: set_ionic_cli ---
+[08:45:12]: ---------------------------
+[08:45:13]: Preinstalled @ionic/cli compatible with project `react-vite`
+[08:45:13]: ------------------------------------
+[08:45:13]: --- Step: detect_package_manager ---
+[08:45:13]: ------------------------------------
+[08:45:13]: Detecting package manager
+[08:45:13]: Defaulting to npm
+[08:45:13]: ---------------------------------
+[08:45:13]: --- Step: add_git_credentials ---
+[08:45:13]: ---------------------------------
+[08:45:13]: Writing git-credentials files
+[08:45:13]: git-credentials successfully added to project
+[08:45:13]: --------------------------------
+[08:45:13]: --- Step: get_appflow_config ---
+[08:45:13]: --------------------------------
+[08:45:13]: Checking for appflow.config.json
+[08:45:13]: Appflow config detected
+[08:45:13]: dependency install command: npm ci
+[08:45:13]: web build command: npm run build
+[08:45:13]: iOS native project directory path: ios
+[08:45:13]: android native project directory path: android
+[08:45:13]: --------------------------------
+[08:45:13]: --- Step: dependency_install ---
+[08:45:13]: --------------------------------
+[08:45:13]: Installing Dependencies (in /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile)
+[08:45:13]: $ npm ci
+[08:45:15]: ▸ npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+[08:45:15]: ▸ npm warn deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+[08:45:16]: ▸ npm warn deprecated sntp@2.1.0: This module moved to @hapi/sntp. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.
+[08:45:16]: ▸ npm warn deprecated sudo-prompt@9.1.1: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+[08:45:16]: ▸ npm warn deprecated lodash.get@4.4.2: This package is deprecated. Use the optional chaining (?.) operator instead.
+[08:45:16]: ▸ npm warn deprecated request@2.85.0: request has been deprecated, see https://github.com/request/request/issues/3142
+[08:45:16]: ▸ npm warn deprecated har-validator@5.0.3: this library is no longer supported
+[08:45:16]: ▸ npm warn deprecated hoek@4.3.1: This module has moved and is now available at @hapi/hoek. Please update your dependencies as this version is no longer maintained an may contain bugs and security issues.
+[08:45:17]: ▸ npm warn deprecated hawk@6.0.2: This module moved to @hapi/hawk. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.
+[08:45:17]: ▸ npm warn deprecated cryptiles@3.2.1: This module has moved and is now available at @hapi/cryptiles. Please update your dependencies as this version is no longer maintained and may contain bugs and security issues.
+[08:45:17]: ▸ npm warn deprecated boom@4.3.1: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).
+[08:45:18]: ▸ npm warn deprecated coinbase@2.0.8: This package has been deprecated. Refer to the latest Coinbase API docs for support: https://docs.cloud.coinbase.com/sign-in-with-coinbase/docs
+[08:45:18]: ▸ npm warn deprecated @oclif/screen@3.0.8: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+[08:45:18]: ▸ npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+[08:45:18]: ▸ npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+[08:45:19]: ▸ npm warn deprecated rimraf@2.4.5: Rimraf versions prior to v4 are no longer supported
+[08:45:19]: ▸ npm warn deprecated glob@6.0.4: Glob versions prior to v9 are no longer supported
+[08:45:19]: ▸ npm warn deprecated boom@5.3.3: This module has moved and is now available at @hapi/boom. Please update your dependencies as this version is no longer maintained and may contain bugs and security issues.
+[08:45:19]: ▸ npm warn deprecated @xmldom/xmldom@0.7.13: this version is no longer supported, please update to at least 0.8.*
+[08:45:35]: ▸ added 1130 packages, and audited 1131 packages in 22s
+[08:45:35]: ▸ 120 packages are looking for funding
+[08:45:35]: ▸ run `npm fund` for details
+[08:45:35]: ▸ 16 vulnerabilities (8 moderate, 4 high, 4 critical)
+[08:45:35]: ▸ To address issues that do not require attention, run:
+[08:45:35]: ▸ npm audit fix
+[08:45:35]: ▸ To address all issues possible (including breaking changes), run:
+[08:45:35]: ▸ npm audit fix --force
+[08:45:35]: ▸ Some issues need review, and may require choosing
+[08:45:35]: ▸ a different dependency.
+[08:45:35]: ▸ Run `npm audit` for details.
+[08:45:35]: -------------------------------------
+[08:45:35]: --- Step: create_capacitor_config ---
+[08:45:35]: -------------------------------------
+[08:45:35]: -------------------------
+[08:45:35]: --- Step: get_web_dir ---
+[08:45:35]: -------------------------
+[08:45:35]: webDir is `dist/public`
+[08:45:35]: -----------------------------------
+[08:45:35]: --- Step: modify_cap_web_config ---
+[08:45:35]: -----------------------------------
+[08:45:35]: Applying custom native config...
+[08:45:35]: Writing new capacitor.config.json
+[08:45:35]: custom native config applied to capacitor.config.json 💾.
+[08:45:35]: No changes made in package.json
+[08:45:35]: ---------------------------
+[08:45:35]: --- Step: build_pro_app ---
+[08:45:35]: ---------------------------
+[08:45:35]: Building app from /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile
+[08:45:35]: $ npm run build
+[08:45:35]: ▸ > rest-express@1.0.0 build
+[08:45:35]: ▸ > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+[08:45:35]: ▸ vite v7.1.5 building for production...
+[08:45:36]: ▸ transforming...
+[08:45:39]: ▸ ✓ 1767 modules transformed.
+[08:45:39]: ▸ rendering chunks...
+[08:45:39]: ▸ computing gzip size...
+[08:45:39]: ▸ ../dist/public/index.html                                                                  2.49 kB │ gzip:   0.95 kB
+[08:45:39]: ▸ ../dist/public/assets/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f-DVU03aW9.png       1,094.52 kB
+[08:45:39]: ▸ ../dist/public/assets/D22C55D0-9527-4CE7-863F-F9327653E73E_1756052612472-CWUgZlZj.png  1,458.80 kB
+[08:45:39]: ▸ ../dist/public/assets/Using_918ef4_as_202508312147_1757083629199-BAAEN_xU.mp4          1,723.25 kB
+[08:45:39]: ▸ ../dist/public/assets/index-IhThpyg4.css                                                  73.78 kB │ gzip:  12.86 kB
+[08:45:39]: ▸ ../dist/public/assets/index-OKIoUzM_.js                                                  777.96 kB │ gzip: 231.53 kB
+[08:45:39]: ▸ 
+[08:45:39]: ▸ (!) Some chunks are larger than 500 kB after minification. Consider:
+[08:45:39]: ▸ - Using dynamic import() to code-split the application
+[08:45:39]: ▸ - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[08:45:39]: ▸ - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[08:45:39]: ▸ ✓ built in 3.58s
+[08:45:39]: ▸ dist/index.js  201.7kb
+[08:45:39]: ▸ ⚡ Done in 12ms
+[08:45:39]: Generating app manifest...
+[08:45:39]: -------------------------------------
+[08:45:39]: --- Step: get_xcode_project_paths ---
+[08:45:39]: -------------------------------------
+[08:45:39]: -------------------------------
+[08:45:39]: --- Step: modify_ios_config ---
+[08:45:39]: -------------------------------
+[08:45:39]: Applying custom native config...
+[08:45:39]: Updated /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcodeproj 💾.
+[08:45:39]: Updated /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcodeproj/../App/Info.plist 💾.
+[08:45:39]: -------------------------------
+[08:45:39]: --- Step: install_cocoapods ---
+[08:45:39]: -------------------------------
+[08:45:39]: ----------------------
+[08:45:39]: --- Step: cap_sync ---
+[08:45:39]: ----------------------
+[08:45:40]: $ npx cap sync ios
+[08:45:41]: ▸ ✔ Copying web assets from public to ios/App/App/public in 12.91ms
+[08:45:41]: ▸ ✔ Creating capacitor.config.json in ios/App/App in 798.67μs
+[08:45:42]: ▸ ✔ copy ios in 83.91ms
+[08:45:42]: ▸ ✔ Updating iOS plugins in 14.13ms
+[08:45:46]: ▸ ✔ Updating iOS native dependencies with pod install in 4.34s
+[08:45:46]: ▸ [info] Found 4 Capacitor plugins for ios:
+[08:45:46]: ▸ @capacitor/app@7.1.0
+[08:45:46]: ▸ @capacitor/haptics@7.0.2
+[08:45:46]: ▸ @capacitor/keyboard@7.0.3
+[08:45:46]: ▸ @capacitor/status-bar@7.0.3
+[08:45:46]: ▸ ✔ update ios in 4.45s
+[08:45:46]: ▸ [info] Sync finished in 5.067s
+[08:45:46]: -------------------------------
+[08:45:46]: --- Step: cap_custom_deploy ---
+[08:45:46]: -------------------------------
+[08:45:46]: No custom deploy native config provided. Skipping.
+[08:45:46]: ------------------------------------------
+[08:45:46]: --- Step: update_code_signing_settings ---
+[08:45:46]: ------------------------------------------
+
++---------------------------------------------------------------------------------------------------------+
+|                                    Summary for code signing settings                                    |
++-----------------------+---------------------------------------------------------------------------------+
+| path                  | /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcodeproj |
+| use_automatic_signing | false                                                                           |
+| team_id               | 8WZHH537SU                                                                      |
+| code_sign_identity    | iPhone Distribution: Tim Carlisle (8WZHH537SU)                                  |
++-----------------------+---------------------------------------------------------------------------------+
+
+[08:45:46]: Updating the Automatic Codesigning flag to disabled for the given project '/Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcodeproj/project.pbxproj'
+[08:45:46]: Set Team id to: 8WZHH537SU for target: App for build configuration: Debug
+[08:45:46]: Set Code Sign identity to: iPhone Distribution: Tim Carlisle (8WZHH537SU) for target: App for build configuration: Debug
+[08:45:46]: Set Team id to: 8WZHH537SU for target: App for build configuration: Release
+[08:45:46]: Set Code Sign identity to: iPhone Distribution: Tim Carlisle (8WZHH537SU) for target: App for build configuration: Release
+[08:45:46]: Successfully updated project settings to use Code Sign Style = 'Manual'
+[08:45:46]: Modified Targets:
+[08:45:46]: 	 * App
+[08:45:46]: Modified Build Configurations:
+[08:45:46]: 	 * Debug
+[08:45:46]: 	 * Release
+[08:45:46]: ------------------------------------------
+[08:45:46]: --- Step: update_provisioning_profiles ---
+[08:45:46]: ------------------------------------------
+[08:45:46]: ---------------------------
+[08:45:46]: --- Step: build_ios_app ---
+[08:45:46]: ---------------------------
+[08:45:46]: Resolving Swift Package Manager dependencies...
+[08:45:46]: $ xcodebuild -resolvePackageDependencies -workspace /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcworkspace -scheme App
+[08:45:47]: ▸ Command line invocation:
+[08:45:47]: ▸     /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -resolvePackageDependencies -workspace /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcworkspace -scheme App
+[08:45:47]: ▸ resolved source packages: 
+[08:45:47]: $ xcodebuild -showBuildSettings -workspace /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcworkspace -scheme App 2>&1
+[08:45:48]: Detected provisioning profile mapping: {"com.dimetime.mobile": "Dime Time App Store Profile"}
+
++---------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                           Summary for gym 2.228.0                                                           |
++---------------------------------------------------------+-----------------------------------------------------------------------------------+
+| workspace                                               | /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcworkspace |
+| output_directory                                        | /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile                         |
+| output_name                                             | 01d82b63-649f-42af-b4e0-a659ed246179-app-store                                    |
+| archive_path                                            | 01d82b63-649f-42af-b4e0-a659ed246179-app-store.xcarchive                          |
+| scheme                                                  | App                                                                               |
+| codesigning_identity                                    | iPhone Distribution: Tim Carlisle (8WZHH537SU)                                    |
+| export_team_id                                          | 8WZHH537SU                                                                        |
+| catalyst_platform                                       | ios                                                                               |
+| export_options.provisioningProfiles.com.dimetime.mobile | Dime Time App Store Profile                                                       |
+| clean                                                   | false                                                                             |
+| silent                                                  | false                                                                             |
+| skip_package_ipa                                        | false                                                                             |
+| export_method                                           | app-store                                                                         |
+| build_path                                              | /Users/ionic-cloud-team/Library/Developer/Xcode/Archives/2025-09-23               |
+| result_bundle                                           | false                                                                             |
+| buildlog_path                                           | ~/Library/Logs/gym                                                                |
+| destination                                             | generic/platform=iOS                                                              |
+| xcodebuild_formatter                                    | xcbeautify                                                                        |
+| build_timing_summary                                    | false                                                                             |
+| skip_profile_detection                                  | false                                                                             |
+| xcodebuild_command                                      | xcodebuild                                                                        |
+| skip_package_dependencies_resolution                    | false                                                                             |
+| disable_package_automatic_updates                       | false                                                                             |
+| use_system_scm                                          | false                                                                             |
+| skip_package_pkg                                        | false                                                                             |
+| xcode_path                                              | /Applications/Xcode.app                                                           |
++---------------------------------------------------------+-----------------------------------------------------------------------------------+
+
+[08:45:49]: $ set -o pipefail && xcodebuild -workspace /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcworkspace -scheme App -destination 'generic/platform=iOS' -archivePath 01d82b63-649f-42af-b4e0-a659ed246179-app-store.xcarchive archive CODE_SIGN_IDENTITY=iPhone\ Distribution:\ Tim\ Carlisle\ \(8WZHH537SU\) | tee /Users/ionic-cloud-team/Library/Logs/gym/App-App.log | xcbeautify
+[08:45:49]: ▸ ----- xcbeautify -----
+[08:45:49]: ▸ Version: 2.28.0
+[08:45:49]: ▸ ----------------------
+[08:45:49]: ▸ note: Using codesigning identity override: iPhone Distribution: Tim Carlisle (8WZHH537SU)
+[08:45:50]: ▸ note: Building targets in dependency order
+[08:45:50]: ▸ note: Target dependency graph (8 targets)
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'CapacitorKeyboard' from project 'Pods')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'CapacitorHaptics' from project 'Pods')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'CapacitorApp' from project 'Pods')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Pods-App' from project 'Pods')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'CapacitorCordova' from project 'Pods')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Capacitor' from project 'Pods')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'CapacitorStatusBar' from project 'Pods')
+[08:45:54]: ▸ ❌ /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcodeproj: error: "App" requires a provisioning profile. Select a provisioning profile in the Signing & Capabilities editor. (in target 'App' from project 'App')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'App' from project 'App')
+[08:45:54]: ▸ ⚠️ Run script build phase '[CP] Embed Pods Frameworks' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'App' from project 'App')
+[08:45:54]: ▸ ** ARCHIVE FAILED **
+[08:45:54]: ▸ The following build commands failed:
+[08:45:54]: ▸ 	Archiving workspace App with scheme App
+[08:45:54]: ▸ (1 failure)
+[08:45:54]: Exit status: 65
+
++-----------------------------------------+
+|            Build environment            |
++---------------+-------------------------+
+| xcode_path    | /Applications/Xcode.app |
+| gym_version   | 2.228.0                 |
+| export_method | app-store               |
+| sdk           | iPhoneOS18.5.sdk        |
++---------------+-------------------------+
+
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Capacitor' from project 'Pods')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'CapacitorStatusBar' from project 'Pods')
+[08:45:54]: ▸ /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcodeproj: error: "App" requires a provisioning profile. Select a provisioning profile in the Signing & Capabilities editor. (in target 'App' from project 'App')
+[08:45:54]: ▸ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'App' from project 'App')
+[08:45:54]: ▸ warning: Run script build phase '[CP] Embed Pods Frameworks' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'App' from project 'App')
+[08:45:54]: 
+[08:45:54]: ⬆️  Check out the few lines of raw `xcodebuild` output above for potential hints on how to solve this error
+[08:45:54]: 📋  For the complete and more detailed error log, check the full log at:
+[08:45:54]: 📋  /Users/ionic-cloud-team/Library/Logs/gym/App-App.log
+[08:45:54]: 
+[08:45:54]: Looks like fastlane ran into a build/archive error with your project
+[08:45:54]: It's hard to tell what's causing the error, so we wrote some guides on how
+[08:45:54]: to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+[08:45:54]: Before submitting an issue on GitHub, please follow the guide above and make
+[08:45:54]: sure your project is set up correctly.
+[08:45:54]: fastlane uses `xcodebuild` commands to generate your binary, you can see the
+[08:45:54]: the full commands printed out in yellow in the above log.
+[08:45:54]: Make sure to inspect the output above, as usually you'll find more error information there
+[08:45:54]: 
+[08:45:54]: -------------------------
+[08:45:54]: --- Step: upload_logs ---
+[08:45:54]: -------------------------
+[08:46:04]: --------------------------------------
+[08:46:04]: --- Step: sentry_capture_exception ---
+[08:46:04]: --------------------------------------
+[08:46:06]: ---------------------------
+[08:46:06]: --- Step: shell command ---
+[08:46:06]: ---------------------------
+[08:46:06]: -----------------------------
+[08:46:06]: --- Step: delete_keychain ---
+[08:46:06]: -----------------------------
+[08:46:06]: Error building the application - see the log above
++----------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                       Lane Context                                                                       |
++-------------------------------------+--------------------------------------------------------------------------------------------------------------------+
+| DEFAULT_PLATFORM                    | ios                                                                                                                |
+| PLATFORM_NAME                       | ios                                                                                                                |
+| LANE_NAME                           | ios build_capacitor                                                                                                |
+| KEYCHAIN_PATH                       | ~/Library/Keychains/IonicKeychain                                                                                  |
+| DOWNLOAD_CERTS_PROVISION_FILE_UUID  | af65fd0f-3a86-4155-a963-a80afc7b64e3                                                                               |
+| DOWNLOAD_CERTS_CODESIGNING_IDENTITY | iPhone Distribution: Tim Carlisle (8WZHH537SU)                                                                     |
+| DOWNLOAD_CERTS_TEAM_ID              | 8WZHH537SU                                                                                                         |
+| DOWNLOAD_CERTS_CERT_PATH            | /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/cert_file.p12                                            |
+| SIGH_PROFILE_PATHS                  | ["/Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/af65fd0f-3a86-4155-a963-a80afc7b64e3.mobileprovision"] |
+| IONIC_CLI_VERSION                   | 7.2.1                                                                                                              |
+| NODE_PACKAGE_MANAGER                | npm                                                                                                                |
+| APPFLOW_CONFIG_INSTALL_CMD          | npm ci                                                                                                             |
+| APPFLOW_CONFIG_WEB_BUILD_CMD        | npm run build                                                                                                      |
+| APPFLOW_CONFIG_IOS_PATH             | ios                                                                                                                |
+| APPFLOW_CONFIG_ANDROID_PATH         | android                                                                                                            |
+| PROJECT_WEB_DIR                     | dist/public                                                                                                        |
+| XCODE_PROJECT_NAME                  | App                                                                                                                |
+| XCODE_PROJECT_PATH                  | /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcodeproj                                    |
+| XCODE_WORKSPACE_PATH                | /Users/ionic-cloud-team/builds/Dime-Time/Dime-Time-Mobile/ios/App/App.xcworkspace                                  |
++-------------------------------------+--------------------------------------------------------------------------------------------------------------------+
+[08:46:06]: Error building the application - see the log above
+
++---------------------------------------------------+
+|                 fastlane summary                  |
++------+------------------------------+-------------+
+| Step | Action                       | Time (in s) |
++------+------------------------------+-------------+
+| 1    | add_extra_platforms          | 0           |
+| 2    | default_platform             | 0           |
+| 3    | prepare_environment          | 0           |
+| 4    | sentry_init                  | 0           |
+| 5    | begin_building               | 0           |
+| 6    | build_summary                | 3           |
+| 7    | create_keychain              | 0           |
+| 8    | get_ios_credentials_from_api | 0           |
+| 9    | set_ios_credentials          | 2           |
+| 10   | import_certificate           | 0           |
+| 11   | set_ionic_cli                | 1           |
+| 12   | detect_package_manager       | 0           |
+| 13   | add_git_credentials          | 0           |
+| 14   | get_appflow_config           | 0           |
+| 15   | dependency_install           | 21          |
+| 16   | create_capacitor_config      | 0           |
+| 17   | get_web_dir                  | 0           |
+| 18   | modify_cap_web_config        | 0           |
+| 19   | build_pro_app                | 4           |
+| 20   | get_xcode_project_paths      | 0           |
+| 21   | modify_ios_config            | 0           |
+| 22   | install_cocoapods            | 0           |
+| 23   | cap_sync                     | 6           |
+| 24   | cap_custom_deploy            | 0           |
+| 25   | update_code_signing_settings | 0           |
+| 26   | update_provisioning_profiles | 0           |
+| 💥   | build_ios_app                | 7           |
+| 28   | upload_logs                  | 10          |
+| 29   | sentry_capture_exception     | 2           |
+| 30   | shell command                | 0           |
+| 31   | delete_keychain              | 0           |
++------+------------------------------+-------------+
+
+[08:46:06]: fastlane finished with errors
+
+[!] Error building the application - see the log above
+Running after_script
+Running after script...
+$ clean-up
+Cleaning up project directory and file based variables
+Terminating VM: build_stack_2025.06_arm64-1758617056629115000 (77d96379-1226-4e64-b951-7f64cff9b532) | Controller Instance ID: a37353db-bb2e-4860-6238-1ea1b7297548 | Host: 10.2.183.221
+ERROR: Job failed: Process exited with status 1
