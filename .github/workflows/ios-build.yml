@@ -1,8 +1,6 @@
-name: iOS Build and TestFlight Upload
+name: iOS Build (No Auth)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -40,48 +38,26 @@ jobs:
         cd ios/App
         pod install
         
-    - name: Import Code-Signing Certificates
-      uses: Apple-Actions/import-codesign-certs@v2
-      with:
-        p12-file-base64: ${{ secrets.CERT_P12 }}
-        p12-password: ${{ secrets.CERT_P12_PASSWORD }}
+    # Apple authentication steps temporarily disabled
+    # - name: Import Code-Signing Certificates
+    #   uses: Apple-Actions/import-codesign-certs@v2
+    # - name: Install Provisioning Profile  
+    #   uses: Apple-Actions/download-provisioning-profiles@v1
         
-    - name: Install Provisioning Profile
-      uses: Apple-Actions/download-provisioning-profiles@v1
-      with:
-        bundle-id: com.dimetime.app
-        issuer-id: ${{ secrets.ASC_ISSUER_ID }}
-        api-key-id: ${{ secrets.ASC_KEY_ID }}
-        api-private-key: ${{ secrets.ASC_API_KEY }}
-        
-    - name: Build iOS App
+    - name: Build iOS App (No Code Signing)
       run: |
         cd ios/App
         xcodebuild \
           -workspace App.xcworkspace \
           -scheme App \
           -configuration Release \
-          -destination generic/platform=iOS \
-          -archivePath App.xcarchive \
-          archive
+          -sdk iphonesimulator \
+          CODE_SIGNING_ALLOWED=NO \
+          -derivedDataPath ./build
           
-    - name: Export IPA
-      run: |
-        cd ios/App
-        xcodebuild \
-          -exportArchive \
-          -archivePath App.xcarchive \
-          -exportOptionsPlist ../../build-config/ExportOptions.plist \
-          -exportPath ./build \
-          -allowProvisioningUpdates
-          
-    - name: Upload to TestFlight
-      uses: Apple-Actions/upload-testflight-build@v1
-      with:
-        app-path: ios/App/build/App.ipa
-        issuer-id: ${{ secrets.ASC_ISSUER_ID }}
-        api-key-id: ${{ secrets.ASC_KEY_ID }}
-        api-private-key: ${{ secrets.ASC_API_KEY }}
+    # Temporarily disabled - requires Apple authentication
+    # - name: Export IPA  
+    # - name: Upload to TestFlight
         
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -90,4 +66,5 @@ jobs:
         name: ios-build-artifacts
         path: |
           ios/App/build/
-          ios/App/App.xcarchive/
+          ios/App/*.log
+          package.json
