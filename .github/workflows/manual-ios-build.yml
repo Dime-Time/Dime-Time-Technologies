@@ -1,0 +1,95 @@
+name: Manual iOS Signed Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      CERT_P12_B64:
+        description: 'Base64 encoded .p12 certificate'
+        required: true
+        type: string
+      CERT_P12_PASSWORD:
+        description: 'Certificate password'
+        required: true
+        type: string
+      PROFILE_B64:
+        description: 'Base64 encoded provisioning profile'
+        required: true
+        type: string
+      TEAM_ID:
+        description: 'Apple Team ID (10 characters)'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build web app
+      run: npm run build
+      
+    - name: Setup iOS
+      run: |
+        npm install -g @capacitor/cli
+        npx cap sync ios
+        cd ios/App && pod install
+        
+    - name: Mask sensitive inputs
+      run: |
+        echo "::add-mask::${{ inputs.CERT_P12_B64 }}"
+        echo "::add-mask::${{ inputs.CERT_P12_PASSWORD }}"
+        echo "::add-mask::${{ inputs.PROFILE_B64 }}"
+        echo "::add-mask::${{ inputs.TEAM_ID }}"
+        
+    - name: Import certificate
+      run: |
+        echo "${{ inputs.CERT_P12_B64 }}" | base64 --decode > cert.p12
+        security create-keychain -p temp temp.keychain
+        security default-keychain -s temp.keychain
+        security unlock-keychain -p temp temp.keychain
+        security import cert.p12 -P "${{ inputs.CERT_P12_PASSWORD }}" -A
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp temp.keychain
+        
+    - name: Install provisioning profile
+      run: |
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        echo "${{ inputs.PROFILE_B64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/dist.mobileprovision
+        
+    - name: Build and archive
+      run: |
+        cd ios/App
+        xcodebuild \
+          -workspace App.xcworkspace \
+          -scheme App \
+          -configuration Release \
+          -destination generic/platform=iOS \
+          -archivePath App.xcarchive \
+          DEVELOPMENT_TEAM=${{ inputs.TEAM_ID }} \
+          CODE_SIGN_STYLE=Manual \
+          archive
+          
+    - name: Export IPA
+      run: |
+        cd ios/App
+        xcodebuild \
+          -exportArchive \
+          -archivePath App.xcarchive \
+          -exportOptionsPlist ../../build-config/ExportOptions.plist \
+          -exportPath ./build
+          
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: Dime-Time-v1.0.1.ipa
+        path: ios/App/build/*.ipa
