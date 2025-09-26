@@ -82,6 +82,10 @@
         <key>LSApplicationCategoryType</key>
         <string>public.app-category.finance</string>
         
+        <!-- Required for App Store submission -->
+        <key>ITSAppUsesNonExemptEncryption</key>
+        <false/>
+        
         <!-- Supported Document Types -->
         <key>CFBundleDocumentTypes</key>
         <array>
