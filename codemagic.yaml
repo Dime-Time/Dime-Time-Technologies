@@ -1,0 +1,59 @@
+workflows:
+  ios-capacitor-workflow:
+    name: iOS Capacitor Build
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: "com.dimetime.app"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 18.17.0
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+      - name: Capacitor build
+        script: |
+          npm run build
+          npx cap sync ios
+      - name: Set up provisioning profiles
+        script: |
+          PROFILES_HOME="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILES_HOME"
+          PROFILE_PATH="$(find /tmp -name "*.mobileprovision")"
+          echo "Profile path: $PROFILE_PATH"
+          cp "$PROFILE_PATH" "$PROFILES_HOME/$(uuidgen).mobileprovision"
+      - name: Set up signing certificate
+        script: |
+          echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
+          if [ -z ${CM_CERTIFICATE_PASSWORD+x} ]; then
+            # Pre-create keychain, add it to the list, and set it as default
+            keychain initialize
+          else
+            keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password $CM_CERTIFICATE_PASSWORD
+          fi
+      - name: Build ipa for distribution
+        script: |
+          package_manager=npm
+          if [ -f yarn.lock ]; then
+              package_manager=yarn
+          elif [ -f pnpm-lock.yaml ]; then
+              package_manager=pnpm
+          fi
+          $package_manager run build
+          find . -name "*.xcworkspace" -maxdepth 3
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
