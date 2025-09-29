@@ -2,27 +2,16 @@ name: Manual iOS Signed Build
 
 on:
   workflow_dispatch:
-    inputs:
-      CERT_P12_B64:
-        description: 'Base64 encoded .p12 certificate'
-        required: true
-        type: string
-      CERT_P12_PASSWORD:
-        description: 'Certificate password'
-        required: true
-        type: string
-      PROFILE_B64:
-        description: 'Base64 encoded provisioning profile'
-        required: true
-        type: string
-      TEAM_ID:
-        description: 'Apple Team ID (10 characters)'
-        required: true
-        type: string
 
 jobs:
   build:
     runs-on: macos-latest
+    
+    env:
+      CERT_P12_B64: ${{ secrets.IOS_CERT_P12_B64 }}
+      CERT_P12_PASSWORD: ${{ secrets.IOS_CERT_P12_PASSWORD }}
+      PROFILE_B64: ${{ secrets.IOS_PROFILE_B64 }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     
     steps:
     - name: Checkout
@@ -45,26 +34,27 @@ jobs:
         npx cap sync ios
         cd ios/App && pod install
         
-    - name: Mask sensitive inputs
-      run: |
-        echo "::add-mask::${{ inputs.CERT_P12_B64 }}"
-        echo "::add-mask::${{ inputs.CERT_P12_PASSWORD }}"
-        echo "::add-mask::${{ inputs.PROFILE_B64 }}"
-        echo "::add-mask::${{ inputs.TEAM_ID }}"
-        
     - name: Import certificate
       run: |
-        echo "${{ inputs.CERT_P12_B64 }}" | base64 --decode > cert.p12
+        printf '%s' "$CERT_P12_B64" | base64 -D > cert.p12
+        KEYCHAIN=~/Library/Keychains/temp.keychain-db
         security create-keychain -p temp temp.keychain
         security default-keychain -s temp.keychain
         security unlock-keychain -p temp temp.keychain
-        security import cert.p12 -P "${{ inputs.CERT_P12_PASSWORD }}" -A
-        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp temp.keychain
+        security import cert.p12 -k "$KEYCHAIN" -P "$CERT_P12_PASSWORD" -A -t cert -f pkcs12 -T /usr/bin/codesign -T /usr/bin/security
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp "$KEYCHAIN"
         
     - name: Install provisioning profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        echo "${{ inputs.PROFILE_B64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/dist.mobileprovision
+        printf '%s' "$PROFILE_B64" | base64 -D > ~/Library/MobileDevice/Provisioning\ Profiles/dist.mobileprovision
+        
+    - name: Verify signing setup
+      run: |
+        echo "=== Available signing identities ==="
+        security find-identity -v -p codesigning
+        echo "=== Installed provisioning profiles ==="
+        ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
         
     - name: Build and archive
       run: |
@@ -75,8 +65,10 @@ jobs:
           -configuration Release \
           -destination generic/platform=iOS \
           -archivePath App.xcarchive \
-          DEVELOPMENT_TEAM=${{ inputs.TEAM_ID }} \
+          DEVELOPMENT_TEAM=$TEAM_ID \
           CODE_SIGN_STYLE=Manual \
+          CODE_SIGN_IDENTITY="Apple Distribution" \
+          PROVISIONING_PROFILE_SPECIFIER="Dime Time App Store Profile" \
           archive
           
     - name: Export IPA
