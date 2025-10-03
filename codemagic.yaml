@@ -39,6 +39,6 @@ workflows:
           xcodebuild -exportArchive \
             -archivePath App.xcarchive \
             -exportPath ./build \
-            -exportOptionsPlist ../../build-config/ExportOptions.plist
+            -allowProvisioningUpdates
     artifacts:
       - ios/App/build/*.ipa
