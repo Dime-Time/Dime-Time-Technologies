@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>CFBundleDevelopmentRegion</key>
+        <string>en</string>
+        <key>CFBundleDisplayName</key>
+        <string>Dime Time</string>
+        <key>CFBundleExecutable</key>
+        <string>$(EXECUTABLE_NAME)</string>
+        <key>CFBundleIdentifier</key>
+        <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+        <key>CFBundleInfoDictionaryVersion</key>
+        <string>6.0</string>
+        <key>CFBundleName</key>
+        <string>$(PRODUCT_NAME)</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>CFBundleShortVersionString</key>
+        <string>$(MARKETING_VERSION)</string>
+        <key>CFBundleVersion</key>
+        <string>$(CURRENT_PROJECT_VERSION)</string>
+        <key>LSRequiresIPhoneOS</key>
+        <true/>
+        <key>UILaunchStoryboardName</key>
+        <string>LaunchScreen</string>
+        <key>UIMainStoryboardFile</key>
+        <string>Main</string>
+        <key>UIRequiredDeviceCapabilities</key>
+        <array>
+                <string>armv7</string>
+        </array>
+        <key>UISupportedInterfaceOrientations</key>
+        <array>
+                <string>UIInterfaceOrientationPortrait</string>
+                <string>UIInterfaceOrientationLandscapeLeft</string>
+                <string>UIInterfaceOrientationLandscapeRight</string>
+        </array>
+        <key>UISupportedInterfaceOrientations~ipad</key>
+        <array>
+                <string>UIInterfaceOrientationPortrait</string>
+                <string>UIInterfaceOrientationPortraitUpsideDown</string>
+                <string>UIInterfaceOrientationLandscapeLeft</string>
+                <string>UIInterfaceOrientationLandscapeRight</string>
+        </array>
+        <key>UIViewControllerBasedStatusBarAppearance</key>
+        <true/>
+        
+        <!-- Privacy Permission Descriptions -->
+        <key>NSCameraUsageDescription</key>
+        <string>Dime Time uses the camera to scan QR codes for quick access and authentication features.</string>
+        
+        <key>NSPhotoLibraryUsageDescription</key>
+        <string>Dime Time accesses your photo library to upload receipts, statements, and other financial documents for expense tracking.</string>
+        
+        <key>NSLocationWhenInUseUsageDescription</key>
+        <string>Dime Time uses location to find nearby ATMs and bank branches, and to enhance transaction categorization.</string>
+        
+        <key>NSFaceIDUsageDescription</key>
+        <string>Dime Time uses Face ID for secure authentication and to protect your financial data.</string>
+        
+        <key>NSContactsUsageDescription</key>
+        <string>Dime Time accesses contacts to help you send money to friends and family more easily.</string>
+        
+        <!-- App Transport Security - Secure TLS 1.2+ only -->
+        <key>NSAppTransportSecurity</key>
+        <dict>
+            <key>NSAllowsArbitraryLoads</key>
+            <false/>
+            <!-- No TLS exceptions - all connections must use secure TLS 1.2+ -->
+        </dict>
+        
+        <!-- Background Modes - Commented out until features are implemented
+        <key>UIBackgroundModes</key>
+        <array>
+            <string>background-processing</string>
+            <string>remote-notification</string>
+        </array>
+        -->
+        
+        <!-- App Category -->
+        <key>LSApplicationCategoryType</key>
+        <string>public.app-category.finance</string>
+        
+        <!-- Supported Document Types -->
+        <key>CFBundleDocumentTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleTypeName</key>
+                <string>Financial Documents</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Owner</string>
+                <key>LSItemContentTypes</key>
+                <array>
+                    <string>public.image</string>
+                    <string>com.adobe.pdf</string>
+                    <string>public.comma-separated-values-text</string>
+                </array>
+            </dict>
+        </array>
+        
+        <!-- URL Schemes -->
+        <key>CFBundleURLTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleURLName</key>
+                <string>com.dimetime.app.urlscheme</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <string>dimetime</string>
+                </array>
+            </dict>
+        </array>
+        
+        <!-- iTunes File Sharing disabled for financial app security -->
+        <!-- <key>UIFileSharingEnabled</key>
+        <true/>
+        <key>LSSupportsOpeningDocumentsInPlace</key>
+        <true/> -->
+        
+        <!-- StatusBar Style -->
+        <key>UIStatusBarStyle</key>
+        <string>UIStatusBarStyleDefault</string>
+        
+        <!-- Minimum iOS Version -->
+        <key>MinimumOSVersion</key>
+        <string>13.0</string>
+        
+        <!-- Requires Full Screen -->
+        <key>UIRequiresFullScreen</key>
+        <false/>
+        
+        <!-- Universal Links - uncomment when domain association is configured -->
+        <!-- <key>com.apple.developer.associated-domains</key>
+        <array>
+            <string>applinks:dimetime.app</string>
+        </array> -->
+</dict>
+</plist>
