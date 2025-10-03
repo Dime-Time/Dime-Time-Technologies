@@ -44,7 +44,10 @@ jobs:
     - name: Install provisioning profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        echo "${{ secrets.IOS_PROFILE_B64 }}" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/dist.mobileprovision
+        echo "${{ secrets.IOS_PROFILE_B64 }}" | base64 -d > profile.mobileprovision
+        UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
+        cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+        echo "Installed provisioning profile with UUID: $UUID"
         
     - name: Verify signing setup
       run: |
