@@ -19,7 +19,7 @@
     <key>provisioningProfiles</key>
     <dict>
         <key>com.dimetime.app</key>
-        <string>Dime Time App Store Profile</string>
+        <string>Dime_Time_App_Store_Profile (3)</string>
     </dict>
     <key>signingStyle</key>
     <string>manual</string>
