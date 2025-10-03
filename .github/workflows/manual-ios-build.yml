@@ -40,13 +40,13 @@ jobs:
         p12-file-base64: ${{ secrets.IOS_CERT_P12_B64 }}
         p12-password: ${{ secrets.IOS_CERT_P12_PASSWORD }}
         create-keychain: true
-        
-    - name: Install provisioning profile
+    
+    - name: Install provisioning profile with UUID-based filename
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        echo "${{ secrets.IOS_PROFILE_B64 }}" | base64 -d > profile.mobileprovision
-        UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
-        cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+        echo "${{ secrets.IOS_PROFILE_B64 }}" | base64 -d > /tmp/profile.mobileprovision
+        UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
+        cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "Installed provisioning profile with UUID: $UUID"
         
     - name: Verify signing setup
