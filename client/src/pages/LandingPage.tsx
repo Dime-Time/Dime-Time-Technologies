@@ -215,7 +215,7 @@ export default function LandingPage() {
               <img 
                 src={founderPortrait} 
                 alt="Founder" 
-                className="w-16 h-16 rounded-full object-cover"
+                className="w-16 h-16 rounded-full object-cover object-[center_30%]"
                 data-testid="img-founder-portrait"
               />
               <p className="text-sm text-white/80 font-semibold" data-testid="text-founder">Founder</p>
