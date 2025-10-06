@@ -314,7 +314,7 @@ export default function LandingPage() {
                 placeholder="Your Name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white"
                 data-testid="input-contact-name"
               />
             </div>
@@ -324,7 +324,7 @@ export default function LandingPage() {
                 placeholder="Your Email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white"
                 data-testid="input-contact-email"
               />
             </div>
@@ -333,7 +333,7 @@ export default function LandingPage() {
                 placeholder="Your Message"
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[120px]"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white min-h-[120px]"
                 data-testid="textarea-contact-message"
               />
             </div>
