@@ -32,7 +32,7 @@ function Router() {
   
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/transactions" component={Transactions} />
       <Route path="/debts" component={Debts} />
       <Route path="/crypto" component={Crypto} />
@@ -105,15 +105,152 @@ function AppContent() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <LandingPage />;
-  }
-
+  // Always show the landing page at the root
   return (
-    <>
-      <Navigation />
-      <Router />
-    </>
+    <Switch>
+      <Route path="/" component={LandingPage} />
+      <Route path="/dashboard">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Dashboard />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/transactions">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Transactions />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/debts">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Debts />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/crypto">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Crypto />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/insights">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Insights />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/banking">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Banking />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/qr">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <QRCodePage />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/settings">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Settings />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/notifications">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Notifications />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/legal">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Legal />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/signup">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <Signup />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/dime-token">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <DimeToken />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/business-analytics">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <BusinessAnalytics />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route path="/stats">
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            <StatsPage />
+          </>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 

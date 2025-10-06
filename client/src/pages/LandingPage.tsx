@@ -13,7 +13,14 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#918EF4] text-white flex flex-col">
       {/* Header */}
       <header className="w-full py-6 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto flex justify-end">
+          <Button 
+            onClick={handleLogin}
+            className="bg-white text-[#918EF4] hover:bg-white/90"
+            data-testid="button-login"
+          >
+            Get Started
+          </Button>
         </div>
       </header>
 
@@ -26,14 +33,14 @@ export default function LandingPage() {
           </div>
           
           {/* Hello World Text */}
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-white text-center" data-testid="text-hello-world">
             "Hello World!"
           </h1>
         </div>
 
         {/* Features Grid */}
         <div className="max-w-6xl mx-auto mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-feature-roundup">
             <CardHeader>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <DollarSign className="w-6 h-6 text-white" />
@@ -45,7 +52,7 @@ export default function LandingPage() {
             </CardHeader>
           </Card>
 
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-feature-analytics">
             <CardHeader>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <TrendingUp className="w-6 h-6 text-white" />
@@ -57,7 +64,7 @@ export default function LandingPage() {
             </CardHeader>
           </Card>
 
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-feature-security">
             <CardHeader>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6 text-white" />
@@ -69,7 +76,7 @@ export default function LandingPage() {
             </CardHeader>
           </Card>
 
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-feature-mobile">
             <CardHeader>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Smartphone className="w-6 h-6 text-white" />
@@ -81,7 +88,7 @@ export default function LandingPage() {
             </CardHeader>
           </Card>
 
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-feature-payments">
             <CardHeader>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Clock className="w-6 h-6 text-white" />
@@ -93,7 +100,7 @@ export default function LandingPage() {
             </CardHeader>
           </Card>
 
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-feature-crypto">
             <CardHeader>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <TrendingUp className="w-6 h-6 text-white" />
@@ -107,15 +114,17 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full py-6 px-4 text-center text-white/60">
+      {/* Footer with Veteran Badge */}
+      <footer className="w-full py-8 px-4 text-center text-white/60">
         <p className="mb-4">&copy; 2025 Dime Time. All rights reserved.</p>
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-2">
           <img 
             src={vaq139Badge} 
             alt="VAQ-139 Veteran Owned Business" 
             className="w-16 h-16"
+            data-testid="img-veteran-badge"
           />
+          <p className="text-sm text-white/80 font-semibold" data-testid="text-veteran-owned">Veteran Owned Business</p>
         </div>
       </footer>
     </div>
