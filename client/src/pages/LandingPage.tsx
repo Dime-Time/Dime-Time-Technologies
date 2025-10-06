@@ -340,7 +340,7 @@ export default function LandingPage() {
             <Button
               type="submit"
               disabled={contactMutation.isPending}
-              className="w-full bg-white text-[#918EF4] hover:bg-white/90 font-semibold"
+              className="w-full bg-white/10 border border-white/20 text-white hover:bg-white/20 font-semibold"
               data-testid="button-contact-submit"
             >
               {contactMutation.isPending ? "Sending..." : "Send Message"}
