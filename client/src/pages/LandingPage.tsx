@@ -192,7 +192,7 @@ export default function LandingPage() {
             Business Projections
           </h2>
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-stat-revenue">
+            <Card className="max-w-none w-full bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-stat-revenue">
               <CardHeader>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <BarChart3 className="w-6 h-6 text-white" />
@@ -209,7 +209,7 @@ export default function LandingPage() {
               </CardHeader>
             </Card>
 
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-stat-market">
+            <Card className="max-w-none w-full bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-stat-market">
               <CardHeader>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-white" />
@@ -226,7 +226,7 @@ export default function LandingPage() {
               </CardHeader>
             </Card>
 
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-stat-growth">
+            <Card className="max-w-none w-full bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-stat-growth">
               <CardHeader>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <Target className="w-6 h-6 text-white" />
