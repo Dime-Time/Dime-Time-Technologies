@@ -27,6 +27,8 @@ import {
   type InsertDttStaking,
   type DttTokenInfo,
   type InsertDttTokenInfo,
+  type ContactSubmission,
+  type InsertContactSubmission,
   users, 
   debts, 
   transactions, 
@@ -40,7 +42,8 @@ import {
   dttHoldings,
   dttRewards,
   dttStaking,
-  dttTokenInfo
+  dttTokenInfo,
+  contactSubmissions
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -113,6 +116,10 @@ export interface IStorage {
   // Notification settings methods
   getNotificationSettings(userId: string): Promise<NotificationSettings | undefined>;
   createOrUpdateNotificationSettings(settings: InsertNotificationSettings): Promise<NotificationSettings>;
+
+  // Contact submission methods
+  createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission>;
+  getContactSubmissions(): Promise<ContactSubmission[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1308,6 +1315,16 @@ export class MemStorage implements IStorage {
     };
     this.dttTokenInfoData = updated;
     return updated;
+  }
+
+  // Contact submission methods
+  async createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission> {
+    const [result] = await db.insert(contactSubmissions).values(submission).returning();
+    return result;
+  }
+
+  async getContactSubmissions(): Promise<ContactSubmission[]> {
+    return await db.select().from(contactSubmissions).orderBy(desc(contactSubmissions.createdAt));
   }
 }
 

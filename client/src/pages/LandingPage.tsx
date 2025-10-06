@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogoWithText } from "@/components/logo";
-import { DollarSign, TrendingUp, Shield, Smartphone, Clock, BarChart3, Users, Target, Code } from "lucide-react";
+import { DollarSign, TrendingUp, Shield, Smartphone, Clock, BarChart3, Users, Target, Code, Mail } from "lucide-react";
 import vaq139Badge from "@assets/generated_images/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f.png";
 import founderPortrait from "@assets/C522B2F1-FBF0-476A-BB44-9A0B1F2E5113_1759744034189.png";
 import QRCode from "qrcode";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function LandingPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const { toast } = useToast();
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -28,6 +36,43 @@ export default function LandingPage() {
     };
     generateQRCode();
   }, []);
+
+  const contactMutation = useMutation({
+    mutationFn: async (data: { name: string; email: string; message: string }) => {
+      return await apiRequest("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message sent!",
+        description: "Thank you for contacting us. We'll get back to you soon at tim@dime-time.com",
+      });
+      setFormData({ name: "", email: "", message: "" });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    contactMutation.mutate(formData);
+  };
 
   return (
     <div className="min-h-screen bg-[#918EF4] text-white flex flex-col">
@@ -242,6 +287,65 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+
+      {/* Contact Form Section */}
+      <div className="w-full py-16 px-4 mt-12 bg-white/5">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <Mail className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4" data-testid="text-contact-heading">
+              Get in Touch
+            </h2>
+            <p className="text-white/70 mb-2" data-testid="text-contact-email">
+              tim@dime-time.com
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Input
+                type="text"
+                placeholder="Your Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                data-testid="input-contact-name"
+              />
+            </div>
+            <div>
+              <Input
+                type="email"
+                placeholder="Your Email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                data-testid="input-contact-email"
+              />
+            </div>
+            <div>
+              <Textarea
+                placeholder="Your Message"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[120px]"
+                data-testid="textarea-contact-message"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={contactMutation.isPending}
+              className="w-full bg-white text-[#918EF4] hover:bg-white/90 font-semibold"
+              data-testid="button-contact-submit"
+            >
+              {contactMutation.isPending ? "Sending..." : "Send Message"}
+            </Button>
+          </form>
+        </div>
+      </div>
 
       {/* Footer with Founder Portrait and Veteran Badge */}
       <footer className="w-full py-8 px-4 mt-12">

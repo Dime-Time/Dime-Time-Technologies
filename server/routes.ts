@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 import { dimeTokenService } from "./services/dimeTokenService";
 
-import { insertTransactionSchema, insertPaymentSchema, insertDebtSchema, insertCryptoPurchaseSchema, insertRoundUpSettingsSchema } from "@shared/schema";
+import { insertTransactionSchema, insertPaymentSchema, insertDebtSchema, insertCryptoPurchaseSchema, insertRoundUpSettingsSchema, insertContactSubmissionSchema } from "@shared/schema";
 import { z } from "zod";
 import { plaidService } from "./services/plaidService";
 import { coinbaseService } from "./services/coinbaseService";
@@ -40,6 +40,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(user);
     } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Contact form submission (public endpoint)
+  app.post("/api/contact", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertContactSubmissionSchema.parse(req.body);
+      const submission = await storage.createContactSubmission(validatedData);
+      res.json({ success: true, submission });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid form data", errors: error.errors });
+      }
       res.status(500).json({ message: "Internal server error" });
     }
   });
