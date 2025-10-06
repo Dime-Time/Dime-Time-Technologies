@@ -250,7 +250,7 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-8" data-testid="text-development-stats">
             Development Achievement
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-white/10 border-white/20 backdrop-blur-sm" data-testid="card-stat-tech">
               <CardHeader>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
