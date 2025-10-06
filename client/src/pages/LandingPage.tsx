@@ -1,10 +1,34 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogoWithText } from "@/components/logo";
 import { DollarSign, TrendingUp, Shield, Smartphone, Clock, BarChart3, Users, Target, Code } from "lucide-react";
 import vaq139Badge from "@assets/generated_images/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f.png";
 import founderPortrait from "@assets/C522B2F1-FBF0-476A-BB44-9A0B1F2E5113_1759744034189.png";
+import QRCode from "qrcode";
 
 export default function LandingPage() {
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+
+  useEffect(() => {
+    const generateQRCode = async () => {
+      try {
+        const url = window.location.href;
+        const qrDataUrl = await QRCode.toDataURL(url, {
+          width: 150,
+          margin: 2,
+          color: {
+            dark: '#918EF4',
+            light: '#FFFFFF'
+          }
+        });
+        setQrCodeUrl(qrDataUrl);
+      } catch (err) {
+        console.error('Error generating QR code:', err);
+      }
+    };
+    generateQRCode();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#918EF4] text-white flex flex-col">
       {/* Header - No button anymore */}
@@ -25,6 +49,19 @@ export default function LandingPage() {
           <h1 className="text-4xl md:text-5xl font-bold text-white text-center" data-testid="text-hello-world">
             "Hello World!"
           </h1>
+
+          {/* QR Code */}
+          {qrCodeUrl && (
+            <div className="flex flex-col items-center gap-2 mt-6">
+              <img 
+                src={qrCodeUrl} 
+                alt="Scan to visit website" 
+                className="bg-white p-2 rounded-lg"
+                data-testid="img-qr-code"
+              />
+              <p className="text-sm text-white/80" data-testid="text-qr-label">Scan to visit</p>
+            </div>
+          )}
         </div>
 
         {/* Features Grid */}
