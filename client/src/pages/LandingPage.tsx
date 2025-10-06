@@ -352,7 +352,7 @@ export default function LandingPage() {
       {/* Footer with Founder Portrait and Veteran Badge */}
       <footer className="w-full py-8 px-4 mt-12">
         <div className="max-w-6xl mx-auto flex flex-col items-center justify-center">
-          <p className="mb-6 text-center text-white/60">&copy; 2025 Dime Time. All rights reserved.</p>
+          <p className="mb-6 text-center text-white/60">&copy; 2025 Dime Time Technologies. All rights reserved.</p>
           <div className="flex flex-row items-center justify-center gap-12">
             <div className="flex flex-col items-center gap-2">
               <img 
