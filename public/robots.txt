@@ -1,0 +1,8 @@
+# Dime Time - Robots.txt
+# Allow all crawlers to index all content
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://dime-time.com/sitemap.xml
