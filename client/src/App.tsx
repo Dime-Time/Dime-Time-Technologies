@@ -23,6 +23,7 @@ import Legal from "@/pages/legal";
 import Signup from "@/pages/signup";
 import DimeToken from "@/pages/dime-token";
 import BusinessAnalytics from "@/pages/business-analytics";
+import StatsPage from "@/pages/StatsPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/signup" component={Signup} />
       <Route path="/dime-token" component={DimeToken} />
       <Route path="/business-analytics" component={BusinessAnalytics} />
+      <Route path="/stats" component={StatsPage} />
       <Route component={NotFound} />
     </Switch>
   );
