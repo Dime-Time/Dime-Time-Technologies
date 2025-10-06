@@ -39,11 +39,13 @@ export default function LandingPage() {
 
   const contactMutation = useMutation({
     mutationFn: async (data: { name: string; email: string; message: string }) => {
-      return await apiRequest("/api/contact", {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      if (!response.ok) throw new Error("Failed to send message");
+      return response.json();
     },
     onSuccess: () => {
       toast({
