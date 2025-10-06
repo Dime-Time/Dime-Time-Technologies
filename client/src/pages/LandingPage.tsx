@@ -207,26 +207,28 @@ export default function LandingPage() {
       </main>
 
       {/* Footer with Founder Portrait and Veteran Badge */}
-      <footer className="w-full py-8 px-4 text-center text-white/60 mt-12">
-        <p className="mb-4">&copy; 2025 Dime Time. All rights reserved.</p>
-        <div className="flex flex-row items-center justify-center gap-8">
-          <div className="flex flex-col items-center gap-2">
-            <img 
-              src={founderPortrait} 
-              alt="Founder" 
-              className="w-16 h-16 rounded-full object-cover"
-              data-testid="img-founder-portrait"
-            />
-            <p className="text-sm text-white/80 font-semibold" data-testid="text-founder">Founder</p>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <img 
-              src={vaq139Badge} 
-              alt="VAQ-139 Veteran Owned Business" 
-              className="w-16 h-16"
-              data-testid="img-veteran-badge"
-            />
-            <p className="text-sm text-white/80 font-semibold" data-testid="text-veteran-owned">Veteran Owned Business</p>
+      <footer className="w-full py-8 px-4 mt-12">
+        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center">
+          <p className="mb-6 text-center text-white/60">&copy; 2025 Dime Time. All rights reserved.</p>
+          <div className="flex flex-row items-center justify-center gap-12">
+            <div className="flex flex-col items-center gap-2">
+              <img 
+                src={founderPortrait} 
+                alt="Founder" 
+                className="w-16 h-16 rounded-full object-cover"
+                data-testid="img-founder-portrait"
+              />
+              <p className="text-sm text-white/80 font-semibold" data-testid="text-founder">Founder</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <img 
+                src={vaq139Badge} 
+                alt="VAQ-139 Veteran Owned Business" 
+                className="w-16 h-16"
+                data-testid="img-veteran-badge"
+              />
+              <p className="text-sm text-white/80 font-semibold" data-testid="text-veteran-owned">Veteran Owned Business</p>
+            </div>
           </div>
         </div>
       </footer>
