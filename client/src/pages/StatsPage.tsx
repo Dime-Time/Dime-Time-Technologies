@@ -11,6 +11,8 @@ import {
   AppWindow,
   Globe
 } from "lucide-react";
+import logoImage from "@assets/D22C55D0-9527-4CE7-863F-F9327653E73E_1756052612472.png";
+import veteranBadge from "@assets/generated_images/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f.png";
 
 export default function StatsPage() {
   // Get the current website URL for the QR code
@@ -72,11 +74,24 @@ export default function StatsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8 md:mb-12">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img 
+              src={logoImage} 
+              alt="Dime Time Logo" 
+              className="w-24 h-24 md:w-32 md:h-32 object-contain"
+              style={{ 
+                filter: `brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%)`,
+              }}
+              data-testid="img-logo"
+            />
+          </div>
+          
           <h1 
             className="text-4xl md:text-6xl font-bold mb-4"
             data-testid="text-stats-title"
           >
-            Dime Time
+            This is Dime Time
           </h1>
           <p 
             className="text-xl md:text-2xl font-light mb-6"
@@ -191,6 +206,16 @@ export default function StatsPage() {
             </p>
           </div>
         </Card>
+
+        {/* Veteran Business Badge */}
+        <div className="flex justify-center mt-8">
+          <img 
+            src={veteranBadge} 
+            alt="Veteran Owned Business" 
+            className="w-32 h-32 md:w-40 md:h-40 object-contain"
+            data-testid="img-veteran-badge"
+          />
+        </div>
 
         {/* Footer */}
         <div className="text-center mt-8 opacity-70">
