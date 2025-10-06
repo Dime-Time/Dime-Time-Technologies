@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LogoWithText } from "@/components/logo";
 import { DollarSign, TrendingUp, Shield, Smartphone, Clock, BarChart3, Users, Target, Code } from "lucide-react";
 import vaq139Badge from "@assets/generated_images/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f.png";
+import founderPortrait from "@assets/C522B2F1-FBF0-476A-BB44-9A0B1F2E5113_1759744034189.png";
 
 export default function LandingPage() {
   return (
@@ -205,17 +206,28 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {/* Footer with Veteran Badge */}
+      {/* Footer with Founder Portrait and Veteran Badge */}
       <footer className="w-full py-8 px-4 text-center text-white/60 mt-12">
         <p className="mb-4">&copy; 2025 Dime Time. All rights reserved.</p>
-        <div className="flex flex-col items-center gap-2">
-          <img 
-            src={vaq139Badge} 
-            alt="VAQ-139 Veteran Owned Business" 
-            className="w-16 h-16"
-            data-testid="img-veteran-badge"
-          />
-          <p className="text-sm text-white/80 font-semibold" data-testid="text-veteran-owned">Veteran Owned Business</p>
+        <div className="flex flex-row items-center justify-center gap-8">
+          <div className="flex flex-col items-center gap-2">
+            <img 
+              src={founderPortrait} 
+              alt="Founder" 
+              className="w-16 h-16 rounded-full object-cover"
+              data-testid="img-founder-portrait"
+            />
+            <p className="text-sm text-white/80 font-semibold" data-testid="text-founder">Founder</p>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <img 
+              src={vaq139Badge} 
+              alt="VAQ-139 Veteran Owned Business" 
+              className="w-16 h-16"
+              data-testid="img-veteran-badge"
+            />
+            <p className="text-sm text-white/80 font-semibold" data-testid="text-veteran-owned">Veteran Owned Business</p>
+          </div>
         </div>
       </footer>
     </div>
