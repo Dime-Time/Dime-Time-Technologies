@@ -9,6 +9,7 @@ import { initGA, setUserId, setUserProperties, trackLogin, setupGlobalErrorTrack
 import { useAnalytics } from "../hooks/use-analytics";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import LandingPage from "@/pages/LandingPage";
+import Onboarding from "@/pages/Onboarding";
 
 import Dashboard from "@/pages/dashboard";
 import Transactions from "@/pages/transactions";
@@ -105,10 +106,10 @@ function AppContent() {
     );
   }
 
-  // Always show the landing page at the root
+  // Always show the onboarding page at the root
   return (
     <Switch>
-      <Route path="/" component={LandingPage} />
+      <Route path="/" component={Onboarding} />
       <Route path="/dashboard">
         {isAuthenticated ? (
           <>
