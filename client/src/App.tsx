@@ -110,6 +110,7 @@ function AppContent() {
   return (
     <Switch>
       <Route path="/" component={Onboarding} />
+      <Route path="/conference" component={LandingPage} />
       <Route path="/dashboard">
         {isAuthenticated ? (
           <>
