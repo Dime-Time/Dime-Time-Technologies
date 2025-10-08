@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogoWithText } from "@/components/logo";
 import { DollarSign, TrendingUp, Shield, Smartphone, Clock, BarChart3, Users, Target, Code, Mail } from "lucide-react";
-import vaq139Badge from "@assets/generated_images/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f.png";
+import veteranBadge from "@assets/generated_images/Minimal_veteran_business_badge_d1e1c716.png";
 import founderPortrait from "@assets/C522B2F1-FBF0-476A-BB44-9A0B1F2E5113_1759744034189.png";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
@@ -365,9 +365,9 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-col items-center gap-2">
               <img 
-                src={vaq139Badge} 
-                alt="VAQ-139 Veteran Owned Business" 
-                className="w-16 h-16"
+                src={veteranBadge} 
+                alt="Veteran Owned Business" 
+                className="w-24 h-24"
                 data-testid="img-veteran-badge"
               />
               <p className="text-sm text-white/80 font-semibold" data-testid="text-veteran-owned">Veteran Owned Business</p>
