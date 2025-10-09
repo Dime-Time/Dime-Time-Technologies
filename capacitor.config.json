@@ -2,24 +2,14 @@
   "appId": "com.dimetime.app",
   "appName": "Dime Time",
   "webDir": "dist/public",
-  "server": {
-    "androidScheme": "https"
-  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 3000,
       "launchAutoHide": true,
       "backgroundColor": "#918EF4",
-      "androidSplashResourceName": "splash",
-      "androidScaleType": "CENTER_CROP",
       "showSpinner": true,
-      "androidSpinnerStyle": "large",
       "iosSpinnerStyle": "small",
-      "spinnerColor": "#ffffff",
-      "splashFullScreen": true,
-      "splashImmersive": true,
-      "layoutName": "launch_screen",
-      "useDialog": true
+      "spinnerColor": "#ffffff"
     },
     "StatusBar": {
       "style": "DARK",

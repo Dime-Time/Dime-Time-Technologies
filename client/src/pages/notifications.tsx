@@ -194,7 +194,7 @@ export default function Notifications() {
         </div>
 
         <Tabs defaultValue="notifications" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${import.meta.env.DEV ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <BellRing className="h-4 w-4" />
               Notifications
@@ -203,10 +203,12 @@ export default function Notifications() {
               <SettingsIcon className="h-4 w-4" />
               Settings
             </TabsTrigger>
-            <TabsTrigger value="test" className="flex items-center gap-2">
-              <TestTube className="h-4 w-4" />
-              Test
-            </TabsTrigger>
+            {import.meta.env.DEV && (
+              <TabsTrigger value="test" className="flex items-center gap-2">
+                <TestTube className="h-4 w-4" />
+                Test
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="notifications" className="space-y-4">
@@ -452,9 +454,11 @@ export default function Notifications() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="test" className="space-y-6">
-            <NotificationTest />
-          </TabsContent>
+          {import.meta.env.DEV && (
+            <TabsContent value="test" className="space-y-6">
+              <NotificationTest />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
