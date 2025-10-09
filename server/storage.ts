@@ -174,7 +174,7 @@ export class MemStorage implements IStorage {
     const demoUser: User = {
       id: "demo-user-1",
       email: "demo@dimetime.app",
-      firstName: "Demo",
+      firstName: "Neo",
       lastName: "User",
       profileImageUrl: null,
       createdAt: new Date("2024-01-01"),
