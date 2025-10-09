@@ -1,0 +1,199 @@
+App Review2025-10-06 7:28 PM
+Review Environment
+
+Submission ID: ae44963e-d637-4aef-885e-ae8fc2994b7f
+Review date: October 06, 2025
+Version reviewed: 1.0
+
+
+Guideline 2.3.3 - Performance - Accurate Metadata
+Issue Description
+
+The screenshots do not show the actual app in use in the majority of the screenshots. Screenshots should highlight the app's core concept to help users understand the app’s functionality and value. 
+
+Next Steps
+
+Upload new screenshots that resolve the issues identified above and accurately reflect the app in use on each of the supported devices.
+
+Note some screenshots may only be viewed and updated by selecting "View All Sizes in Media Manager" in the Previews and Screenshots section of App Store Connect.
+
+Resources
+
+Follow these general requirements when adding or updating screenshots:
+
+- Marketing or promotional materials that do not reflect the UI of the app are not appropriate for screenshots.
+- The majority of the screenshots should highlight the app's main features and functionality. Note that splash and login screens are generally not considered to show your app in use.
+- Confirm that the screenshots appear identical to the app in all languages and on all supported devices. For example, screenshots can include the controls, interface or menus present in the app. 
+- Make sure that the screenshots show the app in use on the correct device. For example, iPhone screenshots should show the app as it appears on iPhone, not on iPad. Screenshots of the app on multiple Apple platforms can be included to demonstrate compatibility. 
+
+Learn more about creating great screenshots for your product page on the App Store or how to upload screenshots in App Store Connect.
+
+
+Guideline 2.1 - Performance - App Completeness
+Issue Description
+
+The app exhibited one or more bugs that would negatively impact users.
+
+Bug description: The app became unresponsive upon launch. 
+
+Review device details:
+
+- Device type: iPad Air (5th generation) 
+- OS version: iPadOS 26.0.1
+
+Next Steps
+
+Test the app on supported devices to identify and resolve bugs and stability issues before submitting for review.
+
+If the bug cannot be reproduced, try the following:
+
+- For new apps, uninstall all previous versions of the app from a device, then install and follow the steps to reproduce.
+- For app updates, install the new version as an update to the previous version, then follow the steps to reproduce.
+
+Resources
+
+- For information about testing apps and preparing them for review, see Testing a Release Build.
+- To learn about troubleshooting networking issues, see Networking Overview.
+
+
+
+Guideline 2.2 - Performance - Beta Testing
+
+Your app includes features that are intended to support beta testing. Since you are submitting a production version of your app, features intended to support beta testing are not appropriate.
+
+Next Steps
+
+To resolve this issue, revise your app and remove features that are intended to support beta testing. Since you are submitting a production version of your app, features intended to support beta testing are not appropriate.
+
+Resources
+
+- To learn more about our policies for beta testing, see App Review Guideline 2.2.
+- Test apps and invite users to provide feedback with TestFlight Beta Testing.
+
+Support
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+iOS App 1.0App Version
+Rejection Reasons:
+2.1.0 Performance: App Completeness
+
+2.2.0 Performance: Beta Testing
+
+2.3.3 Performance: Accurate Metadata
+
+Rejection Attachments:
+ab580ba135cd896fb34d423188101e63eca2d4c1.pngDownload
+43062d37f5fc065d5c4012ee015f328e94094937.pngDownload
+e3068c9c31baeed64860055e9338b5466cffbe22.pngDownload
+4a3aee08996b53122cf7e9756a4840ce82346002.pngDownload
+Screenshot-1007-082636.pngDownload
+Screenshot-1007-082709.pngDownload
+
+App ReviewToday 11:03 AM
+Hello,
+
+Thank you for your resubmission. Upon further review, we identified additional issues that need your attention. See below for more information.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+Review Environment
+
+Submission ID: ae44963e-d637-4aef-885e-ae8fc2994b7f
+Review date: October 09, 2025
+Version reviewed: 1.0
+
+
+Guideline 2.3.3 - Performance - Accurate Metadata
+Issue Description
+
+The 6.5-inch iPhone and 13-inch iPad screenshots still do not show the current version of the app in use. Screenshots should highlight the app's core concept to help users understand the app’s functionality and value. 
+
+Next Steps
+
+Upload new screenshots that resolve the issues identified above and accurately reflect the app in use on each of the supported devices.
+
+Note some screenshots may only be viewed and updated by selecting "View All Sizes in Media Manager" in the Previews and Screenshots section of App Store Connect.
+
+Resources
+
+Follow these general requirements when adding or updating screenshots:
+
+- Marketing or promotional materials that do not reflect the UI of the app are not appropriate for screenshots.
+- The majority of the screenshots should highlight the app's main features and functionality. Note that splash and login screens are generally not considered to show your app in use.
+- Confirm that the screenshots appear identical to the app in all languages and on all supported devices. For example, screenshots can include the controls, interface or menus present in the app. 
+- Make sure that the screenshots show the app in use on the correct device. For example, iPhone screenshots should show the app as it appears on iPhone, not on iPad. Screenshots of the app on multiple Apple platforms can be included to demonstrate compatibility. 
+
+Learn more about creating great screenshots for your product page on the App Store or how to upload screenshots in App Store Connect.
+
+
+Guideline 2.1 - Performance - App Completeness
+Issue Description
+
+The app exhibited one or more bugs that would negatively impact users.
+
+Bug description: The app was still irresponsive upon launch.
+
+Review device details:
+
+- Device type: iPad Air (5th generation) 
+- OS version: iPadOS 26.0.1
+
+Next Steps
+
+Test the app on supported devices to identify and resolve bugs and stability issues before submitting for review.
+
+If the bug cannot be reproduced, try the following:
+
+- For new apps, uninstall all previous versions of the app from a device, then install and follow the steps to reproduce.
+- For app updates, install the new version as an update to the previous version, then follow the steps to reproduce.
+
+Resources
+
+- For information about testing apps and preparing them for review, see Testing a Release Build.
+- To learn about troubleshooting networking issues, see Networking Overview.
+
+
+Guideline 2.2 - Performance - Beta Testing
+
+Your app still appears to be a pre-release, test, or trial version with a limited feature set. Apps that are created for test or trial purposes are not appropriate for the App Store.
+
+Next Steps
+
+To resolve this issue, please complete, remove, or fully configure any partially implemented features. If your app is not ready for public distribution, use TestFlight to test your app.
+
+Resources
+
+- To learn more about our policies for beta testing, see App Review Guideline 2.2.
+- Test apps and invite users to provide feedback with TestFlight Beta Testing.
+
+
+Guideline 1.5 - Safety
+Issue Description
+
+The Support URL provided in App Store Connect, https://your-replit-app-url.replit.app/privacy-policy.html, is currently not functional and/or displays an error. 
+
+Next Steps
+
+Update the specified Support URL to direct users to a functional webpage with support information.
+
+Resources
+
+Learn about Support URLs and other platform version information on App Store Connect Help.
+
+
+Guideline 2.3.10 - Performance - Accurate Metadata
+Issue Description
+
+The app or metadata includes information about third-party platforms that may not be relevant for App Store users, who are focused on experiences offered by the app itself.
+
+Next Steps
+
+Revise the app's binary to remove Android references. 
+
+Reply to App Review in App Store Connect with additional information if the app's functionality and how it interacts with third-party platforms has been misunderstood.
+
+Resources
+
+Learn how to edit App Store metadata on App Store Connect Help.
