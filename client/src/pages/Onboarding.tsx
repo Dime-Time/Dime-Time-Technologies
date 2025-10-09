@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
-import dimeTimeLogo from "@assets/D22C55D0-9527-4CE7-863F-F9327653E73E_1756052612472.png";
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
@@ -86,21 +85,6 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-[#918EF4] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md relative">
-        {/* Show logo on first 3 slides */}
-        {current <= 2 && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-16 z-10">
-            <img 
-              src={dimeTimeLogo} 
-              alt="Dime Time Logo" 
-              className="w-20 h-20 object-contain"
-              style={{ 
-                filter: `brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%)`
-              }}
-              data-testid="onboarding-logo"
-            />
-          </div>
-        )}
-        
         <div 
           className={`flex flex-col items-center justify-center min-h-[60vh] text-center px-6 transition-all duration-300 ${
             isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
