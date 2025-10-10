@@ -24,6 +24,11 @@ workflows:
       - name: Sync Capacitor
         script: |
           npx cap sync ios
+      - name: Update Build Number
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 26" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
+          echo "Updated build number to 26"
       - name: Install CocoaPods
         script: |
           cd ios/App && pod install
