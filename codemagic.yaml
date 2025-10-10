@@ -40,6 +40,8 @@ workflows:
             -configuration Release \
             -archivePath App.xcarchive \
             -destination generic/platform=iOS \
+            CURRENT_PROJECT_VERSION=26 \
+            MARKETING_VERSION=1.0.1 \
             archive
           xcodebuild -exportArchive \
             -archivePath App.xcarchive \
