@@ -22,7 +22,7 @@
         <string>Dime_Time_App_Store_Profile (3)</string>
     </dict>
     <key>signingStyle</key>
-    <string>manual</string>
+    <string>automatic</string>
     <key>stripSwiftSymbols</key>
     <true/>
     <key>thinning</key>

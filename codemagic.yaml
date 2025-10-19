@@ -8,6 +8,7 @@ workflows:
         BUNDLE_ID: "com.dimetime.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        TEAM_ID: "8WZHH537SU"
       node: 20
       xcode: latest
       cocoapods: default
@@ -40,6 +41,8 @@ workflows:
             -configuration Release \
             -archivePath App.xcarchive \
             -destination generic/platform=iOS \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=$TEAM_ID \
             CURRENT_PROJECT_VERSION=26 \
             MARKETING_VERSION=1.0.1 \
             archive
