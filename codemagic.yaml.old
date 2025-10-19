@@ -1,12 +1,14 @@
 workflows:
-  ios-automatic-signing:
-    name: iOS App Store Build
-    instance_type: mac_mini_m1
+  ios-capacitor-workflow:
+    name: iOS Capacitor Build
     max_build_duration: 120
+    instance_type: mac_mini_m1
     environment:
       vars:
+        BUNDLE_ID: "com.dimetime.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        TEAM_ID: "8WZHH537SU"
       node: 20
       xcode: latest
       cocoapods: default
@@ -15,36 +17,38 @@ workflows:
         bundle_identifier: com.dimetime.app
     scripts:
       - name: Install dependencies
-        script: npm ci
+        script: |
+          npm ci
       - name: Build web app
-        script: npm run build
-      - name: Sync iOS
-        script: npx cap sync ios
-      - name: Set build number
+        script: |
+          npm run build
+      - name: Sync Capacitor
+        script: |
+          npx cap sync ios
+      - name: Update Build Number
         script: |
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 26" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
-      - name: Install pods
-        script: cd ios/App && pod install
-      - name: Build archive
+          echo "Updated build number to 26"
+      - name: Install CocoaPods
+        script: |
+          cd ios/App && pod install
+      - name: Build IPA
         script: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath App.xcarchive \
-            -destination 'generic/platform=iOS' \
+            -destination generic/platform=iOS \
             CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=8WZHH537SU \
+            DEVELOPMENT_TEAM=$TEAM_ID \
             CURRENT_PROJECT_VERSION=26 \
             MARKETING_VERSION=1.0.1 \
             archive
-      - name: Export IPA
-        script: |
-          cd ios/App
           xcodebuild -exportArchive \
             -archivePath App.xcarchive \
-            -exportPath build \
+            -exportPath ./build \
             -exportOptionsPlist ../../build-config/ExportOptions.plist
     artifacts:
       - ios/App/build/*.ipa
