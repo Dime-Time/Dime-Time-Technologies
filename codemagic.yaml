@@ -30,7 +30,7 @@ workflows:
         script: |
           cd ios/App
           xcodebuild archive \
-            -workspace "$XCODE_WORKSPACE" \
+            -workspace App.xcworkspace \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath "$HOME/App.xcarchive" \
