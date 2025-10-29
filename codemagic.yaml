@@ -3,9 +3,9 @@ workflows:
     name: iOS App Store Build
     instance_type: mac_mini_m1
     max_build_duration: 120
+    integrations:
+      app_store_connect: dimetime-asc-key
     environment:
-      groups:
-        - iOS building info
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
@@ -56,7 +56,5 @@ workflows:
       - $HOME/output/*.ipa
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
