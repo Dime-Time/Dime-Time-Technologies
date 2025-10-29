@@ -28,32 +28,24 @@ workflows:
           echo "Build version updated to 1.0.1 (26)"
       - name: Install CocoaPods
         script: cd ios/App && pod install
-      - name: Build and archive with xcodebuild
+      - name: Initialize keychain
+        script: keychain initialize
+      - name: Fetch signing files from App Store Connect
         script: |
-          cd ios/App
-          xcodebuild archive \
-            -workspace App.xcworkspace \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath "$HOME/App.xcarchive" \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            -allowProvisioningUpdates
-      - name: Export IPA
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Add certificates to keychain
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Build iOS app
         script: |
-          xcodebuild -exportArchive \
-            -archivePath "$HOME/App.xcarchive" \
-            -exportPath "$HOME/output" \
-            -exportOptionsPlist "$CM_BUILD_DIR/build-config/ExportOptions.plist" \
-            -allowProvisioningUpdates
-      - name: Move IPA to artifacts
-        script: |
-          mkdir -p build/ios/ipa
-          cp "$HOME/output/"*.ipa build/ios/ipa/ || echo "No IPA found"
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
-      - $HOME/output/*.ipa
     publishing:
       app_store_connect:
         auth: integration
