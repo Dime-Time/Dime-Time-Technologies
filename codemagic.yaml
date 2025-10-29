@@ -30,6 +30,11 @@ workflows:
         script: cd ios/App && pod install
       - name: Initialize keychain
         script: keychain initialize
+      - name: Debug - Check bundle ID
+        script: |
+          echo "Bundle ID being used: $BUNDLE_ID"
+          echo "Checking Xcode project bundle ID:"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" ios/App/App/Info.plist || echo "Could not read from Info.plist"
       - name: Fetch signing files from App Store Connect
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
