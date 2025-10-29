@@ -52,3 +52,9 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - $HOME/output/*.ipa
+    publishing:
+      app_store_connect:
+        auth: key
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testing
