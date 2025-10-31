@@ -1,0 +1,57 @@
+workflows:
+  ios-automatic-signing:
+    name: iOS App Store Build
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+    integrations:
+      app_store_connect: integration
+    environment:
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.dimetime.mobile"
+        TEAM_ID: "8WZHH537SU"
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web app
+        script: npm run build
+      - name: Sync iOS
+        script: npx cap sync ios
+      - name: Set build number to 26
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 26" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
+          echo "Build version updated to 1.0.1 (26)"
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+      - name: Initialize keychain
+        script: keychain initialize
+      - name: Debug - Check bundle ID
+        script: |
+          echo "Bundle ID being used: $BUNDLE_ID"
+          echo "Checking Xcode project bundle ID:"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" ios/App/App/Info.plist || echo "Could not read from Info.plist"
+      - name: Fetch signing files from App Store Connect
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Add certificates to keychain
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Build iOS app
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
