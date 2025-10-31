@@ -6,11 +6,12 @@ workflows:
     integrations:
       app_store_connect: Codemagic iOS Build
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.dimetime.mobile
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        BUNDLE_ID: "com.dimetime.mobile"
-        TEAM_ID: "8WZHH537SU"
       node: 20
       xcode: latest
       cocoapods: default
@@ -28,23 +29,14 @@ workflows:
           echo "Build version updated to 1.0.1 (26)"
       - name: Install CocoaPods
         script: cd ios/App && pod install
-      - name: Initialize keychain
-        script: keychain initialize
-      - name: Debug - Check bundle ID
+      - name: Set up code signing
         script: |
-          echo "Bundle ID being used: $BUNDLE_ID"
-          echo "Checking Xcode project bundle ID:"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" ios/App/App/Info.plist || echo "Could not read from Info.plist"
-      - name: Fetch signing files from App Store Connect
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          keychain initialize
+          app-store-connect fetch-signing-files \
             --type IOS_APP_STORE \
-            --create \
-            --strict-match-identifier
-      - name: Add certificates to keychain
-        script: keychain add-certificates
-      - name: Set up code signing settings on Xcode project
-        script: xcode-project use-profiles
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
