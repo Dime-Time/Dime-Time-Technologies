@@ -1,5 +1,5 @@
 {
-  "appId": "com.dimetime.app",
+  "appId": "com.dimetime.mobile",
   "appName": "Dime Time",
   "webDir": "dist/public",
   "plugins": {

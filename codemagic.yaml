@@ -9,7 +9,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        BUNDLE_ID: "com.dimetime.app"
+        BUNDLE_ID: "com.dimetime.mobile"
         TEAM_ID: "8WZHH537SU"
       node: 20
       xcode: latest
