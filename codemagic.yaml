@@ -29,6 +29,21 @@ workflows:
           echo "Build version updated to 1.0.1 (26)"
       - name: Install CocoaPods
         script: cd ios/App && pod install
+      - name: Configure Xcode for Manual Signing
+        script: |
+          # Set manual code signing in Xcode project
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/App/App.xcodeproj/project.pbxproj
+          # Add provisioning profile specifier if not present
+          if ! grep -q "PROVISIONING_PROFILE_SPECIFIER" ios/App/App.xcodeproj/project.pbxproj; then
+            sed -i '' '/PRODUCT_BUNDLE_IDENTIFIER = com.dimetime.mobile;/a\
+                                PROVISIONING_PROFILE_SPECIFIER = "Dime Time App Store";' ios/App/App.xcodeproj/project.pbxproj
+          fi
+          # Add code sign identity for distribution
+          if ! grep -q 'CODE_SIGN_IDENTITY = "Apple Distribution"' ios/App/App.xcodeproj/project.pbxproj; then
+            sed -i '' '/CODE_SIGN_STYLE = Manual;/a\
+                                CODE_SIGN_IDENTITY = "Apple Distribution";' ios/App/App.xcodeproj/project.pbxproj
+          fi
+          echo "Xcode project configured for manual signing"
       - name: Set up code signing
         script: |
           keychain initialize
