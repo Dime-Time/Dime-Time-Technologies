@@ -7,8 +7,6 @@ workflows:
       app_store_connect: Codemagic iOS Build
     environment:
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.dimetime.mobile
         provisioning_profiles:
           - Dime Time App Store
       vars:
