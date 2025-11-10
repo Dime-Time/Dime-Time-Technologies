@@ -1,0 +1,62 @@
+workflows:
+  ios_build_info:
+    name: iOS App Store Build
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+    integrations:
+      app_store_connect: Codemagic iOS Build
+    environment:
+      ios_signing:
+        provisioning_profiles:
+          - Dime App Store
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web app
+        script: npm run build
+      - name: Sync iOS
+        script: npx cap sync ios
+      - name: Set build number to 26
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 26" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
+          echo "Build version updated to 1.0.1 (26)"
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+      - name: Configure Xcode for Manual Signing
+        script: |
+          # Set manual code signing in Xcode project
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/App/App.xcodeproj/project.pbxproj
+          # Add provisioning profile specifier if not present
+          if ! grep -q "PROVISIONING_PROFILE_SPECIFIER" ios/App/App.xcodeproj/project.pbxproj; then
+            sed -i '' '/PRODUCT_BUNDLE_IDENTIFIER = com.dimetime.mobile;/a\
+                                PROVISIONING_PROFILE_SPECIFIER = "Dime Time App Store";' ios/App/App.xcodeproj/project.pbxproj
+          fi
+          # Add code sign identity for distribution
+          if ! grep -q 'CODE_SIGN_IDENTITY = "Apple Distribution"' ios/App/App.xcodeproj/project.pbxproj; then
+            sed -i '' '/CODE_SIGN_STYLE = Manual;/a\
+                                CODE_SIGN_IDENTITY = "Apple Distribution";' ios/App/App.xcodeproj/project.pbxproj
+          fi
+          echo "Xcode project configured for manual signing"
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build iOS app
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
