@@ -1,0 +1,136 @@
+Applications
+Builds
+OTA Updates
+NEW
+App Preview
+Teams
+Billing
+All systems operational
+
+User preferences
+
+Log out
+Dime-Time-Mobile
+Dime-Time-Mobile
+github.com/Dime-Time/Dime-Time-Mobile
+
+
+Start new build
+Build overview
+ID:
+6911cb50be82b06a1c6d7995
+Please provide this ID when you contact our support team
+Index:
+9
+Status:
+finished with post-processing undefined
+Workflow:
+iOS App Store Build
+Started by:
+tim.carlisle77@gmail.com
+
+tim.carlisle77@gmail.com
+Started:
+6 minutes ago
+Nov 10th, 2025 at 05:24 CST
+Duration:
+2m 33s
+Machine:
+Mac mini M2
+Branch:
+main
+Commit:
+1a21189
+Artifacts
+App.ipa
+[9.10 MB]
+Click on the build steps for details.
+Preparing build machine
+32s
+
+
+
+Warning: Mac mini M1 machines are no longer available, running the build on Mac mini M2 instead. Mac mini M2 machines are provided for the same price as Mac mini M1. Please change the instance type in your build configuration to hide the warning
+
+== User-defined environment variables ==
+XCODE_SCHEME=App
+XCODE_WORKSPACE=ios/App/App.xcworkspace
+
+== Use Xcode 16.4 ==
+> sudo xcode-select --switch /Applications/Xcode-16.4.app/Contents/Developer
+Xcode 16.4
+Build version 16F6
+
+== Use default version of CocoaPods ==
+> gem list '^cocoapods$' --no-verbose
+cocoapods (1.16.2)
+
+== Use Java version 17 ==
+> java -version
+openjdk version "17.0.15" 2025-04-15 LTS
+OpenJDK Runtime Environment Zulu17.58+21-CA (build 17.0.15+6-LTS)
+OpenJDK 64-Bit Server VM Zulu17.58+21-CA (build 17.0.15+6-LTS, mixed mode, sharing)
+
+== Use Node version 20 ==
+> n 20
+
+> node --version
+v20.19.5
+
+== Codemagic CLI tools ==
+> codemagic-cli-tools version
+codemagic-cli-tools 0.62.1
+
+== Use App Store Connect API key "Codemagic iOS Build" ==
+Fetching app sources
+3s
+Set up code signing identities
+2s
+Install dependencies
+17s
+Build web app
+2s
+Sync iOS
+3s
+Set build number to 28
+< 1s
+Install CocoaPods
+< 1s
+Set up code signing
+2s
+Build iOS app
+43s
+Publishing
+40s
+Cleaning up
+3s
+Post-processing
+App Store Connect distribution
+2m 23s
+
+
+
+Find application entry from App Store Connect for uploaded binary
+Found 1 App matching specified filters: bundleId=com.dimetime.mobile.
+-- App --
+Id: 6755106723
+Type: apps
+Bundle id: com.dimetime.mobile
+Name: Dime Time Mobile
+Primary locale: en-US
+Sku: Dime-Time-Mobile-2025
+Is or ever was made for kids: False
+
+Find freshly uploaded build
+Did not find build matching uploaded version yet, it might be still processing. Waiting to try again...
+Did not find build matching uploaded version yet, it might be still processing. Waiting to try again...
+Found uploaded build on App Store Connect 8a484526-39d1-410b-be21-ecaff84e1df3
+
+Wait until processing build 8a484526-39d1-410b-be21-ecaff84e1df3 is completed
+App Store Connect finished processing build 8a484526-39d1-410b-be21-ecaff84e1df3
+
+Submit build '8a484526-39d1-410b-be21-ecaff84e1df3' to TestFlight beta review
+Creating new Beta App Review Submission: build: 8a484526-39d1-410b-be21-ecaff84e1df3
+Failure: POST https://api.appstoreconnect.apple.com/v1/betaAppReviewSubmissions returned 422: Another build is in review. - Another build is in review.
+
+
