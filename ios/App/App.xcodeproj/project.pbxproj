@@ -396,7 +396,7 @@
                                 PRODUCT_BUNDLE_IDENTIFIER = com.dimetime.mobile;
                                 PRODUCT_NAME = "$(TARGET_NAME)";
                                 PROVISIONING_PROFILE = "0748b347-e1c2-47b7-833e-e0ebcd41d2d8";
-                                PROVISIONING_PROFILE_SPECIFIER = "Dime Time App Store";
+                                PROVISIONING_PROFILE_SPECIFIER = "Dime App Store";
                                 SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
                                 SWIFT_VERSION = 5.0;
                                 TARGETED_DEVICE_FAMILY = "1,2";
