@@ -105,6 +105,10 @@
             </dict>
         </array>
         
+        <!-- Document handling configuration (required when CFBundleDocumentTypes is declared) -->
+        <key>LSSupportsOpeningDocumentsInPlace</key>
+        <false/>
+        
         <!-- URL Schemes -->
         <key>CFBundleURLTypes</key>
         <array>
