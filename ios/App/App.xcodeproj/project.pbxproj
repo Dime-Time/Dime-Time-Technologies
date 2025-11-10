@@ -130,7 +130,7 @@
                                                 CreatedOnToolsVersion = 9.2;
                                                 DevelopmentTeam = 8WZHH537SU;
                                                 LastSwiftMigration = 1100;
-                                                ProvisioningStyle = Automatic;
+                                                ProvisioningStyle = Manual;
                                         };
                                 };
                         };
