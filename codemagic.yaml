@@ -1,7 +1,7 @@
 workflows:
   ios_build_info:
     name: iOS App Store Build
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     max_build_duration: 120
     integrations:
       app_store_connect: Codemagic iOS Build
