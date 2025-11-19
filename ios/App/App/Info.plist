@@ -145,5 +145,9 @@
         <array>
             <string>applinks:dimetime.app</string>
         </array> -->
+        
+        <!-- Export Compliance: Uses only standard iOS encryption (HTTPS, URLSession) -->
+        <key>ITSAppUsesNonExemptEncryption</key>
+        <false/>
 </dict>
 </plist>
