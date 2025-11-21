@@ -101,7 +101,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user 
   app.get("/api/user", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -131,7 +135,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's debts
   app.get("/api/debts", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const debts = await storage.getDebtsByUserId(userId);
       res.json(debts);
     } catch (error) {
@@ -142,7 +150,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's transactions
   app.get("/api/transactions", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const transactions = await storage.getTransactionsByUserId(userId, limit);
       res.json(transactions);
@@ -154,7 +166,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new transaction
   app.post("/api/transactions", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       
       // Get user's round-up settings to calculate proper round-up with multiplier
       const roundUpSettings = await storage.getRoundUpSettings(userId);
