@@ -228,7 +228,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's payments
   app.get("/api/payments", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const payments = await storage.getPaymentsByUserId(userId);
       res.json(payments);
     } catch (error) {
@@ -239,7 +242,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new payment
   app.post("/api/payments", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const validatedData = insertPaymentSchema.parse({
         ...req.body,
         userId,
@@ -275,7 +281,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // One-tap accelerated payment
   app.post("/api/accelerated-payment", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { debtId, amount } = req.body;
       
       if (!debtId || !amount) {
@@ -301,7 +310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get round-up settings
   app.get("/api/round-up-settings", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const settings = await storage.getRoundUpSettings(userId);
       res.json(settings);
     } catch (error) {
@@ -312,7 +324,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update round-up settings
   app.put("/api/round-up-settings", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const settings = await storage.createOrUpdateRoundUpSettings({
         ...req.body,
         userId,
@@ -326,6 +341,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply round-ups to debt
   app.post("/api/apply-round-ups", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const { debtId, amount } = req.body;
       
       if (!debtId || !amount) {
@@ -333,7 +353,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create payment record
-      const userId = "demo-user-1";
       const payment = await storage.createPayment({
         userId,
         debtId,
@@ -359,7 +378,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get dashboard summary
   app.get("/api/dashboard-summary", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const [debts, transactions, payments] = await Promise.all([
         storage.getDebtsByUserId(userId),
         storage.getTransactionsByUserId(userId),
@@ -414,7 +436,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's crypto purchases
   app.get("/api/crypto-purchases", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const purchases = await storage.getCryptoPurchasesByUserId(userId);
       res.json(purchases);
     } catch (error) {
@@ -425,7 +450,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new crypto purchase with real Coinbase integration
   app.post("/api/crypto-purchases", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { amount, cryptoSymbol = "BTC" } = req.body;
 
       if (!amount || parseFloat(amount) <= 0) {
@@ -505,41 +533,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get round-up settings
-  app.get("/api/round-up-settings", async (req: Request, res: Response) => {
-    try {
-      const settings = await storage.getRoundUpSettings("demo-user-1");
-      if (!settings) {
-        return res.status(404).json({ message: "Round-up settings not found" });
-      }
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Update round-up settings
-  app.put("/api/round-up-settings", async (req: Request, res: Response) => {
-    try {
-      const validatedData = insertRoundUpSettingsSchema.parse({
-        ...req.body,
-        userId: "demo-user-1",
-      });
-      
-      const settings = await storage.createOrUpdateRoundUpSettings(validatedData);
-      res.json(settings);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid settings data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
   // Get crypto portfolio summary
   app.get("/api/crypto-summary", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const purchases = await storage.getCryptoPurchasesByUserId(userId);
       const completedPurchases = purchases.filter(p => p.status === 'completed');
       
@@ -584,7 +585,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Plaid banking integration routes
   app.post("/api/plaid/create-link-token", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       
       if (!plaidService.isServiceConfigured()) {
         return res.status(503).json({ 
@@ -603,8 +607,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/plaid/exchange-token", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { publicToken } = req.body;
-      const userId = "demo-user-1";
 
       if (!publicToken) {
         return res.status(400).json({ message: "Public token is required" });
@@ -651,7 +658,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/plaid/accounts", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const bankAccounts = await storage.getBankAccountsByUserId(userId);
       res.json(bankAccounts);
     } catch (error) {
@@ -662,7 +672,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/plaid/transactions", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const bankAccounts = await storage.getBankAccountsByUserId(userId);
       
       if (bankAccounts.length === 0) {
@@ -696,7 +709,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/plaid/balances", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const bankAccounts = await storage.getBankAccountsByUserId(userId);
       
       if (bankAccounts.length === 0) {
@@ -767,8 +783,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/coinbase/buy", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { accountId, amount, currency = 'USD' } = req.body;
-      const userId = "demo-user-1";
 
       if (!accountId || !amount) {
         return res.status(400).json({ message: "Account ID and amount are required" });
@@ -848,7 +867,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dime-token/balance', async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const holdings = await storage.getDttHoldings(userId);
       
       if (!holdings) {
@@ -873,7 +895,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dime-token/rewards', async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const rewards = await storage.getDttRewardsByUserId(userId);
       
       // Transform to match frontend interface
@@ -894,7 +919,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/dime-token/stake', async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { amount, duration } = req.body;
 
       if (!amount || !duration || parseFloat(amount) <= 0) {
@@ -966,7 +994,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AWS S3 File Upload Routes
   app.post("/api/aws/upload", upload.single('file'), async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const documentType = req.body.documentType || 'other';
       
       if (!req.file) {
