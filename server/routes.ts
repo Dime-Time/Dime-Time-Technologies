@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 import { dimeTokenService } from "./services/dimeTokenService";
+import { createHash } from "crypto";
 
 import { insertTransactionSchema, insertPaymentSchema, insertDebtSchema, insertCryptoPurchaseSchema, insertRoundUpSettingsSchema, insertContactSubmissionSchema } from "@shared/schema";
 import { z } from "zod";
@@ -26,7 +27,76 @@ function getAuthenticatedUserId(req: Request): string | null {
   return authUser?.claims?.sub || null;
 }
 
+// Simple password hashing (use bcrypt in production)
+function hashPassword(password: string): string {
+  return createHash('sha256').update(password).digest('hex');
+}
+
+function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  // Signup endpoint
+  app.post("/api/signup", async (req: Request, res: Response) => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      const hashedPassword = hashPassword(password);
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName: firstName || email.split("@")[0],
+        lastName: lastName || "",
+      });
+
+      // Initialize user data (debts, roundup settings, etc.)
+      await storage.createOrUpdateRoundUpSettings({
+        userId: user.id,
+        isEnabled: true,
+        multiplier: "1.00",
+      });
+
+      res.status(201).json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  // Login endpoint
+  app.post("/api/login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password || !verifyPassword(password, user.password)) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Store user session
+      req.session.userId = user.id;
+      
+      res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
 
   // Get current user 
   app.get("/api/user", async (req: Request, res: Response) => {

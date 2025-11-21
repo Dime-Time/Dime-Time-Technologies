@@ -22,6 +22,7 @@ import Settings from "@/pages/settings";
 import Notifications from "@/pages/notifications";
 import Legal from "@/pages/legal";
 import Signup from "@/pages/signup";
+import Login from "@/pages/Login";
 import DimeToken from "@/pages/dime-token";
 import BusinessAnalytics from "@/pages/business-analytics";
 import StatsPage from "@/pages/StatsPage";
@@ -106,10 +107,13 @@ function AppContent() {
     );
   }
 
-  // Always show the onboarding page at the root
+  // Show login if not authenticated, otherwise show onboarding
   return (
     <Switch>
-      <Route path="/" component={Onboarding} />
+      <Route path="/" >
+        {isAuthenticated ? <Onboarding /> : <Login />}
+      </Route>
+      <Route path="/login" component={Login} />
       <Route path="/conference" component={LandingPage} />
       <Route path="/dashboard">
         {isAuthenticated ? (
