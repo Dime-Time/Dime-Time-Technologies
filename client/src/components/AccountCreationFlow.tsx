@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { UserPlus, Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AccountCreationFlowProps {
   onAccountCreated: (userData: any) => void;
@@ -24,6 +25,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
   });
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,30 +66,40 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
     setIsCreating(true);
     
     try {
-      // Simulate account creation API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const userData = {
-        id: `user-${Date.now()}`,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        username: formData.username,
-        createdAt: new Date().toISOString(),
-        agreedToTerms: true,
-        agreedToTermsDate: new Date().toISOString()
-      };
+      // Call the real /api/signup endpoint
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: include cookies for session
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Signup failed');
+      }
+
+      const userData = await response.json();
+
+      // Invalidate auth cache so useAuth refetches /api/user with new session
+      await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
 
       toast({
         title: "Account Created Successfully!",
         description: "Welcome to Dime Time. Your account is ready to use.",
       });
 
-      onAccountCreated(userData);
-    } catch (error) {
+      onAccountCreated(userData.user || userData);
+    } catch (error: any) {
+      console.error('Signup error:', error);
       toast({
         title: "Account Creation Failed",
-        description: "Please try again later",
+        description: error.message || "Please try again later",
         variant: "destructive"
       });
     } finally {

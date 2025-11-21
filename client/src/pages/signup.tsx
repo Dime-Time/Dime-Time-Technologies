@@ -5,27 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import OnboardingFlow from "@/components/OnboardingFlow";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Signup() {
   const [showAccountFlow, setShowAccountFlow] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  const queryClient = useQueryClient();
 
   const handleAccountCreated = (data: any) => {
     setUserData(data);
     setAccountCreated(true);
     setShowAccountFlow(false);
     // Start onboarding flow after brief success message
+    // Wait for auth cache to refresh before showing onboarding
     setTimeout(() => {
       setShowOnboarding(true);
-    }, 2000);
+    }, 1500);
   };
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = async () => {
     setShowOnboarding(false);
-    // Redirect to dashboard (skip carousel, go straight to app)
-    window.location.href = '/dashboard';
+    // Final cache refresh to ensure user data is loaded
+    await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    // Give a moment for cache to refresh, then redirect to dashboard
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 500);
   };
 
   if (accountCreated && !showOnboarding) {
