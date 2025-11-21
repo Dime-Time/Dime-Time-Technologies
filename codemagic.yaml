@@ -36,7 +36,7 @@ workflows:
         script: |
           npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
 
-      # 4. Verify that dist/public exists
+      # 4. Verify dist/public exists
       - name: Verify web assets exist
         script: |
           if [ ! -f dist/public/index.html ]; then
@@ -51,7 +51,25 @@ workflows:
         script: |
           npx cap sync ios
 
-      # 6. Build IPA
+      # 6. Set build number
+      - name: Set build number
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 39" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
+          echo "Build version updated to 1.0.1 (39)"
+
+      # 7. Install CocoaPods
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+
+      # 8. Set up code signing
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+
+      # 9. Build IPA
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
