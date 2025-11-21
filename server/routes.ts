@@ -67,6 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         multiplier: "1.00",
       });
 
+      // Store user session - THIS IS CRITICAL so they're authenticated after signup
+      req.session.userId = user.id;
+
       res.status(201).json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
     } catch (error) {
       console.error("Signup error:", error);
