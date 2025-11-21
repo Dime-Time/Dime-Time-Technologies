@@ -1,7 +1,7 @@
 {
   "appId": "com.dimetime.mobile",
   "appName": "Dime Time",
-  "webDir": "dist",
+  "webDir": "dist/public",
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 3000,
@@ -28,11 +28,7 @@
       "iconColor": "#918EF4"
     },
     "PushNotifications": {
-      "presentationOptions": [
-        "badge",
-        "sound",
-        "alert"
-      ]
+      "presentationOptions": ["badge", "sound", "alert"]
     }
   }
 }
