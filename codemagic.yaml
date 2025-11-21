@@ -3,8 +3,10 @@ workflows:
     name: iOS App Store Build
     instance_type: mac_mini_m2
     max_build_duration: 120
+
     integrations:
       app_store_connect: Codemagic iOS Build
+
     environment:
       ios_signing:
         provisioning_profiles:
@@ -15,34 +17,51 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
+
     scripts:
-      - name: Install dependencies
+      # 1. Install root dependencies
+      - name: Install root dependencies
         script: npm ci
-      - name: Build web app
-        script: npm run build
-      - name: Clean bundled files
-        script: rm -rf ./dist/public
+
+      # 2. Build frontend (Vite) from /client
+      - name: Build frontend (Vite)
+        script: |
+          cd client
+          npm ci
+          npm run build
+          cd ..
+
+      # 3. Build backend output
+      - name: Build backend (server)
+        script: |
+          npm install
+          esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+      # 4. Verify that dist/public exists
+      - name: Verify web assets exist
+        script: |
+          if [ ! -f dist/public/index.html ]; then
+            echo "❌ dist/public missing — Vite build failed."
+            exit 1
+          else
+            echo "✔ dist/public found."
+          fi
+
+      # 5. Sync iOS (Capacitor)
       - name: Sync iOS
-        script: npx cap sync ios
-      - name: Set build number to 39
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 39" ios/App/App/Info.plist
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
-          echo "Build version updated to 1.0.1 (39)"
-      - name: Install CocoaPods
-        script: cd ios/App && pod install
-      - name: Set up code signing
-        script: |
-          keychain initialize
-          keychain add-certificates
-          xcode-project use-profiles
+          npx cap sync ios
+
+      # 6. Build IPA
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+
     artifacts:
       - build/ios/ipa/*.ipa
+
     publishing:
       app_store_connect:
         auth: integration
