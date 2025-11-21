@@ -1,7 +1,6 @@
 {
   "appId": "com.dimetime.mobile",
   "appName": "Dime Time",
-  "webDir": "dist/public",
   "server": {
     "url": "https://ceb23eaa-0ec0-4109-a10a-5e37190a0ad7-00-1yqkfaf9bsv5w.worf.replit.dev",
     "cleartext": true

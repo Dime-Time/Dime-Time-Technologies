@@ -22,11 +22,11 @@ workflows:
         script: npm run build
       - name: Sync iOS
         script: npx cap sync ios
-      - name: Set build number to 30
+      - name: Set build number to 31
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 30" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 31" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
-          echo "Build version updated to 1.0.1 (30)"
+          echo "Build version updated to 1.0.1 (31)"
       - name: Install CocoaPods
         script: cd ios/App && pod install
       - name: Set up code signing
