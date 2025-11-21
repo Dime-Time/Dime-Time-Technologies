@@ -23,7 +23,7 @@ workflows:
       - name: Install root dependencies
         script: npm ci
 
-      # 2. Build frontend (Vite) from /client
+      # 2. Build frontend (Vite)
       - name: Build frontend (Vite)
         script: |
           cd client
@@ -31,11 +31,10 @@ workflows:
           npm run build
           cd ..
 
-      # 3. Build backend output
+      # 3. Build backend (server)
       - name: Build backend (server)
         script: |
-          npm install
-          esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+          npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
 
       # 4. Verify that dist/public exists
       - name: Verify web assets exist
