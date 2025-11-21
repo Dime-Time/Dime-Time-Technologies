@@ -1042,3 +1042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+
+// ... ADD THESE ENDPOINTS BEFORE THE FINAL RETURN ...
+
+// NO WAIT - I need to properly insert these. Let me use a different approach.

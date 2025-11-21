@@ -174,6 +174,7 @@ export class MemStorage implements IStorage {
     const demoUser: User = {
       id: "demo-user-1",
       email: "demo@dimetime.app",
+      password: null,
       firstName: "Neo",
       lastName: "User",
       profileImageUrl: null,
@@ -809,6 +810,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       id,
       email: insertUser.email ?? null,
+      password: insertUser.password ?? null,
       firstName: insertUser.firstName ?? null,
       lastName: insertUser.lastName ?? null,
       profileImageUrl: insertUser.profileImageUrl ?? null,
@@ -819,13 +821,14 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null }): Promise<User> {
+  async upsertUser(userData: { id: string; email?: string | null; password?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null }): Promise<User> {
     const existingUser = this.users.get(userData.id);
     
     if (existingUser) {
       const updatedUser: User = {
         ...existingUser,
         email: userData.email ?? existingUser.email,
+        password: userData.password ?? existingUser.password,
         firstName: userData.firstName ?? existingUser.firstName,
         lastName: userData.lastName ?? existingUser.lastName,
         profileImageUrl: userData.profileImageUrl ?? existingUser.profileImageUrl,
@@ -837,6 +840,7 @@ export class MemStorage implements IStorage {
       const newUser: User = {
         id: userData.id,
         email: userData.email ?? null,
+        password: userData.password ?? null,
         firstName: userData.firstName ?? null,
         lastName: userData.lastName ?? null,
         profileImageUrl: userData.profileImageUrl ?? null,
