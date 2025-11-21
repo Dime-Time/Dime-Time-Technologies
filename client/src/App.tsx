@@ -107,11 +107,19 @@ function AppContent() {
     );
   }
 
-  // Show login if not authenticated, otherwise show onboarding
+  // Show login if not authenticated, otherwise redirect to dashboard
   return (
     <Switch>
       <Route path="/" >
-        {isAuthenticated ? <Onboarding /> : <Login />}
+        {isAuthenticated ? (
+          // Redirect authenticated users to dashboard
+          <>
+            <Navigation />
+            <Dashboard />
+          </>
+        ) : (
+          <Login />
+        )}
       </Route>
       <Route path="/login" component={Login} />
       <Route path="/conference" component={LandingPage} />

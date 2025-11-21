@@ -24,8 +24,8 @@ export default function Signup() {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    // Redirect to dashboard
-    window.location.href = '/';
+    // Redirect to dashboard (skip carousel, go straight to app)
+    window.location.href = '/dashboard';
   };
 
   if (accountCreated && !showOnboarding) {
