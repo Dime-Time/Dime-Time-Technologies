@@ -24,11 +24,11 @@ workflows:
         script: rm -rf ./dist/public
       - name: Sync iOS
         script: npx cap sync ios
-      - name: Set build number to 35
+      - name: Set build number to 36
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 35" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 36" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
-          echo "Build version updated to 1.0.1 (35)"
+          echo "Build version updated to 1.0.1 (36)"
       - name: Install CocoaPods
         script: cd ios/App && pod install
       - name: Set up code signing
