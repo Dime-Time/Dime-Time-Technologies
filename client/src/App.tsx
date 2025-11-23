@@ -223,16 +223,7 @@ function AppContent() {
           <LandingPage />
         )}
       </Route>
-      <Route path="/signup">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Signup />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
+      <Route path="/signup" component={Signup} />
       <Route path="/dime-token">
         {isAuthenticated ? (
           <>

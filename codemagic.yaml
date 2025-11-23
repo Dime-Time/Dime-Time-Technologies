@@ -66,9 +66,9 @@ workflows:
       # 6. Set build number (increment this each build)
       - name: Set build number
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 43" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 44" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
-          echo "Build version updated to 1.0.1 (43)"
+          echo "Build version updated to 1.0.1 (44)"
 
       # 7. Install CocoaPods
       - name: Install CocoaPods
