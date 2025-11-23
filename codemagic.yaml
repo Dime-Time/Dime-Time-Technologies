@@ -19,7 +19,6 @@ workflows:
       cocoapods: default
 
     scripts:
-
       # 1. Install root dependencies
       - name: Install root dependencies
         script: npm ci
@@ -35,35 +34,47 @@ workflows:
       # 3. Build backend (server)
       - name: Build backend (server)
         script: |
-          npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+          npx esbuild server/index.ts \
+            --platform=node \
+            --packages=external \
+            --bundle \
+            --format=esm \
+            --outdir=dist
 
-      # 4. Verify web assets exist
-      - name: Verify web assets
+      # 4. Verify dist/public exists
+      - name: Verify web assets exist
         script: |
-          echo "Checking dist/public..."
           if [ ! -f dist/public/index.html ]; then
-            echo "❌ dist/public/index.html missing — Vite output path incorrect."
-            ls -R dist
+            echo "❌ dist/public missing — Vite build failed."
             exit 1
+          else
+            echo "✔ dist/public found."
           fi
-          echo "✔ dist/public found."
 
-      # 5. Copy and sync web assets into iOS
-      - name: Copy and Sync iOS
+      # 4b. CLEAN OLD IOS WEB ASSETS (CRITICAL FIX)
+      - name: Clean old iOS web assets
         script: |
-          npx cap copy ios
+          echo "🧹 Removing old iOS web assets..."
+          rm -rf ios/App/App/public
+          echo "✔ iOS web assets cleaned."
+
+      # 5. Sync iOS (Capacitor)
+      - name: Sync iOS
+        script: |
           npx cap sync ios
 
-      # 6. Set dynamic build number
+      # 6. Set build number (increment this each build)
       - name: Set build number
         script: |
-          echo "Using build number: $BUILD_NUMBER"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 43" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
+          echo "Build version updated to 1.0.1 (43)"
 
       # 7. Install CocoaPods
       - name: Install CocoaPods
-        script: cd ios/App && pod install
+        script: |
+          cd ios/App
+          pod install
 
       # 8. Set up code signing
       - name: Set up code signing
@@ -72,7 +83,7 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
 
-      # 9. Build IPA
+      # 9. Build the .ipa
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
