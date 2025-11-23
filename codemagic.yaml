@@ -19,56 +19,58 @@ workflows:
       cocoapods: default
 
     scripts:
-      # 1. Install root dependencies
       - name: Install dependencies
         script: npm ci
 
-      # 2. Build frontend + backend all from root
-      - name: Build app (Vite + server)
+      - name: Build web + server
         script: npm run build
 
-      # 3. Verify Vite actually built the frontend
-      - name: Verify dist/public exists
+      - name: Verify Vite output
         script: |
           if [ ! -f dist/public/index.html ]; then
             echo "❌ ERROR: dist/public missing — Vite build failed."
             exit 1
-          else
-            echo "✔ dist/public found."
           fi
+          echo "✔ dist/public exists"
 
-      # 4. Sync iOS with the new web assets
-      - name: Sync iOS
+      - name: Sync Capacitor iOS
         script: npx cap sync ios
 
-      # 5. Update build numbers
-      - name: Set build number
+      - name: Increment iOS build number
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 44" ios/App/App/Info.plist
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
+          cd ios/App
+          NEW_BUILD=$((CURRENT_PROJECT_VERSION + 1))
+          echo "Updating build number to $NEW_BUILD"
+          agvtool new-version -all $NEW_BUILD
+          cd ../..
 
-      # 6. CocoaPods
       - name: Install CocoaPods
-        script: cd ios/App && pod install
-
-      # 7. Code signing
-      - name: Set up code signing
         script: |
-          keychain initialize
-          keychain add-certificates
-          xcode-project use-profiles
+          cd ios/App
+          pod install --repo-update
+          cd ../..
 
-      # 8. Build the IPA
-      - name: Build iOS app
+      - name: Build iOS archive
         script: |
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+          xcodebuild \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath build/ios/App.xcarchive \
+            archive
+
+      - name: Export .ipa
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath build/ios/App.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist ios/exportOptions.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
 
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: Codemagic iOS Build
         submit_to_testflight: true
+        release_type: AFTER_APPROVAL
