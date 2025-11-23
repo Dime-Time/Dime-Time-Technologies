@@ -8,9 +8,6 @@ workflows:
       app_store_connect: Codemagic iOS Build
 
     environment:
-      ios_signing:
-        provisioning_profiles:
-          - Dime App Store
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
