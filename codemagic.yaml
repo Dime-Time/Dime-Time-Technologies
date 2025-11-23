@@ -19,6 +19,7 @@ workflows:
       cocoapods: default
 
     scripts:
+
       # 1. Install root dependencies
       - name: Install root dependencies
         script: npm ci
@@ -36,27 +37,29 @@ workflows:
         script: |
           npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
 
-      # 4. Verify dist/public exists
-      - name: Verify web assets exist
+      # 4. Verify web assets exist
+      - name: Verify web assets
         script: |
+          echo "Checking dist/public..."
           if [ ! -f dist/public/index.html ]; then
-            echo "❌ dist/public missing — Vite build failed."
+            echo "❌ dist/public/index.html missing — Vite output path incorrect."
+            ls -R dist
             exit 1
-          else
-            echo "✔ dist/public found."
           fi
+          echo "✔ dist/public found."
 
-      # 5. Sync iOS (Capacitor)
-      - name: Sync iOS
+      # 5. Copy and sync web assets into iOS
+      - name: Copy and Sync iOS
         script: |
+          npx cap copy ios
           npx cap sync ios
 
-      # 6. Set build number
+      # 6. Set dynamic build number
       - name: Set build number
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 42" ios/App/App/Info.plist
+          echo "Using build number: $BUILD_NUMBER"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
-          echo "Build version updated to 1.0.1 (42)"
 
       # 7. Install CocoaPods
       - name: Install CocoaPods
