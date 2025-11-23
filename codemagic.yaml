@@ -20,70 +20,45 @@ workflows:
 
     scripts:
       # 1. Install root dependencies
-      - name: Install root dependencies
+      - name: Install dependencies
         script: npm ci
 
-      # 2. Build frontend (Vite)
-      - name: Build frontend (Vite)
-        script: |
-          cd client
-          npm ci
-          npm run build
-          cd ..
+      # 2. Build frontend + backend all from root
+      - name: Build app (Vite + server)
+        script: npm run build
 
-      # 3. Build backend (server)
-      - name: Build backend (server)
-        script: |
-          npx esbuild server/index.ts \
-            --platform=node \
-            --packages=external \
-            --bundle \
-            --format=esm \
-            --outdir=dist
-
-      # 4. Verify dist/public exists
-      - name: Verify web assets exist
+      # 3. Verify Vite actually built the frontend
+      - name: Verify dist/public exists
         script: |
           if [ ! -f dist/public/index.html ]; then
-            echo "❌ dist/public missing — Vite build failed."
+            echo "❌ ERROR: dist/public missing — Vite build failed."
             exit 1
           else
             echo "✔ dist/public found."
           fi
 
-      # 4b. CLEAN OLD IOS WEB ASSETS (CRITICAL FIX)
-      - name: Clean old iOS web assets
-        script: |
-          echo "🧹 Removing old iOS web assets..."
-          rm -rf ios/App/App/public
-          echo "✔ iOS web assets cleaned."
-
-      # 5. Sync iOS (Capacitor)
+      # 4. Sync iOS with the new web assets
       - name: Sync iOS
-        script: |
-          npx cap sync ios
+        script: npx cap sync ios
 
-      # 6. Set build number (increment this each build)
+      # 5. Update build numbers
       - name: Set build number
         script: |
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 44" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" ios/App/App/Info.plist
-          echo "Build version updated to 1.0.1 (44)"
 
-      # 7. Install CocoaPods
+      # 6. CocoaPods
       - name: Install CocoaPods
-        script: |
-          cd ios/App
-          pod install
+        script: cd ios/App && pod install
 
-      # 8. Set up code signing
+      # 7. Code signing
       - name: Set up code signing
         script: |
           keychain initialize
           keychain add-certificates
           xcode-project use-profiles
 
-      # 9. Build the .ipa
+      # 8. Build the IPA
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
