@@ -66,6 +66,7 @@ workflows:
             -allowProvisioningUpdates \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=8WZHH537SU \
+            PROVISIONING_PROFILE="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
             archive
 
