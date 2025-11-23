@@ -16,12 +16,16 @@ workflows:
       cocoapods: default
 
     scripts:
+
+      # 1. Install dependencies
       - name: Install dependencies
         script: npm ci
 
+      # 2. Build frontend + backend (Vite)
       - name: Build web + server
         script: npm run build
 
+      # 3. Ensure Vite output exists
       - name: Verify Vite output
         script: |
           if [ ! -f dist/public/index.html ]; then
@@ -30,23 +34,28 @@ workflows:
           fi
           echo "✔ dist/public exists"
 
+      # 4. Sync Capacitor iOS
       - name: Sync Capacitor iOS
         script: npx cap sync ios
 
+      # 5. Auto-increment iOS build number properly
       - name: Increment iOS build number
         script: |
           cd ios/App
-          NEW_BUILD=$((CURRENT_PROJECT_VERSION + 1))
-          echo "Updating build number to $NEW_BUILD"
+          CURRENT_BUILD=$(agvtool what-version -terse)
+          NEW_BUILD=$((CURRENT_BUILD + 1))
+          echo "Updating build number: $CURRENT_BUILD → $NEW_BUILD"
           agvtool new-version -all $NEW_BUILD
           cd ../..
 
+      # 6. Install CocoaPods
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
+      # 7. Build iOS archive with automatic signing enabled
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -59,6 +68,7 @@ workflows:
             DEVELOPMENT_TEAM=8WZHH537SU \
             archive
 
+      # 8. Export the .ipa
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
@@ -68,4 +78,3 @@ workflows:
 
     artifacts:
       - build/ios/ipa/*.ipa
-
