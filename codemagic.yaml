@@ -69,8 +69,3 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
 
-    publishing:
-      app_store_connect:
-        api_key: Codemagic iOS Build
-        submit_to_testflight: true
-        release_type: AFTER_APPROVAL
