@@ -8,6 +8,8 @@ workflows:
       app_store_connect: Codemagic iOS Build
 
     environment:
+      ios_signing:
+        use_app_store_connect: true
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
