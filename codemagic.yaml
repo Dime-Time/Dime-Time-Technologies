@@ -57,7 +57,7 @@ workflows:
           pod install --repo-update
           cd ../..
 
-      # 7. Build iOS archive with automatic signing enabled
+      # 7. Build iOS archive (CodeMagic handles signing via App Store Connect integration)
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -65,11 +65,6 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/ios/App.xcarchive \
-            -allowProvisioningUpdates \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=8WZHH537SU \
-            PROVISIONING_PROFILE="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
             archive
 
       # 8. Export the .ipa
