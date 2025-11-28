@@ -4,27 +4,28 @@
 <dict>
     <key>method</key>
     <string>app-store</string>
-    <key>destination</key>
-    <string>export</string>
-    <key>manageAppVersionAndBuildNumber</key>
-    <false/>
+
     <key>teamID</key>
     <string>8WZHH537SU</string>
-    <key>uploadBitcode</key>
-    <false/>
-    <key>uploadSymbols</key>
-    <true/>
-    <key>compileBitcode</key>
-    <false/>
+
+    <key>signingStyle</key>
+    <string>manual</string>
+
     <key>provisioningProfiles</key>
     <dict>
-        <key>com.dimetime.app</key>
-        <string>Dime_Time_App_Store_Profile (3)</string>
+        <key>com.dimetime.mobile</key>
+        <string>0748b347-e1c2-47b7-833e-e0ebcd41d2d8</string>
     </dict>
-    <key>signingStyle</key>
-    <string>automatic</string>
+
+    <key>uploadSymbols</key>
+    <true/>
+
+    <key>compileBitcode</key>
+    <false/>
+
     <key>stripSwiftSymbols</key>
     <true/>
+
     <key>thinning</key>
     <string>&lt;none&gt;</string>
 </dict>
