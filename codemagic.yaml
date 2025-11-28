@@ -17,15 +17,19 @@ workflows:
 
     scripts:
 
+      # 1. Install dependencies
       - name: Install dependencies
         script: npm ci
 
+      # 2. Build frontend + backend
       - name: Build project
         script: npm run build
 
+      # 3. Sync Capacitor iOS
       - name: Sync Capacitor iOS
         script: npx cap sync ios
 
+      # 4. Increment build number
       - name: Increment iOS build number
         script: |
           cd ios/App
@@ -34,12 +38,14 @@ workflows:
           agvtool new-version -all $NEW_BUILD
           cd ../..
 
+      # 5. Install CocoaPods
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
+      # 6. Build iOS archive with MANUAL SIGNING
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -49,9 +55,10 @@ workflows:
             -archivePath build/ios/App.xcarchive \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=8WZHH537SU \
-            PROVISIONING_PROFILE_SPECIFIER="DimeTimeAppStore" \
+            PROVISIONING_PROFILE_SPECIFIER="Dime Time Distribution" \
             archive
 
+      # 7. Export .ipa using exportOptions.plist
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
