@@ -45,7 +45,7 @@ workflows:
           pod install --repo-update
           cd ../..
 
-      # 6. Build iOS archive with MANUAL SIGNING
+      # 6. Build iOS archive (MANUAL SIGNING)
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -55,10 +55,10 @@ workflows:
             -archivePath build/ios/App.xcarchive \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=8WZHH537SU \
-            PROVISIONING_PROFILE_SPECIFIER="Dime Time Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="DimeTimeAppStore" \
             archive
 
-      # 7. Export .ipa using exportOptions.plist
+      # 7. Export the .ipa
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
