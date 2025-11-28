@@ -10,8 +10,6 @@ workflows:
     environment:
       ios_signing:
         use_app_store_connect: true
-        xcode_project: ios/App/App.xcodeproj
-        xcode_scheme: App
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
@@ -20,53 +18,37 @@ workflows:
       cocoapods: default
 
     scripts:
-
-      # 1. Install dependencies
       - name: Install dependencies
         script: npm ci
 
-      # 2. Build frontend + backend (Vite)
       - name: Build web + server
         script: npm run build
 
-      # 3. Ensure Vite output exists
       - name: Verify Vite output
         script: |
           if [ ! -f dist/public/index.html ]; then
-            echo "❌ ERROR: dist/public missing — Vite build failed."
+            echo "❌ ERROR: dist/public missing"
             exit 1
           fi
           echo "✔ dist/public exists"
 
-      # 4. Sync Capacitor iOS
       - name: Sync Capacitor iOS
         script: npx cap sync ios
 
-      # 5. Auto-increment iOS build number properly
       - name: Increment iOS build number
         script: |
           cd ios/App
           CURRENT_BUILD=$(agvtool what-version -terse)
           NEW_BUILD=$((CURRENT_BUILD + 1))
-          echo "Updating build number: $CURRENT_BUILD → $NEW_BUILD"
           agvtool new-version -all $NEW_BUILD
           cd ../..
 
-      # 6. Install CocoaPods
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
-      # 7. Import certificate into keychain
-      - name: Import certificate
-        script: |
-          echo $CM_CERT_P2_B64 | base64 -d > /tmp/cert.p12
-          security import /tmp/cert.p12 -k ~/Library/Keychains/login.keychain-db -P "$CM_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security || true
-          rm /tmp/cert.p12
-
-      # 8. Build iOS archive with certificate signing
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -74,11 +56,8 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/ios/App.xcarchive \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=8WZHH537SU \
             archive
 
-      # 9. Export the .ipa
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
