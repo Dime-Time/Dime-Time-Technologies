@@ -10,6 +10,8 @@ workflows:
     environment:
       ios_signing:
         use_app_store_connect: true
+        xcode_project: ios/App/App.xcodeproj
+        xcode_scheme: App
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
@@ -57,7 +59,14 @@ workflows:
           pod install --repo-update
           cd ../..
 
-      # 7. Build iOS archive (CodeMagic handles signing via App Store Connect integration)
+      # 7. Import certificate into keychain
+      - name: Import certificate
+        script: |
+          echo $CM_CERT_P2_B64 | base64 -d > /tmp/cert.p12
+          security import /tmp/cert.p12 -k ~/Library/Keychains/login.keychain-db -P "$CM_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security || true
+          rm /tmp/cert.p12
+
+      # 8. Build iOS archive with certificate signing
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -65,9 +74,11 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/ios/App.xcarchive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=8WZHH537SU \
             archive
 
-      # 8. Export the .ipa
+      # 9. Export the .ipa
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
