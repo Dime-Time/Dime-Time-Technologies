@@ -15,12 +15,6 @@ workflows:
       node: 20
       cocoapods: default
 
-    ios_signing:
-      distribution_certificate:
-        certificate: "Dime Time Distribution Certificate"
-      provisioning_profiles:
-        - DimeTimeAppStore
-
     scripts:
 
       - name: Install dependencies
