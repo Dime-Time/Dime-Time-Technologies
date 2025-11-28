@@ -15,27 +15,23 @@ workflows:
       node: 20
       cocoapods: default
 
-      ios_signing:
-        distribution_certificate:
-          certificate: "Dime Time Distribution Certificate"
-        provisioning_profiles:
-          - DimeTimeAppStore
+    ios_signing:
+      distribution_certificate:
+        certificate: "Dime Time Distribution Certificate"
+      provisioning_profiles:
+        - DimeTimeAppStore
 
     scripts:
 
-      # 1. Install dependencies
       - name: Install dependencies
         script: npm ci
 
-      # 2. Build frontend + backend
       - name: Build project
         script: npm run build
 
-      # 3. Sync Capacitor iOS
       - name: Sync Capacitor iOS
         script: npx cap sync ios
 
-      # 4. Increment build number
       - name: Increment iOS build number
         script: |
           cd ios/App
@@ -44,14 +40,12 @@ workflows:
           agvtool new-version -all $NEW_BUILD
           cd ../..
 
-      # 5. Install CocoaPods
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
-      # 6. Build iOS archive (MANUAL SIGNING)
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -64,7 +58,6 @@ workflows:
             PROVISIONING_PROFILE_SPECIFIER="DimeTimeAppStore" \
             archive
 
-      # 7. Export the .ipa
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
