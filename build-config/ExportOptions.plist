@@ -2,29 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-
-    <!-- Export for App Store -->
     <key>method</key>
     <string>app-store</string>
 
-    <!-- Required for manual signing -->
     <key>signingStyle</key>
     <string>manual</string>
 
-    <!-- Ensures Xcode uses your correct profile -->
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.dimetime.mobile</key>
-        <string>0748b347-e1c2-47b7-833e-e0ebcd41d2d8</string>
-    </dict>
-
-    <!-- Your Apple Developer Team -->
     <key>teamID</key>
     <string>8WZHH537SU</string>
 
-    <!-- Debugging, symbol uploads, etc -->
-    <key>uploadSymbols</key>
-    <true/>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.dimetime.mobile</key>
+        <string>DimeTimeAppStore</string>
+    </dict>
+
+    <key>uploadBitcode</key>
+    <false/>
 
     <key>compileBitcode</key>
     <false/>
@@ -32,9 +26,7 @@
     <key>stripSwiftSymbols</key>
     <true/>
 
-    <!-- No slicing (universal IPA) -->
-    <key>thinning</key>
-    <string>&lt;none&gt;</string>
-
+    <key>destination</key>
+    <string>export</string>
 </dict>
 </plist>
