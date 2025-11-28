@@ -65,7 +65,7 @@ workflows:
             -archivePath build/ios/App.xcarchive \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=8WZHH537SU \
-            PROVISIONING_PROFILE_SPECIFIER="Dime Time App Store" \
+            PROVISIONING_PROFILE_SPECIFIER="PROVISIONING_PROFILE_SPECIFIER="0748b347-e1c2-47b7-833e-e0ebcd41d2d8" \
             archive
 
       # 8. Export the .ipa with manual signing (App Store)
