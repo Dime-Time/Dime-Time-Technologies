@@ -1,12 +1,78 @@
-# 7. Build iOS archive with manual signing from Codemagic
-- name: Build iOS archive
-  script: |
-    xcodebuild \
-      -workspace "$XCODE_WORKSPACE" \
-      -scheme "$XCODE_SCHEME" \
-      -configuration Release \
-      -archivePath build/ios/App.xcarchive \
-      DEVELOPMENT_TEAM=8WZHH537SU \
-      CODE_SIGN_STYLE=Manual \
-      PROVISIONING_PROFILE_SPECIFIER="Dime Time App Store" \
-      archive
+workflows:
+  ios_build_info:
+    name: iOS App Store Build
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+
+    integrations:
+      app_store_connect: Codemagic iOS Build
+
+    environment:
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 20
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+
+      # 1. Install dependencies
+      - name: Install dependencies
+        script: npm ci
+
+      # 2. Build frontend & backend (Vite)
+      - name: Build web + server
+        script: npm run build
+
+      # 3. Ensure Vite output exists
+      - name: Verify Vite output
+        script: |
+          if [ ! -f dist/public/index.html ]; then
+            echo "❌ ERROR: dist/public missing — Vite build failed."
+            exit 1
+          fi
+          echo "✔ dist/public exists"
+
+      # 4. Sync Capacitor iOS
+      - name: Sync Capacitor iOS
+        script: npx cap sync ios
+
+      # 5. Auto-increment iOS build number properly
+      - name: Increment iOS build number
+        script: |
+          cd ios/App
+          CURRENT_BUILD=$(agvtool what-version -terse)
+          NEW_BUILD=$((CURRENT_BUILD + 1))
+          echo "Updating build number: $CURRENT_BUILD → $NEW_BUILD"
+          agvtool new-version -all $NEW_BUILD
+          cd ../..
+
+      # 6. Install CocoaPods
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install --repo-update
+          cd ../..
+
+      # 7. Build iOS archive with MANUAL signing
+      - name: Build iOS archive
+        script: |
+          xcodebuild \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath build/ios/App.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=8WZHH537SU \
+            PROVISIONING_PROFILE_SPECIFIER="Dime Time App Store" \
+            archive
+
+      # 8. Export the .ipa with manual signing (App Store)
+      - name: Export .ipa
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath build/ios/App.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -allowProvisioningUpda
