@@ -14,7 +14,7 @@
     <key>provisioningProfiles</key>
     <dict>
         <key>com.dimetime.mobile</key>
-        <string>DimeTimeAppStore</string>
+        <string>Dime Time Distribution</string>
     </dict>
 
     <key>uploadBitcode</key>
