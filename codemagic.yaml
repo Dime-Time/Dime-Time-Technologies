@@ -1,4 +1,4 @@
-m6workflows:
+workflows:
   ios_build:
     name: iOS App Store Build
     instance_type: mac_mini_m2
@@ -8,10 +8,6 @@ m6workflows:
       app_store_connect: Codemagic iOS Build
 
     environment:
-      ios_signing:
-        use_app_store_connect: true
-        bundle_id: com.dimetime.mobile
-        provisioning_profile: "dime time App Store"
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
