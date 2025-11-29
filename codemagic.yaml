@@ -1,6 +1,7 @@
 workflows:
   ios-workflow:
     name: iOS Build & TestFlight Upload
+
     environment:
       groups:
         - ios_build_info
@@ -39,7 +40,7 @@ workflows:
         script: |
           xcodebuild -exportArchive \
             -archivePath build/ios/App.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
+            -exportOptionsPlist build-config/ExportOptions.plist \
             -exportPath build/ios
 
       - name: Upload to TestFlight
