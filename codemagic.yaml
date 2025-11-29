@@ -1,4 +1,4 @@
-workflows:
+m6workflows:
   ios_build:
     name: iOS App Store Build
     instance_type: mac_mini_m2
