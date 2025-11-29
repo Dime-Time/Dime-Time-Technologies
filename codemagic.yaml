@@ -11,6 +11,7 @@ workflows:
       ios_signing:
         use_app_store_connect: true
         bundle_id: com.dimetime.mobile
+        provisioning_profile: "dime time App Store"
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
