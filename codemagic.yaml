@@ -1,25 +1,29 @@
 workflows:
-  ios_build_info:
+  ios_build:
     name: iOS App Store Build
     instance_type: mac_mini_m2
     max_build_duration: 120
 
-    integrations:
-      app_store_connect: Codemagic iOS Build
-
     environment:
+<<<<<<< HEAD
       ios_signing:
         use_app_store_connect: true
         bundle_id: com.dimetime.mobile
         provisioning_profile: "dime time App Store"
+=======
+      groups:
+        - ios_build_info   # This loads your 3 environment variables
+
+>>>>>>> origin/main
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-      node: 20
       xcode: latest
+      node: 20
       cocoapods: default
 
     scripts:
+<<<<<<< HEAD
       - name: Install dependencies
         script: npm ci
 
@@ -37,6 +41,21 @@ workflows:
       - name: Sync Capacitor iOS
         script: npx cap sync ios
 
+=======
+      # 1. Install dependencies
+      - name: Install dependencies
+        script: npm ci
+
+      # 2. Build frontend + backend
+      - name: Build project
+        script: npm run build
+
+      # 3. Sync Capacitor iOS
+      - name: Sync Capacitor iOS
+        script: npx cap sync ios
+
+      # 4. Increment build number
+>>>>>>> origin/main
       - name: Increment iOS build number
         script: |
           cd ios/App
@@ -45,12 +64,20 @@ workflows:
           agvtool new-version -all $NEW_BUILD
           cd ../..
 
+<<<<<<< HEAD
+=======
+      # 5. Install CocoaPods
+>>>>>>> origin/main
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
+<<<<<<< HEAD
+=======
+      # 6. Build iOS archive (MANUAL SIGNING)
+>>>>>>> origin/main
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -58,14 +85,23 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/ios/App.xcarchive \
+<<<<<<< HEAD
             archive
 
+=======
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=8WZHH537SU \
+            PROVISIONING_PROFILE_SPECIFIER="DimeTimeDistribution" \
+            archive
+
+      # 7. Export the .ipa
+>>>>>>> origin/main
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
             -archivePath build/ios/App.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist ios/exportOptions.plist
+            -exportOptionsPlist build-config/ExportOptions.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
