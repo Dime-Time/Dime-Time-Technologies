@@ -63,16 +63,15 @@ workflows:
             -exportPath build/ios/ipa \
             -exportOptionsPlist ios/exportOptions.plist
 
-      - name: Write App Store Connect private key to file
+      - name: Publish to App Store Connect
         script: |
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/private_key.p8
+          echo -e "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/private_key.p8
+          chmod 600 /tmp/private_key.p8
+          app-store-connect publish \
+            --path build/ios/ipa/App.ipa \
+            --key-id $APP_STORE_CONNECT_KEY_ID \
+            --issuer-id $APP_STORE_CONNECT_ISSUER_ID \
+            --private-key /tmp/private_key.p8
 
     artifacts:
       - build/ios/ipa/*.ipa
-
-    publishing:
-      app_store_connect:
-        api_key: /tmp/private_key.p8
-        key_id: $APP_STORE_CONNECT_KEY_ID
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
