@@ -89,7 +89,8 @@ workflows:
       - build/ios/ipa/*.ipa
 
     publishing:
-      email:
-        recipients:
-          - on_success: false
-            on_failure: false
+      app_store_connect:
+        api_key: /tmp/private_key.p8
+        key_id: $APP_STORE_CONNECT_KEY_ID
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
