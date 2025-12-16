@@ -5,12 +5,20 @@ workflows:
     max_build_duration: 120
 
     environment:
-      vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
-        XCODE_SCHEME: "App"
       xcode: latest
       node: 20
       cocoapods: default
+
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: "com.dimetime.mobile"
+
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APP_STORE_CONNECT_KEY_ID: $APP_STORE_CONNECT_KEY_ID
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
 
     scripts:
       - name: Install dependencies
