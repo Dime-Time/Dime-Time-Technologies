@@ -52,6 +52,11 @@ workflows:
           pod install --repo-update
           cd ../..
 
+      - name: Set up code signing profiles in Xcode project
+        script: |
+          echo "=== Setting up code signing with Codemagic ios_signing profiles ==="
+          xcode-project use-profiles
+
       - name: Build iOS archive
         script: |
           xcodebuild \
