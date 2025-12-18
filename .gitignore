@@ -3,4 +3,4 @@ node_modules
 .DS_Store
 server/public
 vite.config.ts.*
-*.tar.gz
+*.tar.gz*.pbxproj.bak.*
