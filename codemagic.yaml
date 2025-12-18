@@ -55,7 +55,25 @@ workflows:
       - name: Set up code signing profiles
         script: |
           echo "=== Setting up code signing profiles ==="
+          set -x
           xcode-project use-profiles
+          PROFILE_EXIT_CODE=$?
+          set +x
+          
+          if [ $PROFILE_EXIT_CODE -ne 0 ]; then
+            echo "❌ xcode-project use-profiles failed with exit code: $PROFILE_EXIT_CODE"
+            exit 1
+          fi
+          echo "✔ xcode-project use-profiles succeeded"
+          
+          # List provisioning profiles
+          echo ""
+          echo "=== Listing provisioning profiles by UUID ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null | grep -E "\.mobileprovision" || echo "No profiles found in default location"
+          
+          echo ""
+          echo "=== Checking for App Store profiles ==="
+          find ~/Library/MobileDevice/Provisioning\ Profiles -name "*App*" -o -name "*Store*" 2>/dev/null || echo "No App Store profiles found"
 
       - name: Build iOS archive
         script: |
