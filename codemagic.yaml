@@ -78,14 +78,21 @@ workflows:
             -exportPath build/ios/ipa \
             -exportOptionsPlist ios/exportOptions.plist
 
-      - name: Publish to App Store Connect
+      - name: Publish to App Store Connect (TestFlight)
         script: |
           echo "=== Publishing to App Store Connect ==="
+          PRIVATE_KEY_PATH="/private-keys/ApiKey_CKSOZE7RUMST.p8"
+          if [ ! -f "$PRIVATE_KEY_PATH" ]; then
+            echo "❌ Private key not found at $PRIVATE_KEY_PATH"
+            ls -la /private-keys/ || echo "private-keys directory not found"
+            exit 1
+          fi
+          echo "✔ Private key found at $PRIVATE_KEY_PATH"
           app-store-connect publish \
             --path build/ios/ipa/App.ipa \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
+            --private-key "$PRIVATE_KEY_PATH"
 
     artifacts:
       - build/ios/ipa/*.ipa
