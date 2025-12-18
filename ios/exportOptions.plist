@@ -12,10 +12,5 @@
         <string>8WZHH537SU</string>
         <key>uploadBitcode</key>
         <true/>
-        <key>provisioningProfiles</key>
-        <dict>
-                <key>com.dimetime.mobile</key>
-                <string>DimeTimeAppStore</string>
-        </dict>
 </dict>
 </plist>
