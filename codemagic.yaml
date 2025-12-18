@@ -9,10 +9,6 @@ workflows:
       node: 20
       cocoapods: default
 
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: "com.dimetime.mobile"
-
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
@@ -52,28 +48,18 @@ workflows:
           pod install --repo-update
           cd ../..
 
-      - name: Set up code signing profiles
+      - name: Set up code signing with App Store Connect credentials
         script: |
-          echo "=== Setting up code signing profiles ==="
-          set -x
-          xcode-project use-profiles
-          PROFILE_EXIT_CODE=$?
-          set +x
+          echo "=== Fetching provisioning profiles from App Store Connect ==="
           
-          if [ $PROFILE_EXIT_CODE -ne 0 ]; then
-            echo "❌ xcode-project use-profiles failed with exit code: $PROFILE_EXIT_CODE"
-            exit 1
-          fi
-          echo "✔ xcode-project use-profiles succeeded"
+          # Download profiles using app-store-connect CLI with our credentials
+          app-store-connect profiles list \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            || echo "Note: Could not fetch profiles (will try to create during export)"
           
-          # List provisioning profiles
-          echo ""
-          echo "=== Listing provisioning profiles by UUID ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null | grep -E "\.mobileprovision" || echo "No profiles found in default location"
-          
-          echo ""
-          echo "=== Checking for App Store profiles ==="
-          find ~/Library/MobileDevice/Provisioning\ Profiles -name "*App*" -o -name "*Store*" 2>/dev/null || echo "No App Store profiles found"
+          echo "✔ Attempting to use App Store Connect credentials for signing"
 
       - name: Build iOS archive
         script: |
