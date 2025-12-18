@@ -68,6 +68,14 @@ workflows:
             DEVELOPMENT_TEAM=8WZHH537SU \
             archive
 
+      - name: Debug provisioning profiles
+        script: |
+          echo "=== Available provisioning profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null | head -20 || echo "No profiles directory found"
+          echo ""
+          echo "=== Checking Xcode derived data ==="
+          find ~/Library/Developer/Xcode/DerivedData -name "*.mobileprovision" 2>/dev/null | head -10 || echo "No mobile provisions found"
+
       - name: Export .ipa
         script: |
           xcodebuild -exportArchive \
