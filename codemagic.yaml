@@ -82,26 +82,20 @@ workflows:
         script: |
           echo "=== Uploading IPA to App Store Connect (TestFlight) ==="
           
-          # Decode base64-encoded private key from environment variable
-          PRIVATE_KEY_FILE="/tmp/app_store_key.p8"
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 -d > "$PRIVATE_KEY_FILE"
-          
-          if [ ! -f "$PRIVATE_KEY_FILE" ] || [ ! -s "$PRIVATE_KEY_FILE" ]; then
-            echo "❌ Failed to decode private key"
+          # Verify private key file exists
+          if [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
+            echo "❌ APP_STORE_CONNECT_PRIVATE_KEY environment variable is empty"
             exit 1
           fi
           
-          echo "✔ Private key decoded successfully"
+          echo "✔ Using private key: $APP_STORE_CONNECT_PRIVATE_KEY"
           
-          # Publish to App Store Connect
+          # Publish to App Store Connect (using private key file path directly)
           app-store-connect publish \
             --path build/ios/ipa/App.ipa \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --private-key "$PRIVATE_KEY_FILE"
-          
-          # Clean up
-          rm -f "$PRIVATE_KEY_FILE"
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
 
     artifacts:
       - build/ios/ipa/*.ipa
