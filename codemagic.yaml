@@ -48,18 +48,43 @@ workflows:
           pod install --repo-update
           cd ../..
 
-      - name: Set up code signing with App Store Connect credentials
+      - name: Download and install provisioning profile
         script: |
-          echo "=== Fetching provisioning profiles from App Store Connect ==="
+          echo "=== Downloading provisioning profile from App Store Connect ==="
           
-          # Download profiles using app-store-connect CLI with our credentials
+          # Create provisioning profiles directory
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
+          
+          # Download provisioning profiles
           app-store-connect profiles list \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
-            || echo "Note: Could not fetch profiles (will try to create during export)"
+            --filter 'bundleId=com.dimetime.mobile' \
+            --filter 'profileType=IOS_APP_STORE' \
+            --output json > /tmp/profiles.json
           
-          echo "✔ Attempting to use App Store Connect credentials for signing"
+          if [ -s /tmp/profiles.json ]; then
+            echo "✔ Profiles list retrieved"
+            cat /tmp/profiles.json
+            
+            # Download the first profile
+            PROFILE_ID=$(jq -r '.[0].id' /tmp/profiles.json)
+            if [ "$PROFILE_ID" != "null" ] && [ ! -z "$PROFILE_ID" ]; then
+              echo "Downloading profile: $PROFILE_ID"
+              app-store-connect profiles download \
+                --id "$PROFILE_ID" \
+                --key-id "$APP_STORE_CONNECT_KEY_ID" \
+                --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+                --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+                --output ~/Library/MobileDevice/Provisioning\ Profiles/
+              echo "✔ Provisioning profile downloaded"
+            fi
+          else
+            echo "⚠ No provisioning profiles found, will attempt with -allowProvisioningUpdates"
+          fi
+          
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - name: Build iOS archive
         script: |
@@ -69,6 +94,7 @@ workflows:
             -configuration Release \
             -archivePath build/ios/App.xcarchive \
             -allowProvisioningUpdates \
+            CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=8WZHH537SU \
             archive
 
