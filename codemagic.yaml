@@ -80,19 +80,28 @@ workflows:
 
       - name: Publish to App Store Connect (TestFlight)
         script: |
-          echo "=== Publishing to App Store Connect ==="
-          PRIVATE_KEY_PATH="/private-keys/ApiKey_CKSOZE7RUMST.p8"
-          if [ ! -f "$PRIVATE_KEY_PATH" ]; then
-            echo "❌ Private key not found at $PRIVATE_KEY_PATH"
-            ls -la /private-keys/ || echo "private-keys directory not found"
+          echo "=== Uploading IPA to App Store Connect (TestFlight) ==="
+          
+          # Decode base64-encoded private key from environment variable
+          PRIVATE_KEY_FILE="/tmp/app_store_key.p8"
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 -d > "$PRIVATE_KEY_FILE"
+          
+          if [ ! -f "$PRIVATE_KEY_FILE" ] || [ ! -s "$PRIVATE_KEY_FILE" ]; then
+            echo "❌ Failed to decode private key"
             exit 1
           fi
-          echo "✔ Private key found at $PRIVATE_KEY_PATH"
+          
+          echo "✔ Private key decoded successfully"
+          
+          # Publish to App Store Connect
           app-store-connect publish \
             --path build/ios/ipa/App.ipa \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --private-key "$PRIVATE_KEY_PATH"
+            --private-key "$PRIVATE_KEY_FILE"
+          
+          # Clean up
+          rm -f "$PRIVATE_KEY_FILE"
 
     artifacts:
       - build/ios/ipa/*.ipa

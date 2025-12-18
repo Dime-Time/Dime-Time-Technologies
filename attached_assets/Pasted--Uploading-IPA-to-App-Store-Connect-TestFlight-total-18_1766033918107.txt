@@ -1,0 +1,14 @@
+=== Uploading IPA to App Store Connect (TestFlight) ===
+total 18792
+drwxr-xr-x  6 builder  staff      192 Dec 18 04:55 .
+drwxr-xr-x  4 builder  staff      128 Dec 18 04:55 ..
+-rw-r--r--  1 builder  staff  9533205 Dec 18 04:55 App.ipa
+-rw-r--r--  1 builder  staff     5885 Dec 18 04:55 DistributionSummary.plist
+-rw-r--r--  1 builder  staff      805 Dec 18 04:55 ExportOptions.plist
+-rw-r--r--  1 builder  staff    73396 Dec 18 04:55 Packaging.log
+usage: app-store-connect publish [-h] [--log-api-calls] [--api-unauthorized-retries UNAUTHORIZED_REQUEST_RETRIES] [--api-server-error-retries SERVER_ERROR_RETRIES] [--disable-jwt-cache] [--json] [--issuer-id ISSUER_ID] [--key-id KEY_IDENTIFIER] [--private-key PRIVATE_KEY] [--certificates-dir CERTIFICATES_DIRECTORY] [--profiles-dir PROFILES_DIRECTORY] [--path artifact-path [artifact-path ...]] [--apple-id APPLE_ID] [--password APP_SPECIFIC_PASSWORD] [--enable-package-validation] [--skip-package-validation] [--skip-package-upload] [--max-find-build-wait MAX_FIND_BUILD_WAIT] [--max-build-processing-wait MAX_BUILD_PROCESSING_WAIT] [--beta-build-localizations BETA_BUILD_LOCALIZATIONS] [--testflight] [--expire-build-submitted-for-review] [--beta-group beta-group [beta-group ...]] [--app-store] [--platform {IOS,MAC_OS,TV_OS}] [--cancel-previous-submissions] [--app-store-version-info APP_STORE_VERSION_INFO] [--copyright COPYRIGHT] [--earliest-release-date EARLIEST_RELEASE_DATE] [--release-type {MANUAL,AFTER_APPROVAL,SCHEDULED}] [--version-string VERSION_STRING] [--description DESCRIPTION] [--keywords KEYWORDS] [--marketing-url MARKETING_URL] [--promotional-text PROMOTIONAL_TEXT] [--support-url SUPPORT_URL] [--app-store-version-localizations APP_STORE_VERSION_LOCALIZATIONS] [--phased-release] [--no-phased-release] [--locale {ar-SA,ca,cs,da,de-DE,el,en-AU,en-CA,en-GB,en-US,es-ES,es-MX,fi,fr-CA,fr-FR,he,hi,hr,hu,id,it,ja,ko,ms,nl-NL,no,pl,pt-BR,pt-PT,ro,ru,sk,sv,th,tr,uk,vi,zh-Hans,zh-Hant}] [--whats-new WHATS_NEW] [--altool-retries ALTOOL_RETRIES_COUNT] [--altool-retry-wait ALTOOL_RETRY_WAIT] [--altool-verbose-logging] [--altool-additional-arguments ALTOOL_ADDITIONAL_ARGUMENTS] [--log-stream {stderr,stdout}] [--no-color] [--version] [-s] [-v]
+app-store-connect publish: error: argument --private-key: Provided value is not a valid PEM encoded private key
+
+
+Build failed :|
+Step 12 script `Upload IPA to App Store Connect (TestFlight)` exited with status code 2
