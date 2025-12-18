@@ -78,25 +78,12 @@ workflows:
 
       - name: Publish to App Store Connect
         script: |
-          # Convert escaped newlines to actual newlines and save to file
-          printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/private_key.p8
-          chmod 600 /tmp/private_key.p8
-          
-          # Verify the key is in proper PEM format
-          if head -1 /tmp/private_key.p8 | grep -q "BEGIN PRIVATE KEY"; then
-            echo "✅ Key format valid"
-          else
-            echo "❌ Key format invalid - key does not start with BEGIN PRIVATE KEY"
-            cat /tmp/private_key.p8 | head -3
-            exit 1
-          fi
-          
-          # Publish to TestFlight
+          echo "=== Publishing to App Store Connect ==="
           app-store-connect publish \
             --path build/ios/ipa/App.ipa \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --private-key /tmp/private_key.p8
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
 
     artifacts:
       - build/ios/ipa/*.ipa
