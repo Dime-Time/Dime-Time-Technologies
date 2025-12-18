@@ -86,20 +86,48 @@ workflows:
         script: |
           echo "=== Uploading IPA to App Store Connect (TestFlight) ==="
           
-          # Verify private key file exists
+          # Verify IPA exists
+          if [ ! -f "build/ios/ipa/App.ipa" ]; then
+            echo "❌ IPA file not found at build/ios/ipa/App.ipa"
+            exit 1
+          fi
+          echo "✔ IPA found: $(ls -lh build/ios/ipa/App.ipa)"
+          
+          # Verify credentials
+          if [ -z "$APP_STORE_CONNECT_KEY_ID" ]; then
+            echo "❌ APP_STORE_CONNECT_KEY_ID is empty"
+            exit 1
+          fi
+          if [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]; then
+            echo "❌ APP_STORE_CONNECT_ISSUER_ID is empty"
+            exit 1
+          fi
           if [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
-            echo "❌ APP_STORE_CONNECT_PRIVATE_KEY environment variable is empty"
+            echo "❌ APP_STORE_CONNECT_PRIVATE_KEY is empty"
             exit 1
           fi
           
-          echo "✔ Using private key: $APP_STORE_CONNECT_PRIVATE_KEY"
+          echo "✔ Credentials verified"
+          echo "  Key ID: $APP_STORE_CONNECT_KEY_ID"
+          echo "  Issuer ID: $APP_STORE_CONNECT_ISSUER_ID"
+          echo "  Private key: $APP_STORE_CONNECT_PRIVATE_KEY"
           
-          # Publish to App Store Connect (using private key file path directly)
+          # Publish to App Store Connect
+          set -x  # Enable debug output
           app-store-connect publish \
             --path build/ios/ipa/App.ipa \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
+          PUBLISH_EXIT_CODE=$?
+          set +x
+          
+          if [ $PUBLISH_EXIT_CODE -eq 0 ]; then
+            echo "✅ IPA successfully uploaded to TestFlight!"
+          else
+            echo "❌ Publishing failed with exit code: $PUBLISH_EXIT_CODE"
+            exit $PUBLISH_EXIT_CODE
+          fi
 
     artifacts:
       - build/ios/ipa/*.ipa
