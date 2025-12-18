@@ -52,6 +52,11 @@ workflows:
           pod install --repo-update
           cd ../..
 
+      - name: Set up code signing profiles
+        script: |
+          echo "=== Setting up code signing profiles ==="
+          xcode-project use-profiles
+
       - name: Build iOS archive
         script: |
           xcodebuild \
@@ -60,9 +65,6 @@ workflows:
             -configuration Release \
             -archivePath build/ios/App.xcarchive \
             -allowProvisioningUpdates \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
             DEVELOPMENT_TEAM=8WZHH537SU \
             archive
 
