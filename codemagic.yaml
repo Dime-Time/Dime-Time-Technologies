@@ -87,7 +87,3 @@ workflows:
 
     artifacts:
       - build/ios/ipa/*.ipa
-
-    publishing:
-      # Custom publishing is handled in the script step above
-      # Disable automatic App Store Connect publishing to prevent conflicts
