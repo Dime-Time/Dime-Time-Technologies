@@ -56,6 +56,9 @@ workflows:
         script: |
           echo "=== Setting up code signing with Codemagic ios_signing profiles ==="
           xcode-project use-profiles
+          echo "✔ Profiles set up"
+          echo "Available provisioning profiles:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No provisioning profiles found"
 
       - name: Build iOS archive
         script: |
@@ -76,7 +79,8 @@ workflows:
           xcodebuild -exportArchive \
             -archivePath build/ios/App.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist ios/exportOptions.plist
+            -exportOptionsPlist ios/exportOptions.plist \
+            -allowProvisioningUpdates
 
       - name: Publish to App Store Connect (TestFlight)
         script: |
