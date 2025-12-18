@@ -66,6 +66,7 @@ workflows:
             -archivePath build/ios/App.xcarchive \
             -allowProvisioningUpdates \
             CODE_SIGN_STYLE=Automatic \
+            PROVISIONING_PROFILE_SPECIFIER="" \
             DEVELOPMENT_TEAM=8WZHH537SU \
             archive
 
