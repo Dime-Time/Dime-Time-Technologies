@@ -7,13 +7,21 @@ The application leverages automated financial tracking, micro-investment strateg
 
 ## Recent Changes (December 2025) - CodeMagic iOS Build Pipeline COMPLETE ✅
 
-### BUILD 61: SUCCESSFUL iOS App Store Build ✅✅✅
-- **Status**: BUILD SUCCESSFUL - App uploaded to TestFlight!
-- **Xcode Project**: Configured with DEVELOPMENT_TEAM=8WZHH537SU + CODE_SIGN_STYLE=Automatic
-- **CodeMagic Build**: Using `-allowProvisioningUpdates` flag to auto-download provisioning profiles
-- **App Store Connect**: All 3 API credentials configured and working
-- **TestFlight**: App now available for beta testing!
-- **Code Signing**: Finally resolved after 15+ builds and multiple certificate regenerations
+### BUILD 92: SUCCESSFUL iOS TestFlight Upload via Apple ID ✅✅✅
+- **Status**: BUILD SUCCESSFUL - App built and uploaded to TestFlight with Apple ID authentication!
+- **Build Tool**: xcode-project build-ipa (CodeMagic's official iOS command)
+- **Code Signing**: CodeMagic iOS signing integration with automatic provisioning profile management
+- **TestFlight Upload**: xcrun altool with Apple ID credentials (APPLE_ID + APP_SPECIFIC_PASSWORD)
+- **Build Number**: CFBundleVersion 45
+- **App Status**: Ready for TestFlight beta testing and review
+- **Next Step**: Apple reviews the app before it becomes available to testers
+
+### Build Timeline (Exit Code 65 → Build 92 Success):
+- **Builds 71-91**: Manual code signing attempts, API key configuration, environment variable fixes
+- **Build 89**: First successful IPA build with simplified signing approach
+- **Build 90**: IPA built but publishing failed (environment variable naming issue)
+- **Build 91**: Added fetch-signing-files step from ChatGPT suggestion
+- **Build 92**: SUCCESS using CodeMagic's ios_signing integration + xcrun altool upload
 
 ### Build Timeline (Exit Code 65 → Success):
 - **Build 44-55**: Initial signing setup, certificate/profile issues
