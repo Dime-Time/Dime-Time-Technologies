@@ -48,6 +48,17 @@ workflows:
           pod install --repo-update
           cd ../..
 
+      - name: Fetch signing files from App Store Connect
+        script: |
+          echo "=== Fetching provisioning profiles from App Store Connect ==="
+          app-store-connect fetch-signing-files \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            --type ios \
+            --platform ios \
+            com.dimetime.mobile
+
       - name: Build iOS archive
         script: |
           xcodebuild \
