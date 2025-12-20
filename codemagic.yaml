@@ -12,7 +12,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APP_STORE_CONNECT_KEY_ID: $APP_STORE_CONNECT_KEY_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_ID
         APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
         APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
 
@@ -88,8 +88,8 @@ workflows:
           echo "✔ IPA found: $(ls -lh build/ios/ipa/App.ipa)"
           
           # Verify credentials
-          if [ -z "$APP_STORE_CONNECT_KEY_ID" ]; then
-            echo "❌ APP_STORE_CONNECT_KEY_ID is empty"
+          if [ -z "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
+            echo "❌ APP_STORE_CONNECT_KEY_IDENTIFIER is empty"
             exit 1
           fi
           if [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]; then
@@ -102,7 +102,7 @@ workflows:
           fi
           
           echo "✔ Credentials verified"
-          echo "  Key ID: $APP_STORE_CONNECT_KEY_ID"
+          echo "  Key Identifier: $APP_STORE_CONNECT_KEY_IDENTIFIER"
           echo "  Issuer ID: $APP_STORE_CONNECT_ISSUER_ID"
           echo "  Private key: $APP_STORE_CONNECT_PRIVATE_KEY"
           
@@ -110,7 +110,7 @@ workflows:
           set -x  # Enable debug output
           app-store-connect publish \
             --path build/ios/ipa/App.ipa \
-            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
           PUBLISH_EXIT_CODE=$?
