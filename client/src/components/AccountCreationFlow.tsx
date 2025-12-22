@@ -126,8 +126,8 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto touch-pan-y">
+      <Card className="w-full max-w-md my-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-dime-purple" />
@@ -138,7 +138,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
           </p>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="pb-20 md:pb-6">
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -149,6 +149,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                     id="firstName"
                     type="text"
                     placeholder="John"
+                    autoComplete="given-name"
                     value={formData.firstName}
                     onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                     className="pl-10"
@@ -166,6 +167,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                     id="lastName"
                     type="text"
                     placeholder="Doe"
+                    autoComplete="family-name"
                     value={formData.lastName}
                     onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                     className="pl-10"
@@ -184,6 +186,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   id="email"
                   type="email"
                   placeholder="john@example.com"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   className="pl-10"
@@ -201,6 +204,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   id="username"
                   type="text"
                   placeholder="johndoe"
+                  autoComplete="username"
                   value={formData.username}
                   onChange={(e) => setFormData({...formData, username: e.target.value})}
                   className="pl-10"
@@ -218,6 +222,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   id="password"
                   type="password"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                   className="pl-10"
@@ -235,6 +240,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   id="confirmPassword"
                   type="password"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                   className="pl-10"

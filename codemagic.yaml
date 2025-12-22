@@ -28,7 +28,7 @@ workflows:
         XCODE_SCHEME: "App"
 
         # Must be higher than the last uploaded CFBundleVersion (you saw 44 in the error)
-        IOS_BUILD_NUMBER: "47"
+        IOS_BUILD_NUMBER: "48"
 
     scripts:
       - name: Install dependencies and sync Capacitor
