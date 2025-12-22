@@ -23,9 +23,9 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
         <CardHeader className="flex-shrink-0">
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
-            Terms of Service & Risk Disclosure
+            <span style={{color: '#918EF4'}}>Terms of Service & Risk Disclosure</span>
           </CardTitle>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm" style={{color: '#918EF4'}}>
             Please read and acknowledge the following before using Dime Time
           </p>
         </CardHeader>
@@ -36,13 +36,13 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
 
               {/* Financial Risk Disclosure */}
               <section className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-red-500" />
+                <h3 className="text-lg font-semibold flex items-center gap-2" style={{color: '#918EF4'}}>
+                  <Shield className="h-4 w-4" style={{color: '#918EF4'}} />
                   Financial Risk Disclosure
                 </h3>
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-2 text-sm">
-                  <p className="font-medium text-red-800">IMPORTANT: READ CAREFULLY</p>
-                  <ul className="list-disc list-inside space-y-1 text-red-700">
+                <div className="p-4 rounded-lg space-y-2 text-sm" style={{backgroundColor: '#918EF4', color: 'white'}}>
+                  <p className="font-medium">IMPORTANT: READ CAREFULLY</p>
+                  <ul className="list-disc list-inside space-y-1" style={{color: 'white'}}>
                     <li>Cryptocurrency investments involve substantial risk of loss</li>
                     <li>Past performance does not guarantee future results</li>
                     <li>You may lose some or all of your invested funds</li>
@@ -55,14 +55,14 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
 
               {/* Service Terms */}
               <section className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
+                <h3 className="text-lg font-semibold flex items-center gap-2" style={{color: '#918EF4'}}>
+                  <FileText className="h-4 w-4" style={{color: '#918EF4'}} />
                   Terms of Service
                 </h3>
-                <div className="space-y-2 text-sm text-gray-700">
+                <div className="space-y-2 text-sm" style={{color: '#918EF4'}}>
                   <p><strong>1. Service Description:</strong> Dime Time provides financial tools and analytics. Services are provided "as is" without warranties.</p>
                   <p><strong>2. User Responsibilities:</strong></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
+                  <ul className="list-disc list-inside ml-4 space-y-1" style={{color: '#918EF4'}}>
                     <li>Providing accurate financial information</li>
                     <li>Monitoring accounts and transactions</li>
                     <li>Understanding risks before making investments</li>
@@ -73,8 +73,8 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
 
               {/* Privacy Policy */}
               <section className="space-y-3">
-                <h3 className="text-lg font-semibold">Privacy Policy Summary</h3>
-                <div className="space-y-2 text-sm text-gray-700">
+                <h3 className="text-lg font-semibold" style={{color: '#918EF4'}}>Privacy Policy Summary</h3>
+                <div className="space-y-2 text-sm" style={{color: '#918EF4'}}>
                   <p><strong>Data Collection:</strong> We collect account info, transaction data, and analytics.</p>
                   <p><strong>Data Sharing:</strong> Shared with banking partners and services required for app functionality.</p>
                   <p><strong>Data Security:</strong> Industry-standard protections, but no guarantee of absolute security.</p>
@@ -86,36 +86,39 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
 
           {/* Acceptance Checkboxes */}
           <div className="mt-6 space-y-4 border-t pt-4">
-            <div className="flex items-start space-x-2">
+            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{backgroundColor: '#f0ebff'}}>
               <Checkbox
                 id="terms"
                 checked={acceptedTerms}
                 onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                className="w-5 h-5"
               />
-              <label htmlFor="terms" className="text-sm leading-relaxed">
-                I have read and agree to the <strong>Terms of Service</strong>.
+              <label htmlFor="terms" className="text-sm font-medium leading-relaxed cursor-pointer flex-1" style={{color: '#918EF4'}}>
+                I have read and agree to the <strong>Terms of Service</strong>
               </label>
             </div>
 
-            <div className="flex items-start space-x-2">
+            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{backgroundColor: '#f0ebff'}}>
               <Checkbox
                 id="privacy"
                 checked={acceptedPrivacy}
                 onCheckedChange={(checked) => setAcceptedPrivacy(checked === true)}
+                className="w-5 h-5"
               />
-              <label htmlFor="privacy" className="text-sm leading-relaxed">
-                I acknowledge the <strong>Privacy Policy</strong>.
+              <label htmlFor="privacy" className="text-sm font-medium leading-relaxed cursor-pointer flex-1" style={{color: '#918EF4'}}>
+                I acknowledge the <strong>Privacy Policy</strong>
               </label>
             </div>
 
-            <div className="flex items-start space-x-2">
+            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{backgroundColor: '#f0ebff'}}>
               <Checkbox
                 id="risks"
                 checked={acceptedRisks}
                 onCheckedChange={(checked) => setAcceptedRisks(checked === true)}
+                className="w-5 h-5"
               />
-              <label htmlFor="risks" className="text-sm leading-relaxed">
-                I understand the <strong>Financial Risks</strong>.
+              <label htmlFor="risks" className="text-sm font-medium leading-relaxed cursor-pointer flex-1" style={{color: '#918EF4'}}>
+                I understand the <strong>Financial Risks</strong>
               </label>
             </div>
           </div>

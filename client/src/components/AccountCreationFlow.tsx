@@ -127,8 +127,8 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto touch-pan-y">
-      <Card className="w-full max-w-md my-auto">
-        <CardHeader>
+      <Card className="w-full max-w-md my-auto max-h-[90vh] flex flex-col">
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-dime-purple" />
             Create Your Account
@@ -138,7 +138,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
           </p>
         </CardHeader>
         
-        <CardContent className="pb-20 md:pb-6">
+        <CardContent className="flex-1 overflow-y-auto pb-6">
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
