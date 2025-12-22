@@ -18,8 +18,8 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
   const canProceed = acceptedTerms && acceptedPrivacy && acceptedRisks;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <Card className="w-full max-w-4xl my-auto flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto touch-pan-y">
+      <Card className="w-full max-w-4xl my-auto flex flex-col overflow-hidden">
         <CardHeader className="flex-shrink-0">
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />

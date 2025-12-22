@@ -64,7 +64,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen bg-dime-lilac overflow-y-auto">
+    <div className="min-h-screen bg-dime-lilac overflow-y-auto h-screen">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
           <Link href="/">

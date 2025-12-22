@@ -30,7 +30,7 @@ export function LegalAgreementModal({ isOpen, onAccept, onDecline }: LegalAgreem
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="legal-agreement-modal">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto touch-pan-y" data-testid="legal-agreement-modal">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-slate-900">
             Welcome to Dime Time

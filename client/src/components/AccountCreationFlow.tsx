@@ -49,10 +49,10 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
       return;
     }
 
-    if (formData.password.length < 8) {
+    if (formData.password.length < 6) {
       toast({
         title: "Weak Password",
-        description: "Password must be at least 8 characters long",
+        description: "Password must be at least 6 characters long",
         variant: "destructive"
       });
       return;
