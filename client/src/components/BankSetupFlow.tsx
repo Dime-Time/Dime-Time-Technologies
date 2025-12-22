@@ -442,6 +442,16 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
               </button>
             </div>
 
+            {/* Coinbase account notice */}
+            {(allocationMode === 'bitcoin' || allocationMode === 'both') && (
+              <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800 text-center">
+                  <strong>Note:</strong> You'll need to connect your Coinbase account to purchase Bitcoin. 
+                  We'll help you set this up after completing round-up configuration.
+                </p>
+              </div>
+            )}
+
             {/* Percentage Slider - Only show for "Both" option */}
             {allocationMode === 'both' && (
               <div className="mt-8 space-y-4 bg-slate-50 rounded-lg p-6">
