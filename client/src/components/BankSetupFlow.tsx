@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Slider } from "@/components/ui/slider";
 import { 
   ArrowRight, 
   ArrowLeft, 
@@ -17,9 +18,13 @@ import {
   CheckCircle, 
   Loader2,
   Wallet,
-  Banknote
+  Banknote,
+  Bitcoin,
+  Percent
 } from "lucide-react";
 import type { BankAccount, Debt } from "@shared/schema";
+
+type AllocationMode = 'debt' | 'bitcoin' | 'both';
 
 interface BankSetupFlowProps {
   onComplete: () => void;
@@ -32,6 +37,8 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSourceAccount, setSelectedSourceAccount] = useState<string>("");
   const [selectedTargetDebt, setSelectedTargetDebt] = useState<string>("");
+  const [allocationMode, setAllocationMode] = useState<AllocationMode>('debt');
+  const [debtPercentage, setDebtPercentage] = useState<number>(50); // Percentage going to debt (1-99)
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -44,7 +51,12 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
   });
 
   const saveSettingsMutation = useMutation({
-    mutationFn: async (settings: { sourceAccountId: string; targetDebtId: string }) => {
+    mutationFn: async (settings: { 
+      sourceAccountId: string; 
+      targetDebtId: string | null;
+      cryptoEnabled: boolean;
+      cryptoPercentage: string;
+    }) => {
       const response = await fetch("/api/round-up-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,10 +168,16 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
       icon: Wallet,
     },
     {
+      id: "allocation",
+      title: "Choose Your Goal",
+      subtitle: "How should we use your round-ups?",
+      icon: Target,
+    },
+    {
       id: "target",
       title: "Select Debt to Pay",
       subtitle: "Choose which debt receives your round-ups",
-      icon: Target,
+      icon: Banknote,
     },
     {
       id: "confirm",
@@ -184,11 +202,64 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
   };
 
   const handleComplete = () => {
-    if (selectedSourceAccount && selectedTargetDebt) {
-      saveSettingsMutation.mutate({
-        sourceAccountId: selectedSourceAccount,
-        targetDebtId: selectedTargetDebt,
+    // Determine crypto settings based on allocation mode
+    let cryptoEnabled = false;
+    let cryptoPercentage = "0.00";
+    let targetDebt: string | null = selectedTargetDebt || null;
+
+    if (allocationMode === 'bitcoin') {
+      cryptoEnabled = true;
+      cryptoPercentage = "100.00";
+      targetDebt = null; // No debt target for bitcoin-only
+    } else if (allocationMode === 'both') {
+      cryptoEnabled = true;
+      cryptoPercentage = (100 - debtPercentage).toFixed(2); // Bitcoin gets the remainder
+    }
+
+    // Validate required fields
+    if (!selectedSourceAccount) {
+      toast({
+        title: "Missing Source Account",
+        description: "Please select a bank account for round-ups.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    // For debt and both modes, require debt selection
+    if ((allocationMode === 'debt' || allocationMode === 'both') && !targetDebt) {
+      toast({
+        title: "Missing Debt Selection",
+        description: "Please select a debt account to pay.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    saveSettingsMutation.mutate({
+      sourceAccountId: selectedSourceAccount,
+      targetDebtId: targetDebt,
+      cryptoEnabled,
+      cryptoPercentage,
+    });
+  };
+
+  // Skip debt selection step if bitcoin-only mode
+  const handleNextWithLogic = () => {
+    if (currentStep === 2 && allocationMode === 'bitcoin') {
+      // Skip debt selection (step 3), go directly to confirm (step 4)
+      setCurrentStep(4);
+    } else {
+      handleNext();
+    }
+  };
+
+  const handleBackWithLogic = () => {
+    if (currentStep === 4 && allocationMode === 'bitcoin') {
+      // Skip back over debt selection to allocation
+      setCurrentStep(2);
+    } else {
+      handleBack();
     }
   };
 
@@ -322,6 +393,99 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
         return (
           <div className="space-y-6">
             <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                Do you want Dime Time to:
+              </h2>
+            </div>
+
+            <div className="flex justify-center gap-4 flex-wrap">
+              {/* Pay Off Debt Option */}
+              <button
+                onClick={() => setAllocationMode('debt')}
+                className={`flex flex-col items-center justify-center w-28 h-28 rounded-full border-4 transition-all ${
+                  allocationMode === 'debt'
+                    ? 'border-dime-purple bg-dime-purple text-white shadow-lg scale-105'
+                    : 'border-slate-300 bg-white text-slate-700 hover:border-dime-purple/50'
+                }`}
+                data-testid="option-debt"
+              >
+                <Banknote className="w-8 h-8 mb-1" />
+                <span className="text-xs font-bold text-center leading-tight">Pay Off<br/>Debt!</span>
+              </button>
+
+              {/* Buy Bitcoin Option */}
+              <button
+                onClick={() => setAllocationMode('bitcoin')}
+                className={`flex flex-col items-center justify-center w-28 h-28 rounded-full border-4 transition-all ${
+                  allocationMode === 'bitcoin'
+                    ? 'border-orange-500 bg-orange-500 text-white shadow-lg scale-105'
+                    : 'border-slate-300 bg-white text-slate-700 hover:border-orange-300'
+                }`}
+                data-testid="option-bitcoin"
+              >
+                <Bitcoin className="w-8 h-8 mb-1" />
+                <span className="text-xs font-bold text-center leading-tight">Buy<br/>Bitcoin!</span>
+              </button>
+
+              {/* Both Option */}
+              <button
+                onClick={() => setAllocationMode('both')}
+                className={`flex flex-col items-center justify-center w-28 h-28 rounded-full border-4 transition-all ${
+                  allocationMode === 'both'
+                    ? 'border-green-500 bg-green-500 text-white shadow-lg scale-105'
+                    : 'border-slate-300 bg-white text-slate-700 hover:border-green-300'
+                }`}
+                data-testid="option-both"
+              >
+                <Percent className="w-8 h-8 mb-1" />
+                <span className="text-xs font-bold text-center leading-tight">Both!</span>
+              </button>
+            </div>
+
+            {/* Percentage Slider - Only show for "Both" option */}
+            {allocationMode === 'both' && (
+              <div className="mt-8 space-y-4 bg-slate-50 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-center text-slate-900">
+                  Set Your Split
+                </h3>
+                
+                <div className="flex justify-between text-sm font-medium">
+                  <span className="text-dime-purple">Debt: {debtPercentage}%</span>
+                  <span className="text-orange-500">Bitcoin: {100 - debtPercentage}%</span>
+                </div>
+
+                <Slider
+                  value={[debtPercentage]}
+                  onValueChange={(value) => setDebtPercentage(value[0])}
+                  min={1}
+                  max={99}
+                  step={1}
+                  className="w-full"
+                  data-testid="slider-percentage"
+                />
+
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>1% Debt</span>
+                  <span>50/50</span>
+                  <span>99% Debt</span>
+                </div>
+
+                <div className="mt-4 p-3 bg-white rounded-lg border border-slate-200">
+                  <p className="text-sm text-center text-slate-600">
+                    For every $1 in round-ups:<br/>
+                    <span className="font-semibold text-dime-purple">${(debtPercentage / 100).toFixed(2)}</span> goes to debt • 
+                    <span className="font-semibold text-orange-500"> ${((100 - debtPercentage) / 100).toFixed(2)}</span> buys Bitcoin
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
               <h3 className="text-xl font-semibold text-slate-900">Select Your Debt Account</h3>
               <p className="text-slate-600 mt-2">
                 Choose which debt should receive your round-up payments
@@ -379,7 +543,7 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -419,37 +583,78 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
                 <ArrowRight className="w-6 h-6 text-dime-purple" />
               </div>
 
+              {/* Allocation Summary */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
-                    <Banknote className="w-4 h-4" />
-                    Paying Debt
+                    <Target className="w-4 h-4" />
+                    Allocation
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {selectedDebt ? (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">{selectedDebt.name}</p>
-                        <p className="text-sm text-slate-600">{selectedDebt.interestRate}% APR</p>
-                      </div>
-                      <p className="font-bold text-dime-purple">
-                        ${Number(selectedDebt.currentBalance).toLocaleString()}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">
+                        {allocationMode === 'debt' && 'Pay Off Debt'}
+                        {allocationMode === 'bitcoin' && 'Buy Bitcoin'}
+                        {allocationMode === 'both' && 'Split Between Both'}
                       </p>
+                      {allocationMode === 'both' && (
+                        <p className="text-sm text-slate-600">
+                          {debtPercentage}% Debt • {100 - debtPercentage}% Bitcoin
+                        </p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-slate-500 italic">No debt selected</p>
-                  )}
+                    <div className="text-right">
+                      {allocationMode === 'debt' && <Banknote className="w-6 h-6 text-dime-purple" />}
+                      {allocationMode === 'bitcoin' && <Bitcoin className="w-6 h-6 text-orange-500" />}
+                      {allocationMode === 'both' && <Percent className="w-6 h-6 text-green-500" />}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+
+              {/* Show debt target only if applicable */}
+              {(allocationMode === 'debt' || allocationMode === 'both') && (
+                <>
+                  <div className="flex justify-center">
+                    <ArrowRight className="w-6 h-6 text-dime-purple" />
+                  </div>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+                        <Banknote className="w-4 h-4" />
+                        Paying Debt
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {selectedDebt ? (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">{selectedDebt.name}</p>
+                            <p className="text-sm text-slate-600">{selectedDebt.interestRate}% APR</p>
+                          </div>
+                          <p className="font-bold text-dime-purple">
+                            ${Number(selectedDebt.currentBalance).toLocaleString()}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-slate-500 italic">No debt selected</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </div>
 
             <div className="bg-dime-purple/5 border border-dime-purple/20 rounded-lg p-4">
               <p className="text-sm text-slate-700">
                 <strong>How it works:</strong> Every time you make a purchase, we'll round up
                 to the nearest dollar and transfer that amount from your{" "}
-                {selectedAccount?.institutionName || "bank account"} to pay down your{" "}
-                {selectedDebt?.name || "selected debt"}.
+                {selectedAccount?.institutionName || "bank account"}
+                {allocationMode === 'debt' && ` to pay down your ${selectedDebt?.name || "debt"}.`}
+                {allocationMode === 'bitcoin' && ` to buy Bitcoin.`}
+                {allocationMode === 'both' && ` — ${debtPercentage}% goes to ${selectedDebt?.name || "your debt"} and ${100 - debtPercentage}% buys Bitcoin.`}
               </p>
             </div>
           </div>
@@ -467,9 +672,15 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
       case 1:
         return !!selectedSourceAccount;
       case 2:
-        return !!selectedTargetDebt;
+        return true; // Allocation always has a default selection
       case 3:
-        return selectedSourceAccount && selectedTargetDebt;
+        return !!selectedTargetDebt;
+      case 4:
+        // For bitcoin-only, don't require debt selection
+        if (allocationMode === 'bitcoin') {
+          return !!selectedSourceAccount;
+        }
+        return !!selectedSourceAccount && !!selectedTargetDebt;
       default:
         return false;
     }
@@ -510,7 +721,7 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
           {currentStep > 0 ? (
             <Button
               variant="outline"
-              onClick={handleBack}
+              onClick={handleBackWithLogic}
               className="flex items-center gap-2"
               data-testid="button-back"
             >
@@ -530,7 +741,7 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
 
           {currentStep < steps.length - 1 ? (
             <Button
-              onClick={handleNext}
+              onClick={handleNextWithLogic}
               disabled={!canProceed()}
               className="flex items-center gap-2 bg-dime-purple hover:bg-dime-purple/90"
               data-testid="button-next"

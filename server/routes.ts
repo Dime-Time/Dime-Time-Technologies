@@ -398,7 +398,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
       
-      const { sourceAccountId, targetDebtId } = req.body;
+      const { sourceAccountId, targetDebtId, cryptoEnabled, cryptoPercentage } = req.body;
+      
+      // Validate cryptoPercentage is within valid range (0-100)
+      let validatedCryptoPercentage = "0.00";
+      if (cryptoPercentage) {
+        const percentValue = parseFloat(cryptoPercentage);
+        if (!isNaN(percentValue) && percentValue >= 0 && percentValue <= 100) {
+          validatedCryptoPercentage = percentValue.toFixed(2);
+        }
+      }
       
       const settings = await storage.createOrUpdateRoundUpSettings({
         userId,
@@ -407,8 +416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetDebtId: targetDebtId || null,
         multiplier: "1.00",
         autoApplyThreshold: "25.00",
-        cryptoEnabled: false,
-        cryptoPercentage: "0.00",
+        cryptoEnabled: cryptoEnabled === true,
+        cryptoPercentage: validatedCryptoPercentage,
         preferredCrypto: "BTC",
       });
       
