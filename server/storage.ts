@@ -437,6 +437,8 @@ export class MemStorage implements IStorage {
       id: "settings-1",
       userId: demoUser.id,
       isEnabled: true,
+      sourceAccountId: null, // User needs to select their bank account
+      targetDebtId: null, // User needs to select their target debt
       multiplier: "1.00",
       autoApplyThreshold: "25.00",
       cryptoEnabled: true,
