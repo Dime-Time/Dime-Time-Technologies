@@ -931,7 +931,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         coinbase: {
           configured: coinbaseService.isServiceConfigured(),
-          status: coinbaseService.isServiceConfigured() ? 'ready' : 'missing_credentials'
+          status: coinbaseService.isServiceConfigured() ? 'ready' : 'missing_credentials',
+          demoMode: coinbaseService.isDemoMode()
         }
       };
       res.json(status);

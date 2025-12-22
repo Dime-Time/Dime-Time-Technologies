@@ -197,6 +197,7 @@ class CoinbaseApiClient {
 class CoinbaseService {
   private client: CoinbaseApiClient | null = null;
   private isConfigured: boolean = false;
+  private demoMode: boolean = true; // Always use demo mode for user safety
 
   constructor() {
     try {
@@ -207,7 +208,7 @@ class CoinbaseService {
           process.env.COINBASE_PASSPHRASE || ''
         );
         this.isConfigured = true;
-        console.log('✅ Coinbase service initialized with secure API client');
+        console.log('✅ Coinbase service initialized with secure API client (DEMO MODE - no real trades)');
       } else {
         this.isConfigured = false;
         console.log('⚠️  Coinbase service not configured - missing API credentials');
@@ -216,6 +217,32 @@ class CoinbaseService {
       console.error('Failed to initialize Coinbase service:', error);
       this.isConfigured = false;
     }
+  }
+
+  /**
+   * Generate a simulated Bitcoin purchase for demo mode
+   */
+  private generateDemoPurchase(amount: string, currency: string = 'USD'): CoinbaseTransaction {
+    const btcPrice = 43250.00; // Simulated BTC price
+    const usdAmount = parseFloat(amount);
+    const btcAmount = usdAmount / btcPrice;
+    
+    return {
+      id: `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'buy',
+      status: 'completed',
+      amount: {
+        amount: btcAmount.toFixed(8),
+        currency: 'BTC',
+      },
+      native_amount: {
+        amount: amount,
+        currency: currency,
+      },
+      description: `Demo purchase of ${btcAmount.toFixed(8)} BTC`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
   }
 
   async getAccounts() {
@@ -247,6 +274,12 @@ class CoinbaseService {
   }
 
   async buyCrypto(accountId: string, amount: string, currency: string = 'USD') {
+    // Always use demo mode for user safety - no real trades
+    if (this.demoMode) {
+      console.log(`[DEMO MODE] Simulating BTC purchase of ${amount} ${currency}`);
+      return this.generateDemoPurchase(amount, currency);
+    }
+
     if (!this.isConfigured || !this.client) {
       throw new Error('Coinbase service not configured');
     }
@@ -304,6 +337,10 @@ class CoinbaseService {
 
   isServiceConfigured(): boolean {
     return this.isConfigured;
+  }
+
+  isDemoMode(): boolean {
+    return this.demoMode;
   }
 }
 

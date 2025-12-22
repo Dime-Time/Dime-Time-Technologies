@@ -442,12 +442,12 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
               </button>
             </div>
 
-            {/* Coinbase account notice */}
+            {/* Coinbase demo mode notice */}
             {(allocationMode === 'bitcoin' || allocationMode === 'both') && (
               <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                 <p className="text-sm text-orange-800 text-center">
-                  <strong>Note:</strong> You'll need to connect your Coinbase account to purchase Bitcoin. 
-                  We'll help you set this up after completing round-up configuration.
+                  <strong>Demo Mode:</strong> Bitcoin purchases are simulated during the beta. 
+                  Real trading will be available when you connect your Coinbase account in a future update.
                 </p>
               </div>
             )}
