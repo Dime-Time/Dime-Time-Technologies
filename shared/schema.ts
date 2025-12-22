@@ -65,6 +65,8 @@ export const roundUpSettings = pgTable("round_up_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   isEnabled: boolean("is_enabled").default(true).notNull(),
+  sourceAccountId: varchar("source_account_id"), // Bank account ID for pulling round-ups (e.g., JP Morgan Chase checking)
+  targetDebtId: varchar("target_debt_id"), // Debt account to pay (e.g., Carmax car loan)
   multiplier: decimal("multiplier", { precision: 3, scale: 2 }).default('1.00').notNull(), // 1.00 = normal, 2.00 = double round-ups
   autoApplyThreshold: decimal("auto_apply_threshold", { precision: 10, scale: 2 }).default('25.00').notNull(),
   cryptoEnabled: boolean("crypto_enabled").default(false).notNull(),
