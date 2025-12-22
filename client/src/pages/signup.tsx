@@ -29,9 +29,9 @@ export default function Signup() {
     setShowOnboarding(false);
     // Final cache refresh to ensure user data is loaded
     await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-    // Give a moment for cache to refresh, then redirect to dashboard
+    // Give a moment for cache to refresh, then redirect to bank setup
     setTimeout(() => {
-      window.location.href = '/dashboard';
+      window.location.href = '/bank-setup';
     }, 500);
   };
 

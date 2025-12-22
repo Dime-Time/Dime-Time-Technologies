@@ -390,6 +390,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create/update round-up settings with bank and debt selection
+  app.post("/api/round-up-settings", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { sourceAccountId, targetDebtId } = req.body;
+      
+      const settings = await storage.createOrUpdateRoundUpSettings({
+        userId,
+        isEnabled: true,
+        sourceAccountId: sourceAccountId || null,
+        targetDebtId: targetDebtId || null,
+        multiplier: "1.00",
+        autoApplyThreshold: "25.00",
+        cryptoEnabled: false,
+        cryptoPercentage: "0.00",
+        preferredCrypto: "BTC",
+      });
+      
+      res.json({ success: true, settings });
+    } catch (error) {
+      console.error("Error saving round-up settings:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Apply round-ups to debt
   app.post("/api/apply-round-ups", async (req: Request, res: Response) => {
     try {

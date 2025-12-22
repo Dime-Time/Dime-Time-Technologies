@@ -972,6 +972,8 @@ export class MemStorage implements IStorage {
         ...settings, 
         id,
         isEnabled: settings.isEnabled ?? true,
+        sourceAccountId: settings.sourceAccountId ?? null,
+        targetDebtId: settings.targetDebtId ?? null,
         multiplier: settings.multiplier ?? "1.00",
         autoApplyThreshold: settings.autoApplyThreshold ?? "25.00",
         cryptoEnabled: settings.cryptoEnabled ?? false,

@@ -17,6 +17,7 @@ import Debts from "@/pages/debts";
 import Crypto from "@/pages/crypto";
 import Insights from "@/pages/insights";
 import Banking from "@/pages/banking";
+import BankSetupFlow from "@/components/BankSetupFlow";
 import QRCodePage from "@/pages/qr";
 import Settings from "@/pages/settings";
 import Notifications from "@/pages/notifications";
@@ -224,6 +225,16 @@ function AppContent() {
         )}
       </Route>
       <Route path="/signup" component={Signup} />
+      <Route path="/bank-setup">
+        {isAuthenticated ? (
+          <BankSetupFlow 
+            onComplete={() => window.location.href = '/dashboard'} 
+            onSkip={() => window.location.href = '/dashboard'} 
+          />
+        ) : (
+          <Login />
+        )}
+      </Route>
       <Route path="/dime-token">
         {isAuthenticated ? (
           <>

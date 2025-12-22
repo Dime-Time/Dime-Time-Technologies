@@ -8,7 +8,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { 
   ArrowRight, 
   ArrowLeft, 
@@ -46,8 +45,10 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (settings: { sourceAccountId: string; targetDebtId: string }) => {
-      const response = await apiRequest("/api/round-up-settings", {
+      const response = await fetch("/api/round-up-settings", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(settings),
       });
       if (!response.ok) throw new Error("Failed to save settings");
@@ -73,8 +74,10 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
   const createLinkToken = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("/api/plaid/create-link-token", {
+      const response = await fetch("/api/plaid/create-link-token", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
@@ -97,8 +100,10 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
     async (publicToken: string, metadata: any) => {
       setIsLoading(true);
       try {
-        const response = await apiRequest("/api/plaid/exchange-token", {
+        const response = await fetch("/api/plaid/exchange-token", {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ publicToken }),
         });
 
