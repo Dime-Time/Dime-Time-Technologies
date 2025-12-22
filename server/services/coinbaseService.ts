@@ -245,7 +245,28 @@ class CoinbaseService {
     };
   }
 
-  async getAccounts() {
+  async getAccounts(): Promise<CoinbaseAccount[]> {
+    if (this.demoMode) {
+      return [
+        {
+          id: 'demo_btc_account',
+          name: 'Bitcoin Wallet',
+          primary: true,
+          type: 'wallet',
+          currency: 'BTC',
+          balance: { amount: '0.00125000', currency: 'BTC' }
+        },
+        {
+          id: 'demo_usd_account',
+          name: 'USD Wallet',
+          primary: false,
+          type: 'fiat',
+          currency: 'USD',
+          balance: { amount: '50.00', currency: 'USD' }
+        }
+      ];
+    }
+
     if (!this.isConfigured || !this.client) {
       throw new Error('Coinbase service not configured. Please provide COINBASE_API_KEY and COINBASE_API_SECRET environment variables.');
     }
@@ -259,7 +280,18 @@ class CoinbaseService {
     }
   }
 
-  async getAccount(accountId: string) {
+  async getAccount(accountId: string): Promise<CoinbaseAccount> {
+    if (this.demoMode) {
+      return {
+        id: accountId,
+        name: 'Demo Bitcoin Wallet',
+        primary: true,
+        type: 'wallet',
+        currency: 'BTC',
+        balance: { amount: '0.00125000', currency: 'BTC' }
+      };
+    }
+
     if (!this.isConfigured || !this.client) {
       throw new Error('Coinbase service not configured');
     }
@@ -294,6 +326,17 @@ class CoinbaseService {
   }
 
   async getExchangeRates(currency: string = 'BTC') {
+    if (this.demoMode) {
+      return {
+        currency: currency,
+        rates: {
+          USD: '43250.00',
+          EUR: '39800.00',
+          GBP: '34100.00'
+        }
+      };
+    }
+
     if (!this.isConfigured || !this.client) {
       throw new Error('Coinbase service not configured');
     }
@@ -308,6 +351,13 @@ class CoinbaseService {
   }
 
   async getSpotPrice(currencyPair: string = 'BTC-USD') {
+    if (this.demoMode) {
+      return {
+        amount: '43250.00',
+        currency: 'USD'
+      };
+    }
+
     if (!this.isConfigured || !this.client) {
       throw new Error('Coinbase service not configured');
     }
@@ -321,7 +371,32 @@ class CoinbaseService {
     }
   }
 
-  async getTransactions(accountId: string) {
+  async getTransactions(accountId: string): Promise<CoinbaseTransaction[]> {
+    if (this.demoMode) {
+      return [
+        {
+          id: 'demo_tx_1',
+          type: 'buy',
+          status: 'completed',
+          amount: { amount: '0.00023100', currency: 'BTC' },
+          native_amount: { amount: '10.00', currency: 'USD' },
+          description: 'Demo round-up purchase',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 86400000).toISOString()
+        },
+        {
+          id: 'demo_tx_2',
+          type: 'buy',
+          status: 'completed',
+          amount: { amount: '0.00011550', currency: 'BTC' },
+          native_amount: { amount: '5.00', currency: 'USD' },
+          description: 'Demo round-up purchase',
+          created_at: new Date(Date.now() - 172800000).toISOString(),
+          updated_at: new Date(Date.now() - 172800000).toISOString()
+        }
+      ];
+    }
+
     if (!this.isConfigured || !this.client) {
       throw new Error('Coinbase service not configured');
     }
