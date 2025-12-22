@@ -60,13 +60,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName: lastName || "",
       });
 
-      // Initialize user data (debts, roundup settings, etc.)
-      await storage.createOrUpdateRoundUpSettings({
-        userId: user.id,
-        isEnabled: true,
-        multiplier: "1.00",
-      });
-
       // Store user session - THIS IS CRITICAL so they're authenticated after signup
       req.session.userId = user.id;
       
