@@ -60,6 +60,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName: lastName || "",
       });
 
+      // Initialize demo debts for new user
+      const newUserDebts = [
+        {
+          userId: user.id,
+          name: "Credit Card Debt",
+          accountNumber: "••••5678",
+          originalBalance: "5000.00",
+          currentBalance: "5000.00",
+          interestRate: "18.99",
+          minimumPayment: "150.00",
+          dueDate: 15,
+          isActive: true,
+        },
+        {
+          userId: user.id,
+          name: "Student Loan",
+          accountNumber: "••••1234",
+          originalBalance: "25000.00",
+          currentBalance: "20000.00",
+          interestRate: "4.50",
+          minimumPayment: "200.00",
+          dueDate: 1,
+          isActive: true,
+        }
+      ];
+
+      for (const debtData of newUserDebts) {
+        await storage.createDebt(debtData as any);
+      }
+
       // Store user session - THIS IS CRITICAL so they're authenticated after signup
       req.session.userId = user.id;
       
