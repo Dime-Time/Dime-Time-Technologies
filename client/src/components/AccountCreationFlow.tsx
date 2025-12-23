@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { UserPlus, Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { Keyboard } from "@capacitor/keyboard";
 
 interface AccountCreationFlowProps {
   onAccountCreated: (userData: any) => void;
@@ -24,8 +25,52 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
     confirmPassword: ''
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle keyboard events for iOS scrolling
+  useEffect(() => {
+    let showListener: any;
+    let hideListener: any;
+
+    const setupKeyboardListeners = async () => {
+      try {
+        showListener = await Keyboard.addListener('keyboardWillShow', (info) => {
+          setKeyboardHeight(info.keyboardHeight);
+          // Scroll focused input into view
+          setTimeout(() => {
+            const activeElement = document.activeElement as HTMLElement;
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+              activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+        });
+
+        hideListener = await Keyboard.addListener('keyboardWillHide', () => {
+          setKeyboardHeight(0);
+        });
+      } catch (e) {
+        // Keyboard plugin not available (web browser)
+        console.log('Capacitor Keyboard not available');
+      }
+    };
+
+    setupKeyboardListeners();
+
+    return () => {
+      showListener?.remove?.();
+      hideListener?.remove?.();
+    };
+  }, []);
+
+  // Scroll input into view on focus (fallback for web)
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,8 +171,12 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto touch-pan-y">
-      <Card className="w-full max-w-md my-auto max-h-[90vh] flex flex-col">
+    <div 
+      ref={scrollContainerRef}
+      className="fixed inset-0 bg-black/50 flex items-start justify-center p-4 z-50 overflow-y-auto touch-pan-y"
+      style={{ paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : '1rem' }}
+    >
+      <Card className="w-full max-w-md my-4 flex flex-col">
         <CardHeader className="flex-shrink-0">
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-dime-purple" />
@@ -138,7 +187,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
           </p>
         </CardHeader>
         
-        <CardContent className="flex-1 overflow-y-auto pb-6">
+        <CardContent className="flex-1 pb-6">
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -152,6 +201,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                     autoComplete="given-name"
                     value={formData.firstName}
                     onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                    onFocus={handleInputFocus}
                     className="pl-10"
                     data-testid="input-first-name"
                     required
@@ -170,6 +220,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                     autoComplete="family-name"
                     value={formData.lastName}
                     onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                    onFocus={handleInputFocus}
                     className="pl-10"
                     data-testid="input-last-name"
                     required
@@ -189,6 +240,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   autoComplete="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onFocus={handleInputFocus}
                   className="pl-10"
                   data-testid="input-email"
                   required
@@ -207,6 +259,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   autoComplete="username"
                   value={formData.username}
                   onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  onFocus={handleInputFocus}
                   className="pl-10"
                   data-testid="input-username"
                   required
@@ -225,6 +278,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onFocus={handleInputFocus}
                   className="pl-10"
                   data-testid="input-password"
                   required
@@ -243,6 +297,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
                   autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  onFocus={handleInputFocus}
                   className="pl-10"
                   data-testid="input-confirm-password"
                   required
@@ -272,6 +327,11 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
           </form>
         </CardContent>
       </Card>
+      
+      {/* Keyboard spacer for iOS */}
+      {keyboardHeight > 0 && (
+        <div style={{ height: `${keyboardHeight}px`, flexShrink: 0 }} />
+      )}
     </div>
   );
 }
