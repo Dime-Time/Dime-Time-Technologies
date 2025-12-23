@@ -86,7 +86,7 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
 
           {/* Acceptance Checkboxes */}
           <div className="mt-6 space-y-4 border-t pt-4">
-            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{backgroundColor: '#f0ebff'}}>
+            <div className="flex items-center space-x-3">
               <Checkbox
                 id="terms"
                 checked={acceptedTerms}
@@ -98,7 +98,7 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
               </label>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{backgroundColor: '#f0ebff'}}>
+            <div className="flex items-center space-x-3">
               <Checkbox
                 id="privacy"
                 checked={acceptedPrivacy}
@@ -110,7 +110,7 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
               </label>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{backgroundColor: '#f0ebff'}}>
+            <div className="flex items-center space-x-3">
               <Checkbox
                 id="risks"
                 checked={acceptedRisks}

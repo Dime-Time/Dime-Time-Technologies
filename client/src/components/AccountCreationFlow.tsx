@@ -20,7 +20,6 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
     firstName: '',
     lastName: '',
     email: '',
-    username: '',
     password: '',
     confirmPassword: ''
   });
@@ -76,7 +75,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
     e.preventDefault();
     
     // Basic validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.username || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -248,24 +247,6 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="johndoe"
-                  autoComplete="username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({...formData, username: e.target.value})}
-                  onFocus={handleInputFocus}
-                  className="pl-10"
-                  data-testid="input-username"
-                  required
-                />
-              </div>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
