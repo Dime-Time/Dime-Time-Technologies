@@ -85,39 +85,39 @@ export function LegalDisclaimer({ onAccept, onDecline }: LegalDisclaimerProps) {
           </ScrollArea>
 
           {/* Acceptance Checkboxes */}
-          <div className="mt-6 space-y-4 border-t pt-4">
-            <div className="flex items-center space-x-3">
+          <div className="mt-6 space-y-3 border-t pt-4">
+            <div className="flex items-start gap-2">
               <Checkbox
                 id="terms"
                 checked={acceptedTerms}
                 onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                className="w-5 h-5"
+                className="w-4 h-4 mt-0.5 flex-shrink-0"
               />
-              <label htmlFor="terms" className="text-sm font-medium leading-relaxed cursor-pointer flex-1" style={{color: '#918EF4'}}>
+              <label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer" style={{color: '#918EF4'}}>
                 I have read and agree to the <strong>Terms of Service</strong>
               </label>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-start gap-2">
               <Checkbox
                 id="privacy"
                 checked={acceptedPrivacy}
                 onCheckedChange={(checked) => setAcceptedPrivacy(checked === true)}
-                className="w-5 h-5"
+                className="w-4 h-4 mt-0.5 flex-shrink-0"
               />
-              <label htmlFor="privacy" className="text-sm font-medium leading-relaxed cursor-pointer flex-1" style={{color: '#918EF4'}}>
+              <label htmlFor="privacy" className="text-sm leading-relaxed cursor-pointer" style={{color: '#918EF4'}}>
                 I acknowledge the <strong>Privacy Policy</strong>
               </label>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-start gap-2">
               <Checkbox
                 id="risks"
                 checked={acceptedRisks}
                 onCheckedChange={(checked) => setAcceptedRisks(checked === true)}
-                className="w-5 h-5"
+                className="w-4 h-4 mt-0.5 flex-shrink-0"
               />
-              <label htmlFor="risks" className="text-sm font-medium leading-relaxed cursor-pointer flex-1" style={{color: '#918EF4'}}>
+              <label htmlFor="risks" className="text-sm leading-relaxed cursor-pointer" style={{color: '#918EF4'}}>
                 I understand the <strong>Financial Risks</strong>
               </label>
             </div>
