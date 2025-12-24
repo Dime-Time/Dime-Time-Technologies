@@ -1,0 +1,156 @@
+
+=== Building IPA with xcode-project build-ipa ===
+Using Xcode 26.1.1 (17B100)
+Check App.xcworkspace build settings
+Execute "xcodebuild -workspace ios/App/App.xcworkspace -scheme App -showBuildSettings"
+
+Archive App.xcworkspace
+Execute "xcodebuild -workspace ios/App/App.xcworkspace -scheme App -archivePath /Users/builder/clone/build/ios/xcarchive/App_rha3v4fp.xcarchive archive COMPILER_INDEX_STORE_ENABLE=NO DEVELOPMENT_TEAM=8WZHH537SU 'CODE_SIGN_IDENTITY=Apple Distribution' CODE_SIGN_STYLE=Manual"
+
+▸ Copying Pods-App-umbrella.h
+▸ Copying CapacitorStatusBar-umbrella.h
+▸ Copying CapacitorKeyboard-umbrella.h
+▸ Copying KeyboardPlugin.h
+▸ Copying Keyboard.h
+▸ Copying CapacitorHaptics-umbrella.h
+▸ Copying NSDictionary+CordovaPreferences.h
+▸ Copying CapacitorCordova.h
+▸ Copying CDVWebViewProcessPoolFactory.h
+▸ Copying CDVViewController.h
+▸ Copying CDVURLProtocol.h
+▸ Copying CDVScreenOrientationDelegate.h
+▸ Copying CDVPluginResult.h
+▸ Copying CDVPluginManager.h
+▸ Copying CDVPlugin.h
+▸ Copying CDVPlugin+Resources.h
+▸ Copying CDVInvokedUrlCommand.h
+▸ Copying CDVConfigParser.h
+▸ Copying CDVCommandDelegateImpl.h
+▸ Copying CDVCommandDelegate.h
+▸ Copying CDVAvailability.h
+▸ Copying CDV.h
+▸ Copying AppDelegate.h
+▸ Copying CapacitorApp-umbrella.h
+▸ Copying Capacitor.h
+▸ Copying CAPPluginMethod.h
+▸ Copying CAPPluginCall.h
+▸ Copying CAPPlugin.h
+▸ Copying CAPInstanceDescriptor.h
+▸ Copying CAPInstanceConfiguration.h
+▸ Copying CAPBridgedPlugin.h
+▸ Copying CAPBridgedJSTypes.h
+▸ Copying CAPBridgeViewController+CDVScreenOrientationDelegate.h
+▸ Processing CapacitorCordova-Info.plist
+▸ Copying /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/Cordova.framework/PrivacyInfo.xcprivacy
+▸ Compiling Cordova_vers.c
+▸ Compiling CDVInvokedUrlCommand.m
+▸ Compiling CDVViewController.m
+▸ Compiling CDVURLProtocol.m
+▸ Compiling CapacitorCordova-dummy.m
+▸ Compiling NSDictionary+CordovaPreferences.m
+▸ Compiling CDVPluginResult.m
+▸ Compiling CDVConfigParser.m
+▸ Compiling AppDelegate.m
+▸ Compiling CDVWebViewProcessPoolFactory.m
+▸ Compiling CDVPluginManager.m
+▸ Compiling CDVPlugin.m
+▸ Compiling CDVPlugin+Resources.m
+▸ Compiling CDVCommandDelegateImpl.m
+▸ Linking Cordova
+▸ Generating 'Cordova.framework.dSYM'
+▸ Touching Cordova.framework (in target 'CapacitorCordova' from project 'Pods')
+▸ Processing Capacitor-Info.plist
+▸ Copying /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/Capacitor.framework/native-bridge.js
+▸ Copying /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/UninstalledProducts/iphoneos/Capacitor.framework/PrivacyInfo.xcprivacy
+▸ Compiling Capacitor_vers.c
+▸ Compiling Capacitor-dummy.m
+▸ Compiling CAPPluginCall.m
+▸ Compiling CapacitorKeyboard_vers.c
+▸ Compiling WKWebView+Capacitor.m
+▸ Compiling UIStatusBarManager+CAPHandleTapAction.m
+▸ Compiling CAPPluginMethod.m
+▸ Compiling CapacitorKeyboard-dummy.m
+▸ Compiling CAPPlugin.m
+▸ Compiling CAPInstanceDescriptor.m
+▸ Compiling CAPInstanceConfiguration.m
+▸ Compiling CAPBridgedJSTypes.m
+▸ Compiling CAPBridgeViewController+CDVScreenOrientationDelegate.m
+▸ Linking Capacitor
+▸ Compiling KeyboardPlugin.m
+▸ Compiling Keyboard.m
+▸ Generating 'Capacitor.framework.dSYM'
+▸ Touching Capacitor.framework (in target 'Capacitor' from project 'Pods')
+▸ Processing CapacitorStatusBar-Info.plist
+▸ Linking CapacitorKeyboard
+▸ Processing CapacitorKeyboard-Info.plist
+▸ Processing CapacitorHaptics-Info.plist
+▸ Processing CapacitorApp-Info.plist
+▸ Generating 'CapacitorKeyboard.framework.dSYM'
+▸ Touching CapacitorKeyboard.framework (in target 'CapacitorKeyboard' from project 'Pods')
+▸ Compiling CapacitorHaptics_vers.c
+▸ Compiling CapacitorApp_vers.c
+▸ Compiling CapacitorStatusBar_vers.c
+▸ Compiling Pods_App_vers.c
+▸ Compiling CapacitorHaptics-dummy.m
+▸ Linking CapacitorHaptics
+▸ Compiling CapacitorApp-dummy.m
+▸ Linking CapacitorApp
+▸ Compiling Pods-App-dummy.m
+▸ Compiling CapacitorStatusBar-dummy.m
+▸ Linking CapacitorStatusBar
+▸ Generating 'CapacitorHaptics.framework.dSYM'
+▸ Generating 'CapacitorApp.framework.dSYM'
+▸ Touching CapacitorHaptics.framework (in target 'CapacitorHaptics' from project 'Pods')
+▸ Touching CapacitorApp.framework (in target 'CapacitorApp' from project 'Pods')
+▸ Generating 'CapacitorStatusBar.framework.dSYM'
+▸ Touching CapacitorStatusBar.framework (in target 'CapacitorStatusBar' from project 'Pods')
+▸ Processing Pods-App-Info.plist
+▸ Touching Pods_App.framework (in target 'Pods-App' from project 'Pods')
+▸ Running script '[CP] Check Pods Manifest.lock'
+▸ Running script 'Force App Version'
+▸ Copying /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app/config.xml
+
+❌  error: lstat(/Users/builder/clone/ios/App/App/config.xml): No such file or directory (2) (in target 'App' from project 'App')
+
+
+▸ Copying /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app/public
+
+❌  error: lstat(/Users/builder/clone/ios/App/App/public): No such file or directory (2) (in target 'App' from project 'App')
+
+
+▸ Copying /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app/capacitor.config.json
+
+❌  error: lstat(/Users/builder/clone/ios/App/App/capacitor.config.json): No such file or directory (2) (in target 'App' from project 'App')
+
+
+▸ Compiling Main.storyboard
+▸ Compiling LaunchScreen.storyboard
+    Run script build phase 'Force App Version' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'App' from project 'App')
+    Run script build phase '[CP] Embed Pods Frameworks' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'App' from project 'App')
+Failed to archive ios/App/App.xcworkspace. The following build commands failed:
+
+CpResource /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app/capacitor.config.json /Users/builder/clone/ios/App/App/capacitor.config.json (in target 'App' from project 'App')
+	...
+	/Applications/Xcode-26.1.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module App --output-partial-info-plist /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/Base.lproj/LaunchScreen-SBPartialInfo.plist --auto-activate-custom-fonts --target-device iphone --target-device ipad --minimum-deployment-target 14.0 --output-format human-readable-text /Users/builder/clone/ios/App/App/Base.lproj/LaunchScreen.storyboard --compilation-directory /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/Base.lproj
+	CompileAssetCatalogVariant thinned /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app /Users/builder/clone/ios/App/App/Assets.xcassets (in target 'App' from project 'App')
+	cd /Users/builder/clone/ios/App
+	/Applications/Xcode-26.1.app/Contents/Developer/usr/bin/actool /Users/builder/clone/ios/App/App/Assets.xcassets --compile /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 14.0 --platform iphoneos
+	warning: Run script build phase 'Force App Version' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'App' from project 'App')
+	warning: Run script build phase '[CP] Embed Pods Frameworks' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'App' from project 'App')
+
+CpResource /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app/config.xml /Users/builder/clone/ios/App/App/config.xml (in target 'App' from project 'App')
+	cd /Users/builder/clone/ios/App
+	builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/builder/clone/ios/App/App/config.xml /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app
+	error: lstat(/Users/builder/clone/ios/App/App/config.xml): No such file or directory (2) (in target 'App' from project 'App')
+	GenerateAssetSymbols /Users/builder/clone/ios/App/App/Assets.xcassets (in target 'App' from project 'App')
+	cd /Users/builder/clone/ios/App
+	/Applications/Xcode-26.1.app/Contents/Developer/usr/bin/actool /Users/builder/clone/ios/App/App/Assets.xcassets --compile /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/assetcatalog_dependencies --output-partial-info-plist /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/assetcatalog_generated_info.plist --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 14.0 --platform iphoneos --bundle-identifier com.dimetime.mobile --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/IntermediateBuildFilesPath/App.build/Release-iphoneos/App.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+
+CpResource /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app/public /Users/builder/clone/ios/App/App/public (in target 'App' from project 'App')
+	cd /Users/builder/clone/ios/App
+	builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/builder/clone/ios/App/App/public /Users/builder/Library/Developer/Xcode/DerivedData/App-dfqlwfgrvlmjunbkfzimjqcghcbo/Build/Intermediates.noindex/ArchiveIntermediates/App/InstallationBuildProductsLocation/Applications/App.app
+	error: lstat(/Users/builder/clone/ios/App/App/public): No such file or directory (2) (in target 'App' from project 'App')
+
+
+Build failed :|
+Step 6 script `Build and export IPA` exited with status code 65
