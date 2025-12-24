@@ -1,0 +1,47 @@
+~/workspace$ npm run build
+git add .
+git commit -m "Fix build script"
+git push origin main
+
+> rest-express@1.0.1 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server-dist && cp -r dist/public/* server-dist/public/
+
+vite v7.1.5 building for production...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+✓ 1825 modules transformed.
+../dist/public/index.html                                                                  3.67 kB │ gzip:   1.28 kB
+../dist/public/assets/Minimal_veteran_business_badge_d1e1c716-81bjuQVH.png               677.75 kB
+../dist/public/assets/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f-DVU03aW9.png       1,094.52 kB
+../dist/public/assets/D22C55D0-9527-4CE7-863F-F9327653E73E_1756052612472-CWUgZlZj.png  1,458.80 kB
+../dist/public/assets/C522B2F1-FBF0-476A-BB44-9A0B1F2E5113_1759744034189-9vNtR-bK.png  2,974.50 kB
+../dist/public/assets/index-DKUJBlK4.css                                                  82.47 kB │ gzip:  13.98 kB
+../dist/public/assets/index-iwBXO83_.js                                                  840.51 kB │ gzip: 250.06 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 10.71s
+
+  server-dist/index.js  216.4kb
+
+⚡ Done in 48ms
+[main d31bd28] Fix build script
+ 7 files changed, 562 insertions(+)
+ create mode 100644 server-dist/public/assets/C522B2F1-FBF0-476A-BB44-9A0B1F2E5113_1759744034189-9vNtR-bK.png
+ create mode 100644 server-dist/public/assets/D22C55D0-9527-4CE7-863F-F9327653E73E_1756052612472-CWUgZlZj.png
+ create mode 100644 server-dist/public/assets/Minimal_veteran_business_badge_d1e1c716-81bjuQVH.png
+ create mode 100644 server-dist/public/assets/VAQ-139_Prowler_Reagan_veteran_badge_eb04c29f-DVU03aW9.png
+ create mode 100644 server-dist/public/assets/index-DKUJBlK4.css
+ create mode 100644 server-dist/public/assets/index-iwBXO83_.js
+ create mode 100644 server-dist/public/index.html
+Enumerating objects: 23, done.
+Counting objects: 100% (23/23), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (19/19), done.
+Writing objects: 100% (19/19), 224.29 KiB | 17.25 MiB/s, done.
+Total 19 (delta 11), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (11/11), completed with 2 local objects.
+To https://github.com/Dime-Time/Dime-Time-Mobile.git
+   237e79f..d31bd28  main -> main
+~/workspace$ 
