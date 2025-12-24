@@ -88,9 +88,24 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     console.log("Setting up Vite for development...");
     await setupVite(app, server);
   } else {
-    console.log("Setting up static file serving for production...");
-    serveStatic(app);
-    console.log("Static file serving configured.");
+    // Use process.cwd() for production - import.meta.dirname doesn't work in Replit autoscale
+    const path = await import("path");
+    const fs = await import("fs");
+    const distPath = path.default.resolve(process.cwd(), "server-dist", "public");
+    console.log("Production static path:", distPath);
+    
+    if (fs.default.existsSync(distPath)) {
+      console.log("Found static files at:", distPath);
+      app.use(express.static(distPath));
+      app.use("*", (_req, res) => {
+        res.sendFile(path.default.resolve(distPath, "index.html"));
+      });
+      console.log("Static file serving configured.");
+    } else {
+      console.error("Static files not found at:", distPath);
+      // Fallback to serveStatic
+      serveStatic(app);
+    }
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT

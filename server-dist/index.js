@@ -6117,9 +6117,21 @@ app.use((req, res, next) => {
     console.log("Setting up Vite for development...");
     await setupVite(app, server);
   } else {
-    console.log("Setting up static file serving for production...");
-    serveStatic(app);
-    console.log("Static file serving configured.");
+    const path3 = await import("path");
+    const fs2 = await import("fs");
+    const distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
+    console.log("Production static path:", distPath);
+    if (fs2.default.existsSync(distPath)) {
+      console.log("Found static files at:", distPath);
+      app.use(express2.static(distPath));
+      app.use("*", (_req, res) => {
+        res.sendFile(path3.default.resolve(distPath, "index.html"));
+      });
+      console.log("Static file serving configured.");
+    } else {
+      console.error("Static files not found at:", distPath);
+      serveStatic(app);
+    }
   }
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen({
