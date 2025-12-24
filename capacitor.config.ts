@@ -9,16 +9,19 @@ const config: CapacitorConfig = {
   ios: {
     /**
      * IMPORTANT:
-     * This must be strictly higher than the last CFBundleVersion
+     * This MUST be strictly higher than the last CFBundleVersion
      * that successfully uploaded to App Store Connect.
      *
-     * Last successful upload used 57, so set this to 58 now.
+     * Last accepted was 57, so we are now using 58.
      */
     buildNumber: '58',
   },
 
   server: {
-    // Your production backend URL
+    /**
+     * This is the URL your Capacitor iOS app points to in production.
+     * It should match your deployed backend (Replit/autoscale).
+     */
     url: 'https://dime-time.com',
     cleartext: false,
   },
