@@ -7,13 +7,18 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
 
   ios: {
-    // IMPORTANT: This must always be strictly higher than the last build
-    // that successfully uploaded to App Store Connect.
+    /**
+     * IMPORTANT:
+     * This must be strictly higher than the last CFBundleVersion
+     * that successfully uploaded to App Store Connect.
+     *
+     * Last successful upload used 57, so set this to 58 now.
+     */
     buildNumber: '58',
   },
 
   server: {
-    // Your production backend
+    // Your production backend URL
     url: 'https://dime-time.com',
     cleartext: false,
   },
