@@ -6107,10 +6107,16 @@ app.use((req, res, next) => {
     throw err;
   });
   app.use(express2.static("public"));
+  console.log("Checking environment for static file setup...");
+  console.log("app.get('env'):", app.get("env"));
+  console.log("process.cwd():", process.cwd());
   if (app.get("env") === "development") {
+    console.log("Setting up Vite for development...");
     await setupVite(app, server);
   } else {
+    console.log("Setting up static file serving for production...");
     serveStatic(app);
+    console.log("Static file serving configured.");
   }
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen({
