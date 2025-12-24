@@ -43,6 +43,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password, firstName, lastName } = req.body;
       
+      console.log("📝 Signup request:", { email, password: "***", firstName, lastName });
+      
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
@@ -53,12 +55,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const hashedPassword = hashPassword(password);
-      const user = await storage.createUser({
-        email,
-        password: hashedPassword,
-        firstName: firstName || email.split("@")[0],
-        lastName: lastName || "",
-      });
+      let user;
+      try {
+        user = await storage.createUser({
+          email,
+          password: hashedPassword,
+          firstName: firstName || email.split("@")[0],
+          lastName: lastName || "",
+        });
+        console.log("✅ User created successfully:", user.id);
+      } catch (createError: any) {
+        console.error("❌ Error creating user:", createError);
+        throw createError;
+      }
 
       // Initialize demo debts for new user
       const newUserDebts = [
