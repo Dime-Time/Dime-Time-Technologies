@@ -1,0 +1,34 @@
+=== Uploading App.ipa to App Store Connect (TestFlight, Apple ID) ===
+Using APPLE_ID: ********
+Running altool at path '/Applications/Xcode-26.1.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+Determining the provider public ID...
+Contacting Apple Services…
+2025-12-24 02:51:42.447 ERROR: [ContentDelivery.Uploader.103516F70] The provided entity includes an attribute with a value that has already been used (-19232) The bundle version must be higher than the previously uploaded version: ‘52’. (ID: e77d3f3d-c522-45bf-94dc-62b947bd4370)
+   NSUnderlyingError : The provided entity includes an attribute with a value that has already been used (-19241) The bundle version must be higher than the previously uploaded version.
+      status : 409
+      detail : The bundle version must be higher than the previously uploaded version.
+      source : 
+         pointer : /data/attributes/cfBundleVersion
+      id : e77d3f3d-c522-45bf-94dc-62b947bd4370
+      code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+      title : The provided entity includes an attribute with a value that has already been used
+      meta : 
+         previousBundleVersion : 52
+   previousBundleVersion : 52
+   iris-code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+2025-12-24 02:51:42.449 ERROR: [altool.103516F70] Failed to upload package.
+2025-12-24 02:51:42.450 ERROR: [altool.103516F70] The provided entity includes an attribute with a value that has already been used (-19232) The bundle version must be higher than the previously uploaded version: ‘52’. (ID: e77d3f3d-c522-45bf-94dc-62b947bd4370)
+   NSUnderlyingError : The provided entity includes an attribute with a value that has already been used (-19241) The bundle version must be higher than the previously uploaded version.
+      status : 409
+      detail : The bundle version must be higher than the previously uploaded version.
+      source : 
+         pointer : /data/attributes/cfBundleVersion
+      id : e77d3f3d-c522-45bf-94dc-62b947bd4370
+      code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+      title : The provided entity includes an attribute with a value that has already been used
+      meta : 
+         previousBundleVersion : 52
+   previousBundleVersion : 52
+   iris-code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+Failed to upload archive at 'build/ios/ipa/App.ipa'.
