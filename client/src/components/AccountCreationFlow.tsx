@@ -8,6 +8,7 @@ import { UserPlus, Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Keyboard } from "@capacitor/keyboard";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface AccountCreationFlowProps {
   onAccountCreated: (userData: any) => void;
@@ -110,8 +111,8 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
     setIsCreating(true);
     
     try {
-      // Call the real /api/signup endpoint
-      const response = await fetch('/api/signup', {
+      // Call the real /api/signup endpoint - use absolute URL for iOS native app
+      const response = await fetch(getApiUrl('/api/signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Important: include cookies for session

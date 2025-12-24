@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.dimetime.mobile',
   appName: 'Dime Time',
   webDir: 'dist/public',
+  server: {
+    url: 'https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app',
+    cleartext: true
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,

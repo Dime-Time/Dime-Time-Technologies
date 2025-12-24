@@ -1,4 +1,15 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { Capacitor } from '@capacitor/core';
+
+// Get the API base URL - for native apps, use the production server
+export function getApiUrl(path: string): string {
+  // In native iOS/Android app, use absolute URL to Replit backend
+  if (Capacitor.isNativePlatform()) {
+    return `https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app${path}`;
+  }
+  // In web browser, use relative URL
+  return path;
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -12,7 +23,8 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const fullUrl = getApiUrl(url);
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +41,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = getApiUrl(queryKey.join("/") as string);
+    const res = await fetch(url, {
       credentials: "include",
     });
 
