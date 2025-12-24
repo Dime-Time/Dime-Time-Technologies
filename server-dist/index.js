@@ -6095,6 +6095,9 @@ app.use((req, res, next) => {
   next();
 });
 (async () => {
+  console.log("Starting server...");
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("Express env:", app.get("env"));
   await setupAuth(app);
   const server = await registerRoutes(app);
   app.use((err, _req, res, _next) => {

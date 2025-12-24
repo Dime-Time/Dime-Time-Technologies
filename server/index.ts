@@ -52,6 +52,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 (async () => {
+  console.log("Starting server...");
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("Express env:", app.get("env"));
+  
   // Setup authentication before routes
   await setupAuth(app);
   
