@@ -57,14 +57,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 (async () => {
-  console.log("Starting server...");
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("Express env:", app.get("env"));
-  
-  // Setup authentication before routes
-  await setupAuth(app);
-  
-  const server = await registerRoutes(app);
+  try {
+    console.log("Starting server...");
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+    console.log("Express env:", app.get("env"));
+    
+    // Setup authentication before routes
+    console.log("Setting up auth...");
+    await setupAuth(app);
+    console.log("Auth setup complete");
+    
+    console.log("Registering routes...");
+    const server = await registerRoutes(app);
+    console.log("Routes registered");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -120,4 +125,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+  } catch (error) {
+    console.error("Server startup error:", error);
+    process.exit(1);
+  }
 })();

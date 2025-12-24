@@ -6098,47 +6098,56 @@ app.use((req, res, next) => {
   next();
 });
 (async () => {
-  console.log("Starting server...");
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("Express env:", app.get("env"));
-  await setupAuth(app);
-  const server = await registerRoutes(app);
-  app.use((err, _req, res, _next) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    throw err;
-  });
-  app.use(express2.static("public"));
-  console.log("Checking environment for static file setup...");
-  console.log("app.get('env'):", app.get("env"));
-  console.log("process.cwd():", process.cwd());
-  if (app.get("env") === "development") {
-    console.log("Setting up Vite for development...");
-    await setupVite(app, server);
-  } else {
-    const path3 = await import("path");
-    const fs2 = await import("fs");
-    const distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
-    console.log("Production static path:", distPath);
-    if (fs2.default.existsSync(distPath)) {
-      console.log("Found static files at:", distPath);
-      app.use(express2.static(distPath));
-      app.use("*", (_req, res) => {
-        res.sendFile(path3.default.resolve(distPath, "index.html"));
-      });
-      console.log("Static file serving configured.");
+  try {
+    console.log("Starting server...");
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+    console.log("Express env:", app.get("env"));
+    console.log("Setting up auth...");
+    await setupAuth(app);
+    console.log("Auth setup complete");
+    console.log("Registering routes...");
+    const server = await registerRoutes(app);
+    console.log("Routes registered");
+    app.use((err, _req, res, _next) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+      throw err;
+    });
+    app.use(express2.static("public"));
+    console.log("Checking environment for static file setup...");
+    console.log("app.get('env'):", app.get("env"));
+    console.log("process.cwd():", process.cwd());
+    if (app.get("env") === "development") {
+      console.log("Setting up Vite for development...");
+      await setupVite(app, server);
     } else {
-      console.error("Static files not found at:", distPath);
-      serveStatic(app);
+      const path3 = await import("path");
+      const fs2 = await import("fs");
+      const distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
+      console.log("Production static path:", distPath);
+      if (fs2.default.existsSync(distPath)) {
+        console.log("Found static files at:", distPath);
+        app.use(express2.static(distPath));
+        app.use("*", (_req, res) => {
+          res.sendFile(path3.default.resolve(distPath, "index.html"));
+        });
+        console.log("Static file serving configured.");
+      } else {
+        console.error("Static files not found at:", distPath);
+        serveStatic(app);
+      }
     }
+    const port = parseInt(process.env.PORT || "5000", 10);
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true
+    }, () => {
+      log(`serving on port ${port}`);
+    });
+  } catch (error) {
+    console.error("Server startup error:", error);
+    process.exit(1);
   }
-  const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true
-  }, () => {
-    log(`serving on port ${port}`);
-  });
 })();
