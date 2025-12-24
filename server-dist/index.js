@@ -6060,6 +6060,9 @@ async function setupAuth(app2) {
 
 // server/index.ts
 var app = express2();
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", env: process.env.NODE_ENV, time: (/* @__PURE__ */ new Date()).toISOString() });
+});
 var corsOptions = {
   origin: process.env.NODE_ENV === "production" ? ["https://dime-time.com", "https://www.dime-time.com", "https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app", "capacitor://localhost", "ionic://localhost"] : ["http://localhost:5000", "http://127.0.0.1:5000", "capacitor://localhost", "ionic://localhost"],
   credentials: true,

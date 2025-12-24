@@ -6,6 +6,11 @@ import { setupAuth } from "./replitAuth";
 
 const app = express();
 
+// Simple health check - first route before any middleware
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", env: process.env.NODE_ENV, time: new Date().toISOString() });
+});
+
 // CORS configuration for security
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
