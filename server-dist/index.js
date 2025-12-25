@@ -5955,9 +5955,7 @@ import passport from "passport";
 import session from "express-session";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+var REPLIT_AUTH_AVAILABLE = !!process.env.REPLIT_DOMAINS && !!process.env.REPL_ID;
 var getOidcConfig = memoize(
   async () => {
     return await client.discovery(
@@ -6013,6 +6011,12 @@ async function setupAuth(app2) {
   app2.use(getSession());
   app2.use(passport.initialize());
   app2.use(passport.session());
+  if (!REPLIT_AUTH_AVAILABLE) {
+    console.log("Replit Auth not available - skipping OIDC setup (using email/password auth only)");
+    passport.serializeUser((user, cb) => cb(null, user));
+    passport.deserializeUser((user, cb) => cb(null, user));
+    return;
+  }
   const config = await getOidcConfig();
   const verify = async (tokens, verified) => {
     const user = {};
