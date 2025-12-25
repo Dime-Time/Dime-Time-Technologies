@@ -96,7 +96,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     // Use process.cwd() for production - import.meta.dirname doesn't work in Replit autoscale
     const path = await import("path");
     const fs = await import("fs");
-    const distPath = path.default.resolve(process.cwd(), "server-dist", "public");
+    // Vite outputs to dist/public/, so after copying we have server-dist/public/public/
+    let distPath = path.default.resolve(process.cwd(), "server-dist", "public");
+    // Check for nested public folder (from Vite's output structure)
+    const nestedPath = path.default.resolve(distPath, "public");
+    if (fs.default.existsSync(path.default.resolve(nestedPath, "index.html"))) {
+      distPath = nestedPath;
+    }
     console.log("Production static path:", distPath);
     
     if (fs.default.existsSync(distPath)) {

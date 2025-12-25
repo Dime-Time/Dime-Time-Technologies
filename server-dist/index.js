@@ -6128,7 +6128,11 @@ app.use((req, res, next) => {
     } else {
       const path3 = await import("path");
       const fs2 = await import("fs");
-      const distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
+      let distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
+      const nestedPath = path3.default.resolve(distPath, "public");
+      if (fs2.default.existsSync(path3.default.resolve(nestedPath, "index.html"))) {
+        distPath = nestedPath;
+      }
       console.log("Production static path:", distPath);
       if (fs2.default.existsSync(distPath)) {
         console.log("Found static files at:", distPath);
