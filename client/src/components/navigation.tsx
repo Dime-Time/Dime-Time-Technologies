@@ -64,9 +64,6 @@ export function Navigation() {
               <Link href="/notifications">
                 <Button variant="ghost" size="icon" className="text-white/70 hover:text-white relative h-11 w-11 min-h-[44px] min-w-[44px]">
                   <Bell className="w-6 h-6" />
-                  <div className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-xs text-white font-bold">3</span>
-                  </div>
                 </Button>
               </Link>
               <Link href="/settings">
@@ -122,7 +119,6 @@ export function Navigation() {
                       >
                         <Bell className="w-5 h-5" />
                         <span className="font-medium">Notifications</span>
-                        <div className="w-2 h-2 bg-red-500 rounded-full ml-auto"></div>
                       </Link>
                       
                       <Link
