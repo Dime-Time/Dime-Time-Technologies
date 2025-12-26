@@ -3,9 +3,9 @@ import { Capacitor } from '@capacitor/core';
 
 // Get the API base URL - for native apps, use the production server
 export function getApiUrl(path: string): string {
-  // In native iOS/Android app, use absolute URL to Replit backend
+  // In native iOS/Android app, use absolute URL to production server
   if (Capacitor.isNativePlatform()) {
-    return `https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app${path}`;
+    return `https://dime-time.com${path}`;
   }
   // In web browser, use relative URL
   return path;
