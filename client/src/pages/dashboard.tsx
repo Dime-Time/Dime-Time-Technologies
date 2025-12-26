@@ -93,19 +93,7 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
-      {/* Logo in upper left corner */}
-      <div className="absolute top-4 left-4">
-        <img 
-          src={transparentLogoImage} 
-          alt="Dime Time Logo" 
-          className="w-12 h-12 object-contain"
-          style={{ 
-            filter: `brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%)`,
-            backgroundColor: 'transparent'
-          }}
-        />
-      </div>
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-24 md:pb-8">
       
 
       {/* Welcome Section */}

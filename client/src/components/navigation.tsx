@@ -33,10 +33,10 @@ export function Navigation() {
 
   return (
     <>
-      {/* Desktop Navigation */}
-      <nav className="shadow-sm border-b border-white/20 sticky top-0 z-50" style={{ backgroundColor: 'var(--dime-background)' }}>
+      {/* Desktop Navigation - with iOS safe area support */}
+      <nav className="shadow-sm border-b border-white/20 sticky top-0 z-50" style={{ backgroundColor: 'var(--dime-background)', paddingTop: 'max(env(safe-area-inset-top), 8px)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-14 min-h-[56px]">
             <div className="flex items-center justify-center space-x-3">
               <div className="mt-1">
                 <Logo size={32} clean={true} />
@@ -60,28 +60,28 @@ export function Navigation() {
               ))}
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <Link href="/notifications">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white relative">
-                  <Bell className="w-5 h-5" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white relative h-11 w-11 min-h-[44px] min-w-[44px]">
+                  <Bell className="w-6 h-6" />
+                  <div className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
                     <span className="text-xs text-white font-bold">3</span>
                   </div>
                 </Button>
               </Link>
               <Link href="/settings">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white">
-                  <Settings className="w-5 h-5" />
+                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]">
+                  <Settings className="w-6 h-6" />
                 </Button>
               </Link>
               <Link href="/qr">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white">
-                  <QrCode className="w-5 h-5" />
+                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]">
+                  <QrCode className="w-6 h-6" />
                 </Button>
               </Link>
 
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 min-h-[44px] min-w-[44px] bg-white/20 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
               </div>
               
               {/* Mobile menu trigger */}
@@ -159,8 +159,8 @@ export function Navigation() {
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/20 px-1 py-1 z-50" style={{ backgroundColor: 'var(--dime-background)' }}>
+      {/* Mobile Bottom Navigation - with iOS safe area support */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/20 px-1 z-50" style={{ backgroundColor: 'var(--dime-background)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)', paddingTop: '8px' }}>
         <div className="flex justify-between items-center max-w-screen-xl mx-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -168,17 +168,17 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center py-1 px-0.5 min-w-0 flex-1 transition-colors ${
+                className={`flex flex-col items-center py-2 px-1 min-w-0 flex-1 transition-colors min-h-[44px] ${
                   location === item.href
                     ? "text-white"
                     : "text-white/70"
                 }`}
                 style={{ maxWidth: `${100/navItems.length}%` }}
               >
-                <Icon className="w-4 h-4 mb-0.5" />
+                <Icon className="w-5 h-5 mb-1" />
                 <span 
                   className="text-center leading-none truncate w-full block" 
-                  style={{ fontSize: '9px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  style={{ fontSize: '10px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 >
                   {item.label}
                 </span>
