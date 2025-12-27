@@ -51,8 +51,8 @@ workflows:
           set -e
           cd ios/App
 
-          # IMPORTANT: This must be strictly higher than the last build Apple accepted (currently 58)
-          NEW_BUILD_NUMBER=59
+          # IMPORTANT: This must be strictly higher than the last build Apple accepted (currently 59)
+          NEW_BUILD_NUMBER=60
 
           echo "=== Setting iOS build number (CFBundleVersion) to $NEW_BUILD_NUMBER with agvtool ==="
           /usr/bin/xcrun agvtool new-version -all "$NEW_BUILD_NUMBER"

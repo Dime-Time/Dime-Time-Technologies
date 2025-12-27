@@ -508,1133 +508,262 @@ var pool = new Pool({ connectionString: process.env.DATABASE_URL });
 var db = drizzle({ client: pool, schema: schema_exports });
 
 // server/storage.ts
-import { desc } from "drizzle-orm";
-var MemStorage = class {
-  users;
-  debts;
-  transactions;
-  payments;
-  roundUpSettings;
-  cryptoPurchases;
-  bankAccounts;
-  userSessions;
-  notifications;
-  notificationSettingsMap;
-  dttHoldingsMap;
-  dttRewardsMap;
-  dttStakingMap;
-  dttTokenInfoData;
-  constructor() {
-    this.users = /* @__PURE__ */ new Map();
-    this.debts = /* @__PURE__ */ new Map();
-    this.transactions = /* @__PURE__ */ new Map();
-    this.payments = /* @__PURE__ */ new Map();
-    this.roundUpSettings = /* @__PURE__ */ new Map();
-    this.cryptoPurchases = /* @__PURE__ */ new Map();
-    this.bankAccounts = /* @__PURE__ */ new Map();
-    this.userSessions = /* @__PURE__ */ new Map();
-    this.notifications = /* @__PURE__ */ new Map();
-    this.notificationSettingsMap = /* @__PURE__ */ new Map();
-    this.dttHoldingsMap = /* @__PURE__ */ new Map();
-    this.dttRewardsMap = /* @__PURE__ */ new Map();
-    this.dttStakingMap = /* @__PURE__ */ new Map();
-    this.dttTokenInfoData = {
-      id: "dtt-info",
-      currentPrice: "0.284700",
-      priceChange24h: "12.45",
-      marketCap: "28470000.00",
-      volume24h: "2847000.00",
-      totalSupply: "100000000",
-      circulatingSupply: "75000000",
-      lastUpdated: /* @__PURE__ */ new Date()
-    };
-    this.initializeDemoData();
-  }
-  initializeDemoData() {
-    const demoUser = {
-      id: "demo-user-1",
-      email: "demo@dimetime.app",
-      password: null,
-      firstName: "Neo",
-      lastName: "User",
-      profileImageUrl: null,
-      createdAt: /* @__PURE__ */ new Date("2024-01-01"),
-      updatedAt: /* @__PURE__ */ new Date("2024-01-01")
-    };
-    this.users.set(demoUser.id, demoUser);
-    const demoDebts = [
-      {
-        id: "debt-1",
-        userId: demoUser.id,
-        name: "Chase Freedom Card",
-        accountNumber: "\u2022\u2022\u2022\u20224892",
-        originalBalance: "15000.00",
-        currentBalance: "6847.12",
-        interestRate: "18.99",
-        minimumPayment: "165.00",
-        dueDate: 15,
-        isActive: true,
-        createdAt: /* @__PURE__ */ new Date("2024-01-01")
-      },
-      {
-        id: "debt-2",
-        userId: demoUser.id,
-        name: "Capital One Venture",
-        accountNumber: "\u2022\u2022\u2022\u20222847",
-        originalBalance: "20000.00",
-        currentBalance: "10200.00",
-        interestRate: "21.99",
-        minimumPayment: "248.00",
-        dueDate: 22,
-        isActive: true,
-        createdAt: /* @__PURE__ */ new Date("2024-01-01")
-      },
-      {
-        id: "debt-3",
-        userId: demoUser.id,
-        name: "Student Loan",
-        accountNumber: "Federal Direct",
-        originalBalance: "8000.00",
-        currentBalance: "1850.00",
-        interestRate: "4.50",
-        minimumPayment: "89.00",
-        dueDate: 1,
-        isActive: true,
-        createdAt: /* @__PURE__ */ new Date("2024-01-01")
-      }
-    ];
-    demoDebts.forEach((debt) => this.debts.set(debt.id, debt));
-    const demoTransactions = [
-      {
-        id: "trans-1",
-        userId: demoUser.id,
-        merchant: "Starbucks Coffee",
-        category: "Food & Drink",
-        amount: "4.17",
-        roundUpAmount: "0.83",
-        date: /* @__PURE__ */ new Date(),
-        description: "Morning coffee"
-      },
-      {
-        id: "trans-2",
-        userId: demoUser.id,
-        merchant: "Shell Gas Station",
-        category: "Transportation",
-        amount: "37.28",
-        roundUpAmount: "0.72",
-        date: new Date(Date.now() - 864e5),
-        // Yesterday
-        description: "Gas fill-up"
-      },
-      {
-        id: "trans-3",
-        userId: demoUser.id,
-        merchant: "Amazon Purchase",
-        category: "Shopping",
-        amount: "24.15",
-        roundUpAmount: "0.85",
-        date: new Date(Date.now() - 864e5),
-        description: "Online purchase"
-      },
-      {
-        id: "trans-4",
-        userId: demoUser.id,
-        merchant: "Whole Foods Market",
-        category: "Groceries",
-        amount: "67.22",
-        roundUpAmount: "0.78",
-        date: new Date(Date.now() - 1728e5),
-        // 2 days ago
-        description: "Weekly groceries"
-      },
-      {
-        id: "trans-5",
-        userId: demoUser.id,
-        merchant: "Target",
-        category: "Shopping",
-        amount: "86.11",
-        roundUpAmount: "0.89",
-        date: new Date(Date.now() - 2592e5),
-        // 3 days ago
-        description: "Home supplies"
-      },
-      {
-        id: "trans-6",
-        userId: demoUser.id,
-        merchant: "McDonald's",
-        category: "Food & Drink",
-        amount: "12.08",
-        roundUpAmount: "0.92",
-        date: new Date(Date.now() - 3456e5),
-        // 4 days ago
-        description: "Lunch"
-      },
-      {
-        id: "trans-7",
-        userId: demoUser.id,
-        merchant: "CVS Pharmacy",
-        category: "Health",
-        amount: "28.13",
-        roundUpAmount: "0.87",
-        date: new Date(Date.now() - 432e6),
-        // 5 days ago
-        description: "Prescriptions"
-      },
-      {
-        id: "trans-8",
-        userId: demoUser.id,
-        merchant: "Uber",
-        category: "Transportation",
-        amount: "19.07",
-        roundUpAmount: "0.93",
-        date: new Date(Date.now() - 5184e5),
-        // 6 days ago
-        description: "Ride to airport"
-      },
-      {
-        id: "trans-9",
-        userId: demoUser.id,
-        merchant: "Best Buy",
-        category: "Electronics",
-        amount: "145.12",
-        roundUpAmount: "0.88",
-        date: new Date(Date.now() - 6048e5),
-        // 1 week ago
-        description: "Phone charger"
-      },
-      {
-        id: "trans-10",
-        userId: demoUser.id,
-        merchant: "Chipotle",
-        category: "Food & Drink",
-        amount: "13.09",
-        roundUpAmount: "0.91",
-        date: new Date(Date.now() - 6912e5),
-        // 8 days ago
-        description: "Dinner"
-      },
-      {
-        id: "trans-11",
-        userId: demoUser.id,
-        merchant: "Home Depot",
-        category: "Home Improvement",
-        amount: "92.06",
-        roundUpAmount: "0.94",
-        date: new Date(Date.now() - 7776e5),
-        // 9 days ago
-        description: "Garden supplies"
-      },
-      {
-        id: "trans-12",
-        userId: demoUser.id,
-        merchant: "Netflix",
-        category: "Entertainment",
-        amount: "15.03",
-        roundUpAmount: "0.97",
-        date: new Date(Date.now() - 864e6),
-        // 10 days ago
-        description: "Monthly subscription"
-      },
-      {
-        id: "trans-13",
-        userId: demoUser.id,
-        merchant: "Costco",
-        category: "Groceries",
-        amount: "124.08",
-        roundUpAmount: "0.92",
-        date: new Date(Date.now() - 9504e5),
-        // 11 days ago
-        description: "Bulk shopping"
-      },
-      {
-        id: "trans-14",
-        userId: demoUser.id,
-        merchant: "Spotify",
-        category: "Entertainment",
-        amount: "9.99",
-        roundUpAmount: "0.01",
-        date: new Date(Date.now() - 10368e5),
-        // 12 days ago
-        description: "Music streaming"
-      },
-      {
-        id: "trans-15",
-        userId: demoUser.id,
-        merchant: "Panera Bread",
-        category: "Food & Drink",
-        amount: "8.23",
-        roundUpAmount: "0.77",
-        date: new Date(Date.now() - 11232e5),
-        // 13 days ago
-        description: "Lunch meeting"
-      },
-      {
-        id: "trans-16",
-        userId: demoUser.id,
-        merchant: "Gas Station",
-        category: "Transportation",
-        amount: "42.16",
-        roundUpAmount: "0.84",
-        date: new Date(Date.now() - 12096e5),
-        // 14 days ago
-        description: "Fuel up"
-      },
-      {
-        id: "trans-17",
-        userId: demoUser.id,
-        merchant: "Walgreens",
-        category: "Health",
-        amount: "17.34",
-        roundUpAmount: "0.66",
-        date: new Date(Date.now() - 1296e6),
-        // 15 days ago
-        description: "Vitamins"
-      },
-      {
-        id: "trans-18",
-        userId: demoUser.id,
-        merchant: "Pizza Hut",
-        category: "Food & Drink",
-        amount: "23.12",
-        roundUpAmount: "0.88",
-        date: new Date(Date.now() - 13824e5),
-        // 16 days ago
-        description: "Friday dinner"
-      },
-      {
-        id: "trans-19",
-        userId: demoUser.id,
-        merchant: "Barnes & Noble",
-        category: "Books",
-        amount: "34.07",
-        roundUpAmount: "0.93",
-        date: new Date(Date.now() - 14688e5),
-        // 17 days ago
-        description: "Book purchase"
-      },
-      {
-        id: "trans-20",
-        userId: demoUser.id,
-        merchant: "Trader Joe's",
-        category: "Groceries",
-        amount: "56.14",
-        roundUpAmount: "0.86",
-        date: new Date(Date.now() - 15552e5),
-        // 18 days ago
-        description: "Weekly groceries"
-      }
-    ];
-    demoTransactions.forEach((trans) => this.transactions.set(trans.id, trans));
-    const demoRoundUpSettings = {
-      id: "settings-1",
-      userId: demoUser.id,
-      isEnabled: true,
-      sourceAccountId: null,
-      // User needs to select their bank account
-      targetDebtId: null,
-      // User needs to select their target debt
-      multiplier: "1.00",
-      autoApplyThreshold: "25.00",
-      cryptoEnabled: true,
-      cryptoPercentage: "25.00",
-      // 25% of round-ups go to crypto
-      preferredCrypto: "BTC"
-    };
-    this.roundUpSettings.set(demoUser.id, demoRoundUpSettings);
-    const demoCryptoPurchases = [
-      {
-        id: "crypto-1",
-        userId: demoUser.id,
-        transactionId: "trans-1",
-        cryptoSymbol: "BTC",
-        amountUsd: "856.05",
-        cryptoAmount: "0.00920592",
-        purchasePrice: "93000.00",
-        coinbaseOrderId: "order-btc-001",
-        status: "completed",
-        createdAt: /* @__PURE__ */ new Date()
-      },
-      {
-        id: "crypto-2",
-        userId: demoUser.id,
-        transactionId: "trans-2",
-        cryptoSymbol: "BTC",
-        amountUsd: "926.17",
-        cryptoAmount: "0.00993718",
-        purchasePrice: "93200.00",
-        coinbaseOrderId: "order-btc-002",
-        status: "completed",
-        createdAt: new Date(Date.now() - 864e5)
-      },
-      {
-        id: "crypto-3",
-        userId: demoUser.id,
-        transactionId: "trans-3",
-        cryptoSymbol: "BTC",
-        amountUsd: "1158.10",
-        cryptoAmount: "0.01241289",
-        purchasePrice: "93300.00",
-        coinbaseOrderId: "order-btc-003",
-        status: "completed",
-        createdAt: new Date(Date.now() - 1728e5)
-      },
-      {
-        id: "crypto-4",
-        userId: demoUser.id,
-        transactionId: "trans-4",
-        cryptoSymbol: "BTC",
-        amountUsd: "785.46",
-        purchasePrice: "93500.00",
-        cryptoAmount: "0.00840171",
-        coinbaseOrderId: "order-btc-004",
-        status: "completed",
-        createdAt: new Date(Date.now() - 2592e5)
-      },
-      {
-        id: "crypto-5",
-        userId: demoUser.id,
-        transactionId: "trans-5",
-        cryptoSymbol: "BTC",
-        amountUsd: "1108.09",
-        cryptoAmount: "0.01184078",
-        purchasePrice: "93600.00",
-        coinbaseOrderId: "order-btc-005",
-        status: "completed",
-        createdAt: new Date(Date.now() - 3456e5)
-      },
-      {
-        id: "crypto-6",
-        userId: demoUser.id,
-        transactionId: "trans-6",
-        cryptoSymbol: "BTC",
-        amountUsd: "957.06",
-        cryptoAmount: "0.01021929",
-        purchasePrice: "93700.00",
-        coinbaseOrderId: "order-btc-006",
-        status: "completed",
-        createdAt: new Date(Date.now() - 432e6)
-      },
-      {
-        id: "crypto-7",
-        userId: demoUser.id,
-        transactionId: "trans-7",
-        cryptoSymbol: "BTC",
-        amountUsd: "1259.11",
-        cryptoAmount: "0.01339267",
-        purchasePrice: "94000.00",
-        coinbaseOrderId: "order-btc-007",
-        status: "completed",
-        createdAt: new Date(Date.now() - 5184e5)
-      },
-      {
-        id: "crypto-8",
-        userId: demoUser.id,
-        transactionId: "trans-8",
-        cryptoSymbol: "ETH",
-        amountUsd: "725.26",
-        cryptoAmount: "0.27062687",
-        purchasePrice: "2680.00",
-        coinbaseOrderId: "order-eth-001",
-        status: "completed",
-        createdAt: new Date(Date.now() - 6048e5)
-      },
-      {
-        id: "crypto-9",
-        userId: demoUser.id,
-        transactionId: "trans-9",
-        cryptoSymbol: "ETH",
-        amountUsd: "896.72",
-        cryptoAmount: "0.33212593",
-        purchasePrice: "2700.00",
-        coinbaseOrderId: "order-eth-002",
-        status: "completed",
-        createdAt: new Date(Date.now() - 6912e5)
-      },
-      {
-        id: "crypto-10",
-        userId: demoUser.id,
-        transactionId: "trans-10",
-        cryptoSymbol: "ETH",
-        amountUsd: "655.05",
-        cryptoAmount: "0.24078676",
-        purchasePrice: "2720.00",
-        coinbaseOrderId: "order-eth-003",
-        status: "completed",
-        createdAt: new Date(Date.now() - 7776e5)
-      },
-      {
-        id: "crypto-11",
-        userId: demoUser.id,
-        transactionId: "trans-11",
-        cryptoSymbol: "ETH",
-        amountUsd: "987.29",
-        cryptoAmount: "0.36037664",
-        purchasePrice: "2740.00",
-        coinbaseOrderId: "order-eth-004",
-        status: "completed",
-        createdAt: new Date(Date.now() - 864e6)
-      },
-      {
-        id: "crypto-12",
-        userId: demoUser.id,
-        transactionId: "trans-12",
-        cryptoSymbol: "ETH",
-        amountUsd: "765.67",
-        cryptoAmount: "0.27741667",
-        purchasePrice: "2760.00",
-        coinbaseOrderId: "order-eth-005",
-        status: "completed",
-        createdAt: new Date(Date.now() - 9504e5)
-      },
-      {
-        id: "crypto-13",
-        userId: demoUser.id,
-        transactionId: "trans-13",
-        cryptoSymbol: "XRP",
-        amountUsd: "352.61",
-        cryptoAmount: "141.04400000",
-        purchasePrice: "2.50",
-        coinbaseOrderId: "order-xrp-001",
-        status: "completed",
-        createdAt: new Date(Date.now() - 10368e5)
-      },
-      {
-        id: "crypto-14",
-        userId: demoUser.id,
-        transactionId: "trans-14",
-        cryptoSymbol: "XRP",
-        amountUsd: "483.46",
-        cryptoAmount: "189.59607843",
-        purchasePrice: "2.55",
-        coinbaseOrderId: "order-xrp-002",
-        status: "completed",
-        createdAt: new Date(Date.now() - 11232e5)
-      },
-      {
-        id: "crypto-15",
-        userId: demoUser.id,
-        transactionId: "trans-15",
-        cryptoSymbol: "XRP",
-        amountUsd: "423.01",
-        cryptoAmount: "162.69615385",
-        purchasePrice: "2.60",
-        coinbaseOrderId: "order-xrp-003",
-        status: "completed",
-        createdAt: new Date(Date.now() - 12096e5)
-      },
-      {
-        id: "crypto-16",
-        userId: demoUser.id,
-        transactionId: "trans-16",
-        cryptoSymbol: "XRP",
-        amountUsd: "251.82",
-        cryptoAmount: "95.02641509",
-        purchasePrice: "2.65",
-        coinbaseOrderId: "order-xrp-004",
-        status: "completed",
-        createdAt: new Date(Date.now() - 1296e6)
-      }
-    ];
-    demoCryptoPurchases.forEach((purchase) => this.cryptoPurchases.set(purchase.id, purchase));
-    const demoPayments = [
-      {
-        id: "payment-1",
-        userId: demoUser.id,
-        debtId: "debt-1",
-        amount: "2500.00",
-        source: "manual",
-        date: new Date(Date.now() - 2592e6),
-        // 30 days ago
-        status: "completed"
-      },
-      {
-        id: "payment-2",
-        userId: demoUser.id,
-        debtId: "debt-2",
-        amount: "3200.00",
-        source: "manual",
-        date: new Date(Date.now() - 216e7),
-        // 25 days ago
-        status: "completed"
-      },
-      {
-        id: "payment-3",
-        userId: demoUser.id,
-        debtId: "debt-3",
-        amount: "1800.00",
-        source: "manual",
-        date: new Date(Date.now() - 1728e6),
-        // 20 days ago
-        status: "completed"
-      },
-      {
-        id: "payment-4",
-        userId: demoUser.id,
-        debtId: "debt-1",
-        amount: "3405.88",
-        source: "round_up",
-        date: new Date(Date.now() - 1296e6),
-        // 15 days ago
-        status: "completed"
-      },
-      {
-        id: "payment-5",
-        userId: demoUser.id,
-        debtId: "debt-2",
-        amount: "6597.00",
-        source: "round_up",
-        date: new Date(Date.now() - 864e6),
-        // 10 days ago
-        status: "completed"
-      },
-      {
-        id: "payment-6",
-        userId: demoUser.id,
-        debtId: "debt-3",
-        amount: "4350.00",
-        source: "round_up",
-        date: new Date(Date.now() - 432e6),
-        // 5 days ago
-        status: "completed"
-      }
-    ];
-    demoPayments.forEach((payment) => this.payments.set(payment.id, payment));
-    const demoDttHoldings = {
-      id: randomUUID(),
-      userId: demoUser.id,
-      balance: "247.85620000",
-      stakedAmount: "125.00000000",
-      totalEarned: "372.85620000",
-      createdAt: /* @__PURE__ */ new Date("2024-01-01"),
-      lastActivity: /* @__PURE__ */ new Date()
-    };
-    this.dttHoldingsMap.set(demoUser.id, demoDttHoldings);
-    const demoDttRewards = [
-      {
-        id: "dtt-reward-1",
-        userId: demoUser.id,
-        action: "round_up",
-        amount: "0.10000000",
-        transactionId: null,
-        paymentId: null,
-        transactionHash: null,
-        status: "completed",
-        metadata: JSON.stringify({ description: "Round-up reward from Starbucks purchase" }),
-        createdAt: new Date(Date.now() - 864e5)
-        // 1 day ago
-      },
-      {
-        id: "dtt-reward-2",
-        userId: demoUser.id,
-        action: "debt_payment",
-        amount: "12.50000000",
-        transactionId: null,
-        paymentId: null,
-        transactionHash: null,
-        status: "completed",
-        metadata: JSON.stringify({ description: "Debt payment reward: $250 payment to Chase Freedom" }),
-        createdAt: new Date(Date.now() - 1728e5)
-        // 2 days ago
-      },
-      {
-        id: "dtt-reward-3",
-        userId: demoUser.id,
-        action: "milestone",
-        amount: "50.00000000",
-        transactionId: null,
-        paymentId: null,
-        transactionHash: null,
-        status: "completed",
-        metadata: JSON.stringify({ description: "Milestone reward: 25% debt reduction achieved" }),
-        createdAt: new Date(Date.now() - 432e6)
-        // 5 days ago
-      },
-      {
-        id: "dtt-reward-4",
-        userId: demoUser.id,
-        action: "round_up",
-        amount: "0.15000000",
-        transactionId: null,
-        paymentId: null,
-        transactionHash: null,
-        status: "completed",
-        metadata: JSON.stringify({ description: "Round-up reward from Shell Gas purchase" }),
-        createdAt: new Date(Date.now() - 5184e5)
-        // 6 days ago
-      },
-      {
-        id: "dtt-reward-5",
-        userId: demoUser.id,
-        action: "daily_login",
-        amount: "1.00000000",
-        transactionId: null,
-        paymentId: null,
-        transactionHash: null,
-        status: "completed",
-        metadata: JSON.stringify({ description: "Daily login bonus" }),
-        createdAt: new Date(Date.now() - 6048e5)
-        // 7 days ago
-      }
-    ];
-    demoDttRewards.forEach((reward) => this.dttRewardsMap.set(reward.id, reward));
-    const demoDttStaking = [
-      {
-        id: "dtt-stake-1",
-        userId: demoUser.id,
-        amount: "125.00000000",
-        duration: 90,
-        apy: "15.50000000",
-        rewardsEarned: "4.25680000",
-        status: "active",
-        startDate: new Date(Date.now() - 2592e6),
-        // 30 days ago
-        endDate: new Date(Date.now() + 5184e6),
-        // 60 days from now
-        lastRewardCalculation: /* @__PURE__ */ new Date(),
-        createdAt: new Date(Date.now() - 2592e6)
-      }
-    ];
-    demoDttStaking.forEach((stake) => this.dttStakingMap.set(stake.id, stake));
-  }
+import { eq, desc, and } from "drizzle-orm";
+var DatabaseStorage = class {
+  // User methods
   async getUser(id) {
-    return this.users.get(id);
-  }
-  async getUserByEmail(email) {
-    return Array.from(this.users.values()).find((user) => user.email === email);
-  }
-  async createUser(insertUser) {
-    const id = randomUUID();
-    const user = {
-      id,
-      email: insertUser.email ?? null,
-      password: insertUser.password ?? null,
-      firstName: insertUser.firstName ?? null,
-      lastName: insertUser.lastName ?? null,
-      profileImageUrl: insertUser.profileImageUrl ?? null,
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.users.set(id, user);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
-  async upsertUser(userData) {
-    const existingUser = this.users.get(userData.id);
-    if (existingUser) {
-      const updatedUser = {
-        ...existingUser,
-        email: userData.email ?? existingUser.email,
-        password: userData.password ?? existingUser.password,
-        firstName: userData.firstName ?? existingUser.firstName,
-        lastName: userData.lastName ?? existingUser.lastName,
-        profileImageUrl: userData.profileImageUrl ?? existingUser.profileImageUrl,
-        updatedAt: /* @__PURE__ */ new Date()
-      };
-      this.users.set(userData.id, updatedUser);
-      return updatedUser;
-    } else {
-      const newUser = {
-        id: userData.id,
-        email: userData.email ?? null,
-        password: userData.password ?? null,
-        firstName: userData.firstName ?? null,
-        lastName: userData.lastName ?? null,
-        profileImageUrl: userData.profileImageUrl ?? null,
-        createdAt: /* @__PURE__ */ new Date(),
-        updatedAt: /* @__PURE__ */ new Date()
-      };
-      this.users.set(userData.id, newUser);
-      return newUser;
-    }
+  async getUserByEmail(email) {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
+  async createUser(user) {
+    const id = randomUUID();
+    const [result] = await db.insert(users).values({ ...user, id }).returning();
+    return result;
+  }
+  async upsertUser(user) {
+    const existing = await this.getUser(user.id);
+    if (existing) {
+      const [updated] = await db.update(users).set({ ...user, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, user.id)).returning();
+      return updated;
+    }
+    const [result] = await db.insert(users).values({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImageUrl: user.profileImageUrl
+    }).returning();
+    return result;
+  }
+  // Debt methods
   async getDebtsByUserId(userId) {
-    return Array.from(this.debts.values()).filter((debt) => debt.userId === userId && debt.isActive);
+    return await db.select().from(debts).where(eq(debts.userId, userId));
   }
   async getDebt(id) {
-    return this.debts.get(id);
-  }
-  async createDebt(insertDebt) {
-    const id = randomUUID();
-    const debt = {
-      ...insertDebt,
-      id,
-      isActive: insertDebt.isActive ?? true,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.debts.set(id, debt);
+    const [debt] = await db.select().from(debts).where(eq(debts.id, id));
     return debt;
   }
-  async updateDebt(id, updates) {
-    const debt = this.debts.get(id);
-    if (!debt) return void 0;
-    const updatedDebt = { ...debt, ...updates };
-    this.debts.set(id, updatedDebt);
-    return updatedDebt;
-  }
-  async getTransactionsByUserId(userId, limit) {
-    const userTransactions = Array.from(this.transactions.values()).filter((trans) => trans.userId === userId).sort((a, b) => b.date.getTime() - a.date.getTime());
-    return limit ? userTransactions.slice(0, limit) : userTransactions;
-  }
-  async createTransaction(insertTransaction) {
+  async createDebt(debt) {
     const id = randomUUID();
-    const transaction = {
-      ...insertTransaction,
-      id,
-      description: insertTransaction.description ?? null,
-      date: /* @__PURE__ */ new Date()
-    };
-    this.transactions.set(id, transaction);
-    return transaction;
+    const [result] = await db.insert(debts).values({ ...debt, id }).returning();
+    return result;
   }
+  async updateDebt(id, updates) {
+    const [result] = await db.update(debts).set(updates).where(eq(debts.id, id)).returning();
+    return result;
+  }
+  // Transaction methods
+  async getTransactionsByUserId(userId, limit) {
+    const query = db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.date));
+    if (limit) {
+      return await query.limit(limit);
+    }
+    return await query;
+  }
+  async createTransaction(transaction) {
+    const id = randomUUID();
+    const [result] = await db.insert(transactions).values({ ...transaction, id }).returning();
+    return result;
+  }
+  // Payment methods
   async getPaymentsByUserId(userId) {
-    return Array.from(this.payments.values()).filter((payment) => payment.userId === userId).sort((a, b) => b.date.getTime() - a.date.getTime());
+    return await db.select().from(payments).where(eq(payments.userId, userId)).orderBy(desc(payments.date));
   }
   async getPaymentsByDebtId(debtId) {
-    return Array.from(this.payments.values()).filter((payment) => payment.debtId === debtId).sort((a, b) => b.date.getTime() - a.date.getTime());
+    return await db.select().from(payments).where(eq(payments.debtId, debtId));
   }
-  async createPayment(insertPayment) {
+  async createPayment(payment) {
     const id = randomUUID();
-    const payment = {
-      ...insertPayment,
-      id,
-      date: /* @__PURE__ */ new Date(),
-      status: "completed"
-    };
-    this.payments.set(id, payment);
-    return payment;
+    const [result] = await db.insert(payments).values({ ...payment, id }).returning();
+    return result;
   }
   async makeAcceleratedPayment(userId, debtId, amount) {
-    const debt = this.debts.get(debtId);
-    if (!debt || debt.userId !== userId) {
-      throw new Error("Debt not found or unauthorized");
-    }
+    const debt = await this.getDebt(debtId);
+    if (!debt) throw new Error("Debt not found");
+    const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
     const payment = await this.createPayment({
       userId,
       debtId,
       amount,
-      source: "manual"
+      source: "accelerated"
     });
-    const currentBalance = parseFloat(debt.currentBalance);
-    const paymentAmount = parseFloat(amount);
-    const newBalance = Math.max(0, currentBalance - paymentAmount);
-    const updatedDebt = await this.updateDebt(debtId, {
-      currentBalance: newBalance.toFixed(2)
-    });
-    if (!updatedDebt) {
-      throw new Error("Failed to update debt balance");
-    }
+    const updatedDebt = await this.updateDebt(debtId, { currentBalance: newBalance });
+    if (!updatedDebt) throw new Error("Failed to update debt");
     return { payment, updatedDebt };
   }
+  // Round-up settings methods
   async getRoundUpSettings(userId) {
-    return this.roundUpSettings.get(userId);
+    const [settings] = await db.select().from(roundUpSettings).where(eq(roundUpSettings.userId, userId));
+    return settings;
   }
   async createOrUpdateRoundUpSettings(settings) {
-    const existing = this.roundUpSettings.get(settings.userId);
+    const existing = await this.getRoundUpSettings(settings.userId);
     if (existing) {
-      const updated = { ...existing, ...settings };
-      this.roundUpSettings.set(settings.userId, updated);
+      const [updated] = await db.update(roundUpSettings).set(settings).where(eq(roundUpSettings.userId, settings.userId)).returning();
       return updated;
-    } else {
-      const id = randomUUID();
-      const newSettings = {
-        ...settings,
-        id,
-        isEnabled: settings.isEnabled ?? true,
-        sourceAccountId: settings.sourceAccountId ?? null,
-        targetDebtId: settings.targetDebtId ?? null,
-        multiplier: settings.multiplier ?? "1.00",
-        autoApplyThreshold: settings.autoApplyThreshold ?? "25.00",
-        cryptoEnabled: settings.cryptoEnabled ?? false,
-        cryptoPercentage: settings.cryptoPercentage ?? "0.00",
-        preferredCrypto: settings.preferredCrypto ?? "BTC"
-      };
-      this.roundUpSettings.set(settings.userId, newSettings);
-      return newSettings;
     }
-  }
-  async getCryptoPurchasesByUserId(userId) {
-    return Array.from(this.cryptoPurchases.values()).filter((purchase) => purchase.userId === userId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-  async createCryptoPurchase(insertPurchase) {
     const id = randomUUID();
-    const purchase = {
-      ...insertPurchase,
-      id,
-      transactionId: insertPurchase.transactionId ?? null,
-      coinbaseOrderId: insertPurchase.coinbaseOrderId ?? null,
-      status: "pending",
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.cryptoPurchases.set(id, purchase);
-    return purchase;
+    const [result] = await db.insert(roundUpSettings).values({ ...settings, id }).returning();
+    return result;
+  }
+  // Crypto purchase methods
+  async getCryptoPurchasesByUserId(userId) {
+    return await db.select().from(cryptoPurchases).where(eq(cryptoPurchases.userId, userId)).orderBy(desc(cryptoPurchases.createdAt));
+  }
+  async createCryptoPurchase(purchase) {
+    const id = randomUUID();
+    const [result] = await db.insert(cryptoPurchases).values({ ...purchase, id }).returning();
+    return result;
   }
   async updateCryptoPurchaseStatus(id, status, coinbaseOrderId) {
-    const purchase = this.cryptoPurchases.get(id);
-    if (!purchase) return void 0;
-    const updated = {
-      ...purchase,
-      status,
-      coinbaseOrderId: coinbaseOrderId || purchase.coinbaseOrderId
-    };
-    this.cryptoPurchases.set(id, updated);
-    return updated;
+    const [result] = await db.update(cryptoPurchases).set({ status, coinbaseOrderId }).where(eq(cryptoPurchases.id, id)).returning();
+    return result;
   }
+  // Bank account methods
   async getBankAccountsByUserId(userId) {
-    return Array.from(this.bankAccounts.values()).filter((account) => account.userId === userId && account.isActive).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
   }
   async createBankAccount(account) {
     const id = randomUUID();
-    const bankAccount = {
-      ...account,
-      id,
-      mask: account.mask ?? null,
-      isActive: account.isActive ?? true,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.bankAccounts.set(id, bankAccount);
-    return bankAccount;
+    const [result] = await db.insert(bankAccounts).values({ ...account, id }).returning();
+    return result;
   }
   async getBankAccountByPlaidItemId(itemId) {
-    return Array.from(this.bankAccounts.values()).find((account) => account.plaidItemId === itemId);
+    const [account] = await db.select().from(bankAccounts).where(eq(bankAccounts.plaidItemId, itemId));
+    return account;
   }
   async updateBankAccountStatus(id, isActive) {
-    const account = this.bankAccounts.get(id);
-    if (!account) return void 0;
-    const updated = { ...account, isActive };
-    this.bankAccounts.set(id, updated);
-    return updated;
+    const [result] = await db.update(bankAccounts).set({ isActive }).where(eq(bankAccounts.id, id)).returning();
+    return result;
   }
+  // User session methods
   async createUserSession(session2) {
     const id = randomUUID();
-    const userSession = {
-      ...session2,
-      id,
-      deviceId: session2.deviceId ?? null,
-      isActive: session2.isActive ?? true,
-      lastActivity: /* @__PURE__ */ new Date(),
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.userSessions.set(id, userSession);
-    return userSession;
+    const [result] = await db.insert(userSessions).values({ ...session2, id }).returning();
+    return result;
   }
   async getUserSessionByToken(token) {
-    return Array.from(this.userSessions.values()).find((session2) => session2.sessionToken === token);
+    const [session2] = await db.select().from(userSessions).where(eq(userSessions.sessionToken, token));
+    return session2;
   }
   async updateSessionActivity(id) {
-    const session2 = this.userSessions.get(id);
-    if (!session2) return void 0;
-    const updated = { ...session2, lastActivity: /* @__PURE__ */ new Date() };
-    this.userSessions.set(id, updated);
-    return updated;
+    const [result] = await db.update(userSessions).set({ lastActivity: /* @__PURE__ */ new Date() }).where(eq(userSessions.id, id)).returning();
+    return result;
   }
   async deactivateUserSessions(userId, deviceType) {
-    Array.from(this.userSessions.entries()).forEach(([id, session2]) => {
-      if (session2.userId === userId && (!deviceType || session2.deviceType === deviceType)) {
-        const updated = { ...session2, isActive: false };
-        this.userSessions.set(id, updated);
-      }
-    });
-  }
-  // Notification methods
-  async createNotification(insertNotification) {
-    const id = randomUUID();
-    const notification = {
-      ...insertNotification,
-      id,
-      status: insertNotification.status ?? "pending",
-      priority: insertNotification.priority ?? "medium",
-      sentAt: null,
-      deliveredAt: null,
-      metadata: insertNotification.metadata ?? null,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.notifications.set(id, notification);
-    return notification;
-  }
-  async getNotificationsByUserId(userId, limit) {
-    const userNotifications = Array.from(this.notifications.values()).filter((notification) => notification.userId === userId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    return limit ? userNotifications.slice(0, limit) : userNotifications;
-  }
-  async getUserNotifications(userId, limit) {
-    return this.getNotificationsByUserId(userId, limit);
-  }
-  async getAllUsers() {
-    return Array.from(this.users.values());
-  }
-  async getUserTransactions(userId, limit) {
-    return this.getTransactionsByUserId(userId, limit);
-  }
-  async getUserDebts(userId) {
-    return this.getDebtsByUserId(userId);
-  }
-  async getUserCryptoPurchases(userId) {
-    return this.getCryptoPurchasesByUserId(userId);
-  }
-  async getDashboardSummary(userId) {
-    const debts3 = await this.getUserDebts(userId);
-    const transactions3 = await this.getUserTransactions(userId);
-    const cryptoPurchases3 = await this.getUserCryptoPurchases(userId);
-    const totalDebt = debts3.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
-    const totalRoundUps = transactions3.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
-    const totalCrypto = cryptoPurchases3.reduce((sum, purchase) => sum + parseFloat(purchase.amountUsd), 0);
-    return {
-      totalDebt: totalDebt.toFixed(2),
-      totalRoundUps: totalRoundUps.toFixed(2),
-      totalCrypto: totalCrypto.toFixed(2),
-      debtCount: debts3.length,
-      transactionCount: transactions3.length
-    };
-  }
-  async updateNotificationStatus(id, status, sentAt, deliveredAt) {
-    const notification = this.notifications.get(id);
-    if (!notification) return void 0;
-    const updated = {
-      ...notification,
-      status,
-      sentAt: sentAt || notification.sentAt,
-      deliveredAt: deliveredAt || notification.deliveredAt
-    };
-    this.notifications.set(id, updated);
-    return updated;
-  }
-  async getNotificationSettings(userId) {
-    return Array.from(this.notificationSettingsMap.values()).find((settings) => settings.userId === userId);
-  }
-  async createOrUpdateNotificationSettings(insertSettings) {
-    const existingSettings = await this.getNotificationSettings(insertSettings.userId);
-    if (existingSettings) {
-      const updated = {
-        ...existingSettings,
-        ...insertSettings,
-        updatedAt: /* @__PURE__ */ new Date()
-      };
-      this.notificationSettingsMap.set(existingSettings.id, updated);
-      return updated;
+    if (deviceType) {
+      await db.update(userSessions).set({ isActive: false }).where(and(eq(userSessions.userId, userId), eq(userSessions.deviceType, deviceType)));
     } else {
-      const id = randomUUID();
-      const settings = {
-        ...insertSettings,
-        id,
-        smsEnabled: insertSettings.smsEnabled ?? true,
-        emailEnabled: insertSettings.emailEnabled ?? true,
-        pushEnabled: insertSettings.pushEnabled ?? true,
-        phoneNumber: insertSettings.phoneNumber ?? null,
-        paymentReminders: insertSettings.paymentReminders ?? true,
-        roundupMilestones: insertSettings.roundupMilestones ?? true,
-        cryptoUpdates: insertSettings.cryptoUpdates ?? true,
-        weeklyReports: insertSettings.weeklyReports ?? true,
-        marketingMessages: insertSettings.marketingMessages ?? false,
-        updatedAt: /* @__PURE__ */ new Date()
-      };
-      this.notificationSettingsMap.set(id, settings);
-      return settings;
+      await db.update(userSessions).set({ isActive: false }).where(eq(userSessions.userId, userId));
     }
   }
   // DTT Token methods
   async getDttHoldings(userId) {
-    return this.dttHoldingsMap.get(userId);
+    const [holdings] = await db.select().from(dttHoldings).where(eq(dttHoldings.userId, userId));
+    return holdings;
   }
   async createOrUpdateDttHoldings(holdings) {
-    const existing = this.dttHoldingsMap.get(holdings.userId);
+    const existing = await this.getDttHoldings(holdings.userId);
     if (existing) {
-      const updated = {
-        ...existing,
-        ...holdings,
-        lastActivity: /* @__PURE__ */ new Date()
-      };
-      this.dttHoldingsMap.set(holdings.userId, updated);
+      const [updated] = await db.update(dttHoldings).set(holdings).where(eq(dttHoldings.userId, holdings.userId)).returning();
       return updated;
-    } else {
-      const id = randomUUID();
-      const newHoldings = {
-        ...holdings,
-        id,
-        balance: holdings.balance || "0.00000000",
-        stakedAmount: holdings.stakedAmount || "0.00000000",
-        totalEarned: holdings.totalEarned || "0.00000000",
-        lastActivity: /* @__PURE__ */ new Date(),
-        createdAt: /* @__PURE__ */ new Date()
-      };
-      this.dttHoldingsMap.set(holdings.userId, newHoldings);
-      return newHoldings;
     }
+    const id = randomUUID();
+    const [result] = await db.insert(dttHoldings).values({ ...holdings, id }).returning();
+    return result;
   }
   async updateDttBalance(userId, balance, stakedAmount, totalEarned) {
-    const existing = this.dttHoldingsMap.get(userId);
-    if (!existing) return void 0;
-    const updated = {
-      ...existing,
-      balance,
-      stakedAmount: stakedAmount || existing.stakedAmount,
-      totalEarned: totalEarned || existing.totalEarned,
-      lastActivity: /* @__PURE__ */ new Date()
-    };
-    this.dttHoldingsMap.set(userId, updated);
-    return updated;
+    const updates = { balance };
+    if (stakedAmount !== void 0) updates.stakedAmount = stakedAmount;
+    if (totalEarned !== void 0) updates.totalEarned = totalEarned;
+    const [result] = await db.update(dttHoldings).set(updates).where(eq(dttHoldings.userId, userId)).returning();
+    return result;
   }
   async getDttRewardsByUserId(userId) {
-    return Array.from(this.dttRewardsMap.values()).filter((reward) => reward.userId === userId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db.select().from(dttRewards).where(eq(dttRewards.userId, userId)).orderBy(desc(dttRewards.createdAt));
   }
   async createDttReward(reward) {
     const id = randomUUID();
-    const newReward = {
-      ...reward,
-      id,
-      status: "completed",
-      transactionId: reward.transactionId || null,
-      paymentId: reward.paymentId || null,
-      transactionHash: reward.transactionHash || null,
-      metadata: reward.metadata || null,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.dttRewardsMap.set(id, newReward);
-    return newReward;
+    const [result] = await db.insert(dttRewards).values({ ...reward, id }).returning();
+    return result;
   }
   async getDttStakingByUserId(userId) {
-    return Array.from(this.dttStakingMap.values()).filter((stake) => stake.userId === userId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db.select().from(dttStaking).where(eq(dttStaking.userId, userId)).orderBy(desc(dttStaking.createdAt));
   }
   async createDttStaking(staking) {
     const id = randomUUID();
     const startDate = /* @__PURE__ */ new Date();
     const endDate = new Date(startDate.getTime() + staking.duration * 24 * 60 * 60 * 1e3);
-    const newStaking = {
+    const [result] = await db.insert(dttStaking).values({
       ...staking,
       id,
       startDate,
       endDate,
       status: staking.status || "active",
-      rewardsEarned: staking.rewardsEarned || "0.00000000",
-      lastRewardCalculation: /* @__PURE__ */ new Date(),
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.dttStakingMap.set(id, newStaking);
-    return newStaking;
+      rewardsEarned: staking.rewardsEarned || "0.00000000"
+    }).returning();
+    return result;
   }
   async updateDttStakingStatus(id, status) {
-    const staking = this.dttStakingMap.get(id);
-    if (!staking) return void 0;
-    const updated = {
-      ...staking,
-      status
-    };
-    this.dttStakingMap.set(id, updated);
-    return updated;
+    const [result] = await db.update(dttStaking).set({ status }).where(eq(dttStaking.id, id)).returning();
+    return result;
   }
   async getDttTokenInfo() {
-    return this.dttTokenInfoData;
+    const [info] = await db.select().from(dttTokenInfo);
+    return info;
   }
   async updateDttTokenInfo(info) {
-    const updated = {
-      id: "dtt-info",
-      currentPrice: info.currentPrice || "0.250000",
-      marketCap: info.marketCap || "2500000.00",
-      volume24h: info.volume24h || "125000.00",
-      priceChange24h: info.priceChange24h || "5.25",
-      totalSupply: info.totalSupply || "10000000",
-      circulatingSupply: info.circulatingSupply || "2500000",
-      lastUpdated: /* @__PURE__ */ new Date()
-    };
-    this.dttTokenInfoData = updated;
-    return updated;
+    const existing = await this.getDttTokenInfo();
+    if (existing) {
+      const [updated] = await db.update(dttTokenInfo).set({ ...info, lastUpdated: /* @__PURE__ */ new Date() }).where(eq(dttTokenInfo.id, existing.id)).returning();
+      return updated;
+    }
+    const id = randomUUID();
+    const [result] = await db.insert(dttTokenInfo).values({ ...info, id }).returning();
+    return result;
+  }
+  // Notification methods
+  async createNotification(notification) {
+    const id = randomUUID();
+    const [result] = await db.insert(notifications).values({ ...notification, id }).returning();
+    return result;
+  }
+  async getNotificationsByUserId(userId, limit) {
+    const query = db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+    if (limit) {
+      return await query.limit(limit);
+    }
+    return await query;
+  }
+  async updateNotificationStatus(id, status, sentAt, deliveredAt) {
+    const updates = { status };
+    if (sentAt) updates.sentAt = sentAt;
+    if (deliveredAt) updates.deliveredAt = deliveredAt;
+    const [result] = await db.update(notifications).set(updates).where(eq(notifications.id, id)).returning();
+    return result;
+  }
+  // Notification settings methods
+  async getNotificationSettings(userId) {
+    const [settings] = await db.select().from(notificationSettings).where(eq(notificationSettings.userId, userId));
+    return settings;
+  }
+  async createOrUpdateNotificationSettings(settings) {
+    const existing = await this.getNotificationSettings(settings.userId);
+    if (existing) {
+      const [updated] = await db.update(notificationSettings).set(settings).where(eq(notificationSettings.userId, settings.userId)).returning();
+      return updated;
+    }
+    const id = randomUUID();
+    const [result] = await db.insert(notificationSettings).values({ ...settings, id }).returning();
+    return result;
+  }
+  // Alias for interface compatibility
+  async getUserNotifications(userId, limit) {
+    return this.getNotificationsByUserId(userId, limit);
   }
   // Contact submission methods
   async createContactSubmission(submission) {
@@ -1645,7 +774,7 @@ var MemStorage = class {
     return await db.select().from(contactSubmissions).orderBy(desc(contactSubmissions.createdAt));
   }
 };
-var storage = new MemStorage();
+var storage = new DatabaseStorage();
 
 // server/services/dimeTokenService.ts
 var DimeTokenService = class {
@@ -2207,8 +1336,8 @@ var CoinbaseService = class {
       throw new Error("Coinbase service not configured");
     }
     try {
-      const transactions3 = await this.client.getTransactions(accountId);
-      return transactions3;
+      const transactions2 = await this.client.getTransactions(accountId);
+      return transactions2;
     } catch (error) {
       console.error("Error fetching transactions:", error);
       throw error;
@@ -2511,7 +1640,7 @@ var DynamoService = class {
     if (!this.isConfigured) {
       throw new Error("DynamoDB service not configured");
     }
-    const [transactions3, debts3, cryptoPurchases3] = await Promise.all([
+    const [transactions2, debts2, cryptoPurchases2] = await Promise.all([
       this.getTransactionsByUserId(userId),
       this.getUserDebts(userId),
       this.getUserCryptoPurchases(userId)
@@ -2519,9 +1648,9 @@ var DynamoService = class {
     const userData = {
       userId,
       exportDate: (/* @__PURE__ */ new Date()).toISOString(),
-      transactions: transactions3,
-      debts: debts3,
-      cryptoPurchases: cryptoPurchases3
+      transactions: transactions2,
+      debts: debts2,
+      cryptoPurchases: cryptoPurchases2
     };
     return JSON.stringify(userData);
   }
@@ -2620,15 +1749,15 @@ var AxosService = class {
     }
   }
   // Process bulk weekly payments (every Friday)
-  async processBulkWeeklyPayments(payments3) {
+  async processBulkWeeklyPayments(payments2) {
     if (!this.isConfigured) {
       throw new Error("Axos service not configured");
     }
     try {
-      const totalAmount = payments3.reduce((sum, payment) => sum + parseFloat(payment.amount), 0).toFixed(2);
+      const totalAmount = payments2.reduce((sum, payment) => sum + parseFloat(payment.amount), 0).toFixed(2);
       const bulkTransferData = {
         fromAccount: this.businessAccountId,
-        payments: payments3.map((payment) => ({
+        payments: payments2.map((payment) => ({
           toAccount: payment.debtAccountId,
           toRoutingNumber: payment.debtRoutingNumber,
           amount: payment.amount,
@@ -2770,8 +1899,8 @@ function registerAxosRoutes(app2) {
   });
   app2.post("/api/axos/weekly-distribution", async (req, res) => {
     try {
-      const { payments: payments3 } = req.body;
-      if (!payments3 || !Array.isArray(payments3) || payments3.length === 0) {
+      const { payments: payments2 } = req.body;
+      if (!payments2 || !Array.isArray(payments2) || payments2.length === 0) {
         return res.status(400).json({
           message: "Payments array is required and must contain at least one payment"
         });
@@ -2787,15 +1916,15 @@ function registerAxosRoutes(app2) {
         debtName: z2.string()
       });
       try {
-        payments3.forEach((payment) => paymentSchema.parse(payment));
+        payments2.forEach((payment) => paymentSchema.parse(payment));
       } catch (validationError) {
         return res.status(400).json({
           message: "Invalid payment data structure",
           errors: validationError
         });
       }
-      const bulkPayment = await axosService.processBulkWeeklyPayments(payments3);
-      const totalAmount = payments3.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+      const bulkPayment = await axosService.processBulkWeeklyPayments(payments2);
+      const totalAmount = payments2.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
       const interestEarned = await axosService.calculateInterestEarned(
         totalAmount.toFixed(2),
         7
@@ -2805,9 +1934,9 @@ function registerAxosRoutes(app2) {
         success: true,
         bulkPayment,
         totalAmount: totalAmount.toFixed(2),
-        paymentCount: payments3.length,
+        paymentCount: payments2.length,
         interestEarned,
-        message: `Successfully scheduled ${payments3.length} debt payments for Friday distribution`
+        message: `Successfully scheduled ${payments2.length} debt payments for Friday distribution`
       });
     } catch (error) {
       console.error("Error processing weekly distribution:", error);
@@ -2863,12 +1992,12 @@ function registerAxosRoutes(app2) {
       if (!axosService.isServiceConfigured()) {
         return res.status(503).json({ message: "Axos service not configured" });
       }
-      const transactions3 = await axosService.getAccountTransactions(startDate, endDate, limit);
+      const transactions2 = await axosService.getAccountTransactions(startDate, endDate, limit);
       res.json({
-        transactions: transactions3,
+        transactions: transactions2,
         startDate,
         endDate,
-        count: transactions3.length
+        count: transactions2.length
       });
     } catch (error) {
       console.error("Error fetching account transactions:", error);
@@ -3945,12 +3074,12 @@ var DebtCalculationService = class {
   // Calculate debt-free timeline based on current round-up pace
   async calculateDebtFreeTimeline(userId) {
     try {
-      const debts3 = await storage.getUserDebts(userId);
-      const transactions3 = await storage.getUserTransactions(userId, 90);
-      const totalDebt = debts3.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
-      const totalRoundUps = transactions3.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
+      const debts2 = await storage.getUserDebts(userId);
+      const transactions2 = await storage.getUserTransactions(userId, 90);
+      const totalDebt = debts2.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
+      const totalRoundUps = transactions2.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
       const monthlyRoundUpAverage = totalRoundUps / 3;
-      const monthlyMinPayments = debts3.reduce((sum, debt) => sum + parseFloat(debt.minimumPayment || "0"), 0);
+      const monthlyMinPayments = debts2.reduce((sum, debt) => sum + parseFloat(debt.minimumPayment || "0"), 0);
       const acceleratedMonthlyPayment = monthlyMinPayments + monthlyRoundUpAverage;
       const monthsWithRoundUps = Math.ceil(totalDebt / acceleratedMonthlyPayment);
       const monthsWithoutRoundUps = Math.ceil(totalDebt / monthlyMinPayments);
@@ -3977,12 +3106,12 @@ var DebtCalculationService = class {
   // Calculate interest savings from round-ups
   async calculateInterestSavings(userId) {
     try {
-      const debts3 = await storage.getUserDebts(userId);
-      const transactions3 = await storage.getUserTransactions(userId, 30);
-      const monthlyRoundUps = transactions3.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
+      const debts2 = await storage.getUserDebts(userId);
+      const transactions2 = await storage.getUserTransactions(userId, 30);
+      const monthlyRoundUps = transactions2.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
       let totalBalance = 0;
       let weightedInterestRate = 0;
-      debts3.forEach((debt) => {
+      debts2.forEach((debt) => {
         const balance = parseFloat(debt.currentBalance);
         const rate = parseFloat(debt.interestRate) / 100;
         totalBalance += balance;
@@ -4036,12 +3165,12 @@ var DebtCalculationService = class {
   // Calculate Axos 4% APY earnings
   async calculateAxosEarnings(userId) {
     try {
-      const transactions3 = await storage.getUserTransactions(userId);
-      const totalRoundUps = transactions3.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
+      const transactions2 = await storage.getUserTransactions(userId);
+      const totalRoundUps = transactions2.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
       const annualRate = 0.04;
       const weeklyRate = annualRate / 52;
       const weeklyEarnings = totalRoundUps * weeklyRate;
-      const weeksActive = Math.min(transactions3.length / 3, 52);
+      const weeksActive = Math.min(transactions2.length / 3, 52);
       const totalEarnings = totalRoundUps * (annualRate * (weeksActive / 52));
       const valueComparisons = [
         { threshold: 50, value: "nice dinner date" },
@@ -4068,8 +3197,8 @@ var DebtCalculationService = class {
   // Recommend optimal debt to pay next (debt avalanche)
   async getDebtAvalancheRecommendation(userId) {
     try {
-      const debts3 = await storage.getUserDebts(userId);
-      const sortedDebts = debts3.filter((debt) => parseFloat(debt.currentBalance) > 0).sort((a, b) => parseFloat(b.interestRate) - parseFloat(a.interestRate));
+      const debts2 = await storage.getUserDebts(userId);
+      const sortedDebts = debts2.filter((debt) => parseFloat(debt.currentBalance) > 0).sort((a, b) => parseFloat(b.interestRate) - parseFloat(a.interestRate));
       if (sortedDebts.length === 0) {
         return {
           recommendedDebt: "All debts",
@@ -4103,8 +3232,8 @@ var DebtCalculationService = class {
   // Calculate user streak
   async calculateRoundUpStreak(userId) {
     try {
-      const transactions3 = await storage.getUserTransactions(userId, 30);
-      const transactionsByDate = transactions3.reduce((acc, trans) => {
+      const transactions2 = await storage.getUserTransactions(userId, 30);
+      const transactionsByDate = transactions2.reduce((acc, trans) => {
         const date = new Date(trans.date).toDateString();
         if (!acc[date]) acc[date] = [];
         acc[date].push(trans);
@@ -4219,10 +3348,10 @@ var NotificationTriggers = class {
   // Check for upcoming payment due dates (daily job)
   async checkPaymentDueDates() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
-        const debts3 = await storage.getUserDebts(user.id);
-        for (const debt of debts3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
+        const debts2 = await storage.getUserDebts(user.id);
+        for (const debt of debts2) {
           if (debt.dueDate) {
             const dueDate = new Date(debt.dueDate);
             const today = /* @__PURE__ */ new Date();
@@ -4245,12 +3374,12 @@ var NotificationTriggers = class {
   // Send weekly progress reports (weekly job)
   async sendWeeklyReports() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const settings = await storage.getNotificationSettings(user.id);
         if (!settings?.weeklyReports) continue;
-        const transactions3 = await storage.getUserTransactions(user.id);
-        const lastWeekTransactions = transactions3.filter((t) => {
+        const transactions2 = await storage.getUserTransactions(user.id);
+        const lastWeekTransactions = transactions2.filter((t) => {
           const transactionDate = new Date(t.date);
           const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1e3);
           return transactionDate >= weekAgo;
@@ -4277,8 +3406,8 @@ var NotificationTriggers = class {
   // Send daily motivational notifications
   async sendDailyMotivation() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const settings = await storage.getNotificationSettings(user.id);
         if (!settings?.marketingMessages) continue;
         await notificationService.sendMotivationalNotification(user.id, "");
@@ -4368,8 +3497,8 @@ var NotificationTriggers = class {
   // Send Axos earnings notifications (weekly)
   async sendAxosEarningsNotifications() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const earnings = await debtCalculationService.calculateAxosEarnings(user.id);
         if (earnings.weeklyEarnings >= 1) {
           await notificationService.sendAxosEarningsNotification(
@@ -4387,8 +3516,8 @@ var NotificationTriggers = class {
   // Send DTT rewards notifications
   async sendDTTRewardsNotifications() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const summary = await storage.getDashboardSummary(user.id);
         const totalRoundUps = parseFloat(summary.totalRoundUps || "0");
         const tokensEarned = (totalRoundUps / 10 * 0.1).toFixed(8);
@@ -4410,8 +3539,8 @@ var NotificationTriggers = class {
   // Send streak maintenance notifications
   async sendStreakMaintenanceNotifications() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const streak = await debtCalculationService.calculateRoundUpStreak(user.id);
         if (streak.streakDays >= 3) {
           await notificationService.sendStreakMaintenanceNotification(
@@ -4428,12 +3557,12 @@ var NotificationTriggers = class {
   // Send morning motivation notifications (daily)
   async sendMorningMotivationNotifications() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const settings = await storage.getNotificationSettings(user.id);
         if (!settings?.marketingMessages) continue;
-        const transactions3 = await storage.getUserTransactions(user.id, 30);
-        const monthlyRoundUps = transactions3.reduce((sum, t) => sum + parseFloat(t.roundUpAmount || "0"), 0);
+        const transactions2 = await storage.getUserTransactions(user.id, 30);
+        const monthlyRoundUps = transactions2.reduce((sum, t) => sum + parseFloat(t.roundUpAmount || "0"), 0);
         const dailyGoal = (monthlyRoundUps / 30).toFixed(2);
         const progressMessages = [
           "You're building unstoppable momentum",
@@ -4456,8 +3585,8 @@ var NotificationTriggers = class {
   // Send evening celebration notifications (daily)
   async sendEveningCelebrationNotifications() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const settings = await storage.getNotificationSettings(user.id);
         if (!settings?.marketingMessages) continue;
         const todayTransactions = await storage.getUserTransactions(user.id, 1);
@@ -4485,8 +3614,8 @@ var NotificationTriggers = class {
   // Send premium feature teasers (weekly)
   async sendPremiumTeaserNotifications() {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         const features = [
           { name: "Debt Consolidation", savings: "89" },
           { name: "Advanced Analytics", savings: "45" },
@@ -4508,8 +3637,8 @@ var NotificationTriggers = class {
   // Send seasonal notifications
   async sendSeasonalNotifications(occasion, tip) {
     try {
-      const users3 = await storage.getAllUsers();
-      for (const user of users3) {
+      const users2 = await storage.getAllUsers();
+      for (const user of users2) {
         await notificationService.sendSeasonalNotification(user.id, occasion, tip);
       }
     } catch (error) {
@@ -4519,7 +3648,7 @@ var NotificationTriggers = class {
   // Send weekly challenge notifications
   async sendWeeklyChallengeNotifications() {
     try {
-      const users3 = await storage.getAllUsers();
+      const users2 = await storage.getAllUsers();
       const challenges = [
         { goal: "Save $25 in round-ups", reward: "bonus 50 DTT tokens" },
         { goal: "Make 15 round-up transactions", reward: "2x DTT multiplier" },
@@ -4527,7 +3656,7 @@ var NotificationTriggers = class {
         { goal: "Complete 7 consecutive days", reward: "exclusive badge" },
         { goal: "Reach $100 total round-ups", reward: "debt consultation call" }
       ];
-      for (const user of users3) {
+      for (const user of users2) {
         const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
         await notificationService.sendWeeklyChallengeNotification(
           user.id,
@@ -4548,8 +3677,8 @@ notificationRoutes.get("/api/notifications/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit) : 20;
-    const notifications3 = await notificationService.getUserNotifications(userId, limit);
-    res.json(notifications3);
+    const notifications2 = await notificationService.getUserNotifications(userId, limit);
+    res.json(notifications2);
   } catch (error) {
     console.error("Error fetching notifications:", error);
     res.status(500).json({ message: "Failed to fetch notifications" });
@@ -4707,16 +3836,16 @@ var RoundUpSplitService = class {
   /**
    * Process a round-up by splitting between crypto (immediate) and debt (Axos accumulation)
    */
-  async processRoundUpSplit(userId, transactionId, totalRoundUpAmount, roundUpSettings3) {
+  async processRoundUpSplit(userId, transactionId, totalRoundUpAmount, roundUpSettings2) {
     try {
       console.log(`Processing split round-up: $${totalRoundUpAmount.toFixed(2)} for user ${userId}`);
-      if (!roundUpSettings3.cryptoEnabled) {
+      if (!roundUpSettings2.cryptoEnabled) {
         await this.processDebtAccumulation(userId, transactionId, totalRoundUpAmount);
         return { cryptoAmount: 0, debtAmount: totalRoundUpAmount, success: true };
       }
       const { cryptoAmount, debtAmount } = splitRoundUp(
         totalRoundUpAmount,
-        parseFloat(roundUpSettings3.cryptoPercentage)
+        parseFloat(roundUpSettings2.cryptoPercentage)
       );
       console.log(`Split: Crypto $${cryptoAmount.toFixed(2)}, Debt $${debtAmount.toFixed(2)}`);
       const [cryptoResult, debtResult] = await Promise.all([
@@ -4724,7 +3853,7 @@ var RoundUpSplitService = class {
           userId,
           transactionId,
           cryptoAmount,
-          roundUpSettings3.preferredCrypto
+          roundUpSettings2.preferredCrypto
         ) : Promise.resolve({ success: true }),
         debtAmount > 0 ? this.processDebtAccumulation(userId, transactionId, debtAmount) : Promise.resolve({ success: true })
       ]);
@@ -4979,8 +4108,8 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const debts3 = await storage.getDebtsByUserId(userId);
-      res.json(debts3);
+      const debts2 = await storage.getDebtsByUserId(userId);
+      res.json(debts2);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -4992,8 +4121,8 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const limit = req.query.limit ? parseInt(req.query.limit) : void 0;
-      const transactions3 = await storage.getTransactionsByUserId(userId, limit);
-      res.json(transactions3);
+      const transactions2 = await storage.getTransactionsByUserId(userId, limit);
+      res.json(transactions2);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -5004,9 +4133,9 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const roundUpSettings3 = await storage.getRoundUpSettings(userId);
+      const roundUpSettings2 = await storage.getRoundUpSettings(userId);
       const amount = parseFloat(req.body.amount);
-      const multiplier = roundUpSettings3 ? parseFloat(roundUpSettings3.multiplier) : 1;
+      const multiplier = roundUpSettings2 ? parseFloat(roundUpSettings2.multiplier) : 1;
       const totalRoundUp = calculateRoundUp(amount, multiplier);
       const validatedData = insertTransactionSchema.parse({
         ...req.body,
@@ -5014,14 +4143,14 @@ async function registerRoutes(app2) {
         roundUpAmount: totalRoundUp.toFixed(2)
       });
       const transaction = await storage.createTransaction(validatedData);
-      if (totalRoundUp > 0 && roundUpSettings3?.isEnabled) {
+      if (totalRoundUp > 0 && roundUpSettings2?.isEnabled) {
         try {
           console.log(`\u{1F504} Processing split round-up: $${totalRoundUp.toFixed(2)}`);
           const splitResult = await roundUpSplitService.processRoundUpSplit(
             userId,
             transaction.id,
             totalRoundUp,
-            roundUpSettings3
+            roundUpSettings2
           );
           console.log(`\u2705 Split processing complete:`, splitResult);
           await notificationTriggers.onRoundUpCollected(
@@ -5048,8 +4177,8 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const payments3 = await storage.getPaymentsByUserId(userId);
-      res.json(payments3);
+      const payments2 = await storage.getPaymentsByUserId(userId);
+      res.json(payments2);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -5201,19 +4330,19 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const [debts3, transactions3, payments3] = await Promise.all([
+      const [debts2, transactions2, payments2] = await Promise.all([
         storage.getDebtsByUserId(userId),
         storage.getTransactionsByUserId(userId),
         storage.getPaymentsByUserId(userId)
       ]);
-      const totalDebt = debts3.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
-      const totalRoundUps = transactions3.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount), 0);
+      const totalDebt = debts2.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
+      const totalRoundUps = transactions2.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount), 0);
       const thisMonth = /* @__PURE__ */ new Date();
       thisMonth.setDate(1);
       thisMonth.setHours(0, 0, 0, 0);
-      const thisMonthRoundUps = transactions3.filter((trans) => trans.date >= thisMonth).reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount), 0);
-      const thisMonthPayments = payments3.filter((payment) => payment.date >= thisMonth).reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
-      const totalOriginalDebt = debts3.reduce((sum, debt) => sum + parseFloat(debt.originalBalance), 0);
+      const thisMonthRoundUps = transactions2.filter((trans) => trans.date >= thisMonth).reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount), 0);
+      const thisMonthPayments = payments2.filter((payment) => payment.date >= thisMonth).reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+      const totalOriginalDebt = debts2.reduce((sum, debt) => sum + parseFloat(debt.originalBalance), 0);
       const progressPercentage = totalOriginalDebt > 0 ? Math.round((totalOriginalDebt - totalDebt) / totalOriginalDebt * 100) : 0;
       const averageMonthlyPayment = thisMonthPayments || 500;
       const monthsToPayOff = Math.ceil(totalDebt / averageMonthlyPayment);
@@ -5226,7 +4355,7 @@ async function registerRoutes(app2) {
         thisMonthPayments: thisMonthPayments.toFixed(2),
         progressPercentage,
         debtFreeDate: debtFreeDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-        debtsCount: debts3.length
+        debtsCount: debts2.length
       };
       res.json(summary);
     } catch (error) {
@@ -5421,8 +4550,8 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const bankAccounts3 = await storage.getBankAccountsByUserId(userId);
-      res.json(bankAccounts3);
+      const bankAccounts2 = await storage.getBankAccountsByUserId(userId);
+      res.json(bankAccounts2);
     } catch (error) {
       console.error("Error fetching bank accounts:", error);
       res.status(500).json({ message: "Failed to fetch bank accounts" });
@@ -5434,8 +4563,8 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const bankAccounts3 = await storage.getBankAccountsByUserId(userId);
-      if (bankAccounts3.length === 0) {
+      const bankAccounts2 = await storage.getBankAccountsByUserId(userId);
+      if (bankAccounts2.length === 0) {
         return res.json([]);
       }
       if (!plaidService.isServiceConfigured()) {
@@ -5444,10 +4573,10 @@ async function registerRoutes(app2) {
       const endDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0];
       const allTransactions = [];
-      for (const account of bankAccounts3) {
+      for (const account of bankAccounts2) {
         try {
-          const transactions3 = await plaidService.getTransactions(account.plaidAccessToken, startDate, endDate);
-          allTransactions.push(...transactions3);
+          const transactions2 = await plaidService.getTransactions(account.plaidAccessToken, startDate, endDate);
+          allTransactions.push(...transactions2);
         } catch (error) {
           console.error(`Error fetching transactions for account ${account.accountId}:`, error);
         }
@@ -5464,15 +4593,15 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const bankAccounts3 = await storage.getBankAccountsByUserId(userId);
-      if (bankAccounts3.length === 0) {
+      const bankAccounts2 = await storage.getBankAccountsByUserId(userId);
+      if (bankAccounts2.length === 0) {
         return res.json([]);
       }
       if (!plaidService.isServiceConfigured()) {
         return res.status(503).json({ message: "Plaid service not configured" });
       }
       const allBalances = [];
-      for (const account of bankAccounts3) {
+      for (const account of bankAccounts2) {
         try {
           const balances = await plaidService.getBalance(account.plaidAccessToken);
           allBalances.push(...balances);
@@ -5556,8 +4685,8 @@ async function registerRoutes(app2) {
       if (!coinbaseService.isServiceConfigured()) {
         return res.status(503).json({ message: "Coinbase service not configured" });
       }
-      const transactions3 = await coinbaseService.getTransactions(accountId);
-      res.json(transactions3);
+      const transactions2 = await coinbaseService.getTransactions(accountId);
+      res.json(transactions2);
     } catch (error) {
       console.error("Error fetching Coinbase transactions:", error);
       res.status(500).json({ message: "Failed to fetch transactions" });
@@ -5752,7 +4881,7 @@ async function registerRoutes(app2) {
       if (!s3Service.isServiceConfigured()) {
         return res.status(503).json({ message: "S3 service not configured" });
       }
-      const [debts3, transactions3, payments3, cryptoPurchases3] = await Promise.all([
+      const [debts2, transactions2, payments2, cryptoPurchases2] = await Promise.all([
         storage.getDebtsByUserId(userId),
         storage.getTransactionsByUserId(userId),
         storage.getPaymentsByUserId(userId),
@@ -5762,10 +4891,10 @@ async function registerRoutes(app2) {
         userId,
         backupDate: (/* @__PURE__ */ new Date()).toISOString(),
         data: {
-          debts: debts3,
-          transactions: transactions3,
-          payments: payments3,
-          cryptoPurchases: cryptoPurchases3
+          debts: debts2,
+          transactions: transactions2,
+          payments: payments2,
+          cryptoPurchases: cryptoPurchases2
         }
       };
       const backupUrl = await s3Service.backupUserData(userId, userData);
@@ -5788,9 +4917,9 @@ async function registerRoutes(app2) {
           configured: false
         });
       }
-      const transactions3 = await storage.getTransactionsByUserId(userId);
+      const transactions2 = await storage.getTransactionsByUserId(userId);
       const syncResults = await Promise.all(
-        transactions3.map(
+        transactions2.map(
           (transaction) => dynamoService.createTransaction(transaction)
         )
       );

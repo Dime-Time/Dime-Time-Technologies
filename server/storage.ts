@@ -1339,7 +1339,322 @@ export class MemStorage implements IStorage {
   }
 }
 
-// DatabaseStorage class removed due to incomplete implementation
-// Using MemStorage for development as specified in replit.md
+// DatabaseStorage class for persistent storage using PostgreSQL
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
 
-export const storage = new MemStorage();
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const id = randomUUID();
+    const [result] = await db.insert(users).values({ ...user, id }).returning();
+    return result;
+  }
+
+  async upsertUser(user: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null }): Promise<User> {
+    const existing = await this.getUser(user.id);
+    if (existing) {
+      const [updated] = await db.update(users)
+        .set({ ...user, updatedAt: new Date() })
+        .where(eq(users.id, user.id))
+        .returning();
+      return updated;
+    }
+    const [result] = await db.insert(users).values({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImageUrl: user.profileImageUrl,
+    }).returning();
+    return result;
+  }
+
+  // Debt methods
+  async getDebtsByUserId(userId: string): Promise<Debt[]> {
+    return await db.select().from(debts).where(eq(debts.userId, userId));
+  }
+
+  async getDebt(id: string): Promise<Debt | undefined> {
+    const [debt] = await db.select().from(debts).where(eq(debts.id, id));
+    return debt;
+  }
+
+  async createDebt(debt: InsertDebt): Promise<Debt> {
+    const id = randomUUID();
+    const [result] = await db.insert(debts).values({ ...debt, id }).returning();
+    return result;
+  }
+
+  async updateDebt(id: string, updates: Partial<Debt>): Promise<Debt | undefined> {
+    const [result] = await db.update(debts).set(updates).where(eq(debts.id, id)).returning();
+    return result;
+  }
+
+  // Transaction methods
+  async getTransactionsByUserId(userId: string, limit?: number): Promise<Transaction[]> {
+    const query = db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.date));
+    if (limit) {
+      return await query.limit(limit);
+    }
+    return await query;
+  }
+
+  async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
+    const id = randomUUID();
+    const [result] = await db.insert(transactions).values({ ...transaction, id }).returning();
+    return result;
+  }
+
+  // Payment methods
+  async getPaymentsByUserId(userId: string): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.userId, userId)).orderBy(desc(payments.date));
+  }
+
+  async getPaymentsByDebtId(debtId: string): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.debtId, debtId));
+  }
+
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const id = randomUUID();
+    const [result] = await db.insert(payments).values({ ...payment, id }).returning();
+    return result;
+  }
+
+  async makeAcceleratedPayment(userId: string, debtId: string, amount: string): Promise<{ payment: Payment; updatedDebt: Debt }> {
+    const debt = await this.getDebt(debtId);
+    if (!debt) throw new Error("Debt not found");
+    
+    const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
+    const payment = await this.createPayment({
+      userId,
+      debtId,
+      amount,
+      source: "accelerated",
+    });
+    
+    const updatedDebt = await this.updateDebt(debtId, { currentBalance: newBalance });
+    if (!updatedDebt) throw new Error("Failed to update debt");
+    
+    return { payment, updatedDebt };
+  }
+
+  // Round-up settings methods
+  async getRoundUpSettings(userId: string): Promise<RoundUpSettings | undefined> {
+    const [settings] = await db.select().from(roundUpSettings).where(eq(roundUpSettings.userId, userId));
+    return settings;
+  }
+
+  async createOrUpdateRoundUpSettings(settings: InsertRoundUpSettings): Promise<RoundUpSettings> {
+    const existing = await this.getRoundUpSettings(settings.userId);
+    if (existing) {
+      const [updated] = await db.update(roundUpSettings).set(settings).where(eq(roundUpSettings.userId, settings.userId)).returning();
+      return updated;
+    }
+    const id = randomUUID();
+    const [result] = await db.insert(roundUpSettings).values({ ...settings, id }).returning();
+    return result;
+  }
+
+  // Crypto purchase methods
+  async getCryptoPurchasesByUserId(userId: string): Promise<CryptoPurchase[]> {
+    return await db.select().from(cryptoPurchases).where(eq(cryptoPurchases.userId, userId)).orderBy(desc(cryptoPurchases.createdAt));
+  }
+
+  async createCryptoPurchase(purchase: InsertCryptoPurchase): Promise<CryptoPurchase> {
+    const id = randomUUID();
+    const [result] = await db.insert(cryptoPurchases).values({ ...purchase, id }).returning();
+    return result;
+  }
+
+  async updateCryptoPurchaseStatus(id: string, status: string, coinbaseOrderId?: string): Promise<CryptoPurchase | undefined> {
+    const [result] = await db.update(cryptoPurchases).set({ status, coinbaseOrderId }).where(eq(cryptoPurchases.id, id)).returning();
+    return result;
+  }
+
+  // Bank account methods
+  async getBankAccountsByUserId(userId: string): Promise<BankAccount[]> {
+    return await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+  }
+
+  async createBankAccount(account: InsertBankAccount): Promise<BankAccount> {
+    const id = randomUUID();
+    const [result] = await db.insert(bankAccounts).values({ ...account, id }).returning();
+    return result;
+  }
+
+  async getBankAccountByPlaidItemId(itemId: string): Promise<BankAccount | undefined> {
+    const [account] = await db.select().from(bankAccounts).where(eq(bankAccounts.plaidItemId, itemId));
+    return account;
+  }
+
+  async updateBankAccountStatus(id: string, isActive: boolean): Promise<BankAccount | undefined> {
+    const [result] = await db.update(bankAccounts).set({ isActive }).where(eq(bankAccounts.id, id)).returning();
+    return result;
+  }
+
+  // User session methods
+  async createUserSession(session: InsertUserSession): Promise<UserSession> {
+    const id = randomUUID();
+    const [result] = await db.insert(userSessions).values({ ...session, id }).returning();
+    return result;
+  }
+
+  async getUserSessionByToken(token: string): Promise<UserSession | undefined> {
+    const [session] = await db.select().from(userSessions).where(eq(userSessions.sessionToken, token));
+    return session;
+  }
+
+  async updateSessionActivity(id: string): Promise<UserSession | undefined> {
+    const [result] = await db.update(userSessions).set({ lastActivity: new Date() }).where(eq(userSessions.id, id)).returning();
+    return result;
+  }
+
+  async deactivateUserSessions(userId: string, deviceType?: string): Promise<void> {
+    if (deviceType) {
+      await db.update(userSessions).set({ isActive: false }).where(and(eq(userSessions.userId, userId), eq(userSessions.deviceType, deviceType)));
+    } else {
+      await db.update(userSessions).set({ isActive: false }).where(eq(userSessions.userId, userId));
+    }
+  }
+
+  // DTT Token methods
+  async getDttHoldings(userId: string): Promise<DttHoldings | undefined> {
+    const [holdings] = await db.select().from(dttHoldings).where(eq(dttHoldings.userId, userId));
+    return holdings;
+  }
+
+  async createOrUpdateDttHoldings(holdings: InsertDttHoldings): Promise<DttHoldings> {
+    const existing = await this.getDttHoldings(holdings.userId);
+    if (existing) {
+      const [updated] = await db.update(dttHoldings).set(holdings).where(eq(dttHoldings.userId, holdings.userId)).returning();
+      return updated;
+    }
+    const id = randomUUID();
+    const [result] = await db.insert(dttHoldings).values({ ...holdings, id }).returning();
+    return result;
+  }
+
+  async updateDttBalance(userId: string, balance: string, stakedAmount?: string, totalEarned?: string): Promise<DttHoldings | undefined> {
+    const updates: Partial<DttHoldings> = { balance };
+    if (stakedAmount !== undefined) updates.stakedAmount = stakedAmount;
+    if (totalEarned !== undefined) updates.totalEarned = totalEarned;
+    const [result] = await db.update(dttHoldings).set(updates).where(eq(dttHoldings.userId, userId)).returning();
+    return result;
+  }
+
+  async getDttRewardsByUserId(userId: string): Promise<DttRewards[]> {
+    return await db.select().from(dttRewards).where(eq(dttRewards.userId, userId)).orderBy(desc(dttRewards.createdAt));
+  }
+
+  async createDttReward(reward: InsertDttRewards): Promise<DttRewards> {
+    const id = randomUUID();
+    const [result] = await db.insert(dttRewards).values({ ...reward, id }).returning();
+    return result;
+  }
+
+  async getDttStakingByUserId(userId: string): Promise<DttStaking[]> {
+    return await db.select().from(dttStaking).where(eq(dttStaking.userId, userId)).orderBy(desc(dttStaking.createdAt));
+  }
+
+  async createDttStaking(staking: InsertDttStaking): Promise<DttStaking> {
+    const id = randomUUID();
+    const startDate = new Date();
+    const endDate = new Date(startDate.getTime() + (staking.duration * 24 * 60 * 60 * 1000));
+    const [result] = await db.insert(dttStaking).values({
+      ...staking,
+      id,
+      startDate,
+      endDate,
+      status: staking.status || "active",
+      rewardsEarned: staking.rewardsEarned || "0.00000000",
+    }).returning();
+    return result;
+  }
+
+  async updateDttStakingStatus(id: string, status: string): Promise<DttStaking | undefined> {
+    const [result] = await db.update(dttStaking).set({ status }).where(eq(dttStaking.id, id)).returning();
+    return result;
+  }
+
+  async getDttTokenInfo(): Promise<DttTokenInfo | undefined> {
+    const [info] = await db.select().from(dttTokenInfo);
+    return info;
+  }
+
+  async updateDttTokenInfo(info: InsertDttTokenInfo): Promise<DttTokenInfo> {
+    const existing = await this.getDttTokenInfo();
+    if (existing) {
+      const [updated] = await db.update(dttTokenInfo).set({ ...info, lastUpdated: new Date() }).where(eq(dttTokenInfo.id, existing.id)).returning();
+      return updated;
+    }
+    const id = randomUUID();
+    const [result] = await db.insert(dttTokenInfo).values({ ...info, id }).returning();
+    return result;
+  }
+
+  // Notification methods
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const id = randomUUID();
+    const [result] = await db.insert(notifications).values({ ...notification, id }).returning();
+    return result;
+  }
+
+  async getNotificationsByUserId(userId: string, limit?: number): Promise<Notification[]> {
+    const query = db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+    if (limit) {
+      return await query.limit(limit);
+    }
+    return await query;
+  }
+
+  async updateNotificationStatus(id: string, status: string, sentAt?: Date, deliveredAt?: Date): Promise<Notification | undefined> {
+    const updates: Partial<Notification> = { status };
+    if (sentAt) updates.sentAt = sentAt;
+    if (deliveredAt) updates.deliveredAt = deliveredAt;
+    const [result] = await db.update(notifications).set(updates).where(eq(notifications.id, id)).returning();
+    return result;
+  }
+
+  // Notification settings methods
+  async getNotificationSettings(userId: string): Promise<NotificationSettings | undefined> {
+    const [settings] = await db.select().from(notificationSettings).where(eq(notificationSettings.userId, userId));
+    return settings;
+  }
+
+  async createOrUpdateNotificationSettings(settings: InsertNotificationSettings): Promise<NotificationSettings> {
+    const existing = await this.getNotificationSettings(settings.userId);
+    if (existing) {
+      const [updated] = await db.update(notificationSettings).set(settings).where(eq(notificationSettings.userId, settings.userId)).returning();
+      return updated;
+    }
+    const id = randomUUID();
+    const [result] = await db.insert(notificationSettings).values({ ...settings, id }).returning();
+    return result;
+  }
+
+  // Alias for interface compatibility
+  async getUserNotifications(userId: string, limit?: number): Promise<Notification[]> {
+    return this.getNotificationsByUserId(userId, limit);
+  }
+
+  // Contact submission methods
+  async createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission> {
+    const [result] = await db.insert(contactSubmissions).values(submission).returning();
+    return result;
+  }
+
+  async getContactSubmissions(): Promise<ContactSubmission[]> {
+    return await db.select().from(contactSubmissions).orderBy(desc(contactSubmissions.createdAt));
+  }
+}
+
+// Use DatabaseStorage for persistent data (production)
+export const storage = new DatabaseStorage();
