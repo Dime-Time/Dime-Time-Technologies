@@ -33,8 +33,8 @@ export function Navigation() {
 
   return (
     <>
-      {/* Desktop Navigation - with iOS safe area support */}
-      <nav className="shadow-sm border-b border-white/20 sticky top-0 z-50" style={{ backgroundColor: 'var(--dime-background)', paddingTop: 'max(env(safe-area-inset-top), 8px)' }}>
+      {/* Desktop Navigation - with iOS safe area support for Dynamic Island */}
+      <nav className="shadow-sm border-b border-white/20 sticky top-0 z-50" style={{ backgroundColor: 'var(--dime-background)', paddingTop: 'max(env(safe-area-inset-top), 44px)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 min-h-[56px]">
             <div className="flex items-center justify-center space-x-3">
@@ -60,31 +60,32 @@ export function Navigation() {
               ))}
             </div>
 
-            <div className="flex items-center space-x-2">
+            {/* Top action buttons - spaced out evenly */}
+            <div className="flex items-center space-x-4">
               <Link href="/notifications">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white relative h-11 w-11 min-h-[44px] min-w-[44px]">
+                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white relative h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-notifications">
                   <Bell className="w-6 h-6" />
                 </Button>
               </Link>
               <Link href="/settings">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]">
+                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-settings">
                   <Settings className="w-6 h-6" />
                 </Button>
               </Link>
               <Link href="/qr">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]">
+                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-qr">
                   <QrCode className="w-6 h-6" />
                 </Button>
               </Link>
 
-              <div className="w-10 h-10 min-h-[44px] min-w-[44px] bg-white/20 rounded-full flex items-center justify-center">
+              <div className="w-11 h-11 min-h-[44px] min-w-[44px] bg-white/20 rounded-full flex items-center justify-center" data-testid="button-profile">
                 <User className="w-5 h-5 text-white" />
               </div>
               
               {/* Mobile menu trigger */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="md:hidden">
+                  <Button variant="ghost" size="icon" className="md:hidden h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-menu">
                     <Menu className="w-6 h-6" />
                   </Button>
                 </SheetTrigger>

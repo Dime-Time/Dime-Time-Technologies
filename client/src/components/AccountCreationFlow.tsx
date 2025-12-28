@@ -127,6 +127,20 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
 
       if (!response.ok) {
         const error = await response.json();
+        // If email already exists, guide user to login
+        if (error.message === "Email already registered") {
+          toast({
+            title: "Email Already Registered",
+            description: "This email already has an account. Please use the login page instead.",
+            variant: "destructive"
+          });
+          setIsCreating(false);
+          // Redirect to login after a short delay
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+          return;
+        }
         throw new Error(error.message || 'Signup failed');
       }
 
