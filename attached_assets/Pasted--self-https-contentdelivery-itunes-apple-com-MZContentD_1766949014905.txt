@@ -1,0 +1,50 @@
+          "self" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/relationships/deliveryNotifications",
+          "related" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/deliveryNotifications"
+        }
+      },
+      "buildAssetDescription" : {
+        "links" : {
+          "self" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/relationships/buildAssetDescription",
+          "related" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/buildAssetDescription"
+        }
+      },
+      "buildAsset" : {
+        "links" : {
+          "self" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/relationships/buildAsset",
+          "related" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/buildAsset"
+        }
+      },
+      "buildAssetSpi" : {
+        "links" : {
+          "self" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/relationships/buildAssetSpi",
+          "related" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846/buildAssetSpi"
+        }
+      }
+    },
+    "links" : {
+      "self" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846"
+    }
+  },
+  "links" : {
+    "self" : "https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds/27aa5636-22f1-4140-b22a-785235c1b846"
+  }
+}
+=======================================
+2025-12-28 19:02:22.851 DEBUG: [ContentDelivery.Uploader.105896F70] 
+==================================
+Upload State: PROCESSING
+==================================
+2025-12-28 19:02:22.852 DEBUG: [ContentDelivery.Uploader.105896F70] Show Progress: Uploaded package is processing.
+2025-12-28 19:02:22.853 DEBUG: [ContentDelivery.Uploader.105896F70] Removing uploader state for identifier 'com.apple.cds_51E3D115-33B1-48E6-99DF-BA9AD699BCC4'
+2025-12-28 19:02:22.855 DEBUG: [ContentDelivery.Uploader.105896F70] Wrote state to '~/Library/Application Support/com.apple.itunes.altool/CDUploads/com.apple.cds_51E3D115-33B1-48E6-99DF-BA9AD699BCC4.plist'.
+2025-12-28 19:02:22.857 DEBUG: [ContentDelivery.Uploader.105896F70] Removed the temporary asset directory '~/Library/Caches/com.apple.cds/com.apple.cds_51E3D115-33B1-48E6-99DF-BA9AD699BCC4'.
+2025-12-28 19:02:22.858 DEBUG: [ContentDelivery.Uploader.105896F70] Removing uploader saved state for identifier 'com.apple.cds_51E3D115-33B1-48E6-99DF-BA9AD699BCC4'.
+2025-12-28 19:02:22.858 DEBUG: [ContentDelivery.Uploader.105896F70] Show Progress: Upload succeeded.
+2025-12-28 19:02:22.859  INFO: [ContentDelivery.Uploader.105896F70] 
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: 27aa5636-22f1-4140-b22a-785235c1b846
+Transferred 9542278 bytes in 0.179 seconds (53.2MB/s, 425.405Mbps)
+==========================================
+2025-12-28 19:02:22.859 DEBUG: [ContentDelivery.Uploader.105896F70] Log file path: ~/Library/Logs/ContentDelivery/com.apple.itunes.altool/com.apple.itunes.altool_Upload_2025-12-28_19-01-41_785.txt
+No errors uploading archive at 'build/ios/ipa/App.ipa
