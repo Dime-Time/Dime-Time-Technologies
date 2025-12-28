@@ -1,6 +1,12 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+
+declare module 'express-session' {
+  interface SessionData {
+    userId: string;
+  }
+}
 import { isAuthenticated } from "./replitAuth";
 import { dimeTokenService } from "./services/dimeTokenService";
 import { createHash } from "crypto";
@@ -21,12 +27,6 @@ import { roundUpSplitService } from "./services/roundUpSplitService";
 import { calculateRoundUp } from "../client/src/lib/calculations";
 import multer from "multer";
 
-// Helper function to get authenticated user ID
-function getAuthenticatedUserId(req: Request): string | null {
-  const authUser = req.user as any;
-  return authUser?.claims?.sub || null;
-}
-
 // Simple password hashing (use bcrypt in production)
 function hashPassword(password: string): string {
   return createHash('sha256').update(password).digest('hex');
@@ -34,6 +34,60 @@ function hashPassword(password: string): string {
 
 function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
+}
+
+// Get session secret - required for token generation
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error('SESSION_SECRET environment variable is required');
+  }
+  return secret;
+}
+
+// Generate auth token for native apps (userId + timestamp signed with hash)
+function generateAuthToken(userId: string): string {
+  const timestamp = Date.now();
+  const payload = `${userId}:${timestamp}`;
+  const signature = createHash('sha256').update(payload + getSessionSecret()).digest('hex').substring(0, 16);
+  return Buffer.from(`${payload}:${signature}`).toString('base64');
+}
+
+// Verify and decode auth token
+function verifyAuthToken(token: string): string | null {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const [userId, timestampStr, signature] = decoded.split(':');
+    const payload = `${userId}:${timestampStr}`;
+    const expectedSignature = createHash('sha256').update(payload + getSessionSecret()).digest('hex').substring(0, 16);
+    
+    if (signature !== expectedSignature) return null;
+    
+    // Token valid for 30 days
+    const timestamp = parseInt(timestampStr, 10);
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    if (Date.now() - timestamp > thirtyDays) return null;
+    
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
+// Get user ID from session OR Authorization header (for native apps)
+function getUserIdFromRequest(req: Request): string | null {
+  // First check session (for web users with cookies)
+  const sessionUserId = (req.session as any)?.userId;
+  if (sessionUserId) return sessionUserId;
+  
+  // Then check Authorization header (for native apps)
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    return verifyAuthToken(token);
+  }
+  
+  return null;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -102,13 +156,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store user session - THIS IS CRITICAL so they're authenticated after signup
       req.session.userId = user.id;
       
+      // Generate auth token for native apps
+      const authToken = generateAuthToken(user.id);
+      
       // Explicitly save session before responding
       req.session.save((err) => {
         if (err) {
           console.error("Session save error:", err);
           return res.status(500).json({ message: "Failed to create session" });
         }
-        res.status(201).json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+        res.status(201).json({ 
+          success: true, 
+          user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+          authToken // Token for native apps to store and use
+        });
       });
     } catch (error) {
       console.error("Signup error:", error);
@@ -133,13 +194,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store user session
       req.session.userId = user.id;
       
+      // Generate auth token for native apps
+      const authToken = generateAuthToken(user.id);
+      
       // Explicitly save session before responding
       req.session.save((err) => {
         if (err) {
           console.error("Session save error:", err);
           return res.status(500).json({ message: "Failed to create session" });
         }
-        res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+        res.json({ 
+          success: true, 
+          user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+          authToken // Token for native apps to store and use
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -150,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user 
   app.get("/api/user", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -196,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's debts
   app.get("/api/debts", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -211,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's transactions
   app.get("/api/transactions", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -227,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new transaction
   app.post("/api/transactions", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -289,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's payments
   app.get("/api/payments", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -303,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new payment
   app.post("/api/payments", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -342,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // One-tap accelerated payment
   app.post("/api/accelerated-payment", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -371,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get round-up settings
   app.get("/api/round-up-settings", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -385,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update round-up settings
   app.put("/api/round-up-settings", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -402,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create/update round-up settings with bank and debt selection
   app.post("/api/round-up-settings", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -440,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply round-ups to debt
   app.post("/api/apply-round-ups", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -477,7 +545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get dashboard summary
   app.get("/api/dashboard-summary", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -535,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's crypto purchases
   app.get("/api/crypto-purchases", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -549,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new crypto purchase with real Coinbase integration
   app.post("/api/crypto-purchases", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -635,7 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get crypto portfolio summary
   app.get("/api/crypto-summary", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -684,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Plaid banking integration routes
   app.post("/api/plaid/create-link-token", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -706,7 +774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/plaid/exchange-token", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -757,7 +825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/plaid/accounts", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -771,7 +839,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/plaid/transactions", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -808,7 +876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/plaid/balances", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -882,7 +950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/coinbase/buy", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -967,7 +1035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dime-token/balance', async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -995,7 +1063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dime-token/rewards', async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -1019,7 +1087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/dime-token/stake', async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -1094,7 +1162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AWS S3 File Upload Routes
   app.post("/api/aws/upload", upload.single('file'), async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }

@@ -20,16 +20,11 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
     async (publicToken: string, metadata: any) => {
       setIsLoading(true);
       try {
-        // Exchange public token for access token
-        const response = await apiRequest('/api/plaid/exchange-token', {
-          method: 'POST',
-          body: JSON.stringify({ publicToken }),
-        });
+        const response = await apiRequest('POST', '/api/plaid/exchange-token', { publicToken });
 
         if (response.ok) {
           const data = await response.json();
           
-          // Track successful bank connection
           trackBankConnection(true, metadata?.institution?.name);
           trackUserMilestone('bank_connected', data.accounts?.length || 1);
           trackFeatureUsage('banking', 'connect_success');
@@ -45,7 +40,6 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
       } catch (error) {
         console.error('Error connecting bank account:', error);
         
-        // Track failed bank connection
         trackBankConnection(false, metadata?.institution?.name);
         trackFeatureUsage('banking', 'connect_failed');
         
@@ -75,9 +69,7 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
   const createLinkToken = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest('/api/plaid/create-link-token', {
-        method: 'POST',
-      });
+      const response = await apiRequest('POST', '/api/plaid/create-link-token');
 
       if (response.ok) {
         const data = await response.json();
@@ -98,7 +90,6 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
   };
 
   const handleConnect = () => {
-    // Track bank connection attempt
     trackFeatureUsage('banking', 'connect_attempt');
     
     if (linkToken && ready) {
@@ -111,7 +102,7 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
   return (
     <Button
       onClick={handleConnect}
-      disabled={isLoading || (linkToken && !ready)}
+      disabled={isLoading || (linkToken !== null && !ready)}
       className="flex items-center space-x-2"
     >
       {isLoading ? (

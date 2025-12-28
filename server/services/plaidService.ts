@@ -1,7 +1,7 @@
 import { Configuration, PlaidApi, PlaidEnvironments, CountryCode, Products } from 'plaid';
 
 class PlaidService {
-  private client: PlaidApi;
+  private client: PlaidApi | null = null;
   private isConfigured: boolean = false;
 
   constructor() {
@@ -23,20 +23,34 @@ class PlaidService {
     }
   }
 
+  private getClient(): PlaidApi {
+    if (!this.client) {
+      throw new Error('Plaid client not initialized');
+    }
+    return this.client;
+  }
+
   async createLinkToken(userId: string) {
     if (!this.isConfigured) {
       throw new Error('Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.');
     }
 
     try {
-      const response = await this.client.linkTokenCreate({
+      const linkTokenRequest: any = {
         user: { client_user_id: userId },
         client_name: 'Dime Time',
         products: [Products.Transactions, Products.Auth],
         country_codes: [CountryCode.Us],
         language: 'en',
-        redirect_uri: process.env.PLAID_REDIRECT_URI,
-      });
+      };
+      
+      // Only include redirect_uri if properly configured (not a placeholder)
+      const redirectUri = process.env.PLAID_REDIRECT_URI;
+      if (redirectUri && !redirectUri.includes('your-domain') && redirectUri.startsWith('https://')) {
+        linkTokenRequest.redirect_uri = redirectUri;
+      }
+      
+      const response = await this.getClient().linkTokenCreate(linkTokenRequest);
       return response.data.link_token;
     } catch (error) {
       console.error('Error creating link token:', error);
@@ -50,7 +64,7 @@ class PlaidService {
     }
 
     try {
-      const response = await this.client.itemPublicTokenExchange({
+      const response = await this.getClient().itemPublicTokenExchange({
         public_token: publicToken,
       });
       return {
@@ -69,7 +83,7 @@ class PlaidService {
     }
 
     try {
-      const response = await this.client.accountsGet({
+      const response = await this.getClient().accountsGet({
         access_token: accessToken,
       });
       return response.data.accounts;
@@ -85,7 +99,7 @@ class PlaidService {
     }
 
     try {
-      const response = await this.client.transactionsGet({
+      const response = await this.getClient().transactionsGet({
         access_token: accessToken,
         start_date: startDate,
         end_date: endDate,
@@ -103,7 +117,7 @@ class PlaidService {
     }
 
     try {
-      const response = await this.client.accountsBalanceGet({
+      const response = await this.getClient().accountsBalanceGet({
         access_token: accessToken,
       });
       return response.data.accounts;

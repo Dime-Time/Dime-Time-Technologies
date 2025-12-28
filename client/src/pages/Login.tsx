@@ -4,27 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getApiUrl } from "@/lib/queryClient";
 import { LogoWithText } from "@/components/logo";
+import { saveAuthToken } from "@/lib/authToken";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const response = await fetch("/api/login", {
+      const response = await fetch(getApiUrl("/api/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
+        credentials: "include",
       });
       if (!response.ok) throw new Error("Invalid credentials");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Save auth token for native apps (persists across app restarts)
+      if (data.authToken) {
+        saveAuthToken(data.authToken);
+      }
+      
+      // Invalidate user query to refetch with new session
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      
       toast({ title: "Welcome back!" });
       setLocation("/dashboard");
     },

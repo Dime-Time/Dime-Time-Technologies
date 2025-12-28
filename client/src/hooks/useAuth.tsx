@@ -1,5 +1,7 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { clearAuthToken } from "@/lib/authToken";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface User {
   id: string;
@@ -45,8 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    clearAuthToken();
     queryClient.clear();
-    window.location.href = "/api/logout";
+    window.location.href = getApiUrl("/api/logout");
   };
 
   const authValue: AuthContextType = {
