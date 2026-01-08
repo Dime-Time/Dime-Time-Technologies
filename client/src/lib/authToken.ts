@@ -1,32 +1,46 @@
-import { Capacitor } from '@capacitor/core';
+// client/src/lib/authToken.ts
 
-const AUTH_TOKEN_KEY = 'dime_time_auth_token';
+const STORAGE_KEY = "dime_time_auth_token";
 
-export function saveAuthToken(token: string): void {
+/**
+ * Save the auth token so native apps (and web) can reuse it
+ * across app restarts.
+ */
+export function saveAuthToken(token: string) {
   try {
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-  } catch (e) {
-    console.warn('Failed to save auth token:', e);
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(STORAGE_KEY, token);
+    }
+  } catch (err) {
+    console.warn("Unable to persist auth token", err);
   }
 }
 
+/**
+ * Read the stored auth token.
+ * On native (Capacitor) this runs in the WebView context, so
+ * localStorage is available and persisted per app install.
+ */
 export function getAuthToken(): string | null {
   try {
-    return localStorage.getItem(AUTH_TOKEN_KEY);
-  } catch (e) {
-    console.warn('Failed to get auth token:', e);
-    return null;
+    if (typeof window !== "undefined" && window.localStorage) {
+      return window.localStorage.getItem(STORAGE_KEY);
+    }
+  } catch (err) {
+    console.warn("Unable to read auth token", err);
   }
+  return null;
 }
 
-export function clearAuthToken(): void {
+/**
+ * Clear the token on logout.
+ */
+export function clearAuthToken() {
   try {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-  } catch (e) {
-    console.warn('Failed to clear auth token:', e);
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+  } catch (err) {
+    console.warn("Unable to clear auth token", err);
   }
-}
-
-export function isNativePlatform(): boolean {
-  return Capacitor.isNativePlatform();
 }
