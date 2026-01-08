@@ -1,13 +1,22 @@
+import { useEffect, type ReactNode } from "react";
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+
+import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navigation } from "@/components/navigation";
-import { useEffect } from "react";
-import { initGA, setUserId, setUserProperties, trackLogin, setupGlobalErrorTracking } from "../lib/analytics";
+
+import {
+  initGA,
+  setUserId,
+  setUserProperties,
+  trackLogin,
+  setupGlobalErrorTracking,
+} from "../lib/analytics";
 import { useAnalytics } from "../hooks/use-analytics";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+
 import LandingPage from "@/pages/LandingPage";
 import Onboarding from "@/pages/Onboarding";
 
@@ -29,35 +38,280 @@ import BusinessAnalytics from "@/pages/business-analytics";
 import StatsPage from "@/pages/StatsPage";
 import NotFound from "@/pages/not-found";
 
-function Router() {
-  // Track page views and user interactions
+/**
+ * Layout for authenticated users:
+ * - Respects iOS safe areas (Dynamic Island / notch / home indicator)
+ * - Keeps navigation pinned at the bottom
+ * - Main content scrolls independently
+ */
+function AuthenticatedLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
+        {children}
+      </main>
+      <nav className="sticky bottom-0 left-0 right-0 safe-area-bottom">
+        <Navigation />
+      </nav>
+    </div>
+  );
+}
+
+/**
+ * Layout for login / signup / auth flows that do not need bottom navigation.
+ */
+function AuthScreen({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
+      <main className="flex-1 flex items-center justify-center px-4">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+/**
+ * Loading screen while auth state initializes.
+ */
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-[#918EF4] flex items-center justify-center safe-area-top safe-area-bottom">
+      <div className="text-white text-xl">Loading...</div>
+    </div>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  // Pageview tracking, route changes, etc.
   useAnalytics();
-  
+
+  // Initialize user-level analytics when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const internalUserId = user.id || `user_${Date.now()}`;
+      setUserId(internalUserId);
+
+      trackLogin("replit_auth");
+
+      setUserProperties({
+        user_type: "authenticated",
+        signup_month: new Date().toISOString().slice(0, 7), // YYYY-MM
+        has_bank_connected: false,
+        crypto_enabled: true,
+        subscription_tier: "free",
+      });
+    }
+  }, [isAuthenticated, user]);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Switch>
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/transactions" component={Transactions} />
-      <Route path="/debts" component={Debts} />
-      <Route path="/crypto" component={Crypto} />
-      <Route path="/insights" component={Insights} />
-      <Route path="/banking" component={Banking} />
-      <Route path="/qr" component={QRCodePage} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/notifications" component={Notifications} />
-      <Route path="/legal" component={Legal} />
-      <Route path="/signup" component={Signup} />
-      <Route path="/dime-token" component={DimeToken} />
-      <Route path="/business-analytics" component={BusinessAnalytics} />
-      <Route path="/stats" component={StatsPage} />
+      {/* Root route: authenticated -> dashboard, unauth -> login */}
+      <Route path="/">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Dashboard />
+          </AuthenticatedLayout>
+        ) : (
+          <AuthScreen>
+            <Login />
+          </AuthScreen>
+        )}
+      </Route>
+
+      {/* Explicit login route */}
+      <Route path="/login">
+        <AuthScreen>
+          <Login />
+        </AuthScreen>
+      </Route>
+
+      {/* Conference / marketing landing */}
+      <Route path="/conference" component={LandingPage} />
+
+      {/* Optional onboarding flow if you choose to use it */}
+      <Route path="/onboarding">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Onboarding />
+          </AuthenticatedLayout>
+        ) : (
+          <AuthScreen>
+            <Login />
+          </AuthScreen>
+        )}
+      </Route>
+
+      {/* Main authenticated app surfaces */}
+      <Route path="/dashboard">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Dashboard />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/transactions">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Transactions />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/debts">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Debts />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/crypto">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Crypto />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/insights">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Insights />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/banking">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Banking />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/qr">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <QRCodePage />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/settings">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Settings />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/notifications">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Notifications />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/legal">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <Legal />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      {/* Signup is open so new users can register */}
+      <Route path="/signup">
+        <AuthScreen>
+          <Signup />
+        </AuthScreen>
+      </Route>
+
+      {/* Bank setup wizard: full-screen, no bottom nav */}
+      <Route path="/bank-setup">
+        {isAuthenticated ? (
+          <div className="min-h-screen bg-dime-lilac safe-area-top safe-area-bottom">
+            <main className="flex-1 px-4 pt-4 pb-4">
+              <BankSetupFlow
+                onComplete={() => (window.location.href = "/dashboard")}
+                onSkip={() => (window.location.href = "/dashboard")}
+              />
+            </main>
+          </div>
+        ) : (
+          <AuthScreen>
+            <Login />
+          </AuthScreen>
+        )}
+      </Route>
+
+      <Route path="/dime-token">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <DimeToken />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/business-analytics">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <BusinessAnalytics />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      <Route path="/stats">
+        {isAuthenticated ? (
+          <AuthenticatedLayout>
+            <StatsPage />
+          </AuthenticatedLayout>
+        ) : (
+          <LandingPage />
+        )}
+      </Route>
+
+      {/* Fallback */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
-  // Initialize Google Analytics when app loads
+  // Initialize GA once at app load
   useEffect(() => {
-    console.log('Initializing Google Analytics for Dime Time...');
     initGA();
     setupGlobalErrorTracking();
   }, []);
@@ -66,207 +320,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <div className="min-h-screen bg-dime-lilac">
-            <AppContent />
-            <Toaster />
-          </div>
+          <AppContent />
+          <Toaster />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
-  );
-}
-
-function AppContent() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  // Track user authentication and set user properties
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      // Set user ID (using internal UUID, not PII)
-      const internalUserId = user.id || `user_${Date.now()}`;
-      setUserId(internalUserId);
-      
-      // Track successful login
-      trackLogin('replit_auth');
-      
-      // Set user properties for audience segmentation
-      setUserProperties({
-        user_type: 'authenticated',
-        signup_month: new Date().toISOString().slice(0, 7), // YYYY-MM format for privacy
-        has_bank_connected: false, // You can update this based on actual data
-        crypto_enabled: true, // Update based on user preferences
-        subscription_tier: 'free' // Update based on actual subscription
-      });
-    }
-  }, [isAuthenticated, user]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#918EF4] flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  // Show login if not authenticated, otherwise redirect to dashboard
-  return (
-    <Switch>
-      <Route path="/" >
-        {isAuthenticated ? (
-          // Redirect authenticated users to dashboard
-          <>
-            <Navigation />
-            <Dashboard />
-          </>
-        ) : (
-          <Login />
-        )}
-      </Route>
-      <Route path="/login" component={Login} />
-      <Route path="/conference" component={LandingPage} />
-      <Route path="/dashboard">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Dashboard />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/transactions">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Transactions />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/debts">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Debts />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/crypto">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Crypto />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/insights">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Insights />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/banking">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Banking />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/qr">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <QRCodePage />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/settings">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Settings />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/notifications">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Notifications />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/legal">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <Legal />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/signup" component={Signup} />
-      <Route path="/bank-setup">
-        {isAuthenticated ? (
-          <BankSetupFlow 
-            onComplete={() => window.location.href = '/dashboard'} 
-            onSkip={() => window.location.href = '/dashboard'} 
-          />
-        ) : (
-          <Login />
-        )}
-      </Route>
-      <Route path="/dime-token">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <DimeToken />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/business-analytics">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <BusinessAnalytics />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route path="/stats">
-        {isAuthenticated ? (
-          <>
-            <Navigation />
-            <StatsPage />
-          </>
-        ) : (
-          <LandingPage />
-        )}
-      </Route>
-      <Route component={NotFound} />
-    </Switch>
   );
 }
 
