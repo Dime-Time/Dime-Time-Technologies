@@ -1,8 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { 
-  CreditCard, 
-  Home, 
-  TrendingUp, 
+import {
+  CreditCard,
+  Home,
+  TrendingUp,
   Receipt,
   Menu,
   User,
@@ -11,7 +11,7 @@ import {
   QrCode,
   Bell,
   Settings,
-  BarChart3
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -33,17 +33,21 @@ export function Navigation() {
 
   return (
     <>
-      {/* Desktop Navigation - with iOS safe area support for Dynamic Island */}
-      <nav className="shadow-sm border-b border-white/20 sticky top-0 z-50" style={{ backgroundColor: 'var(--dime-background)', paddingTop: 'max(env(safe-area-inset-top), 44px)' }}>
+      {/* Top Navigation (respects Dynamic Island via safe-area-top) */}
+      <nav className="safe-area-top shadow-sm border-b border-white/20 sticky top-0 z-50 bg-dime-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 min-h-[56px]">
+            {/* Brand / Logo */}
             <div className="flex items-center justify-center space-x-3">
               <div className="mt-1">
                 <Logo size={32} clean={true} />
               </div>
-              <span className="text-xl font-black text-white">Dime Time</span>
+              <span className="text-xl font-black text-white">
+                Dime Time
+              </span>
             </div>
-            
+
+            {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center space-x-8">
               {navItems.map((item) => (
                 <Link
@@ -60,45 +64,72 @@ export function Navigation() {
               ))}
             </div>
 
-            {/* Top action buttons - spaced out evenly */}
+            {/* Right-side actions (notifications, settings, QR, profile, menu) */}
             <div className="flex items-center space-x-4">
               <Link href="/notifications">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white relative h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-notifications">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white/70 hover:text-white relative h-11 w-11 min-h-[44px] min-w-[44px]"
+                  data-testid="button-notifications"
+                >
                   <Bell className="w-6 h-6" />
                 </Button>
               </Link>
+
               <Link href="/settings">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-settings">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]"
+                  data-testid="button-settings"
+                >
                   <Settings className="w-6 h-6" />
                 </Button>
               </Link>
+
               <Link href="/qr">
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-qr">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]"
+                  data-testid="button-qr"
+                >
                   <QrCode className="w-6 h-6" />
                 </Button>
               </Link>
 
-              <div className="w-11 h-11 min-h-[44px] min-w-[44px] bg-white/20 rounded-full flex items-center justify-center" data-testid="button-profile">
+              {/* Profile avatar placeholder */}
+              <div
+                className="w-11 h-11 min-h-[44px] min-w-[44px] bg-white/20 rounded-full flex items-center justify-center"
+                data-testid="button-profile"
+              >
                 <User className="w-5 h-5 text-white" />
               </div>
-              
+
               {/* Mobile menu trigger */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="md:hidden h-11 w-11 min-h-[44px] min-w-[44px]" data-testid="button-menu">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden h-11 w-11 min-h-[44px] min-w-[44px]"
+                    data-testid="button-menu"
+                  >
                     <Menu className="w-6 h-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent style={{ backgroundColor: 'var(--dime-background)' }}>
+                <SheetContent className="bg-dime-background">
                   <div className="flex flex-col space-y-4 mt-8">
                     {navItems.map((item) => {
                       const Icon = item.icon;
+                      const active = location === item.href;
                       return (
                         <Link
                           key={item.href}
                           href={item.href}
                           className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                            location === item.href
+                            active
                               ? "bg-white/20 text-white"
                               : "text-white/70 hover:bg-white/10"
                           }`}
@@ -108,7 +139,7 @@ export function Navigation() {
                         </Link>
                       );
                     })}
-                    
+
                     <div className="border-t border-white/20 pt-4 mt-4">
                       <Link
                         href="/notifications"
@@ -121,7 +152,7 @@ export function Navigation() {
                         <Bell className="w-5 h-5" />
                         <span className="font-medium">Notifications</span>
                       </Link>
-                      
+
                       <Link
                         href="/settings"
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
@@ -133,7 +164,7 @@ export function Navigation() {
                         <Settings className="w-5 h-5" />
                         <span className="font-medium">Settings</span>
                       </Link>
-                      
+
                       <Link
                         href="/qr"
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
@@ -145,8 +176,6 @@ export function Navigation() {
                         <QrCode className="w-5 h-5" />
                         <span className="font-medium">QR Code</span>
                       </Link>
-                      
-
                     </div>
                   </div>
                 </SheetContent>
@@ -156,26 +185,31 @@ export function Navigation() {
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation - with iOS safe area support */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/20 px-1 z-50" style={{ backgroundColor: 'var(--dime-background)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)', paddingTop: '8px' }}>
+      {/* Bottom Navigation (mobile) – respects home indicator via safe-area-bottom */}
+      <nav className="safe-area-bottom md:hidden fixed bottom-0 left-0 right-0 border-t border-white/20 px-1 z-50 bg-dime-background">
         <div className="flex justify-between items-center max-w-screen-xl mx-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const active = location === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center py-2 px-1 min-w-0 flex-1 transition-colors min-h-[44px] ${
-                  location === item.href
-                    ? "text-white"
-                    : "text-white/70"
+                  active ? "text-white" : "text-white/70"
                 }`}
-                style={{ maxWidth: `${100/navItems.length}%` }}
+                style={{ maxWidth: `${100 / navItems.length}%` }}
               >
                 <Icon className="w-5 h-5 mb-1" />
-                <span 
-                  className="text-center leading-none truncate w-full block" 
-                  style={{ fontSize: '10px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                <span
+                  className="text-center leading-none truncate w-full block"
+                  style={{
+                    fontSize: "10px",
+                    maxWidth: "100%",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   {item.label}
                 </span>
