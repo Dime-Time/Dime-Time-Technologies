@@ -903,7 +903,7 @@ import { z as z4 } from "zod";
 // server/services/plaidService.ts
 import { Configuration, PlaidApi, PlaidEnvironments, CountryCode, Products } from "plaid";
 var PlaidService = class {
-  client;
+  client = null;
   isConfigured = false;
   constructor() {
     try {
@@ -924,19 +924,29 @@ var PlaidService = class {
       this.isConfigured = false;
     }
   }
+  getClient() {
+    if (!this.client) {
+      throw new Error("Plaid client not initialized");
+    }
+    return this.client;
+  }
   async createLinkToken(userId) {
     if (!this.isConfigured) {
       throw new Error("Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.");
     }
     try {
-      const response = await this.client.linkTokenCreate({
+      const linkTokenRequest = {
         user: { client_user_id: userId },
         client_name: "Dime Time",
         products: [Products.Transactions, Products.Auth],
         country_codes: [CountryCode.Us],
-        language: "en",
-        redirect_uri: process.env.PLAID_REDIRECT_URI
-      });
+        language: "en"
+      };
+      const redirectUri = process.env.PLAID_REDIRECT_URI;
+      if (redirectUri && !redirectUri.includes("your-domain") && redirectUri.startsWith("https://")) {
+        linkTokenRequest.redirect_uri = redirectUri;
+      }
+      const response = await this.getClient().linkTokenCreate(linkTokenRequest);
       return response.data.link_token;
     } catch (error) {
       console.error("Error creating link token:", error);
@@ -948,7 +958,7 @@ var PlaidService = class {
       throw new Error("Plaid service not configured");
     }
     try {
-      const response = await this.client.itemPublicTokenExchange({
+      const response = await this.getClient().itemPublicTokenExchange({
         public_token: publicToken
       });
       return {
@@ -965,7 +975,7 @@ var PlaidService = class {
       throw new Error("Plaid service not configured");
     }
     try {
-      const response = await this.client.accountsGet({
+      const response = await this.getClient().accountsGet({
         access_token: accessToken
       });
       return response.data.accounts;
@@ -979,7 +989,7 @@ var PlaidService = class {
       throw new Error("Plaid service not configured");
     }
     try {
-      const response = await this.client.transactionsGet({
+      const response = await this.getClient().transactionsGet({
         access_token: accessToken,
         start_date: startDate,
         end_date: endDate
@@ -995,7 +1005,7 @@ var PlaidService = class {
       throw new Error("Plaid service not configured");
     }
     try {
-      const response = await this.client.accountsBalanceGet({
+      const response = await this.getClient().accountsBalanceGet({
         access_token: accessToken
       });
       return response.data.accounts;
@@ -3976,6 +3986,44 @@ function hashPassword(password) {
 function verifyPassword(password, hash) {
   return hashPassword(password) === hash;
 }
+function getSessionSecret() {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error("SESSION_SECRET environment variable is required");
+  }
+  return secret;
+}
+function generateAuthToken(userId) {
+  const timestamp2 = Date.now();
+  const payload = `${userId}:${timestamp2}`;
+  const signature = createHash("sha256").update(payload + getSessionSecret()).digest("hex").substring(0, 16);
+  return Buffer.from(`${payload}:${signature}`).toString("base64");
+}
+function verifyAuthToken(token) {
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf-8");
+    const [userId, timestampStr, signature] = decoded.split(":");
+    const payload = `${userId}:${timestampStr}`;
+    const expectedSignature = createHash("sha256").update(payload + getSessionSecret()).digest("hex").substring(0, 16);
+    if (signature !== expectedSignature) return null;
+    const timestamp2 = parseInt(timestampStr, 10);
+    const thirtyDays = 30 * 24 * 60 * 60 * 1e3;
+    if (Date.now() - timestamp2 > thirtyDays) return null;
+    return userId;
+  } catch {
+    return null;
+  }
+}
+function getUserIdFromRequest(req) {
+  const sessionUserId = req.session?.userId;
+  if (sessionUserId) return sessionUserId;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    return verifyAuthToken(token);
+  }
+  return null;
+}
 async function registerRoutes(app2) {
   app2.post("/api/signup", async (req, res) => {
     try {
@@ -4030,12 +4078,18 @@ async function registerRoutes(app2) {
         await storage.createDebt(debtData);
       }
       req.session.userId = user.id;
+      const authToken = generateAuthToken(user.id);
       req.session.save((err) => {
         if (err) {
           console.error("Session save error:", err);
           return res.status(500).json({ message: "Failed to create session" });
         }
-        res.status(201).json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+        res.status(201).json({
+          success: true,
+          user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+          authToken
+          // Token for native apps to store and use
+        });
       });
     } catch (error) {
       console.error("Signup error:", error);
@@ -4053,12 +4107,18 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       req.session.userId = user.id;
+      const authToken = generateAuthToken(user.id);
       req.session.save((err) => {
         if (err) {
           console.error("Session save error:", err);
           return res.status(500).json({ message: "Failed to create session" });
         }
-        res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+        res.json({
+          success: true,
+          user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+          authToken
+          // Token for native apps to store and use
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -4067,7 +4127,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/user", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4104,7 +4164,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/debts", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4116,7 +4176,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/transactions", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4129,7 +4189,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/transactions", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4173,7 +4233,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/payments", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4185,7 +4245,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/payments", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4216,7 +4276,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/accelerated-payment", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4240,7 +4300,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/round-up-settings", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4252,7 +4312,7 @@ async function registerRoutes(app2) {
   });
   app2.put("/api/round-up-settings", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4267,7 +4327,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/round-up-settings", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4298,7 +4358,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/apply-round-ups", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4326,7 +4386,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/dashboard-summary", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4364,7 +4424,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/crypto-purchases", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4376,7 +4436,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/crypto-purchases", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4446,7 +4506,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/crypto-summary", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4484,7 +4544,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/plaid/create-link-token", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4503,7 +4563,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/plaid/exchange-token", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4546,7 +4606,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/plaid/accounts", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4559,7 +4619,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/plaid/transactions", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4589,7 +4649,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/plaid/balances", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4651,7 +4711,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/coinbase/buy", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4725,7 +4785,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/dime-token/balance", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4749,7 +4809,7 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/dime-token/rewards", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4769,7 +4829,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/dime-token/stake", async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -4829,7 +4889,7 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/aws/upload", upload.single("file"), async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -5194,14 +5254,42 @@ async function setupAuth(app2) {
 // server/index.ts
 var app = express2();
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", env: process.env.NODE_ENV, time: (/* @__PURE__ */ new Date()).toISOString() });
+  res.json({
+    status: "ok",
+    env: process.env.NODE_ENV,
+    time: (/* @__PURE__ */ new Date()).toISOString()
+  });
 });
+var allowedOriginsProd = [
+  "https://dime-time.com",
+  "https://www.dime-time.com",
+  "https://dime-time-2sdmp44chp.replit.app",
+  "https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app",
+  "capacitor://localhost",
+  "ionic://localhost"
+];
+var allowedOriginsDev = [
+  "http://localhost:5000",
+  "http://127.0.0.1:5000",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "capacitor://localhost",
+  "ionic://localhost"
+];
 var corsOptions = {
-  origin: process.env.NODE_ENV === "production" ? ["https://dime-time.com", "https://www.dime-time.com", "https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app", "capacitor://localhost", "ionic://localhost"] : ["http://localhost:5000", "http://127.0.0.1:5000", "capacitor://localhost", "ionic://localhost"],
+  origin: (origin, callback) => {
+    const env = process.env.NODE_ENV || "development";
+    const allowed = env === "production" ? allowedOriginsProd : allowedOriginsDev;
+    if (!origin || allowed.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn("Blocked CORS origin:", origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
-  optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 app.use(express2.json());
@@ -5210,17 +5298,20 @@ app.use((req, res, next) => {
   const start = Date.now();
   const path3 = req.path;
   let capturedJsonResponse = void 0;
-  const originalResJson = res.json;
+  const originalResJson = res.json.bind(res);
   res.json = function(bodyJson) {
     capturedJsonResponse = bodyJson;
-    return originalResJson.call(this, bodyJson);
+    return originalResJson(bodyJson);
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path3.startsWith("/api")) {
       let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        try {
+          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        } catch {
+        }
       }
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "\u2026";
@@ -5244,10 +5335,9 @@ app.use((req, res, next) => {
     app.use((err, _req, res, _next) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
+      console.error("Unhandled error:", err);
       res.status(status).json({ message });
-      throw err;
     });
-    app.use(express2.static("public"));
     console.log("Checking environment for static file setup...");
     console.log("app.get('env'):", app.get("env"));
     console.log("process.cwd():", process.cwd());
@@ -5257,32 +5347,33 @@ app.use((req, res, next) => {
     } else {
       const path3 = await import("path");
       const fs2 = await import("fs");
-      let distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
-      const nestedPath = path3.default.resolve(distPath, "public");
-      if (fs2.default.existsSync(path3.default.resolve(nestedPath, "index.html"))) {
-        distPath = nestedPath;
-      }
+      const distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
       console.log("Production static path:", distPath);
-      if (fs2.default.existsSync(distPath)) {
+      const indexHtmlPath = path3.default.resolve(distPath, "index.html");
+      if (fs2.default.existsSync(indexHtmlPath)) {
         console.log("Found static files at:", distPath);
         app.use(express2.static(distPath));
         app.use("*", (_req, res) => {
-          res.sendFile(path3.default.resolve(distPath, "index.html"));
+          res.sendFile(indexHtmlPath);
         });
         console.log("Static file serving configured.");
       } else {
         console.error("Static files not found at:", distPath);
+        console.error("Falling back to serveStatic helper (./vite).");
         serveStatic(app);
       }
     }
     const port = parseInt(process.env.PORT || "5000", 10);
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true
-    }, () => {
-      log(`serving on port ${port}`);
-    });
+    server.listen(
+      {
+        port,
+        host: "0.0.0.0",
+        reusePort: true
+      },
+      () => {
+        log(`serving on port ${port}`);
+      }
+    );
   } catch (error) {
     console.error("Server startup error:", error);
     process.exit(1);
