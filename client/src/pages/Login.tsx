@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/queryClient";
@@ -24,18 +30,22 @@ export default function Login() {
         body: JSON.stringify(credentials),
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Invalid credentials");
+
+      if (!response.ok) {
+        throw new Error("Invalid credentials");
+      }
+
       return response.json();
     },
     onSuccess: (data) => {
       // Save auth token for native apps (persists across app restarts)
-      if (data.authToken) {
+      if (data?.authToken) {
         saveAuthToken(data.authToken);
       }
-      
-      // Invalidate user query to refetch with new session
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-      
+
+      // Refetch current user so the app immediately sees the new session
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+
       toast({ title: "Welcome back!" });
       setLocation("/dashboard");
     },
@@ -50,12 +60,13 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) return;
     loginMutation.mutate({ email, password });
   };
 
   return (
-    <div className="min-h-screen bg-dime-lilac flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-dime-lilac flex items-center justify-center px-4 safe-area-top safe-area-bottom">
+      <Card className="w-full max-w-md bg-dime-background/90 border-white/20">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <LogoWithText />
@@ -63,11 +74,13 @@ export default function Login() {
           <CardTitle>Welcome Back</CardTitle>
           <CardDescription>Login to your Dime Time account</CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
               placeholder="Email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -76,6 +89,7 @@ export default function Login() {
             <Input
               type="password"
               placeholder="Password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -90,11 +104,12 @@ export default function Login() {
               {loginMutation.isPending ? "Logging in..." : "Login"}
             </Button>
           </form>
-          <p className="text-sm text-center text-gray-600 mt-4">
-            Don't have an account?{" "}
-            <a href="/signup" className="text-dime-purple hover:underline">
+
+          <p className="text-sm text-center mt-4 text-white/80">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="text-dime-lavender underline-offset-2 hover:underline">
               Sign up
-            </a>
+            </Link>
           </p>
         </CardContent>
       </Card>
