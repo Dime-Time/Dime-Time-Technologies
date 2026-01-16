@@ -1,0 +1,68 @@
+
+2026-01-08 05:36:38.087 DEBUG: [ContentDelivery.Uploader.964C358C0] Download task 1 did write file: file:///var/folders/w2/rrf5p87d1bbfyphxc7jdnyvh0000gn/T/CFNetworkDownload_V2yM03.tmp
+2026-01-08 05:36:38.088 DEBUG: [ContentDelivery.Uploader.1031EED70] 
+=======================================
+CREATE BUILD (ASSET_UPLOAD) RESPONSE:
+
+         URL: https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/provider/********/v1/builds
+ status code: 409 (conflict)
+ httpHeaders: {
+    "Content-Length" = 480;
+    "Content-Type" = "application/json";
+    Date = "Thu, 08 Jan 2026 05:36:38 GMT";
+    Server = "daiquiri/5";
+    "Set-Cookie" = "dqsid=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure; HTTPOnly, dqsid=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure; HTTPOnly, dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3Njc4NTA1OTcsImp0aSI6ImstakZ2OGc2ZXk4UWhRbWhrb1NxTFEifQ.2wVa41JJNZ5b_GItJT_Ie5UsYLqRZKcZXsXo-5wewaA; Max-Age=1800; Expires=Thu, 08 Jan 2026 06:06:38 GMT; Path=/; Secure; HTTPOnly";
+    "Strict-Transport-Security" = "max-age=31536000; includeSubDomains";
+    "apple-originating-system" = MZContentDeliveryService;
+    "apple-seq" = "0.0";
+    "apple-timing-app" = 89;
+    "apple-tk" = false;
+    b3 = "15b51abb892996043964b4019882de9f-267db780fa5de6e4";
+    "x-apple-jingle-correlation-key" = CW2RVO4JFGLAIOLEWQAZRAW6T4;
+    "x-apple-request-uuid" = "15b51abb-8929-9604-3964-b4019882de9f";
+    "x-b3-spanid" = 267db780fa5de6e4;
+    "x-b3-traceid" = 15b51abb892996043964b4019882de9f;
+    "x-daiquiri-instance" = "daiquiri:13624001:mr85p00it-hyhk04174601:7987:25HOTFIX33:daiquiri-amp-processing-shared-int-001-mr, daiquiri:18493001:mr85p00it-hyhk03154801:7987:25HOTFIX33:daiquiri-amp-all-shared-ext-001-mr";
+    "x-daiquiri-rate-limit-timing-user" = 0;
+    "x-daiquiri-rate-limit-user" = "user-hour-lim:3600;user-hour-rem:3598;";
+}
+    httpBody: {
+  "errors" : [ {
+    "id" : "5898b000-44c1-4ceb-81fa-7e212124a47d",
+    "status" : "409",
+    "code" : "ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE",
+    "title" : "The provided entity includes an attribute with a value that has already been used",
+    "detail" : "The bundle version must be higher than the previously uploaded version.",
+    "source" : {
+      "pointer" : "/data/attributes/cfBundleVersion"
+    },
+    "meta" : {
+      "previousBundleVersion" : "61"
+    }
+  } ]
+}
+=======================================
+2026-01-08 05:36:38.089 ERROR: [ContentDelivery.Uploader.1031EED70] The provided entity includes an attribute with a value that has already been used (-19232) The bundle version must be higher than the previously uploaded version: ‘61’. (ID: 5898b000-44c1-4ceb-81fa-7e212124a47d)
+   NSUnderlyingError : The provided entity includes an attribute with a value that has already been used (-19241) The bundle version must be higher than the previously uploaded version.
+      status : 409
+      detail : The bundle version must be higher than the previously uploaded version.
+      source : 
+         pointer : /data/attributes/cfBundleVersion
+      id : 5898b000-44c1-4ceb-81fa-7e212124a47d
+      code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+      title : The provided entity includes an attribute with a value that has already been used
+      meta : 
+         previousBundleVersion : 6********   previousBundleVersion : 6********   iris-code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+2026-01-08 05:36:38.089 ERROR: [altool.1031EED70] Failed to upload package.
+2026-01-08 05:36:38.090 ERROR: [altool.1031EED70] The provided entity includes an attribute with a value that has already been used (-19232) The bundle version must be higher than the previously uploaded version: ‘61’. (ID: 5898b000-44c1-4ceb-81fa-7e212124a47d)
+   NSUnderlyingError : The provided entity includes an attribute with a value that has already been used (-19241) The bundle version must be higher than the previously uploaded version.
+      status : 409
+      detail : The bundle version must be higher than the previously uploaded version.
+      source : 
+         pointer : /data/attributes/cfBundleVersion
+      id : 5898b000-44c1-4ceb-81fa-7e212124a47d
+      code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+      title : The provided entity includes an attribute with a value that has already been used
+      meta : 
+         previousBundleVersion : 6********   previousBundleVersion : 6********   iris-code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+Failed to upload archive at 'build/ios/ipa/App.ipa'.
