@@ -37,14 +37,14 @@ export default function Login() {
 
       return response.json();
     },
-    onSuccess: (data) => {
-      // Save auth token for native apps (persists across app restarts)
+    onSuccess: async (data) => {
+      // Save auth token for native apps (encrypted, persists across app restarts)
       if (data?.authToken) {
-        saveAuthToken(data.authToken);
+        await saveAuthToken(data.authToken);
       }
 
       // Refetch current user so the app immediately sees the new session
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
 
       toast({ title: "Welcome back!" });
       setLocation("/dashboard");

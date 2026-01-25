@@ -1,6 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
-import { getAuthToken } from "./authToken";
+import { getAuthToken, hasStoredToken } from "./authToken";
 
 /**
  * Normalize a path so it always starts with "/".
@@ -60,19 +60,25 @@ export function getApiUrl(path: string): string {
 }
 
 /**
- * Get headers for API calls.
+ * Get headers for API calls (async for encrypted token retrieval).
  *
  * For native platforms:
  *   - If an auth token exists, send it as Authorization: Bearer <token>
  * For web:
  *   - Rely primarily on cookies (credentials: "include" in fetch)
  */
-function getAuthHeaders(): Record<string, string> {
+async function getAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
 
-  const token = getAuthToken();
-  if (token && Capacitor.isNativePlatform()) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (Capacitor.isNativePlatform() && hasStoredToken()) {
+    try {
+      const token = await getAuthToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch (err) {
+      console.warn("Failed to retrieve auth token", err);
+    }
   }
 
   return headers;
@@ -94,8 +100,9 @@ export async function apiRequest(
   data?: unknown
 ): Promise<Response> {
   const fullUrl = getApiUrl(url);
+  const authHeaders = await getAuthHeaders();
   const headers: Record<string, string> = {
-    ...getAuthHeaders(),
+    ...authHeaders,
   };
 
   if (data !== undefined) {
@@ -124,14 +131,15 @@ type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+  <T>({ on401: unauthorizedBehavior }: { on401: UnauthorizedBehavior }) =>
+  async ({ queryKey }): Promise<T> => {
     const path = queryKey[0] as string;
     const url = getApiUrl(path);
+    const authHeaders = await getAuthHeaders();
 
     const res = await fetch(url, {
       credentials: "include",
-      headers: getAuthHeaders(),
+      headers: authHeaders,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

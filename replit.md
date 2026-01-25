@@ -107,6 +107,15 @@ The application leverages automated financial tracking, micro-investment strateg
 
 ## Technical Architecture
 
+### Platform: Capacitor Hybrid App (NOT React Native/Expo)
+This is a **Capacitor-based hybrid application**, not React Native or Expo:
+- **Web Framework**: React.js + TypeScript (runs in native WebView)
+- **Native Layer**: Capacitor 7.4.x (wraps web app for iOS/Android)
+- **Native Plugins**: @capacitor/core, @capacitor/ios, @capacitor/android, @capacitor/app, etc.
+- **Build Pipeline**: CodeMagic compiles the native iOS/Android projects
+
+**Why Capacitor?** Single React codebase runs in native WebView with access to device APIs via Capacitor plugins.
+
 ### Frontend
 - **Framework**: React.js with TypeScript
 - **Styling**: Tailwind CSS with custom Dime Time purple (#918EF4)
@@ -114,6 +123,19 @@ The application leverages automated financial tracking, micro-investment strateg
 - **Mobile**: Capacitor for iOS/Android native build
 - **UI Components**: shadcn/ui for professional design
 - **State Management**: TanStack Query (React Query) for API calls
+
+### Security
+- **Auth Tokens**: Encrypted at rest using AES-GCM (WebCrypto API)
+- **Token Storage**: Encrypted tokens in localStorage (sandboxed per app in Capacitor WebView)
+  - Note: Encryption key is stored in localStorage. For true secure storage (Keychain/Keystore), upgrade to Capacitor 8+ and use @capacitor/preferences or secure storage plugins.
+- **PIN Lock**: 4-digit PIN with SHA-256 hash, auto-lock on background
+- **Face ID/Touch ID**: Not yet implemented (requires Capacitor 8+ for native biometric plugins)
+
+### Security Upgrade Path (Capacitor 8)
+When upgrading to Capacitor 8, implement:
+1. Move encryption key to native Keychain/Keystore using @capacitor/preferences or secure storage plugin
+2. Add native biometric authentication for Face ID/Touch ID
+3. This requires testing all existing Capacitor plugins for v8 compatibility
 
 ### Backend
 - **Framework**: Express.js with Node.js

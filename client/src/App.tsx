@@ -20,6 +20,7 @@ import { SecurityProvider, useSecurity } from "@/hooks/useSecurity";
 import { LockScreen } from "@/components/LockScreen";
 import { PinSetup } from "@/components/PinSetup";
 import { hasPinSet } from "@/lib/securityStore";
+import { migrateTokenStorage } from "@/lib/authToken";
 
 import LandingPage from "@/pages/LandingPage";
 import Onboarding from "@/pages/Onboarding";
@@ -336,10 +337,12 @@ function AppContent() {
 }
 
 function App() {
-  // Initialize GA once at app load
+  // Initialize GA and migrate token storage once at app load
   useEffect(() => {
     initGA();
     setupGlobalErrorTracking();
+    // Migrate any unencrypted tokens to encrypted storage
+    migrateTokenStorage().catch(console.warn);
   }, []);
 
   return (

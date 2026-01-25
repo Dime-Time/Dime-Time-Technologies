@@ -26,9 +26,9 @@ export default function Signup() {
     setAccountCreated(true);
     setShowAccountFlow(false);
 
-    // If backend returns an auth token, persist it for native apps
+    // If backend returns an auth token, persist it for native apps (encrypted)
     if (data?.authToken) {
-      saveAuthToken(data.authToken);
+      await saveAuthToken(data.authToken);
     }
 
     // Refresh the user cache so /api/user reflects the new session

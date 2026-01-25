@@ -222,24 +222,7 @@ export default function Settings() {
               )}
             </div>
 
-            {pinConfigured && (
-              <>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Fingerprint className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <Label>Face ID</Label>
-                      <p className="text-sm text-gray-600">Unlock with Face ID for quick access</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={biometricEnabled}
-                    onCheckedChange={handleToggleBiometric}
-                  />
-                </div>
-              </>
-            )}
+            {/* Face ID: Not yet implemented - hidden until native biometrics integrated */}
           </CardContent>
         </Card>
 

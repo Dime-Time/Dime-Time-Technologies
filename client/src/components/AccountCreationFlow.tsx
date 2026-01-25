@@ -146,9 +146,9 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
 
       const userData = await response.json();
 
-      // Save auth token for native apps (persists across app restarts)
+      // Save auth token for native apps (encrypted, persists across app restarts)
       if (userData.authToken) {
-        saveAuthToken(userData.authToken);
+        await saveAuthToken(userData.authToken);
       }
 
       // Invalidate auth cache so useAuth refetches /api/user with new session
