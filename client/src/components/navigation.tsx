@@ -1,17 +1,14 @@
 import { Link, useLocation } from "wouter";
 import {
-  CreditCard,
   Home,
   TrendingUp,
-  Receipt,
   Menu,
   User,
   Bitcoin,
-  Coins,
   QrCode,
   Bell,
   Settings,
-  BarChart3,
+  Landmark,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -22,13 +19,9 @@ export function Navigation() {
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/transactions", label: "Transactions", icon: Receipt },
-    { href: "/debts", label: "Debts", icon: CreditCard },
+    { href: "/banking", label: "Banking", icon: Landmark },
     { href: "/crypto", label: "Crypto", icon: Bitcoin },
-    { href: "/dime-token", label: "DTT", icon: Coins },
-    { href: "/banking", label: "Banking", icon: CreditCard },
     { href: "/insights", label: "Insights", icon: TrendingUp },
-    { href: "/business-analytics", label: "Analytics", icon: BarChart3 },
   ];
 
   return (
@@ -187,7 +180,7 @@ export function Navigation() {
 
       {/* Bottom Navigation (mobile) – respects home indicator via safe-area-bottom */}
       <nav className="safe-area-bottom md:hidden fixed bottom-0 left-0 right-0 border-t border-white/20 px-1 z-50 bg-dime-background">
-        <div className="flex justify-between items-center max-w-screen-xl mx-auto">
+        <div className="flex justify-around items-center max-w-screen-xl mx-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = location === item.href;
@@ -195,24 +188,12 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center py-2 px-1 min-w-0 flex-1 transition-colors min-h-[44px] ${
+                className={`flex flex-col items-center py-3 px-4 min-h-[56px] transition-colors ${
                   active ? "text-white" : "text-white/70"
                 }`}
-                style={{ maxWidth: `${100 / navItems.length}%` }}
               >
-                <Icon className="w-5 h-5 mb-1" />
-                <span
-                  className="text-center leading-none truncate w-full block"
-                  style={{
-                    fontSize: "10px",
-                    maxWidth: "100%",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.label}
-                </span>
+                <Icon className="w-6 h-6 mb-1" />
+                <span className="text-xs font-medium">{item.label}</span>
               </Link>
             );
           })}

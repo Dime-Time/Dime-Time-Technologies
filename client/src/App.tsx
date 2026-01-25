@@ -16,6 +16,10 @@ import {
 } from "../lib/analytics";
 import { useAnalytics } from "../hooks/use-analytics";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { SecurityProvider, useSecurity } from "@/hooks/useSecurity";
+import { LockScreen } from "@/components/LockScreen";
+import { PinSetup } from "@/components/PinSetup";
+import { hasPinSet } from "@/lib/securityStore";
 
 import LandingPage from "@/pages/LandingPage";
 import Onboarding from "@/pages/Onboarding";
@@ -83,6 +87,7 @@ function LoadingScreen() {
 
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { isLocked, needsPinSetup, setNeedsPinSetup, unlock, hasPinConfigured } = useSecurity();
 
   // Pageview tracking, route changes, etc.
   useAnalytics();
@@ -102,11 +107,32 @@ function AppContent() {
         crypto_enabled: true,
         subscription_tier: "free",
       });
+
+      // Check if user needs PIN setup (first time after signup, no PIN set yet)
+      if (!hasPinConfigured && !hasPinSet()) {
+        // Don't force PIN setup immediately, let user explore first
+        // They can set it up in Settings later
+      }
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, hasPinConfigured]);
 
   if (isLoading) {
     return <LoadingScreen />;
+  }
+
+  // Show lock screen if app is locked
+  if (isAuthenticated && isLocked && hasPinConfigured) {
+    return <LockScreen onUnlock={unlock} />;
+  }
+
+  // Show PIN setup if needed (e.g., prompted from settings)
+  if (isAuthenticated && needsPinSetup) {
+    return (
+      <PinSetup
+        onComplete={() => setNeedsPinSetup(false)}
+        onSkip={() => setNeedsPinSetup(false)}
+      />
+    );
   }
 
   return (
@@ -319,10 +345,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <AppContent />
-          <Toaster />
-        </TooltipProvider>
+        <SecurityProvider>
+          <TooltipProvider>
+            <AppContent />
+            <Toaster />
+          </TooltipProvider>
+        </SecurityProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

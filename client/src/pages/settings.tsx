@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useSecurity } from "@/hooks/useSecurity";
+import { hasPinSet, isBiometricEnabled, setBiometricEnabled } from "@/lib/securityStore";
 import { 
   Bell, 
   CreditCard, 
@@ -21,7 +23,9 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Save
+  Save,
+  Fingerprint,
+  KeyRound
 } from "lucide-react";
 
 interface RoundUpSettings {
@@ -45,7 +49,10 @@ interface UserProfile {
 
 export default function Settings() {
   const { toast } = useToast();
+  const { setNeedsPinSetup, clearSecurity, hasPinConfigured } = useSecurity();
   const [showPassword, setShowPassword] = useState(false);
+  const [biometricEnabled, setBiometricEnabledState] = useState(isBiometricEnabled());
+  const [pinConfigured, setPinConfigured] = useState(hasPinSet());
   const [profileData, setProfileData] = useState({
     firstName: "",
     lastName: "",
@@ -54,6 +61,23 @@ export default function Settings() {
     newPassword: "",
     confirmPassword: ""
   });
+
+  const handleSetupPin = () => {
+    setNeedsPinSetup(true);
+  };
+
+  const handleClearPin = () => {
+    clearSecurity();
+    setPinConfigured(false);
+    setBiometricEnabledState(false);
+    toast({ title: "PIN removed", description: "Your app lock has been disabled." });
+  };
+
+  const handleToggleBiometric = (enabled: boolean) => {
+    setBiometricEnabled(enabled);
+    setBiometricEnabledState(enabled);
+    toast({ title: enabled ? "Face ID enabled" : "Face ID disabled" });
+  };
 
   // Fetch user data
   const { data: user } = useQuery<UserProfile>({
@@ -165,15 +189,69 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* App Lock Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              App Lock
+            </CardTitle>
+            <CardDescription>
+              Secure your app with PIN and Face ID
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Lock className="h-5 w-5 text-gray-500" />
+                <div>
+                  <Label>PIN Lock</Label>
+                  <p className="text-sm text-gray-600">
+                    {pinConfigured ? "Your app is secured with a PIN" : "Set up a 4-digit PIN to lock your app"}
+                  </p>
+                </div>
+              </div>
+              {pinConfigured ? (
+                <Button variant="outline" size="sm" onClick={handleClearPin}>
+                  Remove PIN
+                </Button>
+              ) : (
+                <Button size="sm" onClick={handleSetupPin} className="bg-dime-purple hover:bg-dime-purple/90">
+                  Set Up PIN
+                </Button>
+              )}
+            </div>
+
+            {pinConfigured && (
+              <>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Fingerprint className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <Label>Face ID</Label>
+                      <p className="text-sm text-gray-600">Unlock with Face ID for quick access</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={biometricEnabled}
+                    onCheckedChange={handleToggleBiometric}
+                  />
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Security Settings */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Security Settings
+              Password Settings
             </CardTitle>
             <CardDescription>
-              Manage your password and security preferences
+              Change your account password
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

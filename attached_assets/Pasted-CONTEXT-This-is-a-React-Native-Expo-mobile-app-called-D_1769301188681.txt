@@ -1,0 +1,94 @@
+CONTEXT:
+This is a React Native (Expo) mobile app called Dime Time, connected to a GitHub repository. Do NOT assume the authentication backend. You must inspect the existing codebase first and explicitly identify whether authentication is handled by Firebase Auth, Supabase Auth, or a custom backend (JWT / API-based). Do not refactor authentication logic until the backend is confirmed.
+
+TASK 1 — IDENTIFY AUTH BACKEND:
+Search the codebase for authentication-related dependencies, services, and files. Explicitly confirm which backend is in use:
+- Firebase Auth
+- Supabase Auth
+- Custom backend (JWT / API-based)
+If the backend cannot be confidently identified, pause and report findings before making auth changes.
+
+TASK 2 — FIX AUTHENTICATION PERSISTENCE (P0):
+Once the backend is confirmed, implement proper authentication persistence with the following REQUIRED behavior:
+- After user sign-up, the user must remain signed in and must NOT be redirected to the Login screen.
+- When the app is closed and reopened, the user must NOT be asked to create an account again.
+- On cold app launch:
+  - If an authenticated session exists, restore it automatically.
+  - If no authenticated session exists, show the Login screen.
+
+Implementation requirements:
+- Persist the authentication session/token securely (Expo SecureStore or backend-native persistence).
+- Introduce a global AuthProvider (or equivalent) so navigation is driven by authentication state, not manual screen navigation.
+- Remove any logic that manually navigates users to Login after successful signup.
+- Navigation must branch based on auth state, not screen history.
+
+TASK 3 — ADD PIN + FACE ID APP LOCK (ACORNS-STYLE):
+Add an application-level lock layer that sits on top of authentication.
+
+Required flow:
+- After first successful signup:
+  1) Prompt the user to create a 4-digit PIN.
+  2) Store the PIN securely as a hash (never plaintext).
+  3) Ask whether the user wants to enable Face ID.
+- On subsequent app launches:
+  - If authenticated but locked, show a PIN / Face ID unlock screen.
+  - If unlocked, allow access to the main app.
+- Logging out must clear auth session, PIN, and biometric flags.
+
+Technical requirements:
+- Use expo-secure-store for PIN hash and security flags.
+- Use expo-local-authentication for Face ID.
+- Navigation must branch as follows:
+  - Not authenticated → Auth stack
+  - Authenticated but locked → PIN lock screen
+  - Authenticated and unlocked → Main app
+
+TASK 4 — UI / UX FIXES:
+Terms & Conditions screen:
+- Replace static checkmark icons with real, empty checkboxes.
+- Checkboxes are unchecked by default.
+- Checkmark appears only after user taps.
+- Disable the “Accept” button until all required checkboxes are checked.
+- Fix alignment so checkboxes align with the first line of text, not vertically centered.
+
+Header placement:
+- Fix header positioning so it does not collide with the iOS status bar.
+- Use SafeAreaView.
+- Visually move the header down so it aligns closer to the “Welcome back” text.
+
+TASK 5 — BOTTOM NAVIGATION CONSOLIDATION:
+Reduce the bottom navigation to exactly four tabs:
+- Home
+- Banking
+- Crypto
+- Insights
+
+Merge navigation and screens as follows:
+- Transactions + Debts + Banking → Banking
+- Crypto + DTT → Crypto (DTT should appear as a token within the Crypto section)
+- Insights + Analytics → Insights
+Do not remove underlying data or logic — only consolidate routing and navigation.
+
+TASK 6 — WEBSITE (NOT THE MOBILE APP):
+On the website:
+- Remove all login and signup UI completely, including:
+  - Email and password fields
+  - Login button
+  - Create account / signup links
+  - Any authentication-related copy (“Welcome back”, “Login to your account”, etc.)
+
+Replace the website content with:
+Headline:
+“Get out of debt one dime at a time, with Dime Time.”
+
+Subtext:
+“Coming soon!!”
+
+No buttons. No forms. No authentication UI.
+
+FINAL INSTRUCTIONS:
+- Make changes in logical, clean commits.
+- Do not introduce placeholder or mocked authentication logic.
+- Do not assume backend behavior.
+- If backend details are unclear at any step, pause and report findings before proceeding.
+- The goal is a production-ready, review-safe fintech app with persistent authentication, PIN + Face ID security, clean navigation, and correct pre-launch website positioning.

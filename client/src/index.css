@@ -76,13 +76,18 @@
     padding-right: env(safe-area-inset-right);
   }
 
-  /* iOS safe area utilities */
+  /* iOS safe area utilities - Dynamic Island requires ~59px, notch ~44px */
   .safe-area-top {
-    padding-top: max(env(safe-area-inset-top), 16px);
+    padding-top: max(env(safe-area-inset-top, 0px), 44px);
   }
   
   .safe-area-bottom {
-    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  }
+  
+  /* Extra spacing for sticky headers below safe area */
+  .safe-area-top-header {
+    padding-top: calc(max(env(safe-area-inset-top, 0px), 44px) + 8px);
   }
 
   /* Force all text to be white with dark purple outline */

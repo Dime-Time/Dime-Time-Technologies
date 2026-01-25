@@ -11,15 +11,15 @@ export default function Banking() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: bankAccounts, isLoading: accountsLoading } = useQuery({
+  const { data: bankAccounts = [], isLoading: accountsLoading } = useQuery<any[]>({
     queryKey: ['/api/plaid/accounts'],
   });
 
-  const { data: balances, isLoading: balancesLoading } = useQuery({
+  const { data: balances = [], isLoading: balancesLoading } = useQuery<any[]>({
     queryKey: ['/api/plaid/balances'],
   });
 
-  const { data: transactions, isLoading: transactionsLoading } = useQuery({
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery<any[]>({
     queryKey: ['/api/plaid/transactions'],
   });
 
