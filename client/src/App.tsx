@@ -38,6 +38,7 @@ import Notifications from "@/pages/notifications";
 import Legal from "@/pages/legal";
 import Signup from "@/pages/signup";
 import Login from "@/pages/Login";
+import ComingSoon from "@/pages/ComingSoon";
 import DimeToken from "@/pages/dime-token";
 import BusinessAnalytics from "@/pages/business-analytics";
 import StatsPage from "@/pages/StatsPage";
@@ -138,24 +139,20 @@ function AppContent() {
 
   return (
     <Switch>
-      {/* Root route: authenticated -> dashboard, unauth -> login */}
+      {/* Root route: authenticated -> dashboard, unauth -> coming soon */}
       <Route path="/">
         {isAuthenticated ? (
           <AuthenticatedLayout>
             <Dashboard />
           </AuthenticatedLayout>
         ) : (
-          <AuthScreen>
-            <Login />
-          </AuthScreen>
+          <ComingSoon />
         )}
       </Route>
 
-      {/* Explicit login route */}
+      {/* Login/Signup routes redirect to coming soon for security */}
       <Route path="/login">
-        <AuthScreen>
-          <Login />
-        </AuthScreen>
+        <ComingSoon />
       </Route>
 
       {/* Conference / marketing landing */}
@@ -168,9 +165,7 @@ function AppContent() {
             <Onboarding />
           </AuthenticatedLayout>
         ) : (
-          <AuthScreen>
-            <Login />
-          </AuthScreen>
+          <ComingSoon />
         )}
       </Route>
 
@@ -275,11 +270,9 @@ function AppContent() {
         )}
       </Route>
 
-      {/* Signup is open so new users can register */}
+      {/* Signup disabled - coming soon page for security */}
       <Route path="/signup">
-        <AuthScreen>
-          <Signup />
-        </AuthScreen>
+        <ComingSoon />
       </Route>
 
       {/* Bank setup wizard: full-screen, no bottom nav */}
@@ -294,9 +287,7 @@ function AppContent() {
             </main>
           </div>
         ) : (
-          <AuthScreen>
-            <Login />
-          </AuthScreen>
+          <ComingSoon />
         )}
       </Route>
 
