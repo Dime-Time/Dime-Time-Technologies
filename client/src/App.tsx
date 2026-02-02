@@ -139,20 +139,24 @@ function AppContent() {
 
   return (
     <Switch>
-      {/* Root route: authenticated -> dashboard, unauth -> coming soon */}
+      {/* Root route: authenticated -> dashboard, unauth -> login */}
       <Route path="/">
         {isAuthenticated ? (
           <AuthenticatedLayout>
             <Dashboard />
           </AuthenticatedLayout>
         ) : (
-          <ComingSoon />
+          <AuthScreen>
+            <Login />
+          </AuthScreen>
         )}
       </Route>
 
-      {/* Login/Signup routes redirect to coming soon for security */}
+      {/* Explicit login route */}
       <Route path="/login">
-        <ComingSoon />
+        <AuthScreen>
+          <Login />
+        </AuthScreen>
       </Route>
 
       {/* Conference / marketing landing */}
@@ -165,7 +169,9 @@ function AppContent() {
             <Onboarding />
           </AuthenticatedLayout>
         ) : (
-          <ComingSoon />
+          <AuthScreen>
+            <Login />
+          </AuthScreen>
         )}
       </Route>
 
@@ -270,9 +276,11 @@ function AppContent() {
         )}
       </Route>
 
-      {/* Signup disabled - coming soon page for security */}
+      {/* Signup is open so new users can register */}
       <Route path="/signup">
-        <ComingSoon />
+        <AuthScreen>
+          <Signup />
+        </AuthScreen>
       </Route>
 
       {/* Bank setup wizard: full-screen, no bottom nav */}
@@ -287,7 +295,9 @@ function AppContent() {
             </main>
           </div>
         ) : (
-          <ComingSoon />
+          <AuthScreen>
+            <Login />
+          </AuthScreen>
         )}
       </Route>
 
