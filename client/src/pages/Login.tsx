@@ -2,13 +2,6 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/queryClient";
@@ -38,14 +31,10 @@ export default function Login() {
       return response.json();
     },
     onSuccess: async (data) => {
-      // Save auth token for native apps (encrypted, persists across app restarts)
       if (data?.authToken) {
         await saveAuthToken(data.authToken);
       }
-
-      // Refetch current user so the app immediately sees the new session
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-
       toast({ title: "Welcome back!" });
       setLocation("/dashboard");
     },
@@ -65,54 +54,58 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-dime-lilac flex items-center justify-center px-4 safe-area-top safe-area-bottom">
-      <Card className="w-full max-w-md bg-dime-background/90 border-white/20">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <LogoWithText />
-          </div>
-          <CardTitle>Welcome Back</CardTitle>
-          <CardDescription>Login to your Dime Time account</CardDescription>
-        </CardHeader>
+    <div className="min-h-screen bg-[#a8a4f0] flex items-center justify-center px-4 safe-area-top safe-area-bottom">
+      <div className="w-full max-w-md bg-[#918EF4] rounded-3xl p-8">
+        <div className="flex justify-center mb-4">
+          <LogoWithText size={100} />
+        </div>
+        
+        <h1 className="text-2xl font-bold text-white text-center mb-1">
+          Welcome Back
+        </h1>
+        <p className="text-white/80 text-center mb-8">
+          Login to your Dime Time account
+        </p>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              type="email"
-              placeholder="Email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              data-testid="input-email"
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              data-testid="input-password"
-            />
-            <Button
-              type="submit"
-              className="w-full bg-dime-purple hover:bg-dime-purple/90"
-              disabled={loginMutation.isPending}
-              data-testid="button-login"
-            >
-              {loginMutation.isPending ? "Logging in..." : "Login"}
-            </Button>
-          </form>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="email"
+            placeholder="Email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            data-testid="input-email"
+            className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+          />
+          <Input
+            type="password"
+            placeholder="Password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            data-testid="input-password"
+            className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+          />
+          <Button
+            type="submit"
+            variant="ghost"
+            className="w-full text-white hover:bg-white/10 h-12"
+            disabled={loginMutation.isPending}
+            data-testid="button-login"
+          >
+            {loginMutation.isPending ? "Logging in..." : "Login"}
+          </Button>
+        </form>
 
-          <p className="text-sm text-center mt-4 text-white/80">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-dime-lavender underline-offset-2 hover:underline">
-              Sign up
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+        <p className="text-sm text-center mt-6 text-white/80">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-white hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
