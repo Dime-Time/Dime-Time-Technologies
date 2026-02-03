@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useSecurity } from "@/hooks/useSecurity";
+import { useAuth } from "@/hooks/useAuth";
 import { hasPinSet, isBiometricEnabled, setBiometricEnabled } from "@/lib/securityStore";
 import { 
   Bell, 
@@ -25,7 +26,8 @@ import {
   EyeOff,
   Save,
   Fingerprint,
-  KeyRound
+  KeyRound,
+  LogOut
 } from "lucide-react";
 
 interface RoundUpSettings {
@@ -49,6 +51,7 @@ interface UserProfile {
 
 export default function Settings() {
   const { toast } = useToast();
+  const { logout } = useAuth();
   const { setNeedsPinSetup, clearSecurity, hasPinConfigured } = useSecurity();
   const [showPassword, setShowPassword] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(isBiometricEnabled());
@@ -492,6 +495,16 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Logout */}
+        <Button 
+          variant="outline" 
+          className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+          onClick={logout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Log Out
+        </Button>
       </div>
     </div>
   );
