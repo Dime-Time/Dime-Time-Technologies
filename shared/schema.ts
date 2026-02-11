@@ -19,6 +19,7 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
   password: varchar("password"),
+  passwordAlgo: varchar("password_algo").default("sha256"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -189,6 +190,17 @@ export const interestEarnings = pgTable("interest_earnings", {
 // User types for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Idempotency keys table for request deduplication
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  idempotencyKey: varchar("idempotency_key").notNull(),
+  userId: varchar("user_id").notNull(),
+  endpoint: varchar("endpoint").notNull(),
+  responseStatus: integer("response_status").notNull(),
+  responseBody: text("response_body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -532,3 +544,11 @@ export const insertContactSubmissionSchema = createInsertSchema(contactSubmissio
 
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type InsertContactSubmission = z.infer<typeof insertContactSubmissionSchema>;
+
+export const insertIdempotencyKeySchema = createInsertSchema(idempotencyKeys).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type IdempotencyKey = typeof idempotencyKeys.$inferSelect;
+export type InsertIdempotencyKey = z.infer<typeof insertIdempotencyKeySchema>;

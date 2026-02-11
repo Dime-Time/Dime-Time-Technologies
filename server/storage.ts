@@ -47,7 +47,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -120,6 +120,14 @@ export interface IStorage {
   // Contact submission methods
   createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission>;
   getContactSubmissions(): Promise<ContactSubmission[]>;
+
+  // Security methods
+  updateUserPassword(userId: string, passwordHash: string, algo: string): Promise<void>;
+  deleteUserAccount(userId: string): Promise<void>;
+
+  // Idempotency methods
+  getIdempotencyKey(key: string, userId: string, endpoint: string): Promise<{ responseStatus: number; responseBody: string } | undefined>;
+  createIdempotencyKey(data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1337,6 +1345,24 @@ export class MemStorage implements IStorage {
   async getContactSubmissions(): Promise<ContactSubmission[]> {
     return await db.select().from(contactSubmissions).orderBy(desc(contactSubmissions.createdAt));
   }
+
+  async updateUserPassword(userId: string, passwordHash: string, algo: string): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) {
+      (user as any).password = passwordHash;
+      (user as any).passwordAlgo = algo;
+    }
+  }
+
+  async deleteUserAccount(userId: string): Promise<void> {
+    this.users.delete(userId);
+  }
+
+  async getIdempotencyKey(_key: string, _userId: string, _endpoint: string): Promise<{ responseStatus: number; responseBody: string } | undefined> {
+    return undefined;
+  }
+
+  async createIdempotencyKey(_data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void> {}
 }
 
 // DatabaseStorage class for persistent storage using PostgreSQL
@@ -1653,6 +1679,43 @@ export class DatabaseStorage implements IStorage {
 
   async getContactSubmissions(): Promise<ContactSubmission[]> {
     return await db.select().from(contactSubmissions).orderBy(desc(contactSubmissions.createdAt));
+  }
+
+  async updateUserPassword(userId: string, passwordHash: string, algo: string): Promise<void> {
+    await db.update(users).set({ password: passwordHash, passwordAlgo: algo }).where(eq(users.id, userId));
+  }
+
+  async deleteUserAccount(userId: string): Promise<void> {
+    await db.delete(userSessions).where(eq(userSessions.userId, userId));
+    await db.delete(notifications).where(eq(notifications.userId, userId));
+    await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
+    await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
+    await db.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
+    await db.delete(dttRewards).where(eq(dttRewards.userId, userId));
+    await db.delete(dttStaking).where(eq(dttStaking.userId, userId));
+    await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
+    await db.delete(payments).where(eq(payments.userId, userId));
+    await db.delete(transactions).where(eq(transactions.userId, userId));
+    await db.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
+    await db.delete(debts).where(eq(debts.userId, userId));
+    await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async getIdempotencyKey(key: string, userId: string, endpoint: string): Promise<{ responseStatus: number; responseBody: string } | undefined> {
+    const result = await db.execute(
+      sql`SELECT response_status, response_body FROM idempotency_keys WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint} AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`
+    );
+    if (result.rows && result.rows.length > 0) {
+      const row = result.rows[0] as any;
+      return { responseStatus: row.response_status, responseBody: row.response_body };
+    }
+    return undefined;
+  }
+
+  async createIdempotencyKey(data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void> {
+    await db.execute(
+      sql`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body) VALUES (gen_random_uuid(), ${data.idempotencyKey}, ${data.userId}, ${data.endpoint}, ${data.responseStatus}, ${data.responseBody})`
+    );
   }
 }
 

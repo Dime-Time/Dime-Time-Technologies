@@ -9,7 +9,9 @@ declare module 'express-session' {
 }
 import { isAuthenticated } from "./replitAuth";
 import { dimeTokenService } from "./services/dimeTokenService";
-import { createHash } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
+import bcrypt from "bcrypt";
+import rateLimit from "express-rate-limit";
 
 import { insertTransactionSchema, insertPaymentSchema, insertDebtSchema, insertCryptoPurchaseSchema, insertRoundUpSettingsSchema, insertContactSubmissionSchema } from "@shared/schema";
 import { z } from "zod";
@@ -27,13 +29,35 @@ import { roundUpSplitService } from "./services/roundUpSplitService";
 import { calculateRoundUp } from "../client/src/lib/calculations";
 import multer from "multer";
 
-// Simple password hashing (use bcrypt in production)
-function hashPassword(password: string): string {
+const BCRYPT_COST = 12;
+
+function hashPasswordSha256(password: string): string {
   return createHash('sha256').update(password).digest('hex');
 }
 
-function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+async function hashPasswordBcrypt(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_COST);
+}
+
+function constantTimeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+async function verifyPassword(password: string, hash: string, algo: string | null): Promise<boolean> {
+  if (algo === 'bcrypt') {
+    return bcrypt.compare(password, hash);
+  }
+  const sha256Hash = hashPasswordSha256(password);
+  return constantTimeCompare(sha256Hash, hash);
+}
+
+function stripSensitiveFields(user: any): any {
+  if (!user) return user;
+  const { password, passwordAlgo, ...safeUser } = user;
+  return safeUser;
 }
 
 // Get session secret - required for token generation
@@ -92,12 +116,37 @@ function getUserIdFromRequest(req: Request): string | null {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { message: "Too many attempts. Please try again in 15 minutes." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
+  });
+
+  async function checkIdempotency(key: string, userId: string, endpoint: string): Promise<{ status: number; body: any } | null> {
+    const existing = await storage.getIdempotencyKey(key, userId, endpoint);
+    if (existing) {
+      return { status: existing.responseStatus, body: JSON.parse(existing.responseBody) };
+    }
+    return null;
+  }
+
+  async function saveIdempotency(key: string, userId: string, endpoint: string, status: number, body: any): Promise<void> {
+    await storage.createIdempotencyKey({
+      idempotencyKey: key,
+      userId,
+      endpoint,
+      responseStatus: status,
+      responseBody: JSON.stringify(body),
+    });
+  }
+
   // Signup endpoint
-  app.post("/api/signup", async (req: Request, res: Response) => {
+  app.post("/api/signup", authLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password, firstName, lastName } = req.body;
-      
-      console.log("📝 Signup request:", { email, password: "***", firstName, lastName });
       
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
@@ -108,77 +157,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPasswordBcrypt(password);
       let user;
       try {
         user = await storage.createUser({
           email,
           password: hashedPassword,
+          passwordAlgo: "bcrypt",
           firstName: firstName || email.split("@")[0],
           lastName: lastName || "",
         });
-        console.log("✅ User created successfully:", user.id);
       } catch (createError: any) {
-        console.error("❌ Error creating user:", createError);
+        console.error("Error creating user");
         throw createError;
       }
 
-      // Initialize demo debts for new user
-      const newUserDebts = [
-        {
-          userId: user.id,
-          name: "Credit Card Debt",
-          accountNumber: "••••5678",
-          originalBalance: "5000.00",
-          currentBalance: "5000.00",
-          interestRate: "18.99",
-          minimumPayment: "150.00",
-          dueDate: 15,
-          isActive: true,
-        },
-        {
-          userId: user.id,
-          name: "Student Loan",
-          accountNumber: "••••1234",
-          originalBalance: "25000.00",
-          currentBalance: "20000.00",
-          interestRate: "4.50",
-          minimumPayment: "200.00",
-          dueDate: 1,
-          isActive: true,
-        }
-      ];
-
-      for (const debtData of newUserDebts) {
-        await storage.createDebt(debtData as any);
-      }
-
-      // Store user session - THIS IS CRITICAL so they're authenticated after signup
       req.session.userId = user.id;
       
-      // Generate auth token for native apps
       const authToken = generateAuthToken(user.id);
       
-      // Explicitly save session before responding
       req.session.save((err) => {
         if (err) {
-          console.error("Session save error:", err);
+          console.error("Session save error");
           return res.status(500).json({ message: "Failed to create session" });
         }
         res.status(201).json({ 
           success: true, 
           user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-          authToken // Token for native apps to store and use
+          authToken
         });
       });
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Signup error");
       res.status(500).json({ message: "Failed to create account" });
     }
   });
 
   // Login endpoint
-  app.post("/api/login", async (req: Request, res: Response) => {
+  app.post("/api/login", authLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
       
@@ -187,30 +203,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = await storage.getUserByEmail(email);
-      if (!user || !user.password || !verifyPassword(password, user.password)) {
+      if (!user || !user.password) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Store user session
+      const algo = (user as any).passwordAlgo || 'sha256';
+      const isValid = await verifyPassword(password, user.password, algo);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      if (algo !== 'bcrypt') {
+        const bcryptHash = await hashPasswordBcrypt(password);
+        await storage.updateUserPassword(user.id, bcryptHash, 'bcrypt');
+      }
+
       req.session.userId = user.id;
-      
-      // Generate auth token for native apps
       const authToken = generateAuthToken(user.id);
       
-      // Explicitly save session before responding
       req.session.save((err) => {
         if (err) {
-          console.error("Session save error:", err);
+          console.error("Session save error");
           return res.status(500).json({ message: "Failed to create session" });
         }
         res.json({ 
           success: true, 
           user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-          authToken // Token for native apps to store and use
+          authToken
         });
       });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login error");
       res.status(500).json({ message: "Login failed" });
     }
   });
@@ -229,7 +252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      res.json(user);
+      res.json(stripSensitiveFields(user));
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -245,6 +268,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.clearCookie("connect.sid");
       res.json({ success: true, message: "Logged out successfully" });
     });
+  });
+
+  // Account deletion (Apple requires this)
+  app.delete("/api/account", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      await storage.deleteUserAccount(userId);
+      
+      req.session.destroy((err) => {
+        if (err) console.error("Session destroy error during account deletion");
+        res.clearCookie("connect.sid");
+        res.json({ success: true, message: "Account deleted successfully" });
+      });
+    } catch (error) {
+      console.error("Account deletion error");
+      res.status(500).json({ message: "Failed to delete account" });
+    }
   });
 
   // Contact form submission (public endpoint)
@@ -299,16 +343,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+
+      const idempotencyKey = req.headers['idempotency-key'] as string;
+      if (idempotencyKey) {
+        const cached = await checkIdempotency(idempotencyKey, userId, '/api/transactions');
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
       
-      // Get user's round-up settings to calculate proper round-up with multiplier
-      const roundUpSettings = await storage.getRoundUpSettings(userId);
+      const roundUpSettingsData = await storage.getRoundUpSettings(userId);
       
-      // Calculate round-up with multiplier
       const amount = parseFloat(req.body.amount);
-      const multiplier = roundUpSettings ? parseFloat(roundUpSettings.multiplier) : 1.0;
+      const multiplier = roundUpSettingsData ? parseFloat(roundUpSettingsData.multiplier) : 1.0;
       const totalRoundUp = calculateRoundUp(amount, multiplier);
       
-      // Create transaction with calculated round-up
       const validatedData = insertTransactionSchema.parse({
         ...req.body,
         userId,
@@ -318,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = await storage.createTransaction(validatedData);
       
       // Process round-up split (crypto immediate + debt accumulation) if round-up > 0
-      if (totalRoundUp > 0 && roundUpSettings?.isEnabled) {
+      if (totalRoundUp > 0 && roundUpSettingsData?.isEnabled) {
         try {
           console.log(`🔄 Processing split round-up: $${totalRoundUp.toFixed(2)}`);
           
@@ -444,7 +491,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const settings = await storage.getRoundUpSettings(userId);
-      res.json(settings);
+      res.json(settings || {
+        id: null,
+        userId,
+        isEnabled: false,
+        sourceAccountId: null,
+        targetDebtId: null,
+        multiplier: "1.00",
+        autoApplyThreshold: "25.00",
+        cryptoEnabled: false,
+        cryptoPercentage: "0.00",
+        preferredCrypto: "BTC",
+      });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
