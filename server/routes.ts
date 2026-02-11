@@ -373,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId,
             transaction.id,
             totalRoundUp,
-            roundUpSettings
+            roundUpSettingsData
           );
           
           console.log(`✅ Split processing complete:`, splitResult);
