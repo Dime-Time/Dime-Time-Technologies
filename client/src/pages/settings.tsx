@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -27,7 +28,9 @@ import {
   Save,
   Fingerprint,
   KeyRound,
-  LogOut
+  LogOut,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 
 interface RoundUpSettings {
@@ -64,6 +67,31 @@ export default function Settings() {
     newPassword: "",
     confirmPassword: ""
   });
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/account");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Account deleted", description: "Your account and all data have been permanently removed." });
+      setTimeout(() => {
+        logout();
+      }, 1500);
+    },
+    onError: () => {
+      toast({ title: "Failed to delete account", description: "Please try again or contact support.", variant: "destructive" });
+    },
+  });
+
+  const handleDeleteAccount = useCallback(() => {
+    if (deleteConfirmText === "DELETE") {
+      deleteAccountMutation.mutate();
+    }
+  }, [deleteConfirmText]);
 
   const handleSetupPin = () => {
     setNeedsPinSetup(true);
@@ -493,6 +521,70 @@ export default function Settings() {
               <span className="text-sm text-gray-600">Terms of Service</span>
               <Button variant="link" size="sm">View</Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Delete Account */}
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Delete Account
+            </CardTitle>
+            <CardDescription>
+              Permanently delete your account and all associated data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!showDeleteConfirm ? (
+              <Button 
+                variant="outline" 
+                className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete My Account
+              </Button>
+            ) : (
+              <div className="space-y-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-2">
+                    <p className="font-semibold text-red-800">This action cannot be undone</p>
+                    <p className="text-sm text-red-700">
+                      This will permanently delete your account and remove all your data including debts, transactions, payments, bank connections, crypto purchases, and settings.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deleteConfirm" className="text-sm text-red-700">
+                    Type <span className="font-mono font-bold">DELETE</span> to confirm
+                  </Label>
+                  <Input
+                    id="deleteConfirm"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="Type DELETE to confirm"
+                    className="border-red-300 focus:ring-red-500"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="destructive"
+                    disabled={deleteConfirmText !== "DELETE" || deleteAccountMutation.isPending}
+                    onClick={handleDeleteAccount}
+                  >
+                    {deleteAccountMutation.isPending ? "Deleting..." : "Permanently Delete Account"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -391,6 +391,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Transaction still succeeds even if split processing fails
         }
       }
+
+      if (idempotencyKey) {
+        await saveIdempotency(idempotencyKey, userId, '/api/transactions', 201, transaction);
+      }
       
       res.status(201).json(transaction);
     } catch (error) {
@@ -422,6 +426,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+
+      const idempotencyKey = req.headers['idempotency-key'] as string;
+      if (idempotencyKey) {
+        const cached = await checkIdempotency(idempotencyKey, userId, '/api/payments');
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
+
       const validatedData = insertPaymentSchema.parse({
         ...req.body,
         userId,
@@ -444,6 +455,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           parseFloat(validatedData.amount)
         );
       }
+
+      if (idempotencyKey) {
+        await saveIdempotency(idempotencyKey, userId, '/api/payments', 201, payment);
+      }
       
       res.status(201).json(payment);
     } catch (error) {
@@ -461,6 +476,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+
+      const idempotencyKey = req.headers['idempotency-key'] as string;
+      if (idempotencyKey) {
+        const cached = await checkIdempotency(idempotencyKey, userId, '/api/accelerated-payment');
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
+
       const { debtId, amount } = req.body;
       
       if (!debtId || !amount) {
@@ -469,12 +491,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await storage.makeAcceleratedPayment(userId, debtId, amount);
       
-      res.json({
+      const responseBody = {
         success: true,
         payment: result.payment,
         updatedDebt: result.updatedDebt,
         message: `Successfully paid $${amount} toward ${result.updatedDebt.name}`
-      });
+      };
+
+      if (idempotencyKey) {
+        await saveIdempotency(idempotencyKey, userId, '/api/accelerated-payment', 200, responseBody);
+      }
+
+      res.json(responseBody);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
@@ -679,6 +707,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+
+      const idempotencyKey = req.headers['idempotency-key'] as string;
+      if (idempotencyKey) {
+        const cached = await checkIdempotency(idempotencyKey, userId, '/api/crypto-purchases');
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
+
       const { amount, cryptoSymbol = "BTC" } = req.body;
 
       if (!amount || parseFloat(amount) <= 0) {
@@ -707,11 +742,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               coinbaseOrderId: (coinbaseTransaction as any).id || '',
             });
 
-            res.status(201).json({
+            const cryptoResponse = {
               ...purchase,
               coinbaseTransaction,
               message: "Real crypto purchase completed via Coinbase"
-            });
+            };
+            if (idempotencyKey) {
+              await saveIdempotency(idempotencyKey, userId, '/api/crypto-purchases', 201, cryptoResponse);
+            }
+            res.status(201).json(cryptoResponse);
           } else {
             throw new Error("No Coinbase account found");
           }
@@ -744,10 +783,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchasePrice: amount,
         });
 
-        res.status(201).json({
+        const demoResponse = {
           ...purchase,
           message: "Demo purchase - Add Coinbase credentials for real trading"
-        });
+        };
+        if (idempotencyKey) {
+          await saveIdempotency(idempotencyKey, userId, '/api/crypto-purchases', 201, demoResponse);
+        }
+        res.status(201).json(demoResponse);
       }
     } catch (error) {
       if (error instanceof z.ZodError) {

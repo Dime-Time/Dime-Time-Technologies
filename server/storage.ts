@@ -43,7 +43,13 @@ import {
   dttRewards,
   dttStaking,
   dttTokenInfo,
-  contactSubmissions
+  contactSubmissions,
+  roundUpCollections,
+  distributionPayments,
+  sweepAccounts,
+  sweepDeposits,
+  weeklyDispersals,
+  idempotencyKeys
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -183,6 +189,7 @@ export class MemStorage implements IStorage {
       id: "demo-user-1",
       email: "demo@dimetime.app",
       password: null,
+      passwordAlgo: null,
       firstName: "Neo",
       lastName: "User",
       profileImageUrl: null,
@@ -821,6 +828,7 @@ export class MemStorage implements IStorage {
       id,
       email: insertUser.email ?? null,
       password: insertUser.password ?? null,
+      passwordAlgo: insertUser.passwordAlgo ?? null,
       firstName: insertUser.firstName ?? null,
       lastName: insertUser.lastName ?? null,
       profileImageUrl: insertUser.profileImageUrl ?? null,
@@ -851,6 +859,7 @@ export class MemStorage implements IStorage {
         id: userData.id,
         email: userData.email ?? null,
         password: userData.password ?? null,
+        passwordAlgo: null,
         firstName: userData.firstName ?? null,
         lastName: userData.lastName ?? null,
         profileImageUrl: userData.profileImageUrl ?? null,
@@ -1686,6 +1695,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUserAccount(userId: string): Promise<void> {
+    await db.delete(weeklyDispersals).where(eq(weeklyDispersals.userId, userId));
+    await db.delete(sweepDeposits).where(eq(sweepDeposits.userId, userId));
+    await db.delete(sweepAccounts).where(eq(sweepAccounts.userId, userId));
+    await db.delete(distributionPayments).where(eq(distributionPayments.userId, userId));
+    await db.delete(roundUpCollections).where(eq(roundUpCollections.userId, userId));
     await db.delete(userSessions).where(eq(userSessions.userId, userId));
     await db.delete(notifications).where(eq(notifications.userId, userId));
     await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
@@ -1698,6 +1712,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(transactions).where(eq(transactions.userId, userId));
     await db.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
     await db.delete(debts).where(eq(debts.userId, userId));
+    await db.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
     await db.delete(users).where(eq(users.id, userId));
   }
 
