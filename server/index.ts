@@ -55,6 +55,11 @@ const corsOptions: cors.CorsOptions = {
       return callback(null, true);
     }
 
+    // In development, also allow any Replit preview/dev subdomain
+    if (env !== "production" && origin && origin.endsWith(".replit.dev")) {
+      return callback(null, true);
+    }
+
     console.warn("Blocked CORS origin:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
