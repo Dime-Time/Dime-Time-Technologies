@@ -139,16 +139,14 @@ function AppContent() {
 
   return (
     <Switch>
-      {/* Root route: authenticated -> dashboard, unauth -> login */}
+      {/* Root route: authenticated -> dashboard, unauth -> marketing landing page */}
       <Route path="/">
         {isAuthenticated ? (
           <AuthenticatedLayout>
             <Dashboard />
           </AuthenticatedLayout>
         ) : (
-          <AuthScreen>
-            <Login />
-          </AuthScreen>
+          <LandingPage />
         )}
       </Route>
 
