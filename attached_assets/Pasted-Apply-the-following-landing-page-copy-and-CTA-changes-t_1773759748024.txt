@@ -1,0 +1,339 @@
+Apply the following landing page copy and CTA changes to the Dime Time homepage exactly as specified below. Update the existing React/TypeScript/Tailwind implementation directly in code. Do not return a plan. Do not redesign the page from scratch. Preserve the current premium fintech visual style, layout structure, dark theme, purple accent palette, responsiveness, and form behavior. This is a copy, terminology, and CTA refinement pass.
+
+================================================================
+DIME TIME — LANDING PAGE COPY CHANGES (FULL CHANGE LOG)
+================================================================
+
+----------------------------------------------------------------
+NAVIGATION
+----------------------------------------------------------------
+BEFORE:
+- Desktop: "Sign In" button (gray) + "Join Beta" button (purple)
+- Mobile: "Sign In" + "Join Beta"
+
+AFTER:
+- Desktop: "Investor Info" button (gray) + "Join Beta" button (purple)
+- Mobile: "Investor Info" + "Join Beta"
+- Sign In moved to footer only
+
+Implementation notes:
+- Replace the gray top-right CTA with "Investor Info"
+- That button should scroll to the "investors" section
+- Remove Sign In from desktop nav CTA area
+- Remove Sign In from mobile CTA area
+- Keep Sign In available in the footer only
+
+----------------------------------------------------------------
+HERO BADGE
+----------------------------------------------------------------
+BEFORE:
+"Patent-Pending Technology · Now in Beta"
+
+AFTER:
+"Patent Filing in Preparation · Now in Beta"
+
+----------------------------------------------------------------
+HERO HEADLINE
+----------------------------------------------------------------
+BEFORE:
+"Turn Spare Change Into Debt Reduction and Crypto Ownership."
+
+AFTER:
+"Turn Everyday Purchases Into Debt Paydown and Bitcoin Accumulation."
+
+----------------------------------------------------------------
+HERO SUBHEADLINE
+----------------------------------------------------------------
+BEFORE:
+"Dime Time automatically rounds up everyday purchases and routes
+spare change toward paying down debt or purchasing cryptocurrency."
+
+AFTER:
+"Dime Time automatically rounds up card purchases and routes spare
+change toward debt repayment and Bitcoin purchases based on your
+chosen allocation."
+
+----------------------------------------------------------------
+TRUST BAR
+----------------------------------------------------------------
+BEFORE:
+"Plaid" | "Coinbase" | "256-bit AES Encryption" | "HTTPS / TLS 1.3"
+
+AFTER:
+"Plaid Connectivity" | "Coinbase Integration" | "Encrypted Data
+Handling" | "Secure Web Sessions"
+
+Also changed label from "Secured with" → "Built with"
+
+----------------------------------------------------------------
+HOW IT WORKS — Step 03
+----------------------------------------------------------------
+BEFORE:
+"Your round-up is split according to your settings: a percentage
+toward debt repayment and the remainder toward cryptocurrency purchases."
+
+AFTER:
+"Your round-up is split according to your chosen allocation: a portion
+toward debt repayment and the remainder toward Bitcoin purchases."
+
+----------------------------------------------------------------
+WHY DIME TIME — HEADLINE
+----------------------------------------------------------------
+BEFORE:
+"Make Everyday Spending Work For Your Balance Sheet."
+
+AFTER:
+"Put Every Purchase To Work."
+
+----------------------------------------------------------------
+WHY DIME TIME — BODY COPY
+----------------------------------------------------------------
+BEFORE:
+Para 1: "Most round-up apps move spare change into a savings account.
+That money sits idle, earning minimal interest."
+
+Para 2: "Dime Time instead directs spare change toward reducing debt
+liabilities or building cryptocurrency positions — two outcomes with
+meaningfully higher financial impact."
+
+AFTER:
+Para 1: "Most round-up apps move spare change into savings. Dime Time
+takes a different approach by routing round-ups toward debt repayment
+and Bitcoin accumulation."
+
+Para 2: "Instead of letting spare change sit idle, users can apply each
+round-up toward paying down liabilities while also building digital
+asset exposure through automated allocation."
+
+----------------------------------------------------------------
+WHY DIME TIME — BULLET POINTS
+----------------------------------------------------------------
+BEFORE:
+- No manual transfers. No discipline required.
+- Works on every purchase, automatically.
+- Configurable split between debt and crypto.
+- Patent-pending multi-destination microallocation.
+
+AFTER:
+- No manual transfers required
+- Works automatically with everyday purchases
+- Adjustable allocation between debt repayment and Bitcoin
+- Built around a patent-pending round-up allocation model
+
+----------------------------------------------------------------
+WHY DIME TIME — ALLOCATION VISUAL
+----------------------------------------------------------------
+BEFORE:
+Right column label: "→ Debt Payoff"
+Bottom bar label: "← Debt Repayment | Crypto →"
+Footer note: "Split percentages are fully customizable. You decide the ratio."
+
+AFTER:
+Right column label: "→ Debt Repayment"
+Bottom bar label: "← Debt Repayment | Bitcoin →"
+Footer note: "Allocation is fully adjustable. You set the split."
+
+----------------------------------------------------------------
+FEATURES — ALL 6 CARDS
+----------------------------------------------------------------
+Card 1:
+Title: "Automated Debt Reduction" → "Automated Debt Repayment"
+Desc: "Every round-up contributes to your debt balances automatically.
+No login required, no manual transfers, no reminders."
+→ "Every qualifying round-up can be directed toward debt paydown
+automatically, reducing the need for manual transfers or extra
+financial admin."
+
+Card 2:
+Title: "Crypto Allocation" → "Bitcoin Allocation"
+Desc: "A configurable percentage of each round-up purchases Bitcoin via
+Coinbase. Build a crypto position through everyday spending."
+→ "A configurable percentage of each round-up can be used for Bitcoin
+purchases, allowing users to build exposure gradually through everyday
+spending."
+
+Card 3:
+Title: "Flexible Round-Up Allocation" → "Flexible Allocation Controls"
+Desc: "Set any split from 0/100 to 100/0. Adjust anytime. Our
+patent-pending engine handles the rest."
+→ "Choose how each round-up is divided between debt repayment and
+Bitcoin purchases. Adjust your allocation at any time."
+
+Card 4:
+Title: "Transaction-Based Automation" (unchanged)
+Desc: "Round-ups trigger on every qualifying transaction. The system
+processes your spare change without any action required."
+→ "Round-ups are triggered by qualifying purchases, turning routine
+card activity into a consistent automated allocation workflow."
+
+Card 5:
+Title: "Financial Progress Tracking" → "Progress Tracking"
+Desc: "View your debt-free date, crypto portfolio growth, cumulative
+round-ups, and projected impact over time."
+→ "Users can monitor cumulative round-ups, projected debt impact, and
+Bitcoin accumulation over time within the product experience."
+
+Card 6:
+Title: "Secure Financial Connectivity" (unchanged)
+Desc: "Powered by Plaid. Bank credentials never touch our servers.
+Encrypted token storage, PIN lock, and bcrypt authentication."
+→ "Built with modern financial connectivity and secure authentication
+practices designed for consumer fintech applications."
+
+----------------------------------------------------------------
+SECURITY SECTION — ALL 4 CARDS (fully replaced)
+----------------------------------------------------------------
+Card 1:
+Title: "Bank-Grade Connectivity" → "Secure Connectivity"
+Desc: "Financial account access is managed exclusively through Plaid, a
+regulated financial data network. Your bank credentials are never
+transmitted to or stored by Dime Time."
+→ "Financial account connections are handled through trusted
+connectivity providers built for modern fintech applications."
+
+Card 2:
+Title: "Encrypted Data Architecture" → "Encrypted Data Handling"
+Desc: "Authentication tokens are encrypted using AES-GCM. Passwords are
+hashed with bcrypt at cost factor 12. All data is transmitted over
+TLS 1.3."
+→ "Sensitive data is transmitted and stored using modern encryption and
+access-control practices appropriate for financial software."
+
+Card 3:
+Title: "Idempotent Financial Operations" → "Privacy-Conscious Design"
+Desc: "All financial transactions are protected by idempotency keys with
+24-hour TTL, preventing duplicate charges or payments from ever being
+processed."
+→ "Dime Time is being built with a focus on data minimization,
+controlled access, and responsible handling of user financial
+information."
+
+Card 4:
+Title: "Privacy-First by Design" → "Security-Oriented Architecture"
+Desc: "We collect only what is necessary to operate the platform. No
+data is sold to third parties. Users can delete their account and all
+associated data at any time."
+→ "The platform is designed with authentication, secure session
+handling, and operational safeguards intended to support reliable
+financial workflows."
+
+----------------------------------------------------------------
+VISION / MISSION QUOTE
+----------------------------------------------------------------
+BEFORE:
+"Dime Time helps transform everyday purchases into automated financial
+progress — reducing debt and enabling cryptocurrency ownership for
+anyone, starting with their next purchase."
+
+AFTER:
+"Dime Time helps turn everyday spending into automated financial action
+by routing spare change toward debt repayment and Bitcoin accumulation."
+
+----------------------------------------------------------------
+INVESTOR SECTION — HEADLINE
+----------------------------------------------------------------
+BEFORE:
+"Early-stage. High conviction. Preparing for growth."
+
+AFTER:
+"Built for a large consumer pain point."
+
+----------------------------------------------------------------
+INVESTOR SECTION — BODY COPY
+----------------------------------------------------------------
+BEFORE:
+Para 1: "Dime Time is a patent-pending fintech platform in active beta
+development. We are building the infrastructure for automated
+micro-payment debt reduction with simultaneous digital asset
+acquisition."
+
+Para 2: "We are selectively speaking with angels, pre-seed funds, and
+strategic partners who understand the intersection of consumer finance
+and digital assets."
+
+AFTER:
+Para 1: "Dime Time is an early-stage consumer fintech platform focused
+on automated round-up allocations for debt repayment and Bitcoin
+purchases."
+
+Para 2: "We are developing the product for users who want a more
+intentional use of spare change than traditional savings-based round-up
+apps provide."
+
+----------------------------------------------------------------
+INVESTOR METRIC CARDS
+----------------------------------------------------------------
+BEFORE:
+- "Patent-Pending" (IP card)
+- "Plaid Approved" (traction card)
+
+AFTER:
+- "Filing in Preparation" (IP card)
+- "Built with Plaid Connectivity" (traction card)
+- "Patent-Pending" traction item → "Patent Filing in Preparation"
+- "Plaid Approved" traction item → "Built with Plaid Connectivity"
+
+----------------------------------------------------------------
+BETA SECTION — DESCRIPTIVE TEXT
+----------------------------------------------------------------
+BEFORE:
+"Be among the first to experience automated debt reduction and crypto
+accumulation through Dime Time."
+
+AFTER:
+"Be among the first to experience automated debt repayment and Bitcoin
+accumulation through Dime Time."
+
+----------------------------------------------------------------
+BETA SECTION — FORM FOOTER NOTE
+----------------------------------------------------------------
+BEFORE:
+"No spam. No credit card. Just early access to Dime Time."
+
+AFTER:
+"Request early access and we'll reach out when beta capacity opens."
+
+----------------------------------------------------------------
+FOOTER — TAGLINE
+----------------------------------------------------------------
+BEFORE:
+"Automated debt reduction and crypto accumulation through
+patent-pending round-up microallocation technology."
+
+AFTER:
+"Automated debt repayment and Bitcoin accumulation through a
+proprietary round-up allocation model."
+
+----------------------------------------------------------------
+FOOTER — BOTTOM BAR
+----------------------------------------------------------------
+BEFORE:
+"Patent Pending · Veteran-Owned Business · dime-time.com"
+
+AFTER:
+"Patent Filing in Preparation · Veteran-Owned Business · dime-time.com"
+
+================================================================
+ITEMS REQUIRING FOUNDER REVIEW
+================================================================
+1. invest@dime-time.com — confirm this email is live and monitored
+2. founder@dime-time.com — confirm this email is live and monitored
+3. Privacy Policy + Terms of Service — currently both route to /legal
+   (single page). Leave a TODO comment in code for separate pages later.
+4. "Patent Filing in Preparation" — change to "Patent Pending"
+   once the USPTO provisional application is formally submitted.
+
+================================================================
+IMPLEMENTATION RULES
+================================================================
+- Make these changes directly in the existing code
+- Preserve the existing premium fintech UI and page structure
+- Preserve responsiveness and current Tailwind quality
+- Preserve the beta form logic and behavior
+- Keep Sign In in the footer only
+- Use “Bitcoin” consistently across the page instead of vague “crypto” terminology where these changes specify it
+- Do not return a plan
+- After applying the edits, provide:
+  1. updated code
+  2. concise summary of what changed
+  3. any remaining founder-review items
