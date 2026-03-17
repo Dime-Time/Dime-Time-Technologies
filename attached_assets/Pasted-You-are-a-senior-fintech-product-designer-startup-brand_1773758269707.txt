@@ -1,0 +1,196 @@
+You are a senior fintech product designer, startup brand strategist, and full-stack engineer. Your task is to completely redesign the existing Dime Time website into a professional, high-trust fintech landing page suitable for users, investors, and strategic partners.
+
+Do not provide suggestions or explanations first. Execute the redesign directly in code.
+
+OBJECTIVE  
+Transform the existing site into a modern, premium fintech landing page that clearly communicates the Dime Time product, builds trust, and converts visitors into beta users or investor inquiries.
+
+The finished site must look like a legitimate early-stage fintech startup preparing for growth.
+
+PRODUCT CONTEXT
+
+Dime Time is a fintech application that automatically rounds up everyday purchases and allocates spare change toward two specific financial outcomes:
+
+• debt repayment  
+• cryptocurrency purchases
+
+Unlike traditional round-up apps that place spare change into savings accounts, Dime Time routes spare change toward reducing liabilities or acquiring digital assets.
+
+The platform allows users to split round-ups dynamically between these two destinations.
+
+Example allocation:
+
+80% → credit card or debt payoff  
+20% → cryptocurrency purchases
+
+The goal of the platform is to convert everyday spending into automated financial discipline that either reduces debt or builds digital asset exposure.
+
+DESIGN DIRECTION
+
+The visual and UX standard should match premium fintech brands such as:
+
+Plaid  
+Ramp  
+Mercury  
+Brex  
+Robinhood
+
+The design must feel:
+
+• minimal  
+• intelligent  
+• trustworthy  
+• high-end  
+• investor-credible  
+
+Avoid startup clichés and avoid generic template aesthetics.
+
+Use strong typography, generous spacing, elegant UI cards, and a polished professional color system.
+
+SITE STRUCTURE
+
+Build a single modern landing page with the following sections.
+
+1 HERO SECTION
+
+Headline  
+“Turn Spare Change Into Debt Reduction and Crypto Ownership.”
+
+Subheadline  
+“Dime Time automatically rounds up everyday purchases and routes spare change toward paying down debt or purchasing cryptocurrency.”
+
+Primary CTA  
+Join the Beta
+
+Secondary CTA  
+Investor Information
+
+Include a visual product area showing either:
+
+• app dashboard mockups  
+• fintech UI cards  
+• phone mockups
+
+If real screenshots are unavailable create elegant placeholder UI components.
+
+2 HOW IT WORKS
+
+Create a simple three-step visual explanation.
+
+Step 1  
+Securely connect your financial account.
+
+Step 2  
+Every purchase rounds up automatically.
+
+Step 3  
+Your spare change is routed toward debt repayment or crypto purchases.
+
+3 WHY DIME TIME
+
+Headline  
+“Make Everyday Spending Work For Your Balance Sheet.”
+
+Explain the core differentiation:
+
+Most round-up apps move spare change into savings.
+
+Dime Time instead directs spare change toward reducing debt or building cryptocurrency positions.
+
+Show a visual allocation example.
+
+Example
+
+80% → debt payoff  
+20% → crypto purchases
+
+4 FEATURES
+
+Create clean feature panels:
+
+Automated Debt Reduction  
+Crypto Allocation  
+Flexible Round-Up Allocation  
+Transaction-Based Automation  
+Financial Progress Tracking  
+Secure Financial Connectivity
+
+5 TRUST AND SECURITY
+
+Add a professional trust section discussing:
+
+secure financial connectivity  
+privacy-first architecture  
+encrypted financial data  
+secure integrations
+
+Avoid making false compliance claims.
+
+6 COMPANY VISION
+
+Short mission statement:
+
+“Dime Time helps transform everyday purchases into automated financial progress by reducing debt and enabling cryptocurrency ownership.”
+
+7 INVESTOR SECTION
+
+Create a professional section indicating the company is preparing for early stage growth.
+
+Buttons:
+
+Request Investor Deck  
+Contact the Founder
+
+8 BETA SIGNUP
+
+Headline  
+Join Early Access
+
+Fields:
+
+Name  
+Email  
+Optional phone
+
+Subtext
+
+“Be among the first to experience automated debt reduction and crypto accumulation through Dime Time.”
+
+9 FOOTER
+
+Include:
+
+logo or wordmark  
+contact email placeholder  
+social placeholders  
+privacy policy  
+terms of service
+
+TECHNICAL REQUIREMENTS
+
+• fully responsive design  
+• excellent mobile rendering  
+• semantic HTML  
+• reusable components  
+• subtle transitions  
+• strong layout hierarchy  
+• optimized loading performance
+
+Remove any placeholder or amateur looking content from the current site.
+
+IMPORTANT
+
+Do not ask questions.  
+Do not return a plan.  
+Execute the redesign directly in code.
+
+If assets are missing create high-quality placeholders that match a premium fintech brand aesthetic.
+
+The result should look credible enough to present to angel investors.
+
+DELIVERABLES
+
+1 updated homepage implementation  
+2 new components created  
+3 summary of improvements  
+4 placeholders needing replacement
