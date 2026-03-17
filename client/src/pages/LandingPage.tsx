@@ -41,9 +41,7 @@ export default function LandingPage() {
       apiRequest("POST", "/api/contact", {
         name: data.name,
         email: data.email,
-        message: data.phone
-          ? `Beta signup request. Phone: ${data.phone}`
-          : "Beta signup request.",
+        message: `Landing page beta signup${data.phone ? ` | Phone: ${data.phone}` : ""}`,
       }),
     onSuccess: () => { setBetaSuccess(true); reset(); },
     onError: () => {
@@ -111,13 +109,18 @@ export default function LandingPage() {
 
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/5 bg-[#0a0a0f] px-6 py-4 flex flex-col gap-4">
-            {["how-it-works", "features", "security", "investors"].map((id) => (
+            {[
+              { id: "how-it-works", label: "How It Works" },
+              { id: "features", label: "Features" },
+              { id: "security", label: "Security" },
+              { id: "investors", label: "Investors" },
+            ].map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => scrollTo(id)}
-                className="text-sm text-gray-400 text-left capitalize"
+                className="text-sm text-gray-400 text-left"
               >
-                {id.replace("-", " ")}
+                {label}
               </button>
             ))}
             <div className="flex gap-3 pt-2 border-t border-white/5">
@@ -313,7 +316,7 @@ export default function LandingPage() {
                   "No manual transfers required",
                   "Works automatically with everyday purchases",
                   "Adjustable allocation between debt repayment and Bitcoin",
-                  "Built around a patent-pending round-up allocation model",
+                  "Built around a proprietary round-up allocation model",
                 ].map((point) => (
                   <div key={point} className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-[#918EF4] flex-shrink-0 mt-0.5" />
@@ -518,7 +521,7 @@ export default function LandingPage() {
               {[
                 { metric: "Patent Filing in Preparation", detail: "Dynamic Dual-Split Round-Up Microallocation System — USPTO provisional filing in preparation" },
                 { metric: "Live on TestFlight", detail: "iOS app built and distributed to beta testers via Apple TestFlight" },
-                { metric: "Built with Plaid Connectivity", detail: "Production Plaid API access approved for live bank account connectivity" },
+                { metric: "Built with Plaid Connectivity", detail: "Dime Time is being developed with Plaid connectivity for linked account workflows." },
                 { metric: "Veteran-Owned", detail: "Proudly built and operated by a U.S. military veteran" },
               ].map((item) => (
                 <div key={item.metric} className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-5 flex gap-4">
