@@ -1,0 +1,79 @@
+Apply the following 4 precision edits to client/src/pages/LandingPage.tsx exactly as written. Do not redesign anything else. Preserve all current layout, styling, spacing, components, copy, and behavior except for the edits below.
+
+================================================================
+DIME TIME — PRECISION PASS CHANGES (4 EDITS)
+================================================================
+
+----------------------------------------------------------------
+1. BETA SIGNUP MUTATION PAYLOAD
+----------------------------------------------------------------
+FILE: client/src/pages/LandingPage.tsx
+
+BEFORE:
+        message: data.phone
+          ? `Beta signup request. Phone: ${data.phone}`
+          : "Beta signup request.",
+
+AFTER:
+        message: `Landing page beta signup${data.phone ? ` | Phone: ${data.phone}` : ""}`,
+
+----------------------------------------------------------------
+2. WHY DIME TIME — BULLET POINT 4
+----------------------------------------------------------------
+FILE: client/src/pages/LandingPage.tsx
+
+BEFORE:
+"Built around a patent-pending round-up allocation model"
+
+AFTER:
+"Built around a proprietary round-up allocation model"
+
+----------------------------------------------------------------
+3. INVESTOR TRACTION — PLAID DETAIL TEXT
+----------------------------------------------------------------
+FILE: client/src/pages/LandingPage.tsx
+
+BEFORE:
+{ metric: "Built with Plaid Connectivity", detail: "Production Plaid API access approved for live bank account connectivity" }
+
+AFTER:
+{ metric: "Built with Plaid Connectivity", detail: "Dime Time is being developed with Plaid connectivity for linked account workflows." }
+
+----------------------------------------------------------------
+4. MOBILE MENU — EXPLICIT LABELS
+----------------------------------------------------------------
+FILE: client/src/pages/LandingPage.tsx
+
+BEFORE:
+{["how-it-works", "features", "security", "investors"].map((id) => (
+  <button
+    key={id}
+    onClick={() => scrollTo(id)}
+    className="text-sm text-gray-400 text-left capitalize"
+  >
+    {id.replace("-", " ")}
+  </button>
+))}
+
+AFTER:
+{[
+  { id: "how-it-works", label: "How It Works" },
+  { id: "features", label: "Features" },
+  { id: "security", label: "Security" },
+  { id: "investors", label: "Investors" },
+].map(({ id, label }) => (
+  <button
+    key={id}
+    onClick={() => scrollTo(id)}
+    className="text-sm text-gray-400 text-left"
+  >
+    {label}
+  </button>
+))}
+
+================================================================
+
+After applying the edits, provide:
+1. the updated code
+2. a concise summary confirming all 4 changes were made
+3. note whether any additional unintended changes were introduced
