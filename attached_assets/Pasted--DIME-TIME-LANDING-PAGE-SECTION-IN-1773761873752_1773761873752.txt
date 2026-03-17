@@ -1,0 +1,93 @@
+================================================================
+DIME TIME — LANDING PAGE SECTION INSERTS
+Paste these sections BELOW the hero in your existing page.
+Keep the current design, styling, and CTA exactly as they are.
+================================================================
+
+
+SECTION: PROBLEM
+
+Heading:
+Most People Have Two Financial Problems
+
+Bullet 1:
+Debt keeps growing faster than people can realistically pay it down.
+
+Bullet 2:
+Investing consistently is difficult for most households.
+
+Body:
+People spend money every day, but most purchases do nothing to reduce debt or build long-term financial value. Dime Time turns everyday spending into an opportunity for progress.
+
+
+---------------------------------------------------------------
+
+
+SECTION: SOLUTION
+
+Heading:
+Dime Time Automates the Solution
+
+Body:
+Every eligible card purchase rounds up automatically. The spare change is then allocated toward debt payoff and Bitcoin accumulation based on the user’s chosen allocation.
+
+Example:
+
+Coffee Purchase: $4.25
+Round-Up: $0.75
+
+Allocation Example
+$0.45 → Debt Paydown
+$0.30 → Bitcoin
+
+
+---------------------------------------------------------------
+
+
+SECTION: ALLOCATION FEATURE
+
+Heading:
+Choose Your Allocation
+
+Body:
+Users control how their round-ups are split. Dime Time automatically follows the allocation rule you choose and applies it to every qualifying purchase.
+
+Allocation Examples:
+
+100 / 0
+75 / 25
+50 / 50
+25 / 75
+0 / 100
+
+Labels:
+Debt ← Allocation Split → Bitcoin
+
+
+---------------------------------------------------------------
+
+
+OPTIONAL TRUST ROW (Recommended — place under hero CTA)
+
+Patent Pending • Built with Plaid Connectivity • Bank-Level Security
+
+
+================================================================
+FINAL PAGE FLOW AFTER INSERT
+================================================================
+
+Hero (existing)
+↓
+Problem
+↓
+Solution
+↓
+Allocation Feature
+↓
+Existing sections already on the page
+↓
+Beta Signup
+↓
+Footer
+
+================================================================

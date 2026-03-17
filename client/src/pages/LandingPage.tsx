@@ -164,7 +164,7 @@ export default function LandingPage() {
             Dime Time automatically rounds up card purchases and routes spare change toward debt repayment and Bitcoin purchases based on your chosen allocation.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <button
               onClick={() => scrollTo("beta")}
               className="inline-flex items-center justify-center gap-2 bg-[#918EF4] hover:bg-[#7b78e0] text-white font-semibold px-8 py-4 rounded-xl text-base transition-all hover:shadow-[0_0_30px_rgba(145,142,244,0.4)]"
@@ -179,6 +179,15 @@ export default function LandingPage() {
               Investor Information
               <ChevronRight className="w-4 h-4" />
             </button>
+          </div>
+
+          {/* Inline trust row */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-16 text-xs text-gray-500 font-medium">
+            <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#918EF4]" />Patent Filing in Preparation</span>
+            <span className="text-white/10">•</span>
+            <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#918EF4]" />Built with Plaid Connectivity</span>
+            <span className="text-white/10">•</span>
+            <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#918EF4]" />Bank-Level Security</span>
           </div>
 
           {/* Product preview */}
@@ -238,6 +247,134 @@ export default function LandingPage() {
                 <span className="text-[#918EF4]">+$0.63</span>
                 <span className="text-green-400 text-[10px]">Processed</span>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Problem ─────────────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-[#0d0d18]">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">The Problem</p>
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 leading-tight">
+            Most People Have Two Financial Problems
+          </h2>
+          <div className="grid md:grid-cols-2 gap-5 mb-10 text-left">
+            <div className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6 flex gap-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                <TrendingDown className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold mb-2">Debt keeps growing</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">Debt keeps growing faster than people can realistically pay it down.</p>
+              </div>
+            </div>
+            <div className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6 flex gap-4">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                <Bitcoin className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold mb-2">Investing feels out of reach</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">Investing consistently is difficult for most households to maintain.</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
+            People spend money every day, but most purchases do nothing to reduce debt or build long-term financial value. Dime Time turns everyday spending into an opportunity for progress.
+          </p>
+        </div>
+      </section>
+
+      {/* ─── Solution ────────────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-[#0a0a0f]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">The Solution</p>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+              Dime Time Automates the Solution
+            </h2>
+            <p className="text-gray-400 text-lg mt-5 max-w-2xl mx-auto leading-relaxed">
+              Every eligible card purchase rounds up automatically. The spare change is then allocated toward debt payoff and Bitcoin accumulation based on the user's chosen allocation.
+            </p>
+          </div>
+
+          {/* Example card */}
+          <div className="max-w-sm mx-auto bg-[#0f0f1a] border border-white/5 rounded-3xl p-8">
+            <div className="text-xs text-gray-500 mb-5 font-medium text-center uppercase tracking-widest">Live Example</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-gray-400 text-sm">Coffee Purchase</span>
+              <span className="text-white font-semibold">$4.25</span>
+            </div>
+            <div className="flex items-center justify-between mb-5 pb-5 border-b border-white/5">
+              <span className="text-[#918EF4] text-sm font-medium">Round-Up</span>
+              <span className="text-[#918EF4] font-bold">+ $0.75</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between bg-[#918EF4]/10 border border-[#918EF4]/20 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4 text-[#918EF4]" />
+                  <span className="text-sm text-gray-300">Debt Paydown</span>
+                </div>
+                <span className="text-[#918EF4] font-bold">$0.45</span>
+              </div>
+              <div className="flex items-center justify-between bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Bitcoin className="w-4 h-4 text-orange-400" />
+                  <span className="text-sm text-gray-300">Bitcoin</span>
+                </div>
+                <span className="text-orange-400 font-bold">$0.30</span>
+              </div>
+            </div>
+            <div className="mt-5 pt-5 border-t border-white/5 text-xs text-gray-600 text-center">
+              60% debt · 40% Bitcoin allocation
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Allocation Feature ───────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-[#0d0d18]">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">Full Control</p>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight mb-5">
+              Choose Your Allocation
+            </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+              Users control how their round-ups are split. Dime Time automatically follows the allocation rule you choose and applies it to every qualifying purchase.
+            </p>
+          </div>
+
+          <div className="bg-[#0a0a0f] border border-white/5 rounded-3xl p-8 max-w-2xl mx-auto">
+            <div className="flex justify-between text-xs font-semibold mb-5">
+              <span className="text-[#918EF4]">← Debt</span>
+              <span className="text-gray-500 uppercase tracking-widest">Allocation Split</span>
+              <span className="text-orange-400">Bitcoin →</span>
+            </div>
+            <div className="space-y-3">
+              {[
+                { debt: 100, btc: 0 },
+                { debt: 75, btc: 25 },
+                { debt: 50, btc: 50 },
+                { debt: 25, btc: 75 },
+                { debt: 0, btc: 100 },
+              ].map(({ debt, btc }) => (
+                <div key={`${debt}-${btc}`} className="flex items-center gap-3">
+                  <span className="text-xs text-[#918EF4] font-semibold w-8 text-right">{debt}%</span>
+                  <div className="flex-1 h-3 rounded-full overflow-hidden flex gap-0.5">
+                    {debt > 0 && (
+                      <div className="h-full bg-[#918EF4] rounded-l-full transition-all" style={{ width: `${debt}%` }} />
+                    )}
+                    {btc > 0 && (
+                      <div className="h-full bg-orange-400 rounded-r-full transition-all" style={{ width: `${btc}%` }} />
+                    )}
+                  </div>
+                  <span className="text-xs text-orange-400 font-semibold w-8">{btc}%</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 pt-6 border-t border-white/5 text-xs text-gray-600 text-center">
+              Adjust your split anytime. Every purchase follows your rule automatically.
             </div>
           </div>
         </div>
