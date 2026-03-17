@@ -1,0 +1,79 @@
+DIME TIME LANDING PAGE STRUCTURE — REPLIT COPY
+
+HERO
+Headline: Turn Spare Change Into Debt Freedom and Bitcoin
+Subheadline: Dime Time automatically rounds up card purchases and allocates the spare change toward debt payoff and Bitcoin based on your selected split.
+Primary CTA: Join the Beta
+Trust Row: Patent Pending • Built with Plaid • Bank-Level Security
+
+Optional Hero Example:
+$4.25 purchase
+Round-Up → $0.75
+$0.45 → Debt
+$0.30 → Bitcoin
+
+SECTION 1 — THE PROBLEM
+Heading: Most people have two financial problems
+Bullet 1: Debt keeps growing
+Bullet 2: Investing feels hard to start
+Body: People spend money every day, but most purchases do nothing to reduce debt or build long-term value.
+
+SECTION 2 — THE SOLUTION
+Heading: Dime Time automates the solution
+Body: Every eligible purchase is rounded up automatically. The spare change is then split between debt payoff and Bitcoin based on the user’s chosen allocation.
+Example:
+Lunch: $13.40
+Round-Up: $0.60
+$0.36 → Debt
+$0.24 → Bitcoin
+
+SECTION 3 — CORE FEATURE
+Heading: Choose your allocation
+Body: Users control how their round-ups are split. Dime Time follows the selected rule automatically.
+Allocation Options:
+100 / 0
+75 / 25
+50 / 50
+25 / 75
+0 / 100
+Labels:
+Debt ← Allocation Split → Bitcoin
+
+SECTION 4 — HOW IT WORKS
+Heading: How Dime Time works
+Step 1 Title: Connect your account
+Step 1 Body: Securely connect your bank and card activity.
+Step 2 Title: Purchases round up
+Step 2 Body: Everyday transactions round up to the nearest dollar.
+Step 3 Title: Spare change gets allocated
+Step 3 Body: Round-ups are directed toward debt payoff and Bitcoin accumulation based on your selected split.
+
+SECTION 5 — TRUST / SECURITY
+Heading: Built for secure financial automation
+Bullet 1: Plaid secure connectivity
+Bullet 2: Bank-level encryption
+Bullet 3: Patent-pending allocation engine
+Bullet 4: User-controlled allocation settings
+
+SECTION 6 — POSITIONING
+Heading: A new way to make spending work for you
+Body: Most financial apps focus only on saving or investing. Dime Time is built to help users reduce debt while also accumulating Bitcoin automatically through everyday spending.
+
+SECTION 7 — BETA CTA
+Heading: Join the Dime Time beta
+Body: Early users help shape the future of automated debt payoff and Bitcoin allocation.
+CTA: Get Early Access
+
+FOOTER
+Privacy Policy
+Terms
+Security
+Contact
+
+SHORTER HERO VERSION
+Headline: Turn Everyday Spending Into Debt Payoff + Bitcoin
+Subheadline: Dime Time rounds up purchases and automatically allocates spare change based on your selected split.
+CTA: Join the Beta
+
+STRONGEST POSITIONING LINE
+Dime Time helps users turn everyday purchases into automated debt payoff while building Bitcoin at the same time.
