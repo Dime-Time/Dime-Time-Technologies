@@ -1,0 +1,218 @@
+Update the current Dime Time landing page code with the following copy, positioning, and UX revisions. Make the edits directly in code. Do not return a plan. Preserve the existing visual design language unless a change is specifically requested below.
+
+PRIMARY GOAL
+Tighten the homepage so it reads more credible, precise, and investor-ready for an early-stage consumer fintech product focused on debt repayment and Bitcoin accumulation through round-ups.
+
+IMPORTANT POSITIONING RULES
+- Dime Time does NOT do savings.
+- Dime Time should be described as routing round-ups toward debt repayment and Bitcoin purchases / Bitcoin accumulation.
+- Use consistent terminology across the page.
+- Prefer “debt repayment” or “debt paydown” over “debt reduction” where appropriate.
+- Prefer “Bitcoin accumulation” or “Bitcoin purchases” over vague “crypto ownership.”
+- Avoid overclaiming.
+- Remove or soften any compliance, legal, infrastructure, or regulatory claims that may sound too absolute unless they are already fully verified and documented.
+- Keep the product sounding premium, serious, and credible.
+
+GLOBAL COPY CHANGES
+Replace copy throughout the page so the language is consistent with:
+- debt repayment
+- debt paydown
+- Bitcoin accumulation
+- round-up allocation
+- automated financial progress
+
+Do NOT use savings language anywhere unless explicitly contrasting Dime Time against savings-focused apps.
+
+HERO SECTION
+Replace the current hero headline and subheadline with:
+
+Headline:
+“Turn Everyday Purchases Into Debt Paydown and Bitcoin Accumulation.”
+
+Subheadline:
+“Dime Time automatically rounds up card purchases and routes spare change toward debt repayment and Bitcoin purchases based on your chosen allocation.”
+
+Keep the primary CTA as:
+“Join the Beta”
+
+Keep the secondary CTA as:
+“Investor Information”
+
+WHY DIME TIME SECTION
+Change the section headline from:
+“Make Everyday Spending Work For Your Balance Sheet.”
+
+To:
+“Put Every Purchase To Work.”
+
+Update the body copy to this:
+
+Paragraph 1:
+“Most round-up apps move spare change into savings. Dime Time takes a different approach by routing round-ups toward debt repayment and Bitcoin accumulation.”
+
+Paragraph 2:
+“Instead of letting spare change sit idle, users can apply each round-up toward paying down liabilities while also building digital asset exposure through automated allocation.”
+
+Keep the general structure and the allocation visual, but make sure terminology is consistent with Bitcoin if the page uses Bitcoin elsewhere.
+
+Update the bullet points to:
+- No manual transfers required
+- Works automatically with everyday purchases
+- Adjustable allocation between debt repayment and Bitcoin
+- Built around a patent-pending round-up allocation model
+
+FEATURES SECTION
+Keep the existing feature card layout, but revise the text for precision and consistency.
+
+Use these feature titles and descriptions:
+
+1. Automated Debt Repayment
+“Every qualifying round-up can be directed toward debt paydown automatically, reducing the need for manual transfers or extra financial admin.”
+
+2. Bitcoin Allocation
+“A configurable percentage of each round-up can be used for Bitcoin purchases, allowing users to build exposure gradually through everyday spending.”
+
+3. Flexible Allocation Controls
+“Choose how each round-up is divided between debt repayment and Bitcoin purchases. Adjust your allocation at any time.”
+
+4. Transaction-Based Automation
+“Round-ups are triggered by qualifying purchases, turning routine card activity into a consistent automated allocation workflow.”
+
+5. Progress Tracking
+“Users can monitor cumulative round-ups, projected debt impact, and Bitcoin accumulation over time within the product experience.”
+
+6. Secure Financial Connectivity
+“Built with modern financial connectivity and secure authentication practices designed for consumer fintech applications.”
+
+SECURITY / TRUST SECTION
+This section currently feels too over-engineered and makes claims that may be too specific. Simplify it. Keep the section visually strong, but replace the existing four cards with more polished, credible, lower-risk copy.
+
+Use these four cards:
+
+1. Secure Connectivity
+“Financial account connections are handled through trusted connectivity providers built for modern fintech applications.”
+
+2. Encrypted Data Handling
+“Sensitive data is transmitted and stored using modern encryption and access-control practices appropriate for financial software.”
+
+3. Privacy-Conscious Design
+“Dime Time is being built with a focus on data minimization, controlled access, and responsible handling of user financial information.”
+
+4. Security-Oriented Architecture
+“The platform is designed with authentication, secure session handling, and operational safeguards intended to support reliable financial workflows.”
+
+Do not mention:
+- regulated financial data network
+- AES-GCM
+- bcrypt cost factor 12
+- idempotency keys
+- 24-hour TTL
+- bank-grade encryption
+unless those statements are specifically and explicitly verified in the project and already intentionally approved for public marketing copy.
+
+TRUST BAR
+Keep the trust bar design, but make the labels more careful and less overclaiming.
+
+Current bar likely includes: Plaid, Coinbase, 256-bit AES Encryption, HTTPS / TLS 1.3
+
+Revise this area to a safer set of trust indicators such as:
+- Plaid Connectivity
+- Coinbase Integration
+- Encrypted Data Handling
+- Secure Web Sessions
+
+Only keep Plaid and Coinbase if they are truly part of the current product stack and intended to be shown publicly.
+
+VISION / MISSION SECTION
+Replace the current mission quote with:
+
+“Dime Time helps turn everyday spending into automated financial action by routing spare change toward debt repayment and Bitcoin accumulation.”
+
+INVESTOR SECTION
+Keep the current layout, but tighten the copy to sound more factual and less theatrical.
+
+Replace the main heading:
+“Early-stage. High conviction. Preparing for growth.”
+
+With:
+“Built for a large consumer pain point.”
+
+Replace the two main paragraphs with:
+
+Paragraph 1:
+“Dime Time is an early-stage consumer fintech platform focused on automated round-up allocations for debt repayment and Bitcoin purchases.”
+
+Paragraph 2:
+“We are developing the product for users who want a more intentional use of spare change than traditional savings-based round-up apps provide.”
+
+Update the metric cards if needed to remain credible. Keep only claims that are accurate and supportable.
+
+If “Patent-Pending” is not fully accurate and filed, change it to:
+“Patent Filing in Preparation”
+
+If “Plaid Approved” is too strong, change it to:
+“Built with Plaid Connectivity”
+or
+“Plaid Integration in Development”
+depending on the actual state.
+
+If “Live on TestFlight” is accurate, keep it.
+If “Veteran-Owned” is accurate, keep it.
+
+BETA SECTION
+Keep the section structure, but replace the descriptive text with:
+
+“Be among the first to experience automated debt repayment and Bitcoin accumulation through Dime Time.”
+
+Replace the small note under the form:
+“No spam. No credit card. Just early access to Dime Time.”
+
+With:
+“Request early access and we’ll reach out when beta capacity opens.”
+
+NAVIGATION / CTA REFINEMENT
+Remove the top-right “Sign In” button from the main desktop navigation if the main purpose of this page is still acquisition and investor interest.
+
+Replace it with a stronger conversion path:
+- keep “Join Beta”
+- optionally add “Investor Info”
+or leave one clear CTA if that looks cleaner
+
+On mobile, also remove or reduce the emphasis on Sign In unless login is a major current user action.
+
+FOOTER
+Keep the footer structure, but revise the summary line to:
+
+“Automated debt repayment and Bitcoin accumulation through a patent-pending round-up allocation model.”
+
+If “patent-pending” is not accurate, replace with:
+“Automated debt repayment and Bitcoin accumulation through a proprietary round-up allocation model.”
+
+Also separate Privacy Policy and Terms of Service routes if the project supports distinct pages. If not, keep current routing but leave a TODO comment for separate pages later.
+
+TERMINOLOGY CONSISTENCY
+Across the full page, audit and standardize:
+- Use either “Bitcoin” consistently or “crypto” consistently.
+- Preferred choice: use “Bitcoin” if the actual implementation is specifically Bitcoin via Coinbase.
+- Replace “crypto ownership” with “Bitcoin accumulation” or “Bitcoin purchases.”
+- Replace “debt reduction” with “debt repayment” or “debt paydown” where it reads better.
+
+DO NOT CHANGE
+- Keep the current general premium fintech visual style
+- Keep the dark theme and purple accent direction
+- Keep the section order unless a small structural improvement is clearly beneficial
+- Keep the beta form behavior intact
+- Keep the overall polished, investor-grade tone
+
+IMPLEMENTATION REQUIREMENTS
+- Update the code directly
+- Preserve clean React + TypeScript structure
+- Preserve current Tailwind quality
+- Keep the page responsive
+- Do not return a plan
+- Make the revised landing page feel more credible, polished, and precise than the current version
+
+After editing, provide:
+1. the updated code
+2. a concise summary of what changed
+3. any copy placeholders or claims that still require manual founder review

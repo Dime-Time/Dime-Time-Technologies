@@ -12,24 +12,17 @@ import {
 import appDashboardImage from "@assets/generated_images/App_dashboard_screenshot_29cdedbe.png";
 import logoImg from "@assets/9C86D612-C9E4-448E-8F8B-CC8F618BAE03_1756051233947.png";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
 function NavLink({ label, href }: { label: string; href: string }) {
   const scroll = () => {
     const el = document.getElementById(href);
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
   return (
-    <button
-      onClick={scroll}
-      className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
-    >
+    <button onClick={scroll} className="text-sm font-medium text-gray-400 hover:text-white transition-colors">
       {label}
     </button>
   );
 }
-
-// ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   const [, navigate] = useLocation();
@@ -52,10 +45,7 @@ export default function LandingPage() {
           ? `Beta signup request. Phone: ${data.phone}`
           : "Beta signup request.",
       }),
-    onSuccess: () => {
-      setBetaSuccess(true);
-      reset();
-    },
+    onSuccess: () => { setBetaSuccess(true); reset(); },
     onError: () => {
       toast({
         title: "Something went wrong",
@@ -81,7 +71,6 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0a0a0f]/90 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
-          {/* Logo */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-8 h-8 rounded-lg bg-[#918EF4] flex items-center justify-center">
               <img src={logoImg} alt="Dime Time" className="w-6 h-6 object-contain" />
@@ -89,7 +78,6 @@ export default function LandingPage() {
             <span className="font-bold text-white tracking-tight text-lg">Dime Time</span>
           </div>
 
-          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
             <NavLink label="How It Works" href="how-it-works" />
             <NavLink label="Features" href="features" />
@@ -97,12 +85,13 @@ export default function LandingPage() {
             <NavLink label="Investors" href="investors" />
           </nav>
 
+          {/* Desktop CTAs — acquisition focused, no Sign In */}
           <div className="hidden md:flex items-center gap-3">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => scrollTo("investors")}
               className="text-sm font-medium text-gray-400 hover:text-white transition-colors px-4 py-2"
             >
-              Sign In
+              Investor Info
             </button>
             <button
               onClick={() => scrollTo("beta")}
@@ -112,7 +101,6 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Mobile menu toggle */}
           <button
             className="md:hidden text-gray-400 hover:text-white"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -121,7 +109,6 @@ export default function LandingPage() {
           </button>
         </div>
 
-        {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/5 bg-[#0a0a0f] px-6 py-4 flex flex-col gap-4">
             {["how-it-works", "features", "security", "investors"].map((id) => (
@@ -135,10 +122,10 @@ export default function LandingPage() {
             ))}
             <div className="flex gap-3 pt-2 border-t border-white/5">
               <button
-                onClick={() => navigate("/login")}
+                onClick={() => scrollTo("investors")}
                 className="flex-1 text-sm text-gray-400 border border-white/10 rounded-lg py-2"
               >
-                Sign In
+                Investor Info
               </button>
               <button
                 onClick={() => scrollTo("beta")}
@@ -153,29 +140,25 @@ export default function LandingPage() {
 
       {/* ─── Hero ────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-24 pb-16 overflow-hidden">
-
-        {/* Background glow */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-[#918EF4]/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-[#6366f1]/5 rounded-full blur-[80px] pointer-events-none" />
 
         <div className="relative z-10 max-w-4xl mx-auto">
-
-          {/* Badge */}
           <div className="inline-flex items-center gap-2 border border-[#918EF4]/30 bg-[#918EF4]/10 text-[#a5a3f7] text-xs font-semibold px-4 py-2 rounded-full mb-8 uppercase tracking-widest">
             <span className="w-1.5 h-1.5 rounded-full bg-[#918EF4] animate-pulse" />
-            Patent-Pending Technology · Now in Beta
+            Patent Filing in Preparation · Now in Beta
           </div>
 
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] mb-6">
-            Turn Spare Change Into
+            Turn Everyday Purchases Into
             <br />
-            <span className="text-[#918EF4]">Debt Reduction</span> and
+            <span className="text-[#918EF4]">Debt Paydown</span> and
             <br />
-            <span className="text-[#918EF4]">Crypto Ownership.</span>
+            <span className="text-[#918EF4]">Bitcoin Accumulation.</span>
           </h1>
 
           <p className="text-gray-400 text-xl md:text-2xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Dime Time automatically rounds up everyday purchases and routes spare change toward paying down debt or purchasing cryptocurrency.
+            Dime Time automatically rounds up card purchases and routes spare change toward debt repayment and Bitcoin purchases based on your chosen allocation.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
@@ -195,27 +178,22 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Product preview card */}
+          {/* Product preview */}
           <div className="relative max-w-2xl mx-auto">
             <div className="absolute inset-0 bg-[#918EF4]/20 rounded-3xl blur-3xl" />
             <div className="relative border border-white/10 rounded-3xl overflow-hidden bg-[#0f0f1a] shadow-2xl">
-              {/* Mock top bar */}
               <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-[#0d0d18]">
                 <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
                 <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
                 <div className="w-3 h-3 rounded-full bg-[#28c840]" />
                 <div className="mx-auto text-xs text-gray-600 font-mono">dime-time.com/dashboard</div>
               </div>
-              <img
-                src={appDashboardImage}
-                alt="Dime Time Dashboard"
-                className="w-full h-auto"
-              />
+              <img src={appDashboardImage} alt="Dime Time Dashboard" className="w-full h-auto" />
             </div>
 
             {/* Floating allocation card */}
             <div className="absolute -right-4 md:-right-12 top-1/3 bg-[#13131f] border border-white/10 rounded-2xl p-4 shadow-2xl w-44 hidden sm:block">
-              <div className="text-xs text-gray-500 mb-3 font-medium">Round-Up Split</div>
+              <div className="text-xs text-gray-500 mb-3 font-medium">Round-Up Allocation</div>
               <div className="space-y-2">
                 <div>
                   <div className="flex justify-between text-xs mb-1">
@@ -228,7 +206,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-300">Crypto</span>
+                    <span className="text-gray-300">Bitcoin</span>
                     <span className="text-orange-400 font-semibold">20%</span>
                   </div>
                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
@@ -262,12 +240,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Logos / trust bar ───────────────────────────────────────── */}
+      {/* ─── Trust Bar ───────────────────────────────────────────────── */}
       <div className="border-y border-white/5 bg-[#0d0d18] py-6 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-12 text-gray-600 text-sm font-medium">
-          <span>Secured with</span>
+          <span>Built with</span>
           <div className="flex flex-wrap items-center justify-center gap-8">
-            {["Plaid", "Coinbase", "256-bit AES Encryption", "HTTPS / TLS 1.3"].map((name) => (
+            {["Plaid Connectivity", "Coinbase Integration", "Encrypted Data Handling", "Secure Web Sessions"].map((name) => (
               <span key={name} className="text-gray-400 text-sm font-semibold">{name}</span>
             ))}
           </div>
@@ -283,34 +261,30 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 relative">
-            {/* Connector line */}
             <div className="hidden md:block absolute top-10 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px bg-gradient-to-r from-transparent via-[#918EF4]/30 to-transparent" />
-
             {[
               {
                 num: "01",
                 icon: <Shield className="w-5 h-5 text-[#918EF4]" />,
                 title: "Connect Your Account",
-                desc: "Securely link your bank account using Plaid's bank-grade integration. Your credentials stay with your bank — we only read transaction data.",
+                desc: "Securely link your bank account. Your credentials stay with your bank — Dime Time only reads transaction data to identify qualifying purchases.",
               },
               {
                 num: "02",
                 icon: <Zap className="w-5 h-5 text-[#918EF4]" />,
                 title: "Every Purchase Rounds Up",
-                desc: "Each transaction is automatically rounded to the next dollar. The difference — your spare change — is collected and queued for allocation.",
+                desc: "Each qualifying transaction is rounded to the next dollar. The difference — your spare change — is collected and queued for allocation.",
               },
               {
                 num: "03",
                 icon: <TrendingDown className="w-5 h-5 text-[#918EF4]" />,
                 title: "Spare Change Goes to Work",
-                desc: "Your round-up is split according to your settings: a percentage toward debt repayment and the remainder toward cryptocurrency purchases.",
+                desc: "Your round-up is split according to your chosen allocation: a portion toward debt repayment and the remainder toward Bitcoin purchases.",
               },
             ].map((step) => (
               <div key={step.num} className="relative bg-[#0f0f1a] border border-white/5 rounded-2xl p-8 hover:border-[#918EF4]/20 transition-all">
                 <div className="absolute top-6 right-6 text-4xl font-black text-white/3 select-none">{step.num}</div>
-                <div className="w-10 h-10 rounded-xl bg-[#918EF4]/10 flex items-center justify-center mb-5">
-                  {step.icon}
-                </div>
+                <div className="w-10 h-10 rounded-xl bg-[#918EF4]/10 flex items-center justify-center mb-5">{step.icon}</div>
                 <h3 className="text-lg font-bold mb-3 text-white">{step.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
               </div>
@@ -326,21 +300,20 @@ export default function LandingPage() {
             <div>
               <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">Why Dime Time</p>
               <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight">
-                Make Everyday Spending Work For Your Balance Sheet.
+                Put Every Purchase To Work.
               </h2>
               <p className="text-gray-400 text-lg leading-relaxed mb-6">
-                Most round-up apps move spare change into a savings account. That money sits idle, earning minimal interest.
+                Most round-up apps move spare change into savings. Dime Time takes a different approach by routing round-ups toward debt repayment and Bitcoin accumulation.
               </p>
               <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                Dime Time instead directs spare change toward <span className="text-white font-medium">reducing debt liabilities</span> or <span className="text-white font-medium">building cryptocurrency positions</span> — two outcomes with meaningfully higher financial impact.
+                Instead of letting spare change sit idle, users can apply each round-up toward paying down liabilities while also building digital asset exposure through automated allocation.
               </p>
-
               <div className="space-y-3">
                 {[
-                  "No manual transfers. No discipline required.",
-                  "Works on every purchase, automatically.",
-                  "Configurable split between debt and crypto.",
-                  "Patent-pending multi-destination microallocation.",
+                  "No manual transfers required",
+                  "Works automatically with everyday purchases",
+                  "Adjustable allocation between debt repayment and Bitcoin",
+                  "Built around a patent-pending round-up allocation model",
                 ].map((point) => (
                   <div key={point} className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-[#918EF4] flex-shrink-0 mt-0.5" />
@@ -353,13 +326,12 @@ export default function LandingPage() {
             {/* Allocation visual */}
             <div className="bg-[#0a0a0f] border border-white/5 rounded-3xl p-8">
               <div className="text-sm text-gray-500 mb-6 font-medium">Example Allocation — $0.63 round-up</div>
-
               <div className="flex gap-3 mb-8">
                 <div className="flex-1 bg-[#918EF4]/10 border border-[#918EF4]/20 rounded-2xl p-5 text-center">
                   <TrendingDown className="w-6 h-6 text-[#918EF4] mx-auto mb-3" />
                   <div className="text-3xl font-bold text-[#918EF4] mb-1">80%</div>
                   <div className="text-xs text-gray-400">$0.50</div>
-                  <div className="text-xs text-gray-500 mt-1">→ Debt Payoff</div>
+                  <div className="text-xs text-gray-500 mt-1">→ Debt Repayment</div>
                 </div>
                 <div className="flex-1 bg-orange-500/5 border border-orange-500/20 rounded-2xl p-5 text-center">
                   <Bitcoin className="w-6 h-6 text-orange-400 mx-auto mb-3" />
@@ -368,19 +340,16 @@ export default function LandingPage() {
                   <div className="text-xs text-gray-500 mt-1">→ Bitcoin</div>
                 </div>
               </div>
-
-              {/* Combined bar */}
               <div className="h-3 rounded-full overflow-hidden flex gap-0.5 mb-4">
-                <div className="h-full bg-[#918EF4] rounded-l-full transition-all" style={{ width: "80%" }} />
+                <div className="h-full bg-[#918EF4] rounded-l-full" style={{ width: "80%" }} />
                 <div className="h-full bg-orange-400 rounded-r-full" style={{ width: "20%" }} />
               </div>
               <div className="flex justify-between text-xs text-gray-600">
                 <span>← Debt Repayment</span>
-                <span>Crypto →</span>
+                <span>Bitcoin →</span>
               </div>
-
               <div className="mt-6 pt-6 border-t border-white/5 text-xs text-gray-500 text-center">
-                Split percentages are fully customizable. You decide the ratio.
+                Allocation is fully adjustable. You set the split.
               </div>
             </div>
           </div>
@@ -399,42 +368,40 @@ export default function LandingPage() {
             {[
               {
                 icon: <TrendingDown className="w-5 h-5 text-[#918EF4]" />,
-                title: "Automated Debt Reduction",
-                desc: "Every round-up contributes to your debt balances automatically. No login required, no manual transfers, no reminders.",
+                title: "Automated Debt Repayment",
+                desc: "Every qualifying round-up can be directed toward debt paydown automatically, reducing the need for manual transfers or extra financial admin.",
               },
               {
                 icon: <Bitcoin className="w-5 h-5 text-orange-400" />,
-                title: "Crypto Allocation",
-                desc: "A configurable percentage of each round-up purchases Bitcoin via Coinbase. Build a crypto position through everyday spending.",
+                title: "Bitcoin Allocation",
+                desc: "A configurable percentage of each round-up can be used for Bitcoin purchases, allowing users to build exposure gradually through everyday spending.",
               },
               {
                 icon: <Zap className="w-5 h-5 text-yellow-400" />,
-                title: "Flexible Round-Up Allocation",
-                desc: "Set any split from 0/100 to 100/0. Adjust anytime. Our patent-pending engine handles the rest.",
+                title: "Flexible Allocation Controls",
+                desc: "Choose how each round-up is divided between debt repayment and Bitcoin purchases. Adjust your allocation at any time.",
               },
               {
                 icon: <CreditCard className="w-5 h-5 text-blue-400" />,
                 title: "Transaction-Based Automation",
-                desc: "Round-ups trigger on every qualifying transaction. The system processes your spare change without any action required.",
+                desc: "Round-ups are triggered by qualifying purchases, turning routine card activity into a consistent automated allocation workflow.",
               },
               {
                 icon: <BarChart3 className="w-5 h-5 text-green-400" />,
-                title: "Financial Progress Tracking",
-                desc: "View your debt-free date, crypto portfolio growth, cumulative round-ups, and projected impact over time.",
+                title: "Progress Tracking",
+                desc: "Users can monitor cumulative round-ups, projected debt impact, and Bitcoin accumulation over time within the product experience.",
               },
               {
                 icon: <Lock className="w-5 h-5 text-purple-400" />,
                 title: "Secure Financial Connectivity",
-                desc: "Powered by Plaid. Bank credentials never touch our servers. Encrypted token storage, PIN lock, and bcrypt authentication.",
+                desc: "Built with modern financial connectivity and secure authentication practices designed for consumer fintech applications.",
               },
             ].map((f) => (
               <div
                 key={f.title}
                 className="group bg-[#0f0f1a] border border-white/5 rounded-2xl p-6 hover:border-[#918EF4]/20 hover:bg-[#111120] transition-all cursor-default"
               >
-                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center mb-4">
-                  {f.icon}
-                </div>
+                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center mb-4">{f.icon}</div>
                 <h3 className="text-base font-bold text-white mb-2">{f.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
               </div>
@@ -443,7 +410,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Trust / Security ────────────────────────────────────────── */}
+      {/* ─── Security ────────────────────────────────────────────────── */}
       <section id="security" className="py-28 px-6 bg-[#0d0d18]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -458,29 +425,27 @@ export default function LandingPage() {
             {[
               {
                 icon: <Shield className="w-6 h-6 text-[#918EF4]" />,
-                title: "Bank-Grade Connectivity",
-                desc: "Financial account access is managed exclusively through Plaid, a regulated financial data network. Your bank credentials are never transmitted to or stored by Dime Time.",
+                title: "Secure Connectivity",
+                desc: "Financial account connections are handled through trusted connectivity providers built for modern fintech applications.",
               },
               {
                 icon: <Lock className="w-6 h-6 text-[#918EF4]" />,
-                title: "Encrypted Data Architecture",
-                desc: "Authentication tokens are encrypted using AES-GCM. Passwords are hashed with bcrypt at cost factor 12. All data is transmitted over TLS 1.3.",
+                title: "Encrypted Data Handling",
+                desc: "Sensitive data is transmitted and stored using modern encryption and access-control practices appropriate for financial software.",
               },
               {
                 icon: <CheckCircle2 className="w-6 h-6 text-[#918EF4]" />,
-                title: "Idempotent Financial Operations",
-                desc: "All financial transactions are protected by idempotency keys with 24-hour TTL, preventing duplicate charges or payments from ever being processed.",
+                title: "Privacy-Conscious Design",
+                desc: "Dime Time is being built with a focus on data minimization, controlled access, and responsible handling of user financial information.",
               },
               {
                 icon: <Zap className="w-6 h-6 text-[#918EF4]" />,
-                title: "Privacy-First by Design",
-                desc: "We collect only what is necessary to operate the platform. No data is sold to third parties. Users can delete their account and all associated data at any time.",
+                title: "Security-Oriented Architecture",
+                desc: "The platform is designed with authentication, secure session handling, and operational safeguards intended to support reliable financial workflows.",
               },
             ].map((t) => (
               <div key={t.title} className="flex gap-5 bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
-                <div className="w-12 h-12 rounded-xl bg-[#918EF4]/10 flex items-center justify-center flex-shrink-0">
-                  {t.icon}
-                </div>
+                <div className="w-12 h-12 rounded-xl bg-[#918EF4]/10 flex items-center justify-center flex-shrink-0">{t.icon}</div>
                 <div>
                   <h3 className="text-base font-bold text-white mb-2">{t.title}</h3>
                   <p className="text-gray-500 text-sm leading-relaxed">{t.desc}</p>
@@ -496,7 +461,7 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="text-5xl mb-6 opacity-60">❝</div>
           <blockquote className="text-2xl md:text-3xl font-medium text-gray-200 leading-relaxed mb-6">
-            Dime Time helps transform everyday purchases into automated financial progress — reducing debt and enabling cryptocurrency ownership for anyone, starting with their next purchase.
+            Dime Time helps turn everyday spending into automated financial action by routing spare change toward debt repayment and Bitcoin accumulation.
           </blockquote>
           <div className="text-gray-500 text-sm font-medium">Company Mission Statement</div>
         </div>
@@ -509,20 +474,20 @@ export default function LandingPage() {
             <div>
               <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">For Investors</p>
               <h2 className="text-4xl font-bold tracking-tight mb-6 leading-tight">
-                Early-stage. High conviction. Preparing for growth.
+                Built for a large consumer pain point.
               </h2>
               <p className="text-gray-400 leading-relaxed mb-4">
-                Dime Time is a patent-pending fintech platform in active beta development. We are building the infrastructure for automated micro-payment debt reduction with simultaneous digital asset acquisition.
+                Dime Time is an early-stage consumer fintech platform focused on automated round-up allocations for debt repayment and Bitcoin purchases.
               </p>
               <p className="text-gray-400 leading-relaxed mb-8">
-                We are selectively speaking with angels, pre-seed funds, and strategic partners who understand the intersection of consumer finance and digital assets.
+                We are developing the product for users who want a more intentional use of spare change than traditional savings-based round-up apps provide.
               </p>
 
               <div className="grid grid-cols-2 gap-4 mb-8">
                 {[
                   { label: "Stage", value: "Pre-Seed" },
                   { label: "Status", value: "Beta Active" },
-                  { label: "IP", value: "Patent Pending" },
+                  { label: "IP", value: "Filing in Preparation" },
                   { label: "Founded", value: "2025" },
                 ].map((item) => (
                   <div key={item.label} className="bg-[#0a0a0f] border border-white/5 rounded-xl p-4">
@@ -549,12 +514,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Traction highlights */}
             <div className="space-y-4">
               {[
-                { metric: "Patent-Pending", detail: "Dynamic Dual-Split Round-Up Microallocation System — USPTO filing in preparation" },
+                { metric: "Patent Filing in Preparation", detail: "Dynamic Dual-Split Round-Up Microallocation System — USPTO provisional filing in preparation" },
                 { metric: "Live on TestFlight", detail: "iOS app built and distributed to beta testers via Apple TestFlight" },
-                { metric: "Plaid Approved", detail: "Production API access granted by Plaid for live bank account connectivity" },
+                { metric: "Built with Plaid Connectivity", detail: "Production Plaid API access approved for live bank account connectivity" },
                 { metric: "Veteran-Owned", detail: "Proudly built and operated by a U.S. military veteran" },
               ].map((item) => (
                 <div key={item.metric} className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-5 flex gap-4">
@@ -582,7 +546,7 @@ export default function LandingPage() {
           <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">Early Access</p>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Join the Beta.</h2>
           <p className="text-gray-400 text-lg mb-10 leading-relaxed">
-            Be among the first to experience automated debt reduction and crypto accumulation through Dime Time.
+            Be among the first to experience automated debt repayment and Bitcoin accumulation through Dime Time.
           </p>
 
           {betaSuccess ? (
@@ -629,7 +593,7 @@ export default function LandingPage() {
                 {betaMutation.isPending ? "Submitting..." : "Request Early Access"}
               </button>
               <p className="text-xs text-gray-600 text-center">
-                No spam. No credit card. Just early access to Dime Time.
+                Request early access and we'll reach out when beta capacity opens.
               </p>
             </form>
           )}
@@ -648,7 +612,7 @@ export default function LandingPage() {
                 <span className="font-bold text-white tracking-tight">Dime Time</span>
               </div>
               <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-5">
-                Automated debt reduction and crypto accumulation through patent-pending round-up microallocation technology.
+                Automated debt repayment and Bitcoin accumulation through a proprietary round-up allocation model.
               </p>
               <a href="mailto:hello@dime-time.com" className="text-[#918EF4] text-sm hover:underline">hello@dime-time.com</a>
             </div>
@@ -669,6 +633,7 @@ export default function LandingPage() {
                 <li><button onClick={() => scrollTo("investors")} className="hover:text-gray-300 transition-colors">Investors</button></li>
                 <li><a href="mailto:founder@dime-time.com" className="hover:text-gray-300 transition-colors">Contact</a></li>
                 <li><button onClick={() => navigate("/login")} className="hover:text-gray-300 transition-colors">Sign In</button></li>
+                {/* TODO: Separate /privacy and /terms routes when distinct legal pages are created */}
                 <li><button onClick={() => navigate("/legal")} className="hover:text-gray-300 transition-colors">Privacy Policy</button></li>
                 <li><button onClick={() => navigate("/legal")} className="hover:text-gray-300 transition-colors">Terms of Service</button></li>
               </ul>
@@ -678,7 +643,7 @@ export default function LandingPage() {
           <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-600">
             <div>&copy; {new Date().getFullYear()} Dime Time Technologies. All rights reserved.</div>
             <div className="flex items-center gap-4">
-              <span className="text-[#918EF4]/70">Patent Pending</span>
+              <span className="text-[#918EF4]/70">Patent Filing in Preparation</span>
               <span>·</span>
               <span>Veteran-Owned Business</span>
               <span>·</span>
