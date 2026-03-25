@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { Capacitor } from "@capacitor/core";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 
@@ -90,6 +91,15 @@ function LoadingScreen() {
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isLocked, needsPinSetup, setNeedsPinSetup, unlock, hasPinConfigured } = useSecurity();
+  const isNative = Capacitor.isNativePlatform();
+
+  // When running as native iOS/Android app, unauthenticated users see Login.
+  // When running on web, unauthenticated users see the marketing landing page.
+  const UnauthenticatedRoot = isNative ? (
+    <AuthScreen><Login /></AuthScreen>
+  ) : (
+    <LandingPage />
+  );
 
   // Pageview tracking, route changes, etc.
   useAnalytics();
@@ -139,14 +149,14 @@ function AppContent() {
 
   return (
     <Switch>
-      {/* Root route: authenticated -> dashboard, unauth -> marketing landing page */}
+      {/* Root route: authenticated -> dashboard, unauth -> login (native) or landing page (web) */}
       <Route path="/">
         {isAuthenticated ? (
           <AuthenticatedLayout>
             <Dashboard />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -180,7 +190,7 @@ function AppContent() {
             <Dashboard />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -190,7 +200,7 @@ function AppContent() {
             <Transactions />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -200,7 +210,7 @@ function AppContent() {
             <Debts />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -210,7 +220,7 @@ function AppContent() {
             <Crypto />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -220,7 +230,7 @@ function AppContent() {
             <Insights />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -230,7 +240,7 @@ function AppContent() {
             <Banking />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -240,7 +250,7 @@ function AppContent() {
             <QRCodePage />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -250,7 +260,7 @@ function AppContent() {
             <Settings />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -260,7 +270,7 @@ function AppContent() {
             <Notifications />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -270,7 +280,7 @@ function AppContent() {
             <Legal />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -305,7 +315,7 @@ function AppContent() {
             <DimeToken />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -315,7 +325,7 @@ function AppContent() {
             <BusinessAnalytics />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
@@ -325,7 +335,7 @@ function AppContent() {
             <StatsPage />
           </AuthenticatedLayout>
         ) : (
-          <LandingPage />
+          UnauthenticatedRoot
         )}
       </Route>
 
