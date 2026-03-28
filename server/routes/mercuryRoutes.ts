@@ -1,15 +1,14 @@
 import type { Express, Request, Response } from "express";
 import { mercuryService } from "../services/mercuryService";
+import { getUserIdFromRequest } from "../middleware/authHelper";
 import { z } from "zod";
 
 const collectRoundUpSchema = z.object({
-  userId: z.string().min(1, "userId is required"),
   amount: z.number().positive("Amount must be positive"),
   descriptor: z.string().optional(),
 });
 
 const payDebtSchema = z.object({
-  userId: z.string().min(1, "userId is required"),
   amount: z.number().positive("Amount must be positive"),
   debtName: z.string().min(1, "debtName is required"),
   descriptor: z.string().optional(),
@@ -43,8 +42,11 @@ export function registerMercuryRoutes(app: Express) {
     }
   });
 
-  app.get("/api/mercury/balance", async (_req: Request, res: Response) => {
+  app.get("/api/mercury/balance", async (req: Request, res: Response) => {
     try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
@@ -63,6 +65,9 @@ export function registerMercuryRoutes(app: Express) {
 
   app.get("/api/mercury/transactions", async (req: Request, res: Response) => {
     try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
@@ -77,11 +82,14 @@ export function registerMercuryRoutes(app: Express) {
 
   app.post("/api/mercury/collect-roundup", async (req: Request, res: Response) => {
     try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
       const data = collectRoundUpSchema.parse(req.body);
-      const result = await mercuryService.collectRoundUp(data);
+      const result = await mercuryService.collectRoundUp({ ...data, userId });
       res.status(201).json({
         success: result.success,
         transactionId: result.transactionId,
@@ -100,11 +108,14 @@ export function registerMercuryRoutes(app: Express) {
 
   app.post("/api/mercury/pay-debt", async (req: Request, res: Response) => {
     try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
       const data = payDebtSchema.parse(req.body);
-      const result = await mercuryService.payDebt(data);
+      const result = await mercuryService.payDebt({ ...data, userId });
       res.status(201).json({
         success: result.success,
         transactionId: result.transactionId,
