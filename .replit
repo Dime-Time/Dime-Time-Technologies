@@ -45,4 +45,4 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 [userenv]
 
 [userenv.shared]
-PLAID_ENV = "production"
+PLAID_ENV = "sandbox"
