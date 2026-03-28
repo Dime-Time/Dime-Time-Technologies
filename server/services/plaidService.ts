@@ -11,14 +11,25 @@ import {
   ACHClass,
 } from 'plaid';
 
+function resolvePlaidEnvironment(): string {
+  const env = process.env.PLAID_ENV || 'sandbox';
+  switch (env.toLowerCase()) {
+    case 'production': return PlaidEnvironments.production;
+    case 'development': return PlaidEnvironments.development;
+    default: return PlaidEnvironments.sandbox;
+  }
+}
+
 class PlaidService {
   private client: PlaidApi | null = null;
   private isConfigured: boolean = false;
+  private environment: string;
 
   constructor() {
+    this.environment = process.env.PLAID_ENV || 'sandbox';
     try {
       const configuration = new Configuration({
-        basePath: PlaidEnvironments.sandbox, // Use sandbox for development
+        basePath: resolvePlaidEnvironment(),
         baseOptions: {
           headers: {
             'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
@@ -28,6 +39,9 @@ class PlaidService {
       });
       this.client = new PlaidApi(configuration);
       this.isConfigured = !!(process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET);
+      if (this.isConfigured) {
+        console.log(`Plaid service initialized in ${this.environment} environment`);
+      }
     } catch (error) {
       console.error('Failed to initialize Plaid service:', error);
       this.isConfigured = false;
