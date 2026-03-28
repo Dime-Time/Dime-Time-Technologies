@@ -173,6 +173,7 @@ class PlaidService {
     amount: number;
     userLegalName: string;
     description: string;
+    mercuryFundingAccountId?: string;
   }): Promise<{ transferId: string; authorizationId: string; status: string }> {
     if (!this.isConfigured) {
       throw new Error('Plaid service not configured');
@@ -187,6 +188,7 @@ class PlaidService {
       amount: params.amount.toFixed(2),
       ach_class: ACHClass.Ppd,
       user: { legal_name: params.userLegalName },
+      ...(params.mercuryFundingAccountId ? { funding_account_id: params.mercuryFundingAccountId } : {}),
     };
     const authResponse = await client.transferAuthorizationCreate(authRequest);
 

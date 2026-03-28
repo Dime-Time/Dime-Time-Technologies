@@ -211,6 +211,8 @@ export class MemStorage implements IStorage {
         minimumPayment: "165.00",
         dueDate: 15,
         isActive: true,
+        payeeAccountNumber: null,
+        payeeRoutingNumber: null,
         createdAt: new Date("2024-01-01"),
       },
       {
@@ -224,6 +226,8 @@ export class MemStorage implements IStorage {
         minimumPayment: "248.00",
         dueDate: 22,
         isActive: true,
+        payeeAccountNumber: null,
+        payeeRoutingNumber: null,
         createdAt: new Date("2024-01-01"),
       },
       {
@@ -237,6 +241,8 @@ export class MemStorage implements IStorage {
         minimumPayment: "89.00",
         dueDate: 1,
         isActive: true,
+        payeeAccountNumber: null,
+        payeeRoutingNumber: null,
         createdAt: new Date("2024-01-01"),
       },
     ];
@@ -885,6 +891,8 @@ export class MemStorage implements IStorage {
       ...insertDebt, 
       id,
       isActive: insertDebt.isActive ?? true,
+      payeeAccountNumber: insertDebt.payeeAccountNumber ?? null,
+      payeeRoutingNumber: insertDebt.payeeRoutingNumber ?? null,
       createdAt: new Date(),
     };
     this.debts.set(id, debt);

@@ -5,23 +5,17 @@ import { storage } from "../storage";
 import { getUserIdFromRequest } from "../middleware/authHelper";
 import { z } from "zod";
 
-const MAX_SINGLE_ROUNDUP_CENTS = 500;
-const MAX_DEBT_PAYMENT_CENTS = 50000;
+const MAX_ROUNDUP_DOLLARS = 5;
+const MAX_DEBT_PAYMENT_DOLLARS = 500;
 
 const collectRoundUpSchema = z.object({
-  amount: z
-    .number()
-    .positive("Amount must be positive")
-    .max(MAX_SINGLE_ROUNDUP_CENTS / 100, `Round-up cannot exceed $${MAX_SINGLE_ROUNDUP_CENTS / 100}`),
+  amount: z.number().positive().max(MAX_ROUNDUP_DOLLARS, `Round-up cannot exceed $${MAX_ROUNDUP_DOLLARS}`),
   descriptor: z.string().max(60).optional(),
 });
 
 const payDebtSchema = z.object({
-  debtId: z.string().min(1, "debtId is required"),
-  amount: z
-    .number()
-    .positive("Amount must be positive")
-    .max(MAX_DEBT_PAYMENT_CENTS / 100, `Payment cannot exceed $${MAX_DEBT_PAYMENT_CENTS / 100}`),
+  debtId: z.string().min(1),
+  amount: z.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS, `Payment cannot exceed $${MAX_DEBT_PAYMENT_DOLLARS}`),
   descriptor: z.string().max(60).optional(),
 });
 
@@ -31,11 +25,9 @@ export function registerMercuryRoutes(app: Express) {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
       if (!mercuryService.isServiceConfigured()) {
         return res.json({ configured: false, message: "Mercury service not configured" });
       }
-
       const balance = await mercuryService.getAccountBalance();
       res.json({
         configured: true,
@@ -47,7 +39,7 @@ export function registerMercuryRoutes(app: Express) {
         formattedBalance: `$${balance.availableBalance.toFixed(2)}`,
       });
     } catch (error: any) {
-      console.error("Error checking Mercury status:", error?.response?.data || error.message);
+      console.error("Mercury status error:", error?.response?.data || error.message);
       res.status(500).json({ message: "Failed to check Mercury service status" });
     }
   });
@@ -56,7 +48,6 @@ export function registerMercuryRoutes(app: Express) {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
@@ -68,7 +59,7 @@ export function registerMercuryRoutes(app: Express) {
         formattedBalance: `$${balance.availableBalance.toFixed(2)}`,
       });
     } catch (error: any) {
-      console.error("Error fetching Mercury balance:", error?.response?.data || error.message);
+      console.error("Mercury balance error:", error?.response?.data || error.message);
       res.status(500).json({ message: "Failed to fetch Mercury account balance" });
     }
   });
@@ -77,7 +68,6 @@ export function registerMercuryRoutes(app: Express) {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
@@ -85,32 +75,16 @@ export function registerMercuryRoutes(app: Express) {
       const transactions = await mercuryService.getTransactions(limit);
       res.json({ transactions });
     } catch (error: any) {
-      console.error("Error fetching Mercury transactions:", error?.response?.data || error.message);
+      console.error("Mercury transactions error:", error?.response?.data || error.message);
       res.status(500).json({ message: "Failed to fetch Mercury transactions" });
     }
   });
 
-  /**
-   * Collect round-up from the user's linked bank into the Dime Time LLC Mercury account.
-   *
-   * Money flow (correct inbound direction):
-   *   User's bank (Plaid-linked) → ACH debit via Plaid Transfer → Mercury (destination)
-   *
-   * Steps:
-   *   1. Authenticate user and validate request amount.
-   *   2. Look up the user's active linked bank account (Plaid access token + account ID).
-   *   3. Call Plaid transferAuthorizationCreate (risk check) then transferCreate (ACH debit).
-   *   4. Return Plaid transfer ID + status on success.
-   *   5. Return 422 if no bank linked; 503 if Plaid Transfer product not enabled.
-   *
-   * Note: Plaid Transfer product must be enabled in App Dashboard for the Plaid client ID.
-   * In sandbox, use "Transfer" product credentials. In production, requires Plaid approval.
-   */
+  // ACH pull: user's bank → Mercury via Plaid Transfer (inbound to Mercury)
   app.post("/api/mercury/collect-roundup", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
@@ -119,15 +93,13 @@ export function registerMercuryRoutes(app: Express) {
 
       const linkedAccounts = await storage.getBankAccountsByUserId(userId);
       const activeAccount = linkedAccounts.find(a => a.isActive) || null;
-
       if (!activeAccount) {
         return res.status(422).json({
           success: false,
           status: 'no_linked_bank',
-          message: "No active linked bank account found. Connect a bank account via Plaid first.",
+          message: "No active linked bank account. Connect a bank account via Plaid first.",
         });
       }
-
       if (!activeAccount.plaidAccessToken || !activeAccount.accountId) {
         return res.status(422).json({
           success: false,
@@ -141,15 +113,14 @@ export function registerMercuryRoutes(app: Express) {
         ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Account Holder'
         : 'Account Holder';
 
-      const description = descriptor || `Dime Time roundup`;
-
       try {
         const result = await plaidService.createRoundUpTransfer({
           accessToken: activeAccount.plaidAccessToken,
           accountId: activeAccount.accountId,
           amount,
           userLegalName,
-          description,
+          description: descriptor || 'Dime Time roundup',
+          mercuryFundingAccountId: process.env.MERCURY_PLAID_FUNDING_ID || undefined,
         });
 
         return res.status(201).json({
@@ -157,63 +128,51 @@ export function registerMercuryRoutes(app: Express) {
           transferId: result.transferId,
           authorizationId: result.authorizationId,
           status: result.status,
-          message: `Round-up of $${amount.toFixed(2)} initiated — ACH debit from ${activeAccount.institutionName} ••${activeAccount.mask || ''} via Plaid Transfer`,
+          message: `Round-up of $${amount.toFixed(2)} initiated — ACH debit from ${activeAccount.institutionName} ••${activeAccount.mask || ''} to Mercury`,
           linkedBank: activeAccount.institutionName,
           amount,
         });
       } catch (transferErr: any) {
-        const errMsg: string = transferErr?.response?.data?.error_code ||
-          transferErr?.response?.data?.display_message ||
-          transferErr?.message || 'Unknown error';
+        const errCode: string = transferErr?.response?.data?.error_code || transferErr?.message || 'UNKNOWN';
 
-        if (errMsg.includes('INVALID_PRODUCT') || errMsg.includes('NOT_ENABLED') || errMsg.includes('PRODUCT_NOT_ENABLED')) {
+        if (/INVALID_PRODUCT|NOT_ENABLED|PRODUCT_NOT_ENABLED/i.test(errCode)) {
           return res.status(503).json({
             success: false,
             status: 'plaid_transfer_not_enabled',
-            message: "Plaid Transfer product not enabled for this environment. Enable Transfer in the Plaid Dashboard.",
-            detail: errMsg,
+            message: "Plaid Transfer product not enabled. Enable it in the Plaid Dashboard.",
+            detail: errCode,
           });
         }
-
-        if (errMsg.includes('authorization denied') || errMsg.includes('UNAUTHORIZED')) {
+        if (/authorization denied|UNAUTHORIZED/i.test(errCode)) {
           return res.status(422).json({
             success: false,
             status: 'transfer_not_authorized',
-            message: `Plaid rejected this transfer: ${errMsg}`,
+            message: `Plaid rejected the transfer: ${errCode}`,
           });
         }
-
-        console.error("Plaid Transfer failed:", transferErr?.response?.data || transferErr.message);
+        console.error("Plaid Transfer error:", transferErr?.response?.data || transferErr.message);
         return res.status(502).json({
           success: false,
           status: 'transfer_failed',
           message: "Round-up transfer could not be initiated. Please try again later.",
-          detail: errMsg,
+          detail: errCode,
         });
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      console.error("Error collecting round-up:", error?.response?.data || error.message);
+      console.error("collect-roundup error:", error?.response?.data || error.message);
       res.status(500).json({ message: "Failed to collect round-up" });
     }
   });
 
-  /**
-   * Queue an outbound debt payment from the Dime Time LLC Mercury account.
-   *
-   * Security: Recipient routing/account numbers are NEVER accepted from the client.
-   * Payee banking details must be stored server-side in the debt record by an administrator
-   * before a live Mercury ACH transfer can be initiated. Until then, all payments are queued.
-   *
-   * This prevents any authenticated user from directing business funds to arbitrary accounts.
-   */
+  // ACH push: Mercury → creditor. Uses server-stored payee routing from debt record only.
+  // Client cannot supply recipient routing/account numbers to prevent fund diversion.
   app.post("/api/mercury/pay-debt", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
       if (!mercuryService.isServiceConfigured()) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
@@ -234,14 +193,14 @@ export function registerMercuryRoutes(app: Express) {
         });
       }
 
-      const note = descriptor || `Dime Time debt payment — ${debt.name}: $${amount.toFixed(2)}`;
+      const note = descriptor || `Dime Time debt payment — ${debt.name}`;
 
       if (debt.payeeAccountNumber && debt.payeeRoutingNumber) {
         if (!/^\d{9}$/.test(debt.payeeRoutingNumber)) {
           return res.status(422).json({
             success: false,
             status: 'invalid_payee_routing',
-            message: `Debt record has an invalid payee routing number. An administrator must correct it before payment can proceed.`,
+            message: "Debt record has an invalid payee routing number. An administrator must correct it.",
           });
         }
 
@@ -264,7 +223,7 @@ export function registerMercuryRoutes(app: Express) {
             amount,
           });
         } catch (transferErr: any) {
-          console.error("Mercury debt payment failed:", transferErr?.response?.data || transferErr.message);
+          console.error("Mercury debt payment error:", transferErr?.response?.data || transferErr.message);
           return res.status(502).json({
             success: false,
             status: 'transfer_failed',
@@ -278,17 +237,16 @@ export function registerMercuryRoutes(app: Express) {
         success: true,
         transactionId: `debt_queued_${userId}_${Date.now()}`,
         status: 'queued_awaiting_admin_routing',
-        message: `Debt payment of $${amount.toFixed(2)} toward ${debt.name} queued. An administrator must configure payee routing details on the debt record before Mercury ACH disbursement can execute.`,
+        message: `Debt payment of $${amount.toFixed(2)} toward ${debt.name} queued. An administrator must set payee routing details on the debt record before Mercury ACH can execute.`,
         debtName: debt.name,
         amount,
         mercuryBalance: balance.availableBalance,
-        note,
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      console.error("Error processing debt payment:", error?.response?.data || error.message);
+      console.error("pay-debt error:", error?.response?.data || error.message);
       res.status(500).json({ message: "Failed to process debt payment" });
     }
   });
