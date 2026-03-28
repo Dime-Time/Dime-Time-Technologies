@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { mercuryService } from "../services/mercuryService";
+import { plaidService } from "../services/plaidService";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "../middleware/authHelper";
 import { z } from "zod";
@@ -12,7 +13,7 @@ const collectRoundUpSchema = z.object({
     .number()
     .positive("Amount must be positive")
     .max(MAX_SINGLE_ROUNDUP_CENTS / 100, `Round-up cannot exceed $${MAX_SINGLE_ROUNDUP_CENTS / 100}`),
-  descriptor: z.string().optional(),
+  descriptor: z.string().max(60).optional(),
 });
 
 const payDebtSchema = z.object({
@@ -21,9 +22,7 @@ const payDebtSchema = z.object({
     .number()
     .positive("Amount must be positive")
     .max(MAX_DEBT_PAYMENT_CENTS / 100, `Payment cannot exceed $${MAX_DEBT_PAYMENT_CENTS / 100}`),
-  recipientAccountNumber: z.string().optional(),
-  recipientRoutingNumber: z.string().regex(/^\d{9}$/, "Routing number must be exactly 9 digits").optional(),
-  descriptor: z.string().optional(),
+  descriptor: z.string().max(60).optional(),
 });
 
 export function registerMercuryRoutes(app: Express) {
@@ -92,17 +91,20 @@ export function registerMercuryRoutes(app: Express) {
   });
 
   /**
-   * Collect round-up from a user's linked bank into the Dime Time LLC Mercury account.
+   * Collect round-up from the user's linked bank into the Dime Time LLC Mercury account.
    *
-   * Architecture: ACH round-up collection is a PULL from the user's external bank account
-   * INTO Mercury. Mercury's own API only initiates OUTBOUND payments (Mercury → external).
-   * Therefore the correct mechanism is Plaid Transfer API, which acts as the ACH originator,
-   * pulling funds from the user's Plaid-linked bank and depositing them into Mercury.
+   * Money flow (correct inbound direction):
+   *   User's bank (Plaid-linked) → ACH debit via Plaid Transfer → Mercury (destination)
    *
-   * Current status: Plaid Transfer product requires production Plaid credentials with the
-   * Transfer product enabled (separate from Link/Auth). This endpoint validates that the user
-   * has a linked bank account, checks Mercury balance for operational status, and returns a
-   * "queued_for_plaid_transfer" status so the caller knows exactly what is pending.
+   * Steps:
+   *   1. Authenticate user and validate request amount.
+   *   2. Look up the user's active linked bank account (Plaid access token + account ID).
+   *   3. Call Plaid transferAuthorizationCreate (risk check) then transferCreate (ACH debit).
+   *   4. Return Plaid transfer ID + status on success.
+   *   5. Return 422 if no bank linked; 503 if Plaid Transfer product not enabled.
+   *
+   * Note: Plaid Transfer product must be enabled in App Dashboard for the Plaid client ID.
+   * In sandbox, use "Transfer" product credentials. In production, requires Plaid approval.
    */
   app.post("/api/mercury/collect-roundup", async (req: Request, res: Response) => {
     try {
@@ -126,19 +128,69 @@ export function registerMercuryRoutes(app: Express) {
         });
       }
 
-      const note = descriptor || `Dime Time round-up collection: $${amount.toFixed(2)}`;
+      if (!activeAccount.plaidAccessToken || !activeAccount.accountId) {
+        return res.status(422).json({
+          success: false,
+          status: 'plaid_token_missing',
+          message: "Linked bank account is missing Plaid credentials. Please reconnect your bank.",
+        });
+      }
 
-      return res.status(202).json({
-        success: true,
-        transactionId: `roundup_${userId}_${Date.now()}`,
-        status: 'queued_for_plaid_transfer',
-        message: `Round-up of $${amount.toFixed(2)} queued for ACH collection from ${activeAccount.institutionName} ••${activeAccount.mask || ''}. Transfers execute via Plaid Transfer API — production Plaid credentials with Transfer product required.`,
-        linkedBank: activeAccount.institutionName,
-        linkedAccountMask: activeAccount.mask,
-        destinationAccount: `Mercury Checking ••${mercuryService.getMercuryAccountNumber().slice(-4)}`,
-        amount,
-        note,
-      });
+      const user = await storage.getUser(userId);
+      const userLegalName = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Account Holder'
+        : 'Account Holder';
+
+      const description = descriptor || `Dime Time roundup`;
+
+      try {
+        const result = await plaidService.createRoundUpTransfer({
+          accessToken: activeAccount.plaidAccessToken,
+          accountId: activeAccount.accountId,
+          amount,
+          userLegalName,
+          description,
+        });
+
+        return res.status(201).json({
+          success: true,
+          transferId: result.transferId,
+          authorizationId: result.authorizationId,
+          status: result.status,
+          message: `Round-up of $${amount.toFixed(2)} initiated — ACH debit from ${activeAccount.institutionName} ••${activeAccount.mask || ''} via Plaid Transfer`,
+          linkedBank: activeAccount.institutionName,
+          amount,
+        });
+      } catch (transferErr: any) {
+        const errMsg: string = transferErr?.response?.data?.error_code ||
+          transferErr?.response?.data?.display_message ||
+          transferErr?.message || 'Unknown error';
+
+        if (errMsg.includes('INVALID_PRODUCT') || errMsg.includes('NOT_ENABLED') || errMsg.includes('PRODUCT_NOT_ENABLED')) {
+          return res.status(503).json({
+            success: false,
+            status: 'plaid_transfer_not_enabled',
+            message: "Plaid Transfer product not enabled for this environment. Enable Transfer in the Plaid Dashboard.",
+            detail: errMsg,
+          });
+        }
+
+        if (errMsg.includes('authorization denied') || errMsg.includes('UNAUTHORIZED')) {
+          return res.status(422).json({
+            success: false,
+            status: 'transfer_not_authorized',
+            message: `Plaid rejected this transfer: ${errMsg}`,
+          });
+        }
+
+        console.error("Plaid Transfer failed:", transferErr?.response?.data || transferErr.message);
+        return res.status(502).json({
+          success: false,
+          status: 'transfer_failed',
+          message: "Round-up transfer could not be initiated. Please try again later.",
+          detail: errMsg,
+        });
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
@@ -149,11 +201,13 @@ export function registerMercuryRoutes(app: Express) {
   });
 
   /**
-   * Initiate an outbound ACH debt payment from the Dime Time LLC Mercury account.
+   * Queue an outbound debt payment from the Dime Time LLC Mercury account.
    *
-   * Authorization: The requesting user must own the debt. Amount is capped. Recipient
-   * routing number must be a valid 9-digit ABA number. Mercury balance must be sufficient.
-   * When payee routing/account numbers are provided, calls Mercury's transfer API directly.
+   * Security: Recipient routing/account numbers are NEVER accepted from the client.
+   * Payee banking details must be stored server-side in the debt record by an administrator
+   * before a live Mercury ACH transfer can be initiated. Until then, all payments are queued.
+   *
+   * This prevents any authenticated user from directing business funds to arbitrary accounts.
    */
   app.post("/api/mercury/pay-debt", async (req: Request, res: Response) => {
     try {
@@ -164,7 +218,7 @@ export function registerMercuryRoutes(app: Express) {
         return res.status(503).json({ message: "Mercury service not configured" });
       }
 
-      const { debtId, amount, recipientAccountNumber, recipientRoutingNumber, descriptor } = payDebtSchema.parse(req.body);
+      const { debtId, amount, descriptor } = payDebtSchema.parse(req.body);
 
       const debt = await storage.getDebt(debtId);
       if (!debt || debt.userId !== userId) {
@@ -182,42 +236,15 @@ export function registerMercuryRoutes(app: Express) {
 
       const note = descriptor || `Dime Time debt payment — ${debt.name}: $${amount.toFixed(2)}`;
 
-      if (recipientAccountNumber && recipientRoutingNumber) {
-        try {
-          const transferResult = await mercuryService.initiateTransfer({
-            amount,
-            note,
-            recipientAccountNumber,
-            recipientRoutingNumber,
-            recipientName: debt.name,
-            paymentMethod: 'ach',
-          });
-
-          return res.status(201).json({
-            success: true,
-            transactionId: transferResult.id,
-            status: transferResult.status,
-            message: `Debt payment of $${amount.toFixed(2)} to ${debt.name} initiated via Mercury ACH`,
-            amount,
-          });
-        } catch (transferErr: any) {
-          console.error("Mercury debt payment transfer failed:", transferErr?.response?.data || transferErr.message);
-          return res.status(502).json({
-            success: false,
-            status: 'transfer_failed',
-            message: "Mercury ACH transfer failed — check recipient routing/account details",
-            error: transferErr?.response?.data?.errors || transferErr.message,
-          });
-        }
-      }
-
       return res.status(202).json({
         success: true,
         transactionId: `debt_queued_${userId}_${Date.now()}`,
-        status: 'queued_awaiting_payee_routing',
-        message: `Debt payment of $${amount.toFixed(2)} toward ${debt.name} queued. Provide recipientAccountNumber and recipientRoutingNumber to initiate Mercury ACH transfer.`,
+        status: 'queued_awaiting_admin_routing',
+        message: `Debt payment of $${amount.toFixed(2)} toward ${debt.name} queued. An administrator must configure the payee routing details in the debt record before Mercury ACH disbursement can execute.`,
         debtName: debt.name,
         amount,
+        mercuryBalance: balance.availableBalance,
+        note,
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {

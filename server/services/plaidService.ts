@@ -146,6 +146,56 @@ class PlaidService {
     }
   }
 
+  /**
+   * Initiate an ACH debit from the user's linked bank account via Plaid Transfer.
+   * This is the correct mechanism for pulling round-up funds FROM a user's bank INTO
+   * the Dime Time LLC Mercury account. Flow:
+   *   1. transferAuthorizationCreate — Plaid risk-checks the debit
+   *   2. transferCreate — Plaid originates the ACH debit; funds route to Mercury
+   *
+   * Requires the Plaid Transfer product to be enabled for this Plaid client ID.
+   * Returns the Plaid transfer ID and authorization ID on success.
+   */
+  async createRoundUpTransfer(params: {
+    accessToken: string;
+    accountId: string;
+    amount: number;
+    userLegalName: string;
+    description: string;
+  }): Promise<{ transferId: string; authorizationId: string; status: string }> {
+    if (!this.isConfigured) {
+      throw new Error('Plaid service not configured');
+    }
+    const client = this.getClient();
+
+    const authResponse = await (client as any).transferAuthorizationCreate({
+      access_token: params.accessToken,
+      account_id: params.accountId,
+      type: 'debit',
+      network: 'ach',
+      amount: params.amount.toFixed(2),
+      ach_class: 'ppd',
+      user: { legal_name: params.userLegalName },
+    });
+
+    const authorization = authResponse.data.authorization;
+    if (authorization.decision !== 'approved') {
+      throw new Error(`Plaid Transfer authorization denied: ${authorization.decision_rationale?.code || 'UNKNOWN'} — ${authorization.decision_rationale?.description || ''}`);
+    }
+
+    const transferResponse = await (client as any).transferCreate({
+      authorization_id: authorization.id,
+      description: params.description.slice(0, 15),
+    });
+
+    const transfer = transferResponse.data.transfer;
+    return {
+      transferId: transfer.id,
+      authorizationId: authorization.id,
+      status: transfer.status,
+    };
+  }
+
   isServiceConfigured(): boolean {
     return this.isConfigured;
   }
