@@ -127,6 +127,25 @@ class PlaidService {
     }
   }
 
+  async getAccountAuth(accessToken: string): Promise<{ accountId: string; accountNumber: string; routingNumber: string; name: string }[]> {
+    if (!this.isConfigured) {
+      throw new Error('Plaid service not configured');
+    }
+    try {
+      const response = await this.getClient().authGet({ access_token: accessToken });
+      const numbers = response.data.numbers.ach || [];
+      return numbers.map((n: any) => ({
+        accountId: n.account_id,
+        accountNumber: n.account,
+        routingNumber: n.routing,
+        name: response.data.accounts.find((a: any) => a.account_id === n.account_id)?.name || 'Bank Account',
+      }));
+    } catch (error) {
+      console.error('Error fetching Plaid Auth:', error);
+      throw error;
+    }
+  }
+
   isServiceConfigured(): boolean {
     return this.isConfigured;
   }

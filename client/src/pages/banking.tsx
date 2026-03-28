@@ -99,7 +99,7 @@ export default function Banking() {
               <Badge className="bg-[#918EF4] text-white">Business</Badge>
             </div>
             <CardDescription>
-              Mercury Checking {mercuryStatus.accountNumber} · Routing {mercuryStatus.routingNumber}
+              Mercury Checking {mercuryStatus.accountNumber} · Dime Time LLC
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -14,7 +14,7 @@ interface MercuryAccount {
   currency: string;
 }
 
-interface MercuryTransaction {
+export interface MercuryTransaction {
   id: string;
   amount: number;
   status: string;
@@ -26,7 +26,7 @@ interface MercuryTransaction {
   accountId?: string;
 }
 
-interface MercuryTransferResponse {
+export interface MercuryTransferResponse {
   id: string;
   status: string;
   amount: number;
@@ -73,9 +73,10 @@ class MercuryService {
     if (this.cachedAccountId) return this.cachedAccountId;
     const accounts = await this.listAccounts();
     const accountNumber = process.env.MERCURY_ACCOUNT_NUMBER;
-    const checking = accounts.find(a => a.accountNumber === accountNumber && a.kind === 'checking')
-      || accounts.find(a => a.kind === 'checking')
-      || accounts[0];
+    const checking =
+      accounts.find(a => a.accountNumber === accountNumber && a.kind === 'checking') ||
+      accounts.find(a => a.kind === 'checking') ||
+      accounts[0];
     if (!checking) throw new Error('No Mercury checking account found');
     this.cachedAccountId = checking.id;
     return this.cachedAccountId;
@@ -86,11 +87,20 @@ class MercuryService {
     return response.data.accounts || [];
   }
 
-  async getAccountBalance(): Promise<{ balance: number; availableBalance: number; currency: string; accountNumber: string; routingNumber: string }> {
+  async getAccountBalance(): Promise<{
+    balance: number;
+    availableBalance: number;
+    currency: string;
+    accountNumber: string;
+    routingNumber: string;
+  }> {
     if (!this.isConfigured) throw new Error('Mercury service not configured');
     const accounts = await this.listAccounts();
     const accountNumber = process.env.MERCURY_ACCOUNT_NUMBER;
-    const account = accounts.find(a => a.accountNumber === accountNumber) || accounts.find(a => a.kind === 'checking') || accounts[0];
+    const account =
+      accounts.find(a => a.accountNumber === accountNumber) ||
+      accounts.find(a => a.kind === 'checking') ||
+      accounts[0];
     if (!account) throw new Error('No Mercury accounts found');
     return {
       balance: account.currentBalance,
@@ -124,42 +134,19 @@ class MercuryService {
         accountNumber: params.recipientAccountNumber,
         routingNumber: params.recipientRoutingNumber,
         name: params.recipientName,
-        kind: 'business',
+        kind: 'individual',
       },
       note: params.note,
     });
     return response.data;
   }
 
-  async collectRoundUp(params: {
-    amount: number;
-    userId: string;
-    descriptor?: string;
-  }): Promise<{ success: boolean; transactionId?: string; status: string; message: string; amount: number }> {
-    if (!this.isConfigured) throw new Error('Mercury service not configured');
-    return {
-      success: true,
-      transactionId: `roundup_queued_${Date.now()}`,
-      status: 'queued',
-      message: `Round-up of $${params.amount.toFixed(2)} queued — ACH origination from user bank account requires Plaid integration (next milestone)`,
-      amount: params.amount,
-    };
+  getMercuryAccountNumber(): string {
+    return process.env.MERCURY_ACCOUNT_NUMBER || '';
   }
 
-  async payDebt(params: {
-    amount: number;
-    userId: string;
-    debtName: string;
-    descriptor?: string;
-  }): Promise<{ success: boolean; transactionId?: string; status: string; message: string; amount: number }> {
-    if (!this.isConfigured) throw new Error('Mercury service not configured');
-    return {
-      success: true,
-      transactionId: `debt_queued_${Date.now()}`,
-      status: 'queued',
-      message: `Debt payment of $${params.amount.toFixed(2)} toward ${params.debtName} queued — payee routing details required to complete ACH transfer`,
-      amount: params.amount,
-    };
+  getMercuryRoutingNumber(): string {
+    return process.env.MERCURY_ROUTING_NUMBER || '';
   }
 }
 
