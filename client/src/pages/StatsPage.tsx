@@ -30,7 +30,7 @@ export default function StatsPage() {
       icon: Globe,
       label: "API Integrations",
       value: "8",
-      description: "Plaid, Sila Money, Coinbase, Axos Bank, AWS S3, DynamoDB, Replit Auth, Express Sessions",
+      description: "Plaid, Mercury Banking, Coinbase, Axos Bank, AWS S3, DynamoDB, Replit Auth, Express Sessions",
       color: "text-green-300"
     },
     {

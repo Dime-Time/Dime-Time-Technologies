@@ -21,7 +21,7 @@ import { s3Service } from "./services/s3Service";
 import { dynamoService } from "./services/dynamoService";
 import { axosService } from "./services/axosService";
 import { registerAxosRoutes } from "./routes/axosRoutes";
-import { registerSilaRoutes } from "./routes/silaRoutes";
+import { registerMercuryRoutes } from "./routes/mercuryRoutes";
 import { notificationRoutes } from "./routes/notificationRoutes";
 import { notificationService } from "./services/notificationService";
 import { notificationTriggers } from "./services/notificationTriggers";
@@ -1418,8 +1418,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Axos Bank integration routes
   registerAxosRoutes(app);
 
-  // Register Sila Money integration routes  
-  registerSilaRoutes(app);
+  // Register Mercury banking integration routes
+  registerMercuryRoutes(app);
 
   // Register notification routes
   app.use(notificationRoutes);
