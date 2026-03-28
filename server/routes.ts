@@ -22,6 +22,7 @@ import { dynamoService } from "./services/dynamoService";
 import { axosService } from "./services/axosService";
 import { registerAxosRoutes } from "./routes/axosRoutes";
 import { registerMercuryRoutes } from "./routes/mercuryRoutes";
+import { getUserIdFromRequest } from "./middleware/authHelper";
 import { notificationRoutes } from "./routes/notificationRoutes";
 import { notificationService } from "./services/notificationService";
 import { notificationTriggers } from "./services/notificationTriggers";
@@ -77,42 +78,6 @@ function generateAuthToken(userId: string): string {
   return Buffer.from(`${payload}:${signature}`).toString('base64');
 }
 
-// Verify and decode auth token
-function verifyAuthToken(token: string): string | null {
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('utf-8');
-    const [userId, timestampStr, signature] = decoded.split(':');
-    const payload = `${userId}:${timestampStr}`;
-    const expectedSignature = createHash('sha256').update(payload + getSessionSecret()).digest('hex').substring(0, 16);
-    
-    if (signature !== expectedSignature) return null;
-    
-    // Token valid for 30 days
-    const timestamp = parseInt(timestampStr, 10);
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-    if (Date.now() - timestamp > thirtyDays) return null;
-    
-    return userId;
-  } catch {
-    return null;
-  }
-}
-
-// Get user ID from session OR Authorization header (for native apps)
-function getUserIdFromRequest(req: Request): string | null {
-  // First check session (for web users with cookies)
-  const sessionUserId = (req.session as any)?.userId;
-  if (sessionUserId) return sessionUserId;
-  
-  // Then check Authorization header (for native apps)
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    return verifyAuthToken(token);
-  }
-  
-  return null;
-}
 
 export async function registerRoutes(app: Express): Promise<Server> {
 

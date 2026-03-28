@@ -113,7 +113,8 @@ class MercuryService {
 
   async getTransactions(limit: number = 50): Promise<MercuryTransaction[]> {
     if (!this.isConfigured) throw new Error('Mercury service not configured');
-    const response = await this.client.get('/transactions', { params: { limit } });
+    const accountId = await this.resolveCheckingAccountId();
+    const response = await this.client.get(`/account/${accountId}/transactions`, { params: { limit } });
     return response.data.transactions || [];
   }
 
