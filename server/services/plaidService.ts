@@ -20,6 +20,22 @@ function resolvePlaidEnvironment(): string {
   }
 }
 
+function maskToken(token: string): string {
+  if (!token || token.length < 8) return '[masked]';
+  return `${token.slice(0, 8)}...[masked]`;
+}
+
+function log(correlationId: string, event: string, data?: Record<string, unknown>): void {
+  const entry: Record<string, unknown> = {
+    ts: new Date().toISOString(),
+    service: 'PlaidService',
+    correlationId,
+    event,
+    ...data,
+  };
+  console.log(JSON.stringify(entry));
+}
+
 class PlaidService {
   private client: PlaidApi | null = null;
   private isConfigured: boolean = false;
@@ -68,13 +84,12 @@ class PlaidService {
         country_codes: [CountryCode.Us],
         language: 'en',
       };
-      
-      // Only include redirect_uri if properly configured (not a placeholder)
+
       const redirectUri = process.env.PLAID_REDIRECT_URI;
       if (redirectUri && !redirectUri.includes('your-domain') && redirectUri.startsWith('https://')) {
         linkTokenRequest.redirect_uri = redirectUri;
       }
-      
+
       const response = await this.getClient().linkTokenCreate(linkTokenRequest);
       return response.data.link_token;
     } catch (error) {
@@ -172,14 +187,34 @@ class PlaidService {
   }
 
   /**
+   * Validate that funding account configuration is present for production.
+   * Fails explicitly if MERCURY_PLAID_FUNDING_ID is missing in production.
+   */
+  private validateFundingAccountConfig(correlationId: string): string | undefined {
+    const fundingId = process.env.MERCURY_PLAID_FUNDING_ID;
+    if (!fundingId) {
+      if (this.environment === 'production') {
+        log(correlationId, 'funding_account_missing', {
+          severity: 'ERROR',
+          message: 'MERCURY_PLAID_FUNDING_ID is not set. This is required in production to route Plaid Transfer funds to Mercury. Set this env var to the Mercury Plaid funding account ID.',
+        });
+        throw new Error(
+          '[PlaidService] MERCURY_PLAID_FUNDING_ID is required in production for Plaid Transfer to route funds to Mercury. ' +
+          'Set this env var to the funding account ID provided by Plaid for your Mercury account.'
+        );
+      }
+      log(correlationId, 'funding_account_not_set', {
+        severity: 'WARN',
+        message: 'MERCURY_PLAID_FUNDING_ID not set — funds will route to Plaid default funding account. Set this for Mercury in production.',
+      });
+    }
+    return fundingId || undefined;
+  }
+
+  /**
    * Initiate an ACH debit from the user's linked bank account via Plaid Transfer.
-   * This is the correct mechanism for pulling round-up funds FROM a user's bank INTO
-   * the Dime Time LLC Mercury account. Flow:
-   *   1. transferAuthorizationCreate — Plaid risk-checks the debit
-   *   2. transferCreate — Plaid originates the ACH debit; funds route to Mercury
-   *
-   * Requires the Plaid Transfer product to be enabled for this Plaid client ID.
-   * Returns the Plaid transfer ID and authorization ID on success.
+   * Structured reconciliation logging included throughout.
+   * Flow: transferAuthorizationCreate → transferCreate → return ids
    */
   async createRoundUpTransfer(params: {
     accessToken: string;
@@ -187,12 +222,25 @@ class PlaidService {
     amount: number;
     userLegalName: string;
     description: string;
+    correlationId: string;
     mercuryFundingAccountId?: string;
   }): Promise<{ transferId: string; authorizationId: string; status: string }> {
     if (!this.isConfigured) {
       throw new Error('Plaid service not configured');
     }
+    const { correlationId } = params;
     const client = this.getClient();
+
+    const fundingAccountId = params.mercuryFundingAccountId ?? this.validateFundingAccountConfig(correlationId);
+
+    log(correlationId, 'transfer_auth_request', {
+      accountId: params.accountId,
+      amount: params.amount,
+      amountStr: params.amount.toFixed(2),
+      userLegalName: params.userLegalName,
+      accessToken: maskToken(params.accessToken),
+      fundingAccountId: fundingAccountId || 'not_set',
+    });
 
     const authRequest: TransferAuthorizationCreateRequest = {
       access_token: params.accessToken,
@@ -202,13 +250,23 @@ class PlaidService {
       amount: params.amount.toFixed(2),
       ach_class: ACHClass.Ppd,
       user: { legal_name: params.userLegalName },
-      ...(params.mercuryFundingAccountId ? { funding_account_id: params.mercuryFundingAccountId } : {}),
+      ...(fundingAccountId ? { funding_account_id: fundingAccountId } : {}),
     };
-    const authResponse = await client.transferAuthorizationCreate(authRequest);
 
+    const authResponse = await client.transferAuthorizationCreate(authRequest);
     const authorization = authResponse.data.authorization;
+
+    log(correlationId, 'transfer_auth_response', {
+      authorizationId: authorization.id,
+      decision: authorization.decision,
+      decisionRationaleCode: authorization.decision_rationale?.code,
+      decisionRationaleDescription: authorization.decision_rationale?.description,
+    });
+
     if (authorization.decision !== 'approved') {
-      throw new Error(`Plaid Transfer authorization denied: ${authorization.decision_rationale?.code || 'UNKNOWN'} — ${authorization.decision_rationale?.description || ''}`);
+      throw new Error(
+        `Plaid Transfer authorization denied: ${authorization.decision_rationale?.code || 'UNKNOWN'} — ${authorization.decision_rationale?.description || ''}`
+      );
     }
 
     const createRequest: TransferCreateRequest = {
@@ -217,9 +275,22 @@ class PlaidService {
       authorization_id: authorization.id,
       description: params.description.slice(0, 15),
     };
-    const transferResponse = await client.transferCreate(createRequest);
 
+    log(correlationId, 'transfer_create_request', {
+      authorizationId: authorization.id,
+      description: createRequest.description,
+    });
+
+    const transferResponse = await client.transferCreate(createRequest);
     const transfer = transferResponse.data.transfer;
+
+    log(correlationId, 'transfer_create_response', {
+      transferId: transfer.id,
+      status: transfer.status,
+      amount: transfer.amount,
+      network: transfer.network,
+    });
+
     return {
       transferId: transfer.id,
       authorizationId: authorization.id,

@@ -111,6 +111,31 @@ The application leverages automated financial tracking, micro-investment strateg
    - Payment tracking
    - Financial progress visualization
 
+## ACH Production Hardening (March 2026)
+
+### New Infrastructure
+- **Transfer Ledger**: `transfers` table tracks every money movement (roundup_collection, debt_payment) with full lifecycle status (created → authorized → pending → posted → settled → failed → returned → cancelled)
+- **Idempotency on Mercury routes**: Both `POST /api/mercury/collect-roundup` and `POST /api/mercury/pay-debt` accept `Idempotency-Key` header; duplicate requests return cached response without re-executing
+- **Plaid Access Token Encryption**: Tokens stored AES-256-GCM encrypted at rest using `PLAID_TOKEN_ENCRYPTION_KEY`. Legacy plain-text tokens handled transparently. `getPlaidAccessToken(bankAccountId)` is the only way to retrieve a live decrypted token
+- **Plaid Webhook Endpoint**: `POST /webhooks/plaid` — signature-verified, idempotent, updates transfer ledger on status events
+- **Structured Reconciliation Logging**: All transfer operations emit JSON log lines with `correlationId`, masked sensitive fields; correlated end-to-end across Plaid + Mercury
+- **Funding Account Validation**: `MERCURY_PLAID_FUNDING_ID` fails explicitly in production if not set
+
+### New Env Vars Required
+- `PLAID_TOKEN_ENCRYPTION_KEY` — 32-byte base64 key for AES-256-GCM (auto-generated and set)
+- `PLAID_WEBHOOK_SECRET` — From Plaid Dashboard → Webhooks → Signing Secret (set when webhook URL is configured)
+- `MERCURY_PLAID_FUNDING_ID` — Mercury's Plaid funding account ID (required before Plaid Transfer goes live)
+
+### Transfer State Flow
+```
+Request received
+  → Idempotency check (return cached if duplicate key)
+  → Transfer ledger record created (status: created)
+  → Plaid transferAuthorizationCreate (logged) → status: authorized
+  → Plaid transferCreate (logged) → status: pending
+  → Plaid webhook arrives → /webhooks/plaid → status: posted/settled/failed/returned
+```
+
 ## Technical Architecture
 
 ### Platform: Capacitor Hybrid App (NOT React Native/Expo)

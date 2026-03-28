@@ -70,6 +70,23 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Capture raw body for Plaid webhook signature verification before JSON parsing
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith('/webhooks/')) {
+    let data = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk: string) => { data += chunk; });
+    req.on('end', () => {
+      (req as any).rawBody = data;
+      try { req.body = JSON.parse(data); } catch { req.body = {}; }
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

@@ -193,6 +193,36 @@ export const interestEarnings = pgTable("interest_earnings", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// Transfer ledger — every money movement attempt (round-up collections and debt payments)
+export const transfers = pgTable("transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // 'roundup_collection' | 'debt_payment'
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default('created'), // created | authorized | pending | posted | settled | failed | returned | cancelled
+  plaidTransferId: text("plaid_transfer_id"),
+  plaidAuthorizationId: text("plaid_authorization_id"),
+  mercuryTransferId: text("mercury_transfer_id"),
+  debtId: varchar("debt_id"),
+  correlationId: varchar("correlation_id").notNull(),
+  idempotencyKey: text("idempotency_key"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  rawRequest: text("raw_request"),
+  rawResponse: text("raw_response"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertTransferSchema = createInsertSchema(transfers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Transfer = typeof transfers.$inferSelect;
+export type InsertTransfer = z.infer<typeof insertTransferSchema>;
+
 // Idempotency keys table for request deduplication
 export const idempotencyKeys = pgTable("idempotency_keys", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

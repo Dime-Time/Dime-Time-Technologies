@@ -34,6 +34,22 @@ export interface MercuryTransferResponse {
   note?: string;
 }
 
+function log(correlationId: string, event: string, data?: Record<string, unknown>): void {
+  const entry: Record<string, unknown> = {
+    ts: new Date().toISOString(),
+    service: 'MercuryService',
+    correlationId,
+    event,
+    ...data,
+  };
+  console.log(JSON.stringify(entry));
+}
+
+function maskAccountNumber(acct: string): string {
+  if (!acct || acct.length < 4) return '[masked]';
+  return `••${acct.slice(-4)}`;
+}
+
 class MercuryService {
   private client: AxiosInstance;
   private isConfigured: boolean = false;
@@ -125,9 +141,21 @@ class MercuryService {
     recipientRoutingNumber: string;
     recipientName: string;
     paymentMethod?: 'ach' | 'wire';
+    correlationId: string;
   }): Promise<MercuryTransferResponse> {
     if (!this.isConfigured) throw new Error('Mercury service not configured');
+    const { correlationId } = params;
     const accountId = await this.resolveCheckingAccountId();
+
+    log(correlationId, 'mercury_transfer_request', {
+      amount: params.amount,
+      recipientName: params.recipientName,
+      recipientAccount: maskAccountNumber(params.recipientAccountNumber),
+      recipientRouting: `••${params.recipientRoutingNumber.slice(-4)}`,
+      paymentMethod: params.paymentMethod || 'ach',
+      mercuryAccountId: accountId,
+    });
+
     const response = await this.client.post(`/account/${accountId}/transactions`, {
       amount: params.amount,
       paymentMethod: params.paymentMethod || 'ach',
@@ -139,7 +167,17 @@ class MercuryService {
       },
       note: params.note,
     });
-    return response.data;
+
+    const result: MercuryTransferResponse = response.data;
+
+    log(correlationId, 'mercury_transfer_response', {
+      mercuryTransferId: result.id,
+      status: result.status,
+      amount: result.amount,
+      createdAt: result.createdAt,
+    });
+
+    return result;
   }
 
   getMercuryAccountNumber(): string {

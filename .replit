@@ -46,3 +46,4 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 
 [userenv.shared]
 PLAID_ENV = "production"
+PLAID_TOKEN_ENCRYPTION_KEY = "EKRPHRnmNuckxLO4oJ1ELG3JC6GocZP8bZeDYG6UnU8="

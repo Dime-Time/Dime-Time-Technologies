@@ -1,0 +1,86 @@
+We are now in production cutover mode with Plaid + Mercury. Plaid Transfer is the remaining external dependency, so while that is pending, I want the backend hardened for live ACH operations.
+
+Please implement the following:
+
+1. **Idempotency protection**
+
+* Add idempotency for:
+
+  * `POST /api/mercury/collect-roundup`
+  * `POST /api/mercury/pay-debt`
+* Accept an `Idempotency-Key` header
+* Store request key + user ID + endpoint + prior response in persistence
+* If the same key is retried, return the original response and do not execute the transfer again
+
+2. **Transfer ledger / lifecycle tracking**
+
+* Create a `transfers` table to track every money movement attempt
+* Fields should include:
+
+  * internal transfer id
+  * user id
+  * type (`roundup_collection`, `debt_payment`)
+  * amount
+  * status (`created`, `authorized`, `pending`, `posted`, `settled`, `failed`, `returned`, `cancelled`)
+  * plaid transfer id
+  * plaid authorization id
+  * mercury transfer id
+  * linked debt id if applicable
+  * error code / error message
+  * timestamps
+* Every transfer attempt should be recorded before and after external API calls
+
+3. **Plaid webhook endpoint**
+
+* Add `POST /webhooks/plaid`
+* Prepare it to receive Plaid Transfer-related webhook events
+* Log raw webhook payloads
+* Update transfer status in the `transfers` table based on webhook events
+* Make webhook processing idempotent as well
+
+4. **Access token encryption at rest**
+
+* Encrypt Plaid `access_token` values before saving them to the database
+* Decrypt only when needed for Plaid API calls
+* Use a server-side encryption key from env vars
+* Do not expose decrypted tokens anywhere in logs or API responses
+
+5. **Structured reconciliation logging**
+
+* Add detailed server logs for:
+
+  * Plaid transfer authorization request/response
+  * Plaid transfer create request/response
+  * Mercury transfer initiation request/response
+  * webhook receipt and transfer status changes
+* Mask sensitive values in logs
+* Include correlation IDs for tracing a transfer end to end
+
+6. **Funding account support**
+
+* Review whether `createRoundUpTransfer()` is properly passing `funding_account_id` when Plaid Transfer is enabled
+* If additional config is needed for Mercury as the Plaid funding account, identify exactly what env vars or database values are needed
+* Make the system fail explicitly if funding account configuration is missing in production
+
+7. **Operational safeguards**
+
+* Preserve all current server-side limits
+* Keep client users from supplying any routing/account information
+* Add retry-safe behavior for transient upstream failures
+* Do not add any silent fallbacks or mock behavior in production
+
+8. **Readiness output**
+   When complete, provide me with:
+
+* a list of files changed
+* any new env vars required
+* any DB migrations created
+* exact endpoints added or modified
+* a short explanation of how transfer state now flows from request → external API → webhook → final status
+
+Important:
+
+* Do not revert Mercury architecture
+* Do not reintroduce Sila
+* Keep the system production-oriented only
+* Assume Plaid Transfer will be enabled soon and build for immediate live testing once that happens

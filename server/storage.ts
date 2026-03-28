@@ -29,6 +29,8 @@ import {
   type InsertDttTokenInfo,
   type ContactSubmission,
   type InsertContactSubmission,
+  type Transfer,
+  type InsertTransfer,
   users, 
   debts, 
   transactions, 
@@ -49,8 +51,10 @@ import {
   sweepAccounts,
   sweepDeposits,
   weeklyDispersals,
-  idempotencyKeys
+  idempotencyKeys,
+  transfers
 } from "@shared/schema";
+import { encryptToken, decryptToken } from "./services/encryptionService";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -134,6 +138,17 @@ export interface IStorage {
   // Idempotency methods
   getIdempotencyKey(key: string, userId: string, endpoint: string): Promise<{ responseStatus: number; responseBody: string } | undefined>;
   createIdempotencyKey(data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void>;
+
+  // Transfer ledger methods
+  createTransfer(data: InsertTransfer): Promise<Transfer>;
+  getTransfer(id: string): Promise<Transfer | undefined>;
+  getTransferByCorrelationId(correlationId: string): Promise<Transfer | undefined>;
+  getTransferByPlaidTransferId(plaidTransferId: string): Promise<Transfer | undefined>;
+  updateTransferStatus(id: string, status: string, updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'errorCode' | 'errorMessage' | 'rawResponse'>>): Promise<Transfer | undefined>;
+  getTransfersByUserId(userId: string): Promise<Transfer[]>;
+
+  // Encrypted bank account token methods
+  getPlaidAccessToken(bankAccountId: string): Promise<string | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -1380,6 +1395,16 @@ export class MemStorage implements IStorage {
   }
 
   async createIdempotencyKey(_data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void> {}
+
+  async createTransfer(_data: InsertTransfer): Promise<Transfer> {
+    throw new Error('MemStorage does not support transfer ledger');
+  }
+  async getTransfer(_id: string): Promise<Transfer | undefined> { return undefined; }
+  async getTransferByCorrelationId(_correlationId: string): Promise<Transfer | undefined> { return undefined; }
+  async getTransferByPlaidTransferId(_plaidTransferId: string): Promise<Transfer | undefined> { return undefined; }
+  async updateTransferStatus(_id: string, _status: string, _updates?: any): Promise<Transfer | undefined> { return undefined; }
+  async getTransfersByUserId(_userId: string): Promise<Transfer[]> { return []; }
+  async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
 }
 
 // DatabaseStorage class for persistent storage using PostgreSQL
@@ -1522,25 +1547,36 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  // Bank account methods
+  // Bank account methods — access tokens are encrypted at rest
   async getBankAccountsByUserId(userId: string): Promise<BankAccount[]> {
-    return await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+    const rows = await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+    // Return accounts with tokens masked — callers must use getPlaidAccessToken() for the live token
+    return rows.map(a => ({ ...a, plaidAccessToken: '[encrypted]' }));
   }
 
   async createBankAccount(account: InsertBankAccount): Promise<BankAccount> {
     const id = randomUUID();
-    const [result] = await db.insert(bankAccounts).values({ ...account, id }).returning();
-    return result;
+    const encrypted = encryptToken(account.plaidAccessToken);
+    const [result] = await db.insert(bankAccounts).values({ ...account, id, plaidAccessToken: encrypted }).returning();
+    return { ...result, plaidAccessToken: '[encrypted]' };
   }
 
   async getBankAccountByPlaidItemId(itemId: string): Promise<BankAccount | undefined> {
     const [account] = await db.select().from(bankAccounts).where(eq(bankAccounts.plaidItemId, itemId));
-    return account;
+    if (!account) return undefined;
+    return { ...account, plaidAccessToken: '[encrypted]' };
   }
 
   async updateBankAccountStatus(id: string, isActive: boolean): Promise<BankAccount | undefined> {
     const [result] = await db.update(bankAccounts).set({ isActive }).where(eq(bankAccounts.id, id)).returning();
-    return result;
+    if (!result) return undefined;
+    return { ...result, plaidAccessToken: '[encrypted]' };
+  }
+
+  async getPlaidAccessToken(bankAccountId: string): Promise<string | undefined> {
+    const [account] = await db.select({ token: bankAccounts.plaidAccessToken }).from(bankAccounts).where(eq(bankAccounts.id, bankAccountId));
+    if (!account) return undefined;
+    return decryptToken(account.token);
   }
 
   // User session methods
@@ -1721,6 +1757,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
     await db.delete(debts).where(eq(debts.userId, userId));
     await db.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
+    await db.delete(transfers).where(eq(transfers.userId, userId));
     await db.delete(users).where(eq(users.id, userId));
   }
 
@@ -1739,6 +1776,46 @@ export class DatabaseStorage implements IStorage {
     await db.execute(
       sql`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body) VALUES (gen_random_uuid(), ${data.idempotencyKey}, ${data.userId}, ${data.endpoint}, ${data.responseStatus}, ${data.responseBody})`
     );
+  }
+
+  // Transfer ledger methods
+  async createTransfer(data: InsertTransfer): Promise<Transfer> {
+    const id = randomUUID();
+    const now = new Date();
+    const [result] = await db.insert(transfers).values({ ...data, id, createdAt: now, updatedAt: now }).returning();
+    return result;
+  }
+
+  async getTransfer(id: string): Promise<Transfer | undefined> {
+    const [result] = await db.select().from(transfers).where(eq(transfers.id, id));
+    return result;
+  }
+
+  async getTransferByCorrelationId(correlationId: string): Promise<Transfer | undefined> {
+    const [result] = await db.select().from(transfers).where(eq(transfers.correlationId, correlationId));
+    return result;
+  }
+
+  async getTransferByPlaidTransferId(plaidTransferId: string): Promise<Transfer | undefined> {
+    const [result] = await db.select().from(transfers).where(eq(transfers.plaidTransferId, plaidTransferId));
+    return result;
+  }
+
+  async updateTransferStatus(
+    id: string,
+    status: string,
+    updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'errorCode' | 'errorMessage' | 'rawResponse'>>
+  ): Promise<Transfer | undefined> {
+    const [result] = await db
+      .update(transfers)
+      .set({ status, updatedAt: new Date(), ...updates })
+      .where(eq(transfers.id, id))
+      .returning();
+    return result;
+  }
+
+  async getTransfersByUserId(userId: string): Promise<Transfer[]> {
+    return await db.select().from(transfers).where(eq(transfers.userId, userId)).orderBy(desc(transfers.createdAt));
   }
 }
 

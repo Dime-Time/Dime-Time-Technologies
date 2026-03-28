@@ -22,6 +22,7 @@ import { dynamoService } from "./services/dynamoService";
 import { axosService } from "./services/axosService";
 import { registerAxosRoutes } from "./routes/axosRoutes";
 import { registerMercuryRoutes } from "./routes/mercuryRoutes";
+import { registerWebhookRoutes } from "./routes/webhookRoutes";
 import { getUserIdFromRequest } from "./middleware/authHelper";
 import { notificationRoutes } from "./routes/notificationRoutes";
 import { notificationService } from "./services/notificationService";
@@ -1385,6 +1386,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Mercury banking integration routes
   registerMercuryRoutes(app);
+
+  // Register Plaid webhook routes (no user auth — signature-verified)
+  registerWebhookRoutes(app);
 
   // Register notification routes
   app.use(notificationRoutes);
