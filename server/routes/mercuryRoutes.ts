@@ -236,11 +236,49 @@ export function registerMercuryRoutes(app: Express) {
 
       const note = descriptor || `Dime Time debt payment — ${debt.name}: $${amount.toFixed(2)}`;
 
+      if (debt.payeeAccountNumber && debt.payeeRoutingNumber) {
+        if (!/^\d{9}$/.test(debt.payeeRoutingNumber)) {
+          return res.status(422).json({
+            success: false,
+            status: 'invalid_payee_routing',
+            message: `Debt record has an invalid payee routing number. An administrator must correct it before payment can proceed.`,
+          });
+        }
+
+        try {
+          const transferResult = await mercuryService.initiateTransfer({
+            amount,
+            note,
+            recipientAccountNumber: debt.payeeAccountNumber,
+            recipientRoutingNumber: debt.payeeRoutingNumber,
+            recipientName: debt.name,
+            paymentMethod: 'ach',
+          });
+
+          return res.status(201).json({
+            success: true,
+            transactionId: transferResult.id,
+            status: transferResult.status,
+            message: `Debt payment of $${amount.toFixed(2)} to ${debt.name} initiated via Mercury ACH`,
+            debtName: debt.name,
+            amount,
+          });
+        } catch (transferErr: any) {
+          console.error("Mercury debt payment failed:", transferErr?.response?.data || transferErr.message);
+          return res.status(502).json({
+            success: false,
+            status: 'transfer_failed',
+            message: "Mercury ACH transfer failed. Check Mercury account configuration.",
+            error: transferErr?.response?.data?.errors || transferErr.message,
+          });
+        }
+      }
+
       return res.status(202).json({
         success: true,
         transactionId: `debt_queued_${userId}_${Date.now()}`,
         status: 'queued_awaiting_admin_routing',
-        message: `Debt payment of $${amount.toFixed(2)} toward ${debt.name} queued. An administrator must configure the payee routing details in the debt record before Mercury ACH disbursement can execute.`,
+        message: `Debt payment of $${amount.toFixed(2)} toward ${debt.name} queued. An administrator must configure payee routing details on the debt record before Mercury ACH disbursement can execute.`,
         debtName: debt.name,
         amount,
         mercuryBalance: balance.availableBalance,

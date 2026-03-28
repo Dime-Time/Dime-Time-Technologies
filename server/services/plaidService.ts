@@ -1,4 +1,15 @@
-import { Configuration, PlaidApi, PlaidEnvironments, CountryCode, Products } from 'plaid';
+import {
+  Configuration,
+  PlaidApi,
+  PlaidEnvironments,
+  CountryCode,
+  Products,
+  TransferAuthorizationCreateRequest,
+  TransferCreateRequest,
+  TransferType,
+  TransferNetwork,
+  ACHClass,
+} from 'plaid';
 
 class PlaidService {
   private client: PlaidApi | null = null;
@@ -168,25 +179,29 @@ class PlaidService {
     }
     const client = this.getClient();
 
-    const authResponse = await (client as any).transferAuthorizationCreate({
+    const authRequest: TransferAuthorizationCreateRequest = {
       access_token: params.accessToken,
       account_id: params.accountId,
-      type: 'debit',
-      network: 'ach',
+      type: TransferType.Debit,
+      network: TransferNetwork.Ach,
       amount: params.amount.toFixed(2),
-      ach_class: 'ppd',
+      ach_class: ACHClass.Ppd,
       user: { legal_name: params.userLegalName },
-    });
+    };
+    const authResponse = await client.transferAuthorizationCreate(authRequest);
 
     const authorization = authResponse.data.authorization;
     if (authorization.decision !== 'approved') {
       throw new Error(`Plaid Transfer authorization denied: ${authorization.decision_rationale?.code || 'UNKNOWN'} — ${authorization.decision_rationale?.description || ''}`);
     }
 
-    const transferResponse = await (client as any).transferCreate({
+    const createRequest: TransferCreateRequest = {
+      access_token: params.accessToken,
+      account_id: params.accountId,
       authorization_id: authorization.id,
       description: params.description.slice(0, 15),
-    });
+    };
+    const transferResponse = await client.transferCreate(createRequest);
 
     const transfer = transferResponse.data.transfer;
     return {

@@ -38,6 +38,8 @@ export const debts = pgTable("debts", {
   minimumPayment: decimal("minimum_payment", { precision: 10, scale: 2 }).notNull(),
   dueDate: integer("due_date").notNull(), // day of month
   isActive: boolean("is_active").default(true).notNull(),
+  payeeAccountNumber: text("payee_account_number"), // Creditor's bank account number for ACH payment (set by admin)
+  payeeRoutingNumber: text("payee_routing_number"), // Creditor's bank routing number for ACH payment (set by admin)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
