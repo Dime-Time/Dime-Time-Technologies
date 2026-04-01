@@ -1,0 +1,93 @@
+PROJECT: DIME TIME — VALUATION OVERVIEW (INTERNAL)
+
+STAGE:
+Pre-seed / early-stage fintech (post-build, pre-scale)
+
+CURRENT STATUS:
+- Functional iOS app live on TestFlight (v1.0.1)
+- Backend deployed (production environment active)
+- Plaid integrated in production (bank linking + transaction ingestion)
+- Mercury integrated for fund routing and ACH workflows
+- Coinbase integration (demo mode for crypto allocation)
+- Core financial flows operational (round-ups → allocation → transfer lifecycle)
+
+PRODUCT CLASSIFICATION:
+Consumer fintech platform focused on automated microallocation of funds toward:
+1) Debt reduction
+2) Asset accumulation (crypto)
+
+CORE INNOVATION:
+“Dynamic Dual-Split Round-Up Microallocation System”
+- Programmable allocation of transaction round-ups across multiple financial endpoints
+- Supports fractional, percentage-based, and dynamic allocation logic
+- Designed for behavioral automation (no manual user intervention required)
+
+---
+
+VALUATION RANGE (CURRENT ESTIMATE):
+
+LOW CASE:   $1.5M
+MID CASE:   $3M
+HIGH CASE:  $5M+
+
+---
+
+VALUATION DRIVERS:
+
+1. PRODUCT COMPLETION
+- Fully built application with production infrastructure
+- Eliminates “idea risk” and reduces technical uncertainty
+
+2. FINTECH INTEGRATIONS
+- Plaid (production) significantly increases credibility
+- Mercury ACH + fund flow infrastructure in place
+- Financial rails operational vs conceptual
+
+3. MARKET SIZE
+- Consumer debt market (U.S.): $17T+
+- Retail crypto participation: growing adoption curve
+- Behavioral fintech opportunity (automation layer)
+
+4. UNIQUE POSITIONING
+- Not a savings app
+- Not a budgeting tool
+- Positioned as an “automated financial behavior engine”
+
+5. INFRASTRUCTURE READINESS
+- Transfer lifecycle tracking (created → settled)
+- Idempotent transaction handling
+- Reconciliation logging + correlation tracking
+- Secure token storage (AES-256-GCM)
+
+---
+
+CURRENT LIMITATIONS (VALUATION CONSTRAINTS):
+
+- No significant user traction yet
+- No verified revenue
+- Limited behavioral data
+- Security improvements required (password hashing upgrade recommended)
+
+---
+
+PATH TO VALUE EXPANSION:
+
+To move from $3M → $10M+ valuation:
+
+1) Acquire initial user base (50–500 users)
+2) Demonstrate linked bank accounts (≥30% conversion)
+3) Show real money movement (round-up volume)
+4) Establish retention (weekly active users)
+5) Validate allocation behavior (debt vs crypto usage)
+
+---
+
+INVESTOR NARRATIVE (SHORT FORM):
+
+Dime Time is an automated financial layer that converts everyday spending into debt reduction and investing, without requiring behavior change.
+
+---
+
+SUMMARY:
+
+Dime Time currently qualifies as a high-potential pre-seed fintech startup with a realistic valuation range between $1.5M and $5M, contingent on early traction and execution of go-to-market strategy.
