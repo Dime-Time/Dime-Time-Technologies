@@ -1,0 +1,98 @@
+PROJECT: DIME TIME — USER TRACTION REQUIREMENTS (FUNDRAISING READINESS)
+
+OBJECTIVE:
+Define the minimum user and activity thresholds required before approaching venture capitalists or angel investors.
+
+---
+
+KEY PRINCIPLE:
+
+Investor readiness is NOT based on total user count.
+
+Investor readiness is based on:
+- Verified user behavior
+- Financial activity
+- Evidence of product-market interaction
+
+---
+
+MINIMUM TRACTION THRESHOLDS:
+
+LOW READINESS (DO NOT APPROACH INVESTORS):
+- 0–20 users
+- No linked financial accounts
+- No transaction activity
+
+---
+
+PRE-SEED READY (INITIAL OUTREACH APPROPRIATE):
+
+- 50–200 total users
+- 20–50 linked bank accounts (via Plaid)
+- Active transaction ingestion
+- Initial round-up collection functioning
+
+---
+
+STRONG PRE-SEED SIGNAL:
+
+- 200–1,000 users
+- 30%+ bank account connection rate
+- Measurable financial activity:
+  - $500–$2,000+ total processed through system
+- Early retention observed (weekly active users)
+
+---
+
+SEED-LEVEL TRACTION:
+
+- 1,000+ users
+- Consistent growth rate
+- Reliable retention (30%+ weekly)
+- Increasing transaction volume
+- Early monetization signals (if applicable)
+
+---
+
+CRITICAL METRICS TO TRACK:
+
+1. Activation Rate:
+   % of users who connect bank accounts (target: 30–60%)
+
+2. Financial Throughput:
+   Total dollars processed through round-ups and transfers
+
+3. Retention:
+   Weekly active users / total users (target: ≥30%)
+
+4. User Behavior:
+   - Allocation split (debt vs crypto)
+   - Average round-up value per user
+   - Transaction frequency
+
+---
+
+INVESTOR SIGNAL PRIORITY:
+
+Investors prioritize:
+- Active users with real financial behavior
+
+Over:
+- Large user counts with no engagement
+
+---
+
+GO SIGNAL FOR OUTREACH:
+
+Dime Time should begin investor outreach when:
+
+- ≥75 active users
+- ≥25 linked bank accounts
+- ≥$500 processed through system
+- Demonstrated user understanding of product
+
+---
+
+SUMMARY:
+
+Dime Time becomes fundable when it demonstrates that users are not only signing up, but actively linking accounts, generating round-ups, and participating in automated financial allocation.
