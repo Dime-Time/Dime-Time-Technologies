@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -21,7 +21,7 @@ import { SecurityProvider, useSecurity } from "@/hooks/useSecurity";
 import { LockScreen } from "@/components/LockScreen";
 import { PinSetup } from "@/components/PinSetup";
 import { hasPinSet } from "@/lib/securityStore";
-import { migrateTokenStorage } from "@/lib/authToken";
+import { migrateTokenStorage, hasStoredToken } from "@/lib/authToken";
 
 import LandingPage from "@/pages/LandingPage";
 import Onboarding from "@/pages/Onboarding";
@@ -45,12 +45,6 @@ import BusinessAnalytics from "@/pages/business-analytics";
 import StatsPage from "@/pages/StatsPage";
 import NotFound from "@/pages/not-found";
 
-/**
- * Layout for authenticated users:
- * - Respects iOS safe areas (Dynamic Island / notch / home indicator)
- * - Keeps navigation pinned at the bottom
- * - Main content scrolls independently
- */
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
@@ -64,9 +58,6 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * Layout for login / signup / auth flows that do not need bottom navigation.
- */
 function AuthScreen({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
@@ -77,68 +68,64 @@ function AuthScreen({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * Loading screen while auth state initializes.
- */
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-[#918EF4] flex items-center justify-center safe-area-top safe-area-bottom">
-      <div className="text-white text-xl">Loading...</div>
-    </div>
-  );
-}
-
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isLocked, needsPinSetup, setNeedsPinSetup, unlock, hasPinConfigured } = useSecurity();
   const isNative = Capacitor.isNativePlatform();
+  const paintRef = useRef(performance.now());
 
-  // When running as native iOS/Android app, unauthenticated users see Login.
-  // When running on web, unauthenticated users see the marketing landing page.
+  // Log first visible paint on every render cycle
+  useEffect(() => {
+    const elapsed = performance.now() - paintRef.current;
+    console.log(`[DimeTime] first paint in ${elapsed.toFixed(0)}ms`);
+  }, []);
+
+  useAnalytics();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const internalUserId = user.id || `user_${Date.now()}`;
+      setUserId(internalUserId);
+      trackLogin("replit_auth");
+      setUserProperties({
+        user_type: "authenticated",
+        signup_month: new Date().toISOString().slice(0, 7),
+        has_bank_connected: false,
+        crypto_enabled: true,
+        subscription_tier: "free",
+      });
+
+      if (!hasPinConfigured && !hasPinSet()) {
+        // PIN setup deferred — user can enable in Settings
+      }
+    }
+  }, [isAuthenticated, user, hasPinConfigured]);
+
+  // ── Optimistic auth ──────────────────────────────────────────────────────
+  // If isLoading is still true (no cached user data resolved yet), we use
+  // hasStoredToken() as a synchronous signal:
+  //   • Token present  → optimistically render as authenticated (dashboard shows
+  //     with cached/empty data while /api/user validates in background)
+  //   • No token       → render as unauthenticated immediately (login/landing)
+  //
+  // This eliminates the blank LoadingScreen in all real-world scenarios.
+  // If the background /api/user call returns 401, isAuthenticated becomes false
+  // and the user is redirected to login automatically.
+  const effectivelyAuthenticated = isAuthenticated || (isLoading && hasStoredToken());
+
   const UnauthenticatedRoot = isNative ? (
     <AuthScreen><Login /></AuthScreen>
   ) : (
     <LandingPage />
   );
 
-  // Pageview tracking, route changes, etc.
-  useAnalytics();
-
-  // Initialize user-level analytics when authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const internalUserId = user.id || `user_${Date.now()}`;
-      setUserId(internalUserId);
-
-      trackLogin("replit_auth");
-
-      setUserProperties({
-        user_type: "authenticated",
-        signup_month: new Date().toISOString().slice(0, 7), // YYYY-MM
-        has_bank_connected: false,
-        crypto_enabled: true,
-        subscription_tier: "free",
-      });
-
-      // Check if user needs PIN setup (first time after signup, no PIN set yet)
-      if (!hasPinConfigured && !hasPinSet()) {
-        // Don't force PIN setup immediately, let user explore first
-        // They can set it up in Settings later
-      }
-    }
-  }, [isAuthenticated, user, hasPinConfigured]);
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  // Show lock screen if app is locked
-  if (isAuthenticated && isLocked && hasPinConfigured) {
+  // Lock screen (PIN) takes priority over everything else when authenticated
+  if (effectivelyAuthenticated && isLocked && hasPinConfigured) {
     return <LockScreen onUnlock={unlock} />;
   }
 
-  // Show PIN setup if needed (e.g., prompted from settings)
-  if (isAuthenticated && needsPinSetup) {
+  // PIN setup prompt
+  if (effectivelyAuthenticated && needsPinSetup) {
     return (
       <PinSetup
         onComplete={() => setNeedsPinSetup(false)}
@@ -149,151 +136,114 @@ function AppContent() {
 
   return (
     <Switch>
-      {/* Root route: authenticated -> dashboard, unauth -> login (native) or landing page (web) */}
       <Route path="/">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Dashboard />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
-      {/* Explicit login route */}
       <Route path="/login">
-        <AuthScreen>
-          <Login />
-        </AuthScreen>
+        <AuthScreen><Login /></AuthScreen>
       </Route>
 
-      {/* Conference / marketing landing */}
       <Route path="/conference" component={LandingPage} />
 
-      {/* Optional onboarding flow if you choose to use it */}
       <Route path="/onboarding">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Onboarding />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Onboarding /></AuthenticatedLayout>
         ) : (
-          <AuthScreen>
-            <Login />
-          </AuthScreen>
+          <AuthScreen><Login /></AuthScreen>
         )}
       </Route>
 
-      {/* Main authenticated app surfaces */}
       <Route path="/dashboard">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Dashboard />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/transactions">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Transactions />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Transactions /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/debts">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Debts />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Debts /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/crypto">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Crypto />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Crypto /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/insights">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Insights />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Insights /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/banking">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Banking />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Banking /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/qr">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <QRCodePage />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><QRCodePage /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/settings">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Settings />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Settings /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/notifications">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Notifications />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Notifications /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/legal">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <Legal />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Legal /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
-      {/* Signup is open so new users can register */}
       <Route path="/signup">
-        <AuthScreen>
-          <Signup />
-        </AuthScreen>
+        <AuthScreen><Signup /></AuthScreen>
       </Route>
 
-      {/* Bank setup wizard: full-screen, no bottom nav */}
       <Route path="/bank-setup">
-        {isAuthenticated ? (
+        {effectivelyAuthenticated ? (
           <div className="min-h-screen bg-dime-lilac safe-area-top safe-area-bottom">
             <main className="flex-1 px-4 pt-4 pb-4">
               <BankSetupFlow
@@ -303,54 +253,44 @@ function AppContent() {
             </main>
           </div>
         ) : (
-          <AuthScreen>
-            <Login />
-          </AuthScreen>
+          <AuthScreen><Login /></AuthScreen>
         )}
       </Route>
 
       <Route path="/dime-token">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <DimeToken />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><DimeToken /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/business-analytics">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <BusinessAnalytics />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><BusinessAnalytics /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
       <Route path="/stats">
-        {isAuthenticated ? (
-          <AuthenticatedLayout>
-            <StatsPage />
-          </AuthenticatedLayout>
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><StatsPage /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}
       </Route>
 
-      {/* Fallback */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
-  // Initialize GA and migrate token storage once at app load
   useEffect(() => {
+    console.log(`[DimeTime] app bootstrap started at ${performance.now().toFixed(0)}ms`);
     initGA();
     setupGlobalErrorTracking();
-    // Migrate any unencrypted tokens to encrypted storage
     migrateTokenStorage().catch(console.warn);
   }, []);
 

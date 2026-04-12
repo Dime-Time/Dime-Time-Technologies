@@ -9,6 +9,8 @@ import { clearAuthToken } from "@/lib/authToken";
 import { getApiUrl } from "@/lib/queryClient";
 import { getCachedUser, cacheUser, clearDashboardCache } from "@/lib/dashboardCache";
 
+const USER_FETCH_TIMEOUT_MS = 8000;
+
 interface User {
   id: string;
   email: string | null;
@@ -39,10 +41,6 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-
-  // Load cached user so the app can render immediately on warm starts.
-  // initialDataUpdatedAt: 0 ensures the query always runs in the background
-  // to validate the session, even when cached data is present.
   const cachedUser = getCachedUser<User>();
 
   const {
@@ -52,45 +50,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<User | null>({
     queryKey: ["/api/user"],
     queryFn: async () => {
-      const res = await fetch(getApiUrl("/api/user"), {
-        credentials: "include",
-      });
+      const t0 = performance.now();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.error(`[DimeTime] /api/user timed out after ${USER_FETCH_TIMEOUT_MS}ms — weak network or server issue`);
+      }, USER_FETCH_TIMEOUT_MS);
 
-      if (res.status === 401) {
-        return null;
+      try {
+        const res = await fetch(getApiUrl("/api/user"), {
+          credentials: "include",
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        console.log(`[DimeTime] /api/user responded in ${(performance.now() - t0).toFixed(0)}ms (status ${res.status})`);
+
+        if (res.status === 401) {
+          return null;
+        }
+
+        if (!res.ok) {
+          throw new Error(`Failed to load user: ${res.status}`);
+        }
+
+        const json = await res.json();
+
+        if (json && typeof json === "object" && "user" in json) {
+          return json.user as User;
+        }
+
+        return json as User;
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (err.name === "AbortError") {
+          console.error(`[DimeTime] /api/user aborted (timeout) after ${(performance.now() - t0).toFixed(0)}ms`);
+        } else {
+          console.error(`[DimeTime] /api/user fetch error after ${(performance.now() - t0).toFixed(0)}ms:`, err.message);
+        }
+        throw err;
       }
-
-      if (!res.ok) {
-        throw new Error(`Failed to load user: ${res.status}`);
-      }
-
-      const json = await res.json();
-
-      if (json && typeof json === "object" && "user" in json) {
-        return json.user as User;
-      }
-
-      return json as User;
     },
     retry: false,
     staleTime: 5 * 60 * 1000,
-    // Seed the query with cached data so isLoading is false on warm starts.
-    // initialDataUpdatedAt: 0 means React Query treats it as stale and
-    // immediately fires a background fetch to confirm the session is still valid.
+    // Seed with cached user so isLoading is false on warm starts.
+    // initialDataUpdatedAt: 0 forces an immediate background re-fetch
+    // to validate the session even when cached data is present.
     initialData: cachedUser ?? undefined,
     initialDataUpdatedAt: 0,
   });
 
-  // Persist fresh user data to cache whenever it arrives
+  // Persist confirmed user to cache
   useEffect(() => {
     if (user) {
       cacheUser(user);
     }
   }, [user]);
 
-  // If the background /api/user fetch returns null (401), the cached user
-  // data is replaced with null, making isAuthenticated false and sending
-  // the user to the login screen.
   const isAuthenticated = !!user && !isError;
 
   const login = () => {
@@ -104,16 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = getApiUrl("/api/logout");
   };
 
-  const authValue: AuthContextType = {
-    user: user || null,
-    isLoading,
-    isAuthenticated,
-    login,
-    logout,
-  };
-
   return (
-    <AuthContext.Provider value={authValue}>
+    <AuthContext.Provider value={{ user: user || null, isLoading, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
