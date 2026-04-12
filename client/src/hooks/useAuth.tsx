@@ -1,11 +1,13 @@
 import {
   createContext,
   useContext,
+  useEffect,
   ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { clearAuthToken } from "@/lib/authToken";
 import { getApiUrl } from "@/lib/queryClient";
+import { getCachedUser, cacheUser, clearDashboardCache } from "@/lib/dashboardCache";
 
 interface User {
   id: string;
@@ -13,7 +15,7 @@ interface User {
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: string | null;
-  createdAt: string | null;  // usually returned as ISO string from API
+  createdAt: string | null;
   updatedAt: string | null;
 }
 
@@ -38,6 +40,11 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
+  // Load cached user so the app can render immediately on warm starts.
+  // initialDataUpdatedAt: 0 ensures the query always runs in the background
+  // to validate the session, even when cached data is present.
+  const cachedUser = getCachedUser<User>();
+
   const {
     data: user,
     isLoading,
@@ -45,12 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<User | null>({
     queryKey: ["/api/user"],
     queryFn: async () => {
-      // Always call the correct backend base URL and include cookies
       const res = await fetch(getApiUrl("/api/user"), {
         credentials: "include",
       });
 
-      // Not authenticated – treat as a normal "no user" state
       if (res.status === 401) {
         return null;
       }
@@ -61,7 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const json = await res.json();
 
-      // Support APIs that return { user: {...} } or just the user object directly
       if (json && typeof json === "object" && "user" in json) {
         return json.user as User;
       }
@@ -69,25 +73,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return json as User;
     },
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+    // Seed the query with cached data so isLoading is false on warm starts.
+    // initialDataUpdatedAt: 0 means React Query treats it as stale and
+    // immediately fires a background fetch to confirm the session is still valid.
+    initialData: cachedUser ?? undefined,
+    initialDataUpdatedAt: 0,
   });
 
-  // You are authenticated iff we have a user object.
-  // Network errors (isError) no longer automatically force "logged out".
+  // Persist fresh user data to cache whenever it arrives
+  useEffect(() => {
+    if (user) {
+      cacheUser(user);
+    }
+  }, [user]);
+
+  // If the background /api/user fetch returns null (401), the cached user
+  // data is replaced with null, making isAuthenticated false and sending
+  // the user to the login screen.
   const isAuthenticated = !!user && !isError;
 
   const login = () => {
-    // Use backend login route – backend should set the auth cookie.
-    // In native (Capacitor) this will hit the same domain that served the web app.
     window.location.href = getApiUrl("/api/login");
   };
 
   const logout = () => {
-    // Clear any client-side token storage we might be using
     clearAuthToken();
-    // Clear cached queries so we don't keep stale user data around
+    clearDashboardCache();
     queryClient.clear();
-    // Hit backend logout endpoint to clear cookie/session
     window.location.href = getApiUrl("/api/logout");
   };
 

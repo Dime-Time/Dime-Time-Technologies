@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DebtProgressChart } from "@/components/debt-progress-chart";
@@ -17,7 +17,12 @@ import {
   ArrowUp
 } from "lucide-react";
 import type { Transaction, Debt } from "@shared/schema";
-import transparentLogoImage from "@assets/D22C55D0-9527-4CE7-863F-F9327653E73E_1756052612472.png";
+import {
+  getCachedSummary,
+  getCachedDebts,
+  cacheSummary,
+  cacheDebts,
+} from "@/lib/dashboardCache";
 
 interface DashboardSummary {
   totalDebt: string;
@@ -29,26 +34,68 @@ interface DashboardSummary {
   debtsCount: number;
 }
 
+const EMPTY_SUMMARY: DashboardSummary = {
+  totalDebt: "0",
+  totalRoundUps: "0",
+  thisMonthRoundUps: "0",
+  thisMonthPayments: "0",
+  progressPercentage: 0,
+  debtFreeDate: "—",
+  debtsCount: 0,
+};
+
 export default function Dashboard() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const t0 = useRef(performance.now());
 
-  const { data: user } = useQuery({
-    queryKey: ["/api/user"],
-  });
+  // ── Performance logging ──────────────────────────────────────────────────
+  useEffect(() => {
+    const elapsed = performance.now() - t0.current;
+    console.log(`[DimeTime] dashboard shell rendered in ${elapsed.toFixed(0)}ms`);
+  }, []);
 
-  const { data: summary } = useQuery<DashboardSummary>({
+  // ── User (already seeded by AuthProvider from cache) ─────────────────────
+  const { data: user } = useQuery({ queryKey: ["/api/user"] });
+
+  // ── Dashboard summary — cache-first ───────────────────────────────────────
+  const { data: summary, isFetched: summaryFetched } = useQuery<DashboardSummary>({
     queryKey: ["/api/dashboard-summary"],
+    initialData: getCachedSummary<DashboardSummary>(),
+    initialDataUpdatedAt: 0,
   });
 
+  // ── Debts — cache-first ───────────────────────────────────────────────────
+  const { data: debts = [], isFetched: debtsFetched } = useQuery<Debt[]>({
+    queryKey: ["/api/debts"],
+    initialData: getCachedDebts<Debt[]>(),
+    initialDataUpdatedAt: 0,
+  });
+
+  // ── Transactions — deferred, non-critical for first paint ─────────────────
   const { data: transactions = [] } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
     staleTime: 30000,
   });
 
-  const { data: debts = [] } = useQuery<Debt[]>({
-    queryKey: ["/api/debts"],
-  });
+  // ── Persist fresh data to cache ───────────────────────────────────────────
+  useEffect(() => {
+    if (summaryFetched && summary) {
+      cacheSummary(summary);
+      const elapsed = performance.now() - t0.current;
+      console.log(`[DimeTime] summary fetched in ${elapsed.toFixed(0)}ms`);
+    }
+  }, [summary, summaryFetched]);
 
+  useEffect(() => {
+    if (debtsFetched && debts.length > 0) {
+      cacheDebts(debts);
+      const elapsed = performance.now() - t0.current;
+      console.log(`[DimeTime] debts fetched in ${elapsed.toFixed(0)}ms`);
+    }
+  }, [debts, debtsFetched]);
+
+  // ── Derived values ─────────────────────────────────────────────────────────
+  const activeSummary = summary ?? EMPTY_SUMMARY;
   const recentTransactions = transactions.slice(0, 4);
   const weekRoundUps = transactions
     .filter(t => {
@@ -58,43 +105,26 @@ export default function Dashboard() {
     })
     .reduce((sum, t) => sum + parseFloat(t.roundUpAmount), 0);
 
-  // Mock chart data - in a real app this would come from historical data
-  const chartData = [30500, 29200, 28100, 26800, 25600, 24300, parseFloat(summary?.totalDebt || "23847"), 22500, 21200, 19800, 18400, 17000];
-  const chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const chartData = [
+    30500, 29200, 28100, 26800, 25600, 24300,
+    parseFloat(activeSummary.totalDebt || "23847"),
+    22500, 21200, 19800, 18400, 17000,
+  ];
+  const chartLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
-      case 'food & drink':
-        return <Coffee className="w-5 h-5 text-green-600" />;
-      case 'transportation':
-        return <Car className="w-5 h-5 text-blue-600" />;
+      case 'food & drink':  return <Coffee className="w-5 h-5 text-green-600" />;
+      case 'transportation': return <Car className="w-5 h-5 text-blue-600" />;
       case 'shopping':
-      case 'groceries':
-        return <ShoppingBag className="w-5 h-5 text-purple-600" />;
-      default:
-        return <DollarSign className="w-5 h-5 text-gray-600" />;
+      case 'groceries':     return <ShoppingBag className="w-5 h-5 text-purple-600" />;
+      default:              return <DollarSign className="w-5 h-5 text-gray-600" />;
     }
   };
 
-  if (!summary || !user) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-slate-200 rounded w-1/3"></div>
-          <div className="h-4 bg-slate-200 rounded w-2/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-slate-200 rounded-xl"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // ── Render (always — no blocking on network) ───────────────────────────────
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-24 md:pb-8">
-      
 
       {/* Welcome Section */}
       <div className="mb-8">
@@ -102,8 +132,8 @@ export default function Dashboard() {
           Welcome back, <span className="text-dime-purple">{(user as any)?.firstName || 'User'}</span>!
         </h1>
         <p className="text-slate-600">
-          You've saved <span className="font-semibold text-dime-accent">{formatCurrency(summary.thisMonthRoundUps)}</span> in round-ups this month 
-          and paid down <span className="font-semibold text-dime-purple">{formatCurrency(summary.thisMonthPayments)}</span> in debt.
+          You've saved <span className="font-semibold text-dime-accent">{formatCurrency(activeSummary.thisMonthRoundUps)}</span> in round-ups this month{" "}
+          and paid down <span className="font-semibold text-dime-purple">{formatCurrency(activeSummary.thisMonthPayments)}</span> in debt.
         </p>
       </div>
 
@@ -115,10 +145,10 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-dime-purple/5 rounded-lg border border-dime-purple/10 flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-dime-purple" />
               </div>
-              <span className="text-xs text-dime-accent font-medium">+{formatCurrency(summary.thisMonthRoundUps)}</span>
+              <span className="text-xs text-dime-accent font-medium">+{formatCurrency(activeSummary.thisMonthRoundUps)}</span>
             </div>
             <h3 className="text-sm font-medium text-slate-600 mb-1">Round-Up Balance</h3>
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.totalRoundUps)}</p>
+            <p className="text-2xl font-bold text-slate-900">{formatCurrency(activeSummary.totalRoundUps)}</p>
           </CardContent>
         </Card>
 
@@ -128,10 +158,10 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-red-500/5 rounded-lg border border-red-500/10 flex items-center justify-center">
                 <CreditCard className="w-6 h-6 text-red-600" />
               </div>
-              <span className="text-xs text-red-600 font-medium">-{formatCurrency(summary.thisMonthPayments)}</span>
+              <span className="text-xs text-red-600 font-medium">-{formatCurrency(activeSummary.thisMonthPayments)}</span>
             </div>
             <h3 className="text-sm font-medium text-slate-600 mb-1">Total Debt</h3>
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.totalDebt)}</p>
+            <p className="text-2xl font-bold text-slate-900">{formatCurrency(activeSummary.totalDebt)}</p>
           </CardContent>
         </Card>
 
@@ -141,10 +171,10 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-dime-accent/5 rounded-lg border border-dime-accent/10 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-dime-accent" />
               </div>
-              <span className="text-xs text-dime-accent font-medium">{summary.progressPercentage}%</span>
+              <span className="text-xs text-dime-accent font-medium">{activeSummary.progressPercentage}%</span>
             </div>
             <h3 className="text-sm font-medium text-slate-600 mb-1">Progress This Year</h3>
-            <p className="text-2xl font-bold text-slate-900">{summary.progressPercentage}%</p>
+            <p className="text-2xl font-bold text-slate-900">{activeSummary.progressPercentage}%</p>
           </CardContent>
         </Card>
 
@@ -157,7 +187,7 @@ export default function Dashboard() {
               <span className="text-xs text-slate-600 font-medium">Est.</span>
             </div>
             <h3 className="text-sm font-medium text-slate-600 mb-1">Debt Free Date</h3>
-            <p className="text-2xl font-bold text-slate-900">{summary.debtFreeDate}</p>
+            <p className="text-2xl font-bold text-slate-900">{activeSummary.debtFreeDate}</p>
           </CardContent>
         </Card>
       </div>
@@ -175,25 +205,31 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4">
-                {recentTransactions.map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-4 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        {getCategoryIcon(transaction.category)}
+                {recentTransactions.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-4">
+                    Transactions loading…
+                  </p>
+                ) : (
+                  recentTransactions.map((transaction) => (
+                    <div key={transaction.id} className="flex items-center justify-between p-4 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                          {getCategoryIcon(transaction.category)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900">{transaction.merchant}</p>
+                          <p className="text-sm text-slate-600">
+                            {formatDate(transaction.date)}, {formatTime(transaction.date)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-slate-900">{transaction.merchant}</p>
-                        <p className="text-sm text-slate-600">
-                          {formatDate(transaction.date)}, {formatTime(transaction.date)}
-                        </p>
+                      <div className="text-right">
+                        <p className="font-medium text-slate-900">-{formatCurrency(transaction.amount)}</p>
+                        <p className="text-sm text-dime-accent">+{formatCurrency(transaction.roundUpAmount)} round-up</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-slate-900">-{formatCurrency(transaction.amount)}</p>
-                      <p className="text-sm text-dime-accent">+{formatCurrency(transaction.roundUpAmount)} round-up</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
               {/* Round-up Summary */}
@@ -246,32 +282,35 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4">
-                {debts.map((debt) => {
-                  const progress = calculateDebtProgress(debt.originalBalance, debt.currentBalance);
-                  const monthsLeft = Math.ceil(parseFloat(debt.currentBalance) / parseFloat(debt.minimumPayment));
-                  
-                  return (
-                    <div key={debt.id} className="bg-dime-accent/5 rounded-lg border border-dime-accent/10 p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h4 className="font-medium text-slate-900">{debt.name}</h4>
-                          <p className="text-sm text-slate-600">{debt.accountNumber}</p>
+                {debts.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-4">Loading debts…</p>
+                ) : (
+                  debts.map((debt) => {
+                    const progress = calculateDebtProgress(debt.originalBalance, debt.currentBalance);
+                    const monthsLeft = Math.ceil(parseFloat(debt.currentBalance) / parseFloat(debt.minimumPayment));
+                    return (
+                      <div key={debt.id} className="bg-dime-accent/5 rounded-lg border border-dime-accent/10 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="font-medium text-slate-900">{debt.name}</h4>
+                            <p className="text-sm text-slate-600">{debt.accountNumber}</p>
+                          </div>
+                          <span className="text-sm font-medium text-red-600">{formatCurrency(debt.currentBalance)}</span>
                         </div>
-                        <span className="text-sm font-medium text-red-600">{formatCurrency(debt.currentBalance)}</span>
+                        <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
+                          <div 
+                            className="bg-gradient-to-r from-dime-purple to-dime-accent h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-600">
+                          <span>{progress}% paid</span>
+                          <span>{monthsLeft} months left</span>
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
-                        <div 
-                          className="bg-gradient-to-r from-dime-purple to-dime-accent h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-slate-600">
-                        <span>{progress}% paid</span>
-                        <span>{monthsLeft} months left</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </CardContent>
           </Card>
@@ -327,9 +366,8 @@ export default function Dashboard() {
         open={showPaymentModal}
         onOpenChange={setShowPaymentModal}
         debts={debts}
-        roundUpBalance={parseFloat(summary.totalRoundUps)}
+        roundUpBalance={parseFloat(activeSummary.totalRoundUps)}
       />
-
     </main>
   );
 }

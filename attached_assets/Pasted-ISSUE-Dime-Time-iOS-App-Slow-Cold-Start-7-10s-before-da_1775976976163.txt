@@ -1,0 +1,129 @@
+ISSUE: Dime Time iOS App – Slow Cold Start (7–10s before dashboard render)
+
+Context:
+- Platform: iOS (Capacitor-based app)
+- Network: Cellular (~3 bars, no WiFi)
+- Behavior:
+  • First launch (cold start): 7–10 seconds before dashboard appears
+  • Second launch (warm start): loads quickly
+- App works, but startup latency is too high
+
+---
+
+Observed Problem:
+The app is blocking UI rendering during startup.
+
+Current behavior appears to be:
+App Launch
+→ Auth/session validation
+→ API calls (user, accounts, transactions, possibly Plaid)
+→ Wait for responses
+→ THEN render dashboard
+
+Result:
+- Blank screen or delayed UI
+- Heavy dependency on network speed
+- Poor UX on real-world cellular conditions
+
+---
+
+Required Fix (Architecture Change):
+
+Refactor to a render-first model:
+
+App Launch
+→ Render dashboard shell immediately
+→ Load cached data (if available)
+→ Fire API calls in background
+→ Hydrate UI when responses return
+
+---
+
+Implementation Requirements:
+
+1. Immediate UI Render
+- Dashboard must mount instantly
+- Remove blocking patterns like:
+  • if (!data) return null
+  • await fetchBeforeRender
+
+---
+
+2. Local Cache Layer
+Store lightweight dashboard snapshot locally:
+- user profile (basic)
+- account balances (summary)
+- debt totals
+- last known state
+
+On launch:
+→ Load cache → render instantly
+→ Refresh data in background
+
+Storage options:
+- Capacitor Storage
+- SQLite
+- IndexedDB
+
+---
+
+3. Defer Non-Critical Calls
+Do NOT block initial render on:
+- transaction history
+- Plaid sync
+- crypto balances
+- analytics
+
+Only load minimal data needed for first paint.
+
+---
+
+4. Background Hydration
+After render:
+→ Fetch fresh data
+→ Update UI incrementally
+→ Avoid full UI reset
+
+---
+
+5. Add Startup Timing Logs
+
+const t0 = performance.now();
+
+console.log("app start", t0);
+
+console.log("render shell", performance.now() - t0);
+
+await loadCache();
+console.log("cache loaded", performance.now() - t0);
+
+fetchDashboard().then(() => {
+  console.log("dashboard fetched", performance.now() - t0);
+});
+
+Track:
+- time to first render
+- time to usable UI
+- time to API completion
+
+---
+
+Target Performance:
+
+- UI shell visible: < 1 second
+- Cached dashboard visible: < 1.5 seconds
+- Fresh data load: 2–5 seconds (background)
+
+---
+
+Deliverables Requested:
+
+1. Identify blocking calls in startup path
+2. Refactor to non-blocking render
+3. Implement cache-first strategy
+4. Add performance logging to verify improvements
+
+---
+
+Priority:
+HIGH – directly impacts UX and retention
