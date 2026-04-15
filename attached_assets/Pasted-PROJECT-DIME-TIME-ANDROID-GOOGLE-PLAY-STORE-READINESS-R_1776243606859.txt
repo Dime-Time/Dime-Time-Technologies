@@ -1,0 +1,197 @@
+PROJECT: DIME TIME — ANDROID / GOOGLE PLAY STORE READINESS (REFINED)
+
+OVERVIEW:
+Android readiness is NOT blocked by shared React/TypeScript code. The primary blockers are:
+- release signing (keystore + Play App Signing)
+- CI/CD workflow (CodeMagic)
+- Android-specific QA (WebView + Plaid flows)
+- Google Play compliance (fintech + data handling)
+- Store listing + policy requirements
+
+---
+
+CURRENT STATUS:
+
+ENGINEERING READINESS: ~75%
+- Capacitor Android project exists
+- Shared codebase functional (validated via iOS TestFlight)
+- Gradle + env-based signing partially wired
+
+OPERATIONAL READINESS: ~50%
+- No keystore generated
+- No Play Console setup
+- No Android CI/CD workflow
+- No Android device testing
+
+SUBMISSION READINESS: ~30%
+- No listing assets
+- No Data Safety form
+- No compliance validation (fintech + Plaid)
+
+---
+
+CRITICAL MISSING COMPONENTS:
+
+1. PLAY APP SIGNING (REQUIRED)
+- Must enroll in Google Play App Signing
+- Generate upload keystore (NOT final signing key)
+- Google manages production signing key
+
+2. ANDROID KEYSTORE (UPLOAD KEY)
+Required env vars:
+- KEYSTORE_FILE
+- KEYSTORE_PASSWORD
+- KEY_ALIAS
+- KEY_PASSWORD
+
+3. CODEMAGIC ANDROID WORKFLOW
+New workflow required:
+- npm install
+- npm run build
+- npx cap sync android
+- Gradle build (bundleRelease)
+- Sign AAB
+- Upload to Play Console
+
+4. ANDROID DEVICE TESTING (HIGH PRIORITY)
+Must validate:
+- Plaid Link flow (bank connection)
+- redirect URI handling
+- WebView rendering differences
+- login/session persistence
+- keyboard + input behavior
+- cold start performance
+- background/foreground state
+- network timeout behavior
+
+5. PLAY CONSOLE SETUP
+- Create account ($25 fee)
+- Register package: com.dimetime.app
+- Configure app metadata
+
+6. STORE LISTING ASSETS
+Required:
+- phone screenshots
+- tablet screenshots (optional but recommended)
+- feature graphic (1024x500)
+- app icon (512x512)
+- short + full description
+- privacy policy URL
+- support contact info
+
+---
+
+FINTECH / POLICY RISKS (CRITICAL):
+
+Dime Time involves:
+- bank linking (Plaid)
+- financial data handling
+- potential money movement
+- crypto allocation
+
+Must ensure:
+- accurate privacy policy
+- Data Safety form completed correctly
+- clear disclosures (NO misleading financial claims)
+- account deletion mechanism exists
+- no overpromising (e.g., "guaranteed debt payoff")
+
+---
+
+ANDROID MANIFEST / CONFIG CHECK:
+
+Audit before submission:
+- INTERNET permission
+- network security config (HTTPS only)
+- deep links / redirect URI (Plaid)
+- exported activities (Android 12+ compliance)
+- target SDK (must meet Play requirements)
+- WebView configuration
+- intent filters
+
+---
+
+TESTING STRATEGY:
+
+DO NOT go straight to production.
+
+Use:
+1. Internal testing track
+2. Closed testing track
+3. Production rollout
+
+Test on:
+- Pixel device (baseline Android)
+- Samsung device (common OEM differences)
+
+---
+
+REVISED EXECUTION PLAN:
+
+PHASE 1 — iOS LAUNCH (IN PROGRESS)
+- Complete App Store submission
+- Validate real user flows
+
+PHASE 2 — ANDROID FOUNDATION
+- Create Play Developer account
+- Generate keystore
+- Enable Play App Signing
+- Build CodeMagic Android workflow
+
+PHASE 3 — FIRST BUILD
+- Generate debug APK (local testing)
+- Generate release AAB (store pipeline)
+
+PHASE 4 — QA
+- Test Plaid + auth flows on Android
+- Fix UI / WebView inconsistencies
+
+PHASE 5 — STORE PREP
+- Upload assets
+- Complete Data Safety form
+- Validate compliance
+
+PHASE 6 — RELEASE
+- Internal testing
+- Closed testing
+- Gradual production rollout
+
+---
+
+TIME ESTIMATE:
+
+Best case: 5–10 days
+Realistic: 2–3 weeks
+
+---
+
+PRIMARY RISKS:
+
+TECHNICAL:
+- Plaid Link redirect issues on Android
+- WebView inconsistencies
+- environment variables not loading correctly in build
+- signing misconfiguration
+
+SUBMISSION:
+- privacy policy gaps
+- incorrect Data Safety form
+- financial claims flagged by Google
+- missing disclosures
+
+---
+
+BOTTOM LINE:
+
+Android is NOT a major engineering build.
+It IS:
+- a release infrastructure problem
+- a QA problem
+- a compliance + store readiness problem
+
+Proceed AFTER iOS launch, but begin:
+- keystore generation
+- Play Console setup
+- CI/CD workflow
+
+in parallel to reduce delay.
