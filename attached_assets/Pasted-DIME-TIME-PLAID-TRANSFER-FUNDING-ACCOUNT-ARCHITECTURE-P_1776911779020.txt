@@ -1,0 +1,117 @@
+DIME TIME — PLAID TRANSFER FUNDING ACCOUNT ARCHITECTURE (PRODUCTION)
+
+STATUS:
+Plaid Transfer is enabled in production. Funding account is visible under:
+Transfer → Account details → Funding accounts
+
+---
+
+KEY FINDING:
+
+The “Default” funding account shown in Plaid IS the active Transfer funding account.
+
+* Account ID: 768be2d0-9a01-9ec5-9c0d-07306776a2f5
+* This is the correct identifier to use in backend configuration
+* This represents Plaid’s configured funding account for ledger settlement and sweeps
+
+NOTE:
+This is NOT a raw Mercury bank account identifier.
+It is a Plaid-managed funding account used for Transfer operations.
+
+---
+
+ENVIRONMENT VARIABLE (UPDATE REQUIRED):
+
+Replace:
+MERCURY_PLAID_FUNDING_ID
+
+With:
+PLAID_TRANSFER_FUNDING_ACCOUNT_ID=768be2d0-9a01-9ec5-9c0d-07306776a2f5
+
+---
+
+CORE ARCHITECTURE (PLAID TRANSFER FLOW):
+
+User Bank Account
+↓
+Plaid Transfer (ACH debit/credit processing)
+↓
+Plaid Ledger (internal balance tracking)
+↓
+Funding Account (configured “Default” account)
+↓
+Mercury Business Account (via sweep / settlement)
+
+IMPORTANT:
+Transfers do NOT settle directly into Mercury on every transaction.
+Plaid uses a ledger + sweep model.
+
+---
+
+LEDGER OPERATIONS:
+
+* /transfer/ledger/deposit
+  → Pulls funds FROM funding account INTO Plaid Ledger
+
+* /transfer/ledger/withdraw
+  → Pushes funds FROM Plaid Ledger TO funding account
+
+* Automatic sweeps may occur based on balance thresholds
+
+---
+
+RESERVES:
+
+* Current reserve balance: $0.00
+* This is NOT the operating balance
+* This is a risk/collateral buffer used only if losses occur
+
+ACTION:
+
+* Check Transfer → Tasks to confirm if reserve funding is required
+* If required, Plaid will provide wire instructions
+
+---
+
+IMPLEMENTATION GUIDANCE:
+
+1. Use existing funding account ID (do NOT add a new account)
+2. Do NOT attempt to use routing/account numbers in code
+3. Continue using:
+
+   * access_token
+   * account_id (from Plaid Link)
+4. Ensure webhook handling is active and verified
+5. Run controlled live test ($1–$5 transfer)
+
+---
+
+IMPORTANT NOTES:
+
+* Funding account is already configured → no need to add Mercury manually
+* Ledger is separate from funding account
+* All money movement flows through Plaid Transfer + Ledger system
+* Production environment requires re-linking all user bank accounts
+
+---
+
+NEXT STEP:
+
+Proceed with:
+
+* Production key integration (Replit env variables)
+* First live transfer test (internal only)
+* Webhook validation (pending → posted → settled)
+
+---
+
+END STATE:
+
+System is fully enabled for:
+
+* ACH debits (pull funds)
+* ACH credits (push funds)
+* Ledger-based settlement
+* Production money movement
+
+Plaid Transfer is operational.
