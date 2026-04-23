@@ -1,0 +1,200 @@
+DIME TIME — EXACT NEXT STEPS FOR PLAID PRODUCTION CUTOVER
+
+OBJECTIVE:
+Move Dime Time from Plaid sandbox/testing setup to live production money movement safely and correctly.
+
+---
+
+STEP 1 — UPDATE REPLIT SECRETS
+
+In Replit, go to Secrets / Environment Variables and make sure these production variables exist and are correct:
+
+PLAID_CLIENT_ID=your_production_client_id
+PLAID_SECRET=your_production_secret
+PLAID_ENV=production
+PLAID_TRANSFER_FUNDING_ACCOUNT_ID=768be2d0-9a01-9ec5-9c0d-07306776a2f5
+PLAID_WEBHOOK_SECRET=your_production_webhook_secret
+
+IMPORTANT:
+
+* Do not hardcode any Plaid credentials in source code
+* Do not leave sandbox credentials active anywhere in production paths
+
+---
+
+STEP 2 — SWITCH PLAID CLIENT TO PRODUCTION
+
+Update backend Plaid initialization so the server uses production credentials and the production environment.
+
+Required outcome:
+
+* Plaid client reads credentials from env vars
+* Environment is production
+* No sandbox or development fallback remains in live code paths
+
+Expected env mapping:
+
+* client ID ← PLAID_CLIENT_ID
+* secret ← PLAID_SECRET
+* env ← PLAID_ENV=production
+
+---
+
+STEP 3 — CONFIRM FUNDING ACCOUNT CONFIGURATION
+
+Use this Plaid funding account ID as the production funding account reference:
+
+768be2d0-9a01-9ec5-9c0d-07306776a2f5
+
+This should be treated as:
+PLAID_TRANSFER_FUNDING_ACCOUNT_ID
+
+IMPORTANT:
+
+* This is the Plaid Transfer funding account identifier
+* Do not use routing/account numbers directly in code for transfer creation
+* Do not add another funding account unless Plaid specifically instructs us to
+
+---
+
+STEP 4 — VERIFY WEBHOOK CONFIGURATION
+
+Confirm the production webhook endpoint is active and publicly reachable:
+
+/webhooks/plaid
+
+Requirements:
+
+* Signature verification enabled using PLAID_WEBHOOK_SECRET
+* Production webhook URL registered in Plaid dashboard
+* Webhook handler updates transfer ledger states correctly
+
+Verify these transfer states are handled:
+
+* created
+* authorized
+* pending
+* posted
+* settled
+* failed
+* returned
+* cancelled
+
+---
+
+STEP 5 — CONFIRM TRANSFER FLOW USES PRODUCTION ITEMS ONLY
+
+Sandbox-created items must not be reused.
+
+Required behavior:
+
+* Any production bank linking must create a brand new Link flow
+* Production users must generate fresh access_token values
+* Production account_id values must come from production Link sessions only
+
+---
+
+STEP 6 — RUN FIRST LIVE INTERNAL TEST
+
+Do not launch to outside users yet.
+
+Run one internal production test using Tim’s own bank account:
+
+Test plan:
+
+1. Open production app
+2. Link Tim’s real bank through Plaid Link
+3. Exchange public token for production access_token
+4. Select correct account_id from linked bank
+5. Call transferAuthorizationCreate
+6. If authorized, call transferCreate
+7. Create a small live transfer for $1.00 to $5.00 only
+
+Goal:
+Validate end-to-end real money movement without exposing customers to risk
+
+---
+
+STEP 7 — VERIFY RESULTS IN ALL THREE PLACES
+
+A. Backend logs
+Confirm:
+
+* authorization succeeded
+* transfer created successfully
+* no idempotency conflicts
+* no Plaid API errors
+
+B. Plaid dashboard
+Confirm:
+
+* transfer appears in Transfer activity
+* status progresses normally
+
+C. Webhook processing
+Confirm event progression:
+
+* pending
+* posted
+* settled
+
+Also confirm database ledger record updates correctly at each stage
+
+---
+
+STEP 8 — TEST FAILURE HANDLING
+
+Before allowing beta users, validate at least one controlled failure or edge case path if possible.
+
+Need to confirm:
+
+* webhook retry behavior is safe
+* duplicate event processing is idempotent
+* failed/returned transfer states do not corrupt balances
+* transfer records remain reconcilable
+
+---
+
+STEP 9 — DO NOT OPEN PUBLIC BETA YET
+
+Hold public/user rollout until these conditions are all true:
+
+* at least 3 to 5 successful live internal transfers completed
+* webhook state transitions verified
+* ledger reconciliation verified
+* no unresolved production credential issues
+* no reserve/funding tasks still pending in Plaid dashboard
+
+---
+
+STEP 10 — AFTER INTERNAL VALIDATION, PREPARE CONTROLLED BETA
+
+Only after successful internal testing:
+
+* enable 1 to 3 trusted test users first
+* monitor every transfer manually
+* review dashboard + webhook logs daily
+* then expand gradually to a small beta group
+
+---
+
+IMPLEMENTATION SUMMARY
+
+Replit needs to do the following immediately:
+
+1. Add production Plaid secrets
+2. Switch Plaid client to production
+3. Store/use funding account ID:
+   768be2d0-9a01-9ec5-9c0d-07306776a2f5
+4. Confirm production webhook registration and signature verification
+5. Ensure only production-linked bank items are used
+6. Execute first $1 to $5 live transfer test
+7. Verify dashboard, logs, and ledger state progression
+8. Hold public launch until multiple successful live tests complete
+
+---
+
+BOTTOM LINE
+
+The app is no longer waiting on broad Plaid approval.
+The next task is production cutover, live transfer validation, and safe rollout discipline.
