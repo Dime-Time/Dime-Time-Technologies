@@ -1,0 +1,134 @@
+DIME TIME — CORRECT PRODUCTION ACTION PLAN (DO NOT PAUSE)
+
+OBJECTIVE:
+Proceed with controlled internal production validation while waiting for any final Plaid confirmations.
+
+---
+
+CURRENT REALITY:
+
+Plaid Transfer is already provisioned:
+
+* Dashboard active
+* Funding account configured
+* Debit limits assigned ($75,000)
+* No pending review banners
+
+This indicates Transfer is usable.
+
+---
+
+DO NOT WAIT FOR EMAIL APPROVAL
+
+We are not waiting for permission.
+We are validating system integrity with controlled tests.
+
+---
+
+STEP 1 — DO NOT CHANGE ARCHITECTURE
+
+No refactors.
+No redesign.
+
+Only ensure:
+
+* Production env vars exist
+* Plaid client uses production
+
+---
+
+STEP 2 — RUN INTERNAL LIVE TEST
+
+Use Tim’s personal bank account only.
+
+Test flow:
+
+1. Open production app
+2. Link bank via Plaid Link (production)
+3. Exchange public_token → access_token
+4. Select account_id
+5. Call transferAuthorizationCreate
+6. Call transferCreate
+
+Amount:
+$1.00 only
+
+---
+
+STEP 3 — VERIFY SYSTEM BEHAVIOR
+
+Confirm in 3 places:
+
+A. Backend
+
+* authorization success
+* transfer created
+* no API errors
+
+B. Plaid Dashboard
+
+* transfer appears
+
+C. Webhooks
+
+* pending
+* posted
+* settled
+
+---
+
+STEP 4 — REPEAT 3–5 TIMES
+
+Vary:
+
+* time of day
+* small amounts ($1–$5)
+
+Goal:
+Ensure consistency and no race conditions
+
+---
+
+STEP 5 — DO NOT ONBOARD USERS YET
+
+Hold:
+
+* TestFlight conversion to real users
+* Marketing
+* Scaling
+
+Until:
+
+* 3–5 successful transfers confirmed
+* Webhook lifecycle verified
+* Ledger reconciliation verified
+
+---
+
+STEP 6 — OPTIONAL: LIGHT PLAID CONFIRMATION
+
+Send:
+
+“I see Transfer is active with limits assigned. I am running low-volume internal tests. Let me know if there are any constraints on live ACH activity.”
+
+---
+
+WHAT WE ARE DOING:
+
+We are NOT launching.
+
+We ARE:
+
+* Validating real money flow
+* Verifying production stability
+* De-risking system before users touch it
+
+---
+
+BOTTOM LINE:
+
+Do not pause.
+
+Run controlled internal validation immediately.
+
+Waiting introduces more risk than testing small amounts.
