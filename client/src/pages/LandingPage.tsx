@@ -639,14 +639,14 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <a
-                  href="mailto:invest@dime-time.com?subject=Investor Deck Request"
+                  href="mailto:tim@dime-time.com?subject=Investor Deck Request"
                   className="inline-flex items-center justify-center gap-2 bg-[#918EF4] hover:bg-[#7b78e0] text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all"
                 >
                   Request Investor Deck
                   <ArrowRight className="w-4 h-4" />
                 </a>
                 <a
-                  href="mailto:founder@dime-time.com?subject=Founder Contact"
+                  href="mailto:tim@dime-time.com?subject=Founder Contact"
                   className="inline-flex items-center justify-center gap-2 border border-white/10 hover:border-white/25 text-gray-300 hover:text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all"
                 >
                   Contact the Founder
@@ -754,7 +754,7 @@ export default function LandingPage() {
               <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-5">
                 Automated debt repayment and Bitcoin accumulation through a proprietary round-up allocation model.
               </p>
-              <a href="mailto:hello@dime-time.com" className="text-[#918EF4] text-sm hover:underline">hello@dime-time.com</a>
+              <a href="mailto:tim@dime-time.com" className="text-[#918EF4] text-sm hover:underline">tim@dime-time.com</a>
             </div>
 
             <div>
@@ -771,7 +771,7 @@ export default function LandingPage() {
               <div className="text-white font-semibold text-sm mb-4">Company</div>
               <ul className="space-y-3 text-sm text-gray-500">
                 <li><button onClick={() => scrollTo("investors")} className="hover:text-gray-300 transition-colors">Investors</button></li>
-                <li><a href="mailto:founder@dime-time.com" className="hover:text-gray-300 transition-colors">Contact</a></li>
+                <li><a href="mailto:tim@dime-time.com" className="hover:text-gray-300 transition-colors">Contact</a></li>
                 <li><button onClick={() => navigate("/login")} className="hover:text-gray-300 transition-colors">Sign In</button></li>
                 {/* TODO: Separate /privacy and /terms routes when distinct legal pages are created */}
                 <li><button onClick={() => navigate("/legal")} className="hover:text-gray-300 transition-colors">Privacy Policy</button></li>
