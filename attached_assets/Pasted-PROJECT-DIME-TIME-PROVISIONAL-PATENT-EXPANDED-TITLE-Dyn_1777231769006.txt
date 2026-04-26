@@ -1,0 +1,237 @@
+PROJECT: DIME TIME — PROVISIONAL PATENT (EXPANDED)
+
+TITLE:
+Dynamic Dual-Split and Multi-Destination Round-Up Microallocation System
+
+---
+
+FIELD:
+Fintech systems for automated microallocation of transaction round-ups across multiple financial destinations including debt repayment and digital asset acquisition.
+
+---
+
+BACKGROUND:
+Existing round-up systems:
+- Allocate to a single destination (savings/investment)
+- Lack proportional splitting across multiple endpoints
+- Do not support dynamic or algorithmic allocation
+- Do not simultaneously optimize for debt reduction + asset growth
+
+Gap:
+No system exists that performs programmable, multi-destination, real-time microallocation with full allocation spectrum coverage and dynamic logic.
+
+---
+
+SUMMARY:
+A system that:
+- Captures round-up amounts from transactions
+- Applies configurable allocation vectors
+- Routes funds to multiple destinations
+- Supports dynamic, algorithmic rebalancing
+- Maintains a reconciliation ledger across all transfers
+
+---
+
+CORE INNOVATION (KEY DIFFERENTIATOR):
+
+“Allocation Vector System”
+
+Definition:
+A programmable vector representing percentage distribution across N destinations.
+
+Examples:
+- [100,0]
+- [70,30]
+- [33.3,66.7]
+- [50,25,25]
+- Continuous range across all integer + decimal values
+
+This vector:
+- Can be user-defined OR system-generated
+- Can change in real-time
+- Applies to each transaction round-up event
+
+---
+
+DETAILED SYSTEM COMPONENTS:
+
+1. ROUND-UP ENGINE
+- Detects transaction via financial API (e.g., Plaid)
+- Computes delta to nearest whole unit
+- Outputs microallocation value
+
+---
+
+2. ALLOCATION ENGINE
+- Applies allocation vector to round-up
+- Supports:
+  • Integer splits (0–100%)
+  • Decimal splits
+  • Multi-destination routing (N ≥ 2)
+
+---
+
+3. DYNAMIC ALLOCATION LOGIC (NEW — EXPANDED)
+
+Allocation vectors may be modified based on:
+
+A. USER INPUT:
+- Manual slider or preset selection
+
+B. ALGORITHMIC CONDITIONS:
+- Debt balance thresholds
+- Income detection
+- Spending behavior
+- Market signals (crypto volatility)
+- Time-based rules
+- Goal completion milestones
+
+C. AUTO-OPTIMIZATION:
+- System gradually shifts allocation toward debt payoff
+- Or toward asset accumulation after debt reduction
+
+---
+
+4. EXECUTION LAYER
+
+Funds routed via:
+- ACH (bank transfers)
+- API-based execution (crypto purchase)
+- Internal staging accounts (ledger buffering)
+
+Destinations:
+- Credit cards
+- Loans
+- Crypto exchanges
+- Savings accounts
+
+---
+
+5. LEDGER + RECONCILIATION SYSTEM
+
+Tracks:
+- Round-up events
+- Allocation vectors applied
+- Transfer lifecycle:
+  created → authorized → pending → posted → settled → failed → returned
+
+Includes:
+- Correlation IDs
+- Idempotency protection
+- Cross-system reconciliation (Plaid + banking + exchange)
+
+---
+
+6. MULTI-DESTINATION SCALING (NEW)
+
+System supports:
+- N-destination routing (N ≥ 2)
+- Hierarchical allocation:
+  Example:
+  50% debt
+  30% BTC
+  10% ETH
+  10% savings
+
+---
+
+7. FRACTIONAL + CONTINUOUS RANGE COVERAGE
+
+Explicit coverage:
+- All integer pairs from 100/0 → 0/100
+- All decimal/fractional variants
+- Continuous allocation space
+
+Purpose:
+Prevents competitors from designing around fixed-ratio limitations
+
+---
+
+CLAIMS (EXPANDED):
+
+1. A system for allocating transaction round-ups across multiple financial destinations using proportional allocation vectors.
+
+2. The system of claim 1, wherein allocation vectors span the full continuous range from 100% allocation to a first destination to 100% allocation to a second destination.
+
+3. The system of claim 1, wherein allocation vectors include fractional and decimal values.
+
+4. The system of claim 1, wherein allocation vectors apply to more than two destinations.
+
+5. The system of claim 1, wherein allocation vectors are dynamically modified based on user input or algorithmic conditions.
+
+6. The system of claim 5, wherein algorithmic conditions include financial thresholds, behavioral triggers, or time-based rules.
+
+7. The system of claim 1, wherein funds are routed to both liability accounts and asset acquisition platforms.
+
+8. The system of claim 1, wherein execution occurs through financial APIs including ACH transfers and digital asset transactions.
+
+9. The system of claim 1, further comprising a reconciliation ledger tracking all allocation and transfer states.
+
+10. The system of claim 1, wherein allocation is performed per transaction event in real time.
+
+---
+
+FIGURE SPECIFICATIONS (FOR DIAGRAM CREATION):
+
+FIG. 1 — SYSTEM ARCHITECTURE
+
+Layout (left → right):
+
+[User Bank Account]
+        ↓
+[Plaid Transaction Monitoring]
+        ↓
+[Round-Up Engine]
+        ↓
+[Allocation Engine (Vector Applied)]
+        ↓
+ ┌───────────────┬───────────────┬───────────────┐
+ | Debt Payment  | Crypto Buy    | Savings       |
+ | (Credit Card) | (Coinbase)    | Account       |
+ └───────────────┴───────────────┴───────────────┘
+        ↓
+[Ledger + Reconciliation System]
+
+---
+
+FIG. 2 — ALLOCATION FLOW DIAGRAM
+
+Step Flow:
+
+1. Transaction Detected
+2. Round-Up Calculated
+3. Allocation Vector Retrieved
+4. Funds Split According to Vector
+5. Transfers Initiated (ACH / API)
+6. Status Updates Recorded
+7. Ledger Finalized
+
+---
+
+FIG. 3 — DYNAMIC VECTOR ADJUSTMENT (NEW)
+
+Flow:
+
+[User / System Trigger]
+        ↓
+[Condition Evaluation Engine]
+        ↓
+[Allocation Vector Adjustment]
+        ↓
+[Apply Updated Vector to Next Transactions]
+
+Triggers:
+- Debt threshold reached
+- Market condition change
+- User rule update
+
+---
+
+ABSTRACT:
+
+A system and method for dynamically allocating transaction round-ups across multiple financial destinations using configurable allocation vectors. The system supports continuous allocation ranges, multi-destination routing, and algorithmic adjustment, enabling simultaneous debt reduction and asset acquisition through automated financial execution.
+
+---
+
+STATUS:
+Provisional patent draft — expanded coverage, ready for diagram rendering and USPTO filing preparation.
