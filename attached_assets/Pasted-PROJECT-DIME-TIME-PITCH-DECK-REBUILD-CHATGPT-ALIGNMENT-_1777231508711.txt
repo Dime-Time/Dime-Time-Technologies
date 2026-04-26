@@ -1,0 +1,189 @@
+PROJECT: DIME TIME — PITCH DECK REBUILD (CHATGPT ALIGNMENT OUTPUT)
+
+PURPOSE:
+Finalize alignment between Replit + ChatGPT before rebuilding the investor pitch deck post-ACH approval, post-App Store launch, and post-new MacBook acquisition.
+
+---
+
+CORE DECISIONS (CONFIRMED):
+
+1. DATA SALES REVENUE STREAM
+STATUS: REMOVED COMPLETELY
+RATIONALE:
+- Violates Plaid ecosystem expectations and potentially Terms of Service
+- Regulatory risk (CFPB + state privacy laws)
+- Immediate investor red flag
+- Destroys consumer trust and bank-link conversion rates
+ACTION:
+- Remove from all materials (deck, website, conversations)
+
+---
+
+2. QOINS POSTMORTEM SLIDE
+STATUS: KEEP (REFRAME)
+POSITIONING:
+- “Market validation + structural insight”
+- NOT competitor attack language
+
+TITLE RECOMMENDATION:
+“The Market Is Proven — The Model Was Broken”
+
+FOCUS:
+- Negative unit economics
+- Lack of defensibility
+- Structural cost mismatch
+
+AVOID:
+- Emotional framing
+- “They failed, we win” tone
+
+---
+
+3. PATENT MOAT PLACEMENT
+STATUS: MOVE AFTER PRODUCT SLIDE
+
+CORRECT FLOW:
+1. Problem
+2. Solution
+3. Product (screenshots)
+4. Patent / Moat
+
+RATIONALE:
+- Product builds understanding
+- Patent reinforces defensibility after clarity
+
+---
+
+4. VALUATION POSITIONING
+STATUS: ADJUST TO RANGE
+
+CURRENT:
+$4M target
+
+RECOMMENDED:
+$3M–$4M valuation range
+
+RATIONALE:
+- Pre-revenue, pre-ACH, pre-App Store
+- Avoid early investor pushback
+- Preserve negotiation leverage
+
+---
+
+5. SLIDE COUNT
+STATUS: CONFIRMED
+
+12 slides = optimal (within 10–14 range)
+
+---
+
+6. MISSING REQUIRED SLIDES
+
+ADD:
+
+A. GO-TO-MARKET (GTM) SLIDE
+CONTENT:
+- TikTok / YouTube founder content
+- App Store organic discovery
+- LinkedIn network push
+- Target CAC (<$8)
+- Early growth loop
+
+---
+
+B. LIGHT FINANCIAL MODEL (3-YEAR)
+CONTENT:
+- User growth projections
+- Revenue scaling
+- High-level assumptions
+
+EXAMPLE:
+Year 1: 10K users
+Year 2: 50K users
+Year 3: 150K users
+
+---
+
+OPTIONAL:
+- Competitive landscape matrix (2x2 or feature grid)
+
+---
+
+7. TRACTION TIMING
+
+PRIMARY STRATEGY:
+WAIT until:
+- 75 users
+- 25 linked accounts
+- $500 processed
+
+RATIONALE:
+- Proves real financial behavior (not just installs)
+
+EXCEPTION:
+- Early pitch allowed for warm investor intros
+- Frame as “pre-launch early access opportunity”
+
+---
+
+CRITICAL ADJUSTMENTS / PUSHBACK:
+
+1. FLOAT INTEREST REVENUE
+STATUS: SOFTEN CLAIM
+
+DO NOT PRESENT AS GUARANTEED
+
+REPLACE WITH:
+“Potential secondary revenue stream via treasury optimization”
+
+---
+
+2. UNIT ECONOMICS CLAIM
+STATUS: SOFTEN LANGUAGE
+
+DO NOT SAY:
+“Positive from user #1”
+
+USE:
+“Designed for positive unit economics at scale”
+
+---
+
+---
+
+FINAL POSITIONING SHIFT:
+
+OLD:
+“Graduate school concept / theoretical fintech”
+
+NEW:
+“Pre-launch fintech company with:
+- Working product (TestFlight Build 106)
+- Executed Plaid contract (April 1, 2026)
+- Mercury banking integration
+- DUNS assigned (128458968)
+- EIN established (92-3813260)
+- 800+ founder build hours (~$104K replacement cost)
+- Patent filing in preparation”
+
+---
+
+BOTTOM LINE:
+
+The deck must reflect transition from:
+IDEA → FUNCTIONING SYSTEM ABOUT TO PROCESS REAL MONEY
+
+Execution timing remains:
+- Wait for ACH approval
+- Wait for App Store + Play Store live
+- Gather real traction metrics
+- THEN rebuild for investor-grade output
+
+---
+
+NEXT STEP (WHEN READY):
+Full slide-by-slide rebuild with:
+- Updated narrative
+- Live product screenshots
+- Real traction data
+- Final valuation positioning
