@@ -1,0 +1,150 @@
+PROJECT: DIME TIME — SOCIAL MEDIA PARTNERSHIP STRUCTURE
+
+CONTEXT:
+Greg (PhD, National Social Media Marketing Manager — Boy Scouts of America)
+has offered to help launch Dime Time’s social media marketing at no cost.
+
+Founder intent:
+Compensate via equity once Dime Time converts to a Delaware C-Corp.
+
+---
+
+CRITICAL RULE:
+
+DO NOT:
+- Promise vague “shares later”
+- Handshake equity agreements
+- Grant equity before company structure is finalized
+
+ALL EQUITY MUST BE:
+- Documented
+- Vested
+- Performance-based
+- Approved at incorporation
+
+---
+
+RECOMMENDED STRUCTURE:
+
+1. PRE-CORP PHASE (NOW)
+
+Create a simple written agreement:
+
+TYPE:
+Advisor / Contractor Agreement (Pre-Incorporation)
+
+TERMS:
+- Compensation: $0 cash
+- Future equity: subject to board approval upon incorporation
+- No guaranteed ownership today
+
+LANGUAGE:
+“Any equity compensation is subject to future board approval
+and formal grant following incorporation.”
+
+---
+
+2. POST-CORP STRUCTURE (DELAWARE C-CORP)
+
+Grant via:
+
+EQUITY TYPE:
+- Advisor Shares or Stock Options (NOT immediate common stock)
+
+ALLOCATION RANGE:
+- 0.25% – 1.0% (typical for early advisor with real contribution)
+
+Use lower end unless:
+- He is executing consistently
+- Driving measurable user growth
+
+---
+
+3. VESTING (MANDATORY)
+
+Structure:
+- 2-year vesting
+- Monthly vesting schedule
+- No cliff or short cliff (3–6 months optional)
+
+Example:
+0.5% total
+→ ~0.0208% per month vested
+
+---
+
+4. PERFORMANCE LINKING (IMPORTANT)
+
+Tie equity to outcomes:
+
+EXAMPLES:
+- Launch TikTok / Instagram presence
+- Achieve first 10K followers
+- Drive first 1,000 app downloads
+- Maintain weekly content cadence
+
+Avoid:
+“Free equity for effort alone”
+
+---
+
+5. ROLE DEFINITION
+
+TITLE:
+“Social Media Advisor” or “Growth Advisor”
+
+NOT:
+Co-founder (unless truly building company with you)
+
+---
+
+6. DELIVERABLES
+
+Define clearly:
+
+- Content strategy (short-form video focus)
+- Posting schedule (daily / weekly cadence)
+- Platform focus (TikTok, Instagram, YouTube Shorts)
+- Growth tracking metrics
+
+---
+
+7. IP OWNERSHIP
+
+All content created:
+→ Owned by Dime Time LLC / future C-Corp
+
+---
+
+8. CONVERSION EVENT
+
+When you form C-Corp:
+- Convert agreement into formal advisor equity grant
+- Issue stock options via standard plan
+
+---
+
+RISKS IF NOT STRUCTURED:
+
+- Cap table disputes
+- Misaligned expectations
+- Future investor concern (“who owns what?”)
+- Difficulty raising capital
+
+---
+
+FOUNDER POSITIONING:
+
+“This is an advisory relationship with performance-based equity
+that vests over time once the company is incorporated.”
+
+---
+
+BOTTOM LINE:
+
+You are NOT giving away your company.
+
+You are:
+- Trading a small, controlled % of equity
+- For execution that directly drives growth
+- Under structured, investor-safe terms
