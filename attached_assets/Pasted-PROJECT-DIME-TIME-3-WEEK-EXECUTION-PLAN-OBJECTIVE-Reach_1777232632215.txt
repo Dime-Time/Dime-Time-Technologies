@@ -1,0 +1,198 @@
+PROJECT: DIME TIME — 3-WEEK EXECUTION PLAN
+
+OBJECTIVE:
+Reach investor-ready status with:
+- ACH functional
+- iOS + Android submitted/live
+- Early users testing real money movement
+- Provisional patent filed
+- Investor deck updated with real traction
+
+---
+
+CURRENT CONSTRAINTS:
+- Cash constrained until tax return + next paycheck
+- Rent due
+- MacBook purchase required
+- Plaid ACH approval still final blocker
+- App Store / Play Store submission still pending
+
+---
+
+CORE STRATEGY:
+Do not optimize for polish first.
+Optimize for:
+1. Functional money movement
+2. App approval
+3. Early proof of user trust
+4. Patent pending status
+5. Investor-ready deck
+
+---
+
+WEEK 1 — FOUNDATION
+
+PRIORITIES:
+
+1. BUY MACBOOK
+- Required for build work, screenshots, submissions, and deck rebuild
+
+2. TERMS + PRIVACY POLICY
+- Required for Apple / Google review
+- Must include:
+  - Plaid data disclosure
+  - No sale of user financial data
+  - ACH / transfer disclosures
+  - Liability limitations
+  - User authorization language
+
+3. APP STORE PREP
+- Real screenshots
+- App description
+- Keywords
+- Support URL
+- Privacy URL
+- Review notes
+
+4. GOOGLE PLAY ACCOUNT
+- Activate business developer account
+- Use DUNS number
+- Prepare Android submission
+
+---
+
+WEEK 2 — PRODUCT + COMPLIANCE
+
+PRIORITIES:
+
+1. PLAID ACH ACTIVATION
+- Critical blocking item
+- Do not treat app as launch-ready until ACH is confirmed active
+
+2. END-TO-END TESTING
+Test:
+- Bank link
+- Round-up calculation
+- Allocation split
+- ACH transfer
+- Settlement / reconciliation
+- Failure handling
+
+3. CONTROLLED BETA GROUP
+Use friends, coworkers, trusted early users.
+
+Messaging:
+“This is a private beta. Please send feedback directly to me first so I can fix issues before wider release.”
+
+Avoid wording like:
+“Don’t leave a one-star review.”
+
+---
+
+WEEK 3 — VALIDATION + POSITIONING
+
+PRIORITIES:
+
+1. TRACTION TARGETS
+Investor go-signal:
+- 50–100 users
+- 20–30 linked bank accounts
+- $500–$1,000 processed
+
+Most important proof:
+Users are linking accounts and trusting Dime Time with real money movement.
+
+2. FILE PROVISIONAL PATENT
+- File as micro-entity if eligible
+- Unlock “Patent Pending”
+- Use in pitch deck, website, email signature, investor materials
+
+3. REBUILD PITCH DECK
+Only rebuild after:
+- ACH works
+- App submitted/live
+- Patent filed
+- Early traction data exists
+
+Deck should reflect:
+“Pre-launch fintech concept” → “Working fintech company processing real financial behavior.”
+
+---
+
+PRIORITY STACK:
+
+1. ACH works flawlessly
+2. Users successfully move money
+3. Terms / Privacy / compliance basics complete
+4. Apple App Store submission
+5. Google Play submission
+6. Provisional patent filed
+7. Pitch deck rebuilt
+8. Investor outreach
+
+---
+
+VALUATION POSITIONING:
+
+Do not rigidly anchor at only $4M.
+
+Recommended phrasing:
+“Raising at a $3M–$4M valuation range depending on traction over the next 30–60 days.”
+
+Rationale:
+- Preserves confidence
+- Reduces investor pushback
+- Leaves room for negotiation
+- Still supports $4M if traction is strong
+
+---
+
+REAL INVESTOR HOOK:
+
+Not just screenshots.
+Not just patent.
+Not just integrations.
+
+Core investor statement:
+“We’re live, users are linking accounts, money is moving, and the system works.”
+
+That is the strongest proof point.
+
+---
+
+BIGGEST RISK:
+
+ACH failure or unreliable money movement.
+
+If ACH does not work cleanly:
+- User trust collapses
+- Investor confidence weakens
+- App Store launch becomes risky
+
+Therefore:
+Money movement validation comes before pitch polish.
+
+---
+
+WHAT NOT TO OVERFOCUS ON YET:
+
+- Perfect UI
+- Extra features
+- Branding tweaks
+- Overbuilt slide design
+- Premature fundraising conversations
+
+---
+
+FINAL TARGET INVESTOR POSITION:
+
+“We’re live on iOS and Android. Users are linking accounts and moving money through the system. We’ve processed early transactions, validated behavior, and filed a patent on the allocation engine. Now we’re raising capital to scale acquisition.”
+
+---
+
+BOTTOM LINE:
+
+The plan is strong if sequenced correctly.
+
+Execution order:
+Cash → MacBook → legal docs → ACH → testing → app submission → patent pending → traction → pitch deck → investors.
