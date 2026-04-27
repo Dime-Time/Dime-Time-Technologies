@@ -5,6 +5,19 @@ Dime Time is an innovative fintech application that transforms debt reduction in
 
 The application leverages automated financial tracking, micro-investment strategies, and round-up collection mechanisms to help users systematically reduce debt through small, consistent actions and intelligent fund management.
 
+## Recent Changes (April 2026) - TestFlight Build Refresh
+
+### BUILD 110: TestFlight Re-Upload (Beta Expired) ⏳
+- **Reason**: Build 92 (uploaded January 2026) expired after 90 days per Apple TestFlight policy
+- **Version**: 1.0.2 (Build 110)
+- **CFBundleVersion**: 110 (set via agvtool in codemagic.yaml)
+- **CFBundleShortVersionString**: 1.0.2
+- **Android**: versionCode 3 / versionName "1.0.2" (consistency for parallel Play Store work)
+- **Changes**: None — pure rebuild to refresh TestFlight 90-day clock
+- **Action Required**: Commit + push to GitHub → CodeMagic auto-triggers build → uploads to TestFlight
+
+---
+
 ## Recent Changes (January 2026) - CodeMagic iOS Build Pipeline COMPLETE ✅
 
 ### BUILD 63: Control Build (No Changes) ✅

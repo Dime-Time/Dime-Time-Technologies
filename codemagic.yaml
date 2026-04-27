@@ -52,7 +52,8 @@ workflows:
           cd ios/App
 
           # IMPORTANT: This must be strictly higher than the last build Apple accepted
-          NEW_BUILD_NUMBER=100
+          # Last accepted: Build 92 (Jan 2026, expired April 2026 - TestFlight 90-day limit)
+          NEW_BUILD_NUMBER=110
 
           echo "=== Setting iOS build number (CFBundleVersion) to $NEW_BUILD_NUMBER with agvtool ==="
           /usr/bin/xcrun agvtool new-version -all "$NEW_BUILD_NUMBER"
