@@ -52,14 +52,18 @@ workflows:
           cd ios/App
 
           # IMPORTANT: This must be strictly higher than the last build Apple accepted
-          # Last accepted: Build 92 (Jan 2026, expired April 2026 - TestFlight 90-day limit)
-          NEW_BUILD_NUMBER=110
+          # Build 110 attempt rejected as duplicate (April 2026) — Apple had 110 already on file
+          # Jumping to 200 to leave clear headroom above any orphaned uploaded builds
+          NEW_BUILD_NUMBER=200
 
           echo "=== Setting iOS build number (CFBundleVersion) to $NEW_BUILD_NUMBER with agvtool ==="
           /usr/bin/xcrun agvtool new-version -all "$NEW_BUILD_NUMBER"
 
+          echo "=== Forcing CFBundleVersion via PlistBuddy (belt-and-suspenders for Capacitor projects) ==="
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD_NUMBER" "App/Info.plist"
+
           echo "=== Verifying CFBundleVersion in Info.plist ==="
-          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "App/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "App/Info.plist"
 
       - name: Build and export IPA
         script: |
