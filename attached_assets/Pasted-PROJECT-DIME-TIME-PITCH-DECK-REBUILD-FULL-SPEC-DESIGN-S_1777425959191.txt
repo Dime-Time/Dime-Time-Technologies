@@ -1,0 +1,300 @@
+PROJECT: DIME TIME — PITCH DECK REBUILD (FULL SPEC: DESIGN + STRUCTURE + COMPLIANCE)
+
+PURPOSE:
+Provide a complete, implementation-ready specification for rebuilding the Dime Time investor pitch deck, including visual system, messaging corrections, slide structure, and compliance requirements.
+
+---
+
+🚨 CRITICAL COMPLIANCE FIX (IMMEDIATE — NON-NEGOTIABLE)
+
+REMOVE FROM ALL MATERIALS:
+• “Sale of financial data on data marketplace”
+
+REPLACE WITH:
+• “User data is encrypted, protected, and never sold. Data is used solely to optimize user financial outcomes.”
+
+RATIONALE:
+• Violates Plaid policy
+• Violates Apple App Store guidelines
+• Creates regulatory exposure (CCPA / CFPB)
+• Immediate investor rejection signal
+
+---
+
+🎨 DESIGN SYSTEM (LOCK THIS EXACTLY)
+
+PRIMARY COLOR:
+• #918EF4
+
+BACKGROUND:
+• Gradient: #918EF4 → #6F6BE8
+• Apply to ALL slides (no white backgrounds)
+
+TEXT:
+• Primary: #FFFFFF (white)
+• Secondary: rgba(255,255,255,0.85)
+
+ACCENT:
+• #EDEDF5 (soft gray)
+
+USAGE RULES:
+• Titles: White, bold, large
+• Body: White, slightly reduced opacity
+• Icons / dividers: Accent gray
+• NO black text
+• NO multi-color palette
+• Maintain high contrast and minimalism
+
+VISUAL STYLE:
+• Clean, modern fintech aesthetic
+• Large typography
+• Generous spacing
+• Apple / Stripe-level simplicity
+
+LOGO:
+• Use official Dime Time clock + money icon
+• Place centered on:
+  - Cover slide
+  - Breakthrough slide
+  - Closing slide
+
+---
+
+🧠 CORE POSITIONING (REWRITE ALL LANGUAGE AROUND THIS)
+
+OLD:
+• “Round-up app that pays down debt”
+
+NEW:
+• “Financial automation platform”
+
+INVESTOR LANGUAGE:
+• “Dynamic Multi-Destination Financial Allocation Engine”
+
+SUPPORT LINE:
+• “Automatically allocates micro-transactions across multiple financial outcomes in real time.”
+
+---
+
+🔥 FINAL SLIDE STRUCTURE (BUILD IN THIS EXACT ORDER)
+
+---
+
+1. COVER
+• Gradient background
+• Logo centered
+• Tagline:
+  “Get out of debt, one dime at a time.”
+
+---
+
+2. PROBLEM
+• Consumers stuck in debt cycles
+• Manual payments fail behaviorally
+• No automation layer
+
+---
+
+3. SOLUTION
+• Automated round-ups
+• Passive debt reduction
+• Frictionless system
+
+---
+
+4. BREAKTHROUGH (MOST IMPORTANT SLIDE)
+
+TITLE:
+Dynamic Multi-Destination Allocation
+
+CONTENT:
+Users can allocate round-ups to:
+• Debt
+• Savings
+• Investments
+• Cryptocurrency
+
+KEY LINE:
+• “First platform enabling simultaneous allocation across multiple financial outcomes”
+
+---
+
+5. PRODUCT (UI SHOWCASE)
+• Real screenshots required
+• Include:
+  - Bank linking
+  - Dashboard
+  - Allocation interface
+  - Transaction flow
+
+---
+
+6. MARKET
+• Use ONLY:
+  → $18.3T U.S. consumer debt
+• Remove conflicting numbers
+• Include generational breakdown
+
+---
+
+7. BUSINESS MODEL
+
+PRIMARY:
+• Subscription ($2.99–$4.99/month)
+
+SECONDARY:
+• Premium features
+
+FUTURE:
+• Financial services expansion
+• Interchange (if card issued)
+• API / licensing of allocation engine
+
+NOTE:
+• Do NOT emphasize interest or sweep account
+
+---
+
+8. COMPETITION
+
+Qoins:
+• Single-destination
+• High fees
+• Failed model
+
+ChangEd:
+• Student loan only
+
+DIME TIME:
+• Multi-destination
+• Real-time allocation
+• Scalable financial platform
+
+KEY LINE:
+• “First to market with dynamic multi-destination allocation”
+
+---
+
+9. DEFENSIBILITY (CRITICAL)
+
+TITLE:
+Defensible Technology
+
+CONTENT:
+• Patent-pending allocation engine
+• Real-time transaction routing
+• Multi-endpoint architecture
+
+---
+
+10. GO-TO-MARKET
+
+• TikTok / short-form founder content
+• Organic growth loops
+• Referral incentives
+• Community / campus growth
+
+---
+
+11. TRACTION (POST-LAUNCH ONLY)
+
+INCLUDE:
+• Total users
+• Linked accounts
+• Transactions processed
+• Dollars processed
+• Debt reduced
+
+---
+
+12. TEAM
+
+• Tim Carlisle — Founder / CEO
+• Greg — Social Media Advisor
+• Additional advisors
+
+---
+
+13. FINANCIALS
+
+• CAC
+• LTV
+• Payback period
+• Burn rate
+• Runway
+
+---
+
+14. ASK
+
+• Raising: $X at ~$3M–$4M valuation
+• Use of funds:
+  - Engineering
+  - Marketing
+  - Compliance
+  - Operations
+
+---
+
+15. WHY NOW
+
+• $18.3T debt at all-time high
+• Consumers failing with manual systems
+• Automation trend accelerating
+• Infrastructure (Plaid, APIs) now mature
+
+---
+
+16. ROADMAP
+
+• 90 days
+• 180 days
+• 365 days
+• 18-month vision
+
+---
+
+17. CLOSING
+
+• Vision:
+  “Financial automation layer for the next generation.”
+
+• Logo centered
+• Minimal layout
+
+---
+
+📱 PRODUCT REQUIREMENT (MANDATORY)
+
+Add real app screenshots:
+• Onboarding / bank linking
+• Dashboard
+• Allocation UI (key differentiator)
+• Transactions
+
+---
+
+⚠️ REBUILD TIMING (STRICT)
+
+DO NOT FINALIZE THIS DECK UNTIL:
+• Plaid ACH is live
+• App is live on App Store
+• Provisional patent is filed
+• Initial traction exists (50–100 users, real transactions)
+
+---
+
+🧱 SUMMARY
+
+Current deck issues:
+• Incorrect positioning
+• Compliance risk (data sale)
+• Weak revenue framing
+• No moat visibility
+• Missing traction, team, financials
+
+Rebuilt deck outcome:
+• Platform-level positioning
+• Patent-backed narrative
+• Investor-ready structure
+• Scalable fintech story
