@@ -23,16 +23,16 @@ title = "Dime Time Logo — Purple on White (for white slides)"
 id = "MQ60gD88F4swJhTyhgY3a"
 uri = "file://attached_assets/pitch-deck-logos/dime-time-wordmark-hero-purple-bg.png"
 type = "image"
-title = "Dime Time Wordmark — Hero (Icon + Text on Purple Background)"
+title = "Dime Time Wordmark — Hero (Outlined Icon + Text on Purple)"
 
 [[outputs]]
 id = "rgtFp24oUHRWGuBfIIS7Y"
 uri = "file://attached_assets/pitch-deck-logos/dime-time-wordmark-white-transparent.png"
 type = "image"
-title = "Dime Time Wordmark — White on Transparent (for dark/colored slides)"
+title = "Dime Time Wordmark — White Outlined on Transparent"
 
 [[outputs]]
 id = "HT79ifOQNV7NRZHzrQA1F"
 uri = "file://attached_assets/pitch-deck-logos/dime-time-wordmark-purple-transparent.png"
 type = "image"
-title = "Dime Time Wordmark — Purple on Transparent (for white slides)"
+title = "Dime Time Wordmark — Purple Outlined on Transparent"
