@@ -1,0 +1,20 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Kq3tfFayuMZn8iqa4pWwU"
+uri = "file://attached_assets/pitch-deck-logos/dime-time-logo-purple-bg.png"
+type = "image"
+title = "Dime Time Logo — Official (White on Purple #918EF4)"
+
+[[outputs]]
+id = "TW11cQbIEl8sv3DpbV0PE"
+uri = "file://attached_assets/pitch-deck-logos/dime-time-logo-transparent-white.png"
+type = "image"
+title = "Dime Time Logo — White on Transparent (for dark/colored backgrounds)"
+
+[[outputs]]
+id = "x7jq-NeWKe3W8qIqL-nc3"
+uri = "file://attached_assets/pitch-deck-logos/dime-time-logo-purple-on-white.png"
+type = "image"
+title = "Dime Time Logo — Purple on White (for white slides)"
