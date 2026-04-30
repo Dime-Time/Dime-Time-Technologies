@@ -36,3 +36,21 @@ id = "HT79ifOQNV7NRZHzrQA1F"
 uri = "file://attached_assets/pitch-deck-logos/dime-time-wordmark-purple-transparent.png"
 type = "image"
 title = "Dime Time Wordmark — Purple Outlined on Transparent"
+
+[[outputs]]
+id = "lvND3bxdDl-dYM3KCpGCP"
+uri = "file://attached_assets/wallpapers/dime-time-iphone-lockscreen.png"
+type = "image"
+title = "iPhone Lock Screen Wallpaper (1290×2796)"
+
+[[outputs]]
+id = "qokaTA4E8qEDluDnDLz5O"
+uri = "file://attached_assets/wallpapers/dime-time-iphone-homescreen.png"
+type = "image"
+title = "iPhone Home Screen Wallpaper (1290×2796)"
+
+[[outputs]]
+id = "hKxvo-cuNLq9UveM2c2Bv"
+uri = "file://attached_assets/wallpapers/dime-time-android-wallpaper.png"
+type = "image"
+title = "Android Wallpaper (1080×2400)"
