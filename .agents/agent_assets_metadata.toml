@@ -54,3 +54,9 @@ id = "hKxvo-cuNLq9UveM2c2Bv"
 uri = "file://attached_assets/wallpapers/dime-time-android-wallpaper.png"
 type = "image"
 title = "Android Wallpaper (1080×2400)"
+
+[[outputs]]
+id = "svVV64mZi6NokQ0qkeCun"
+uri = "file://attached_assets/pitch-deck-slides/slide-01-cover.png"
+type = "image"
+title = "Slide 1 — Cover (1920×1080, 16:9)"
