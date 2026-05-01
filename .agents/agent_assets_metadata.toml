@@ -60,3 +60,9 @@ id = "svVV64mZi6NokQ0qkeCun"
 uri = "file://attached_assets/pitch-deck-slides/slide-01-cover.png"
 type = "image"
 title = "Slide 1 — Cover (Updated Tagline, Outlined)"
+
+[[outputs]]
+id = "z-qdPA0N7eJepGeBBZsFa"
+uri = "file://attached_assets/website-mockups/dime-time-phone-mockup.png"
+type = "image"
+title = "Dime Time Phone Mockup — Official Brand Colors + Logo (1400×1100)"
