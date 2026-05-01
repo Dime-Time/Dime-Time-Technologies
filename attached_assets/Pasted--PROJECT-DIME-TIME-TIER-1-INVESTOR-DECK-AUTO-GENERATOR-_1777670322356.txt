@@ -1,0 +1,217 @@
+# PROJECT: DIME TIME — TIER-1 INVESTOR DECK (AUTO-GENERATOR)
+# OUTPUT: /mnt/data/DimeTime_Investor_Deck.pptx
+
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
+from pptx.enum.text import PP_ALIGN
+from pptx.enum.shapes import MSO_SHAPE
+
+# ─────────────────────────────────────────────
+# BRAND
+# ─────────────────────────────────────────────
+PRIMARY = RGBColor(145, 142, 244)  # #918EF4
+WHITE = RGBColor(255, 255, 255)
+BLACK = RGBColor(20, 20, 20)
+GRAY = RGBColor(100, 100, 110)
+
+prs = Presentation()
+
+# ─────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────
+def set_background(slide, color):
+    bg = slide.background
+    fill = bg.fill
+    fill.solid()
+    fill.fore_color.rgb = color
+
+def add_title(slide, text, color=WHITE):
+    txBox = slide.shapes.add_textbox(Inches(1), Inches(1.2), Inches(8), Inches(1.5))
+    tf = txBox.text_frame
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = text
+    run.font.size = Pt(44)
+    run.font.bold = True
+    run.font.color.rgb = color
+    p.alignment = PP_ALIGN.CENTER
+
+def add_subtitle(slide, text, color=WHITE):
+    txBox = slide.shapes.add_textbox(Inches(1.5), Inches(2.6), Inches(7), Inches(1.5))
+    tf = txBox.text_frame
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = text
+    run.font.size = Pt(20)
+    run.font.color.rgb = color
+    p.alignment = PP_ALIGN.CENTER
+
+def add_bullets(slide, bullets, top=2.5, color=BLACK):
+    txBox = slide.shapes.add_textbox(Inches(1), Inches(top), Inches(8), Inches(4))
+    tf = txBox.text_frame
+    tf.clear()
+    for i, b in enumerate(bullets):
+        p = tf.add_paragraph() if i > 0 else tf.paragraphs[0]
+        p.text = b
+        p.font.size = Pt(22)
+        p.font.color.rgb = color
+        p.level = 0
+
+def add_section_title(slide, title):
+    txBox = slide.shapes.add_textbox(Inches(1), Inches(0.8), Inches(8), Inches(1))
+    tf = txBox.text_frame
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = title
+    run.font.size = Pt(34)
+    run.font.bold = True
+    run.font.color.rgb = BLACK
+
+def add_allocation_diagram(slide):
+    # Center node
+    center = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(4), Inches(2.5), Inches(1.2), Inches(1.2))
+    center.fill.solid()
+    center.fill.fore_color.rgb = PRIMARY
+    center.text_frame.text = "Round-Ups"
+
+    # Left (Debt)
+    left = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(1.5), Inches(2.6), Inches(2), Inches(1))
+    left.fill.solid()
+    left.fill.fore_color.rgb = RGBColor(230, 230, 255)
+    left.text_frame.text = "Debt Repayment"
+
+    # Right (Crypto)
+    right = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(6.5), Inches(2.6), Inches(2), Inches(1))
+    right.fill.solid()
+    right.fill.fore_color.rgb = RGBColor(230, 230, 255)
+    right.text_frame.text = "Bitcoin"
+
+# ─────────────────────────────────────────────
+# SLIDES
+# ─────────────────────────────────────────────
+
+# 1 — COVER
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+set_background(slide, PRIMARY)
+add_title(slide, "DIME TIME")
+add_subtitle(slide, "Get out of debt and build assets — automatically")
+
+# 2 — PROBLEM
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Problem")
+add_bullets(slide, [
+    "Consumers carry high-interest debt",
+    "No consistent savings behavior",
+    "Investing feels inaccessible",
+    "Financial progress requires effort"
+])
+
+# 3 — SOLUTION
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Solution")
+add_bullets(slide, [
+    "Automatic round-ups from everyday spending",
+    "Funds allocated toward debt + Bitcoin",
+    "Fully automated execution layer",
+    "Zero behavioral friction"
+])
+
+# 4 — PRODUCT
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Product")
+add_bullets(slide, [
+    "Plaid bank linking",
+    "Real-time round-up tracking",
+    "Allocation slider (0–100%)",
+    "Dashboard with progress metrics"
+])
+
+# 5 — CORE DIFFERENTIATOR
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Core Differentiator: Allocation Engine")
+add_allocation_diagram(slide)
+
+# 6 — MARKET
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Market Opportunity")
+add_bullets(slide, [
+    "$17T+ U.S. consumer debt",
+    "60M+ Americans own crypto",
+    "Fintech adoption accelerating",
+    "Target: 22–45, income $40K–$120K"
+])
+
+# 7 — COMPETITION
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Competitive Landscape")
+add_bullets(slide, [
+    "Qoins — debt only (bankrupt)",
+    "ChangEd — student loans only",
+    "Ditch — high fees (~8%)",
+    "Acorns — investing only",
+    "Dime Time — dual allocation + automation"
+])
+
+# 8 — BUSINESS MODEL
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Revenue Model")
+add_bullets(slide, [
+    "$2.99 — Debt",
+    "$3.99 — Crypto",
+    "$4.99 — Debt + Crypto",
+    "Future: lending, refinancing, API"
+])
+
+# 9 — TRACTION
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Traction")
+add_bullets(slide, [
+    "Live on TestFlight",
+    "Backend fully built",
+    "Plaid ACH pending",
+    "800+ build hours (~$150K–$300K equivalent)"
+])
+
+# 10 — FINANCIALS
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Financial Projections")
+add_bullets(slide, [
+    "Year 1: 5,000 users → $210K",
+    "Year 2: 25,000 users → $1M+",
+    "Year 3: 100,000 users → $4M+"
+])
+
+# 11 — GO-TO-MARKET
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Go-To-Market")
+add_bullets(slide, [
+    "TestFlight beta",
+    "TikTok / YouTube content",
+    "LinkedIn launch",
+    "Influencers + paid acquisition"
+])
+
+# 12 — ROADMAP
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_section_title(slide, "Roadmap")
+add_bullets(slide, [
+    "ACH approval",
+    "App Store + Google Play launch",
+    "Patent filing",
+    "User growth + optimization"
+])
+
+# 13 — VISION
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+set_background(slide, PRIMARY)
+add_title(slide, "Vision")
+add_subtitle(slide, "The default financial automation layer for everyday spending")
+
+# ─────────────────────────────────────────────
+# SAVE
+# ─────────────────────────────────────────────
+output_path = "/mnt/data/DimeTime_Investor_Deck.pptx"
+prs.save(output_path)
+
+print(f"Deck created: {output_path}")
