@@ -1,0 +1,162 @@
+PROJECT: DIME TIME — FINAL PITCH DECK (TARGETED IMPROVEMENTS)
+
+INSTRUCTIONS:
+- Apply ONLY the following refinements to the current deck
+- Do not redesign layout
+- Maintain current visual style and structure
+- Keep slides minimal and clean
+
+---
+
+SLIDE 2 — PROBLEM (EMPHASIS IMPROVEMENT)
+
+UPDATE:
+Make the first bullet visually dominant (bold or larger font)
+
+CHANGE TO:
+• **$18.3T in U.S. consumer debt**  
+• People intend to pay down debt — but don’t follow through  
+• Manual payments require discipline most users don’t maintain  
+• Financial stress is rising across all generations  
+
+---
+
+SLIDE 4 — BREAKTHROUGH (CLARITY BOOST)
+
+ADD NEW LINE (BOTTOM OR UNDER TITLE):
+
+• **Automated allocation from every transaction**
+
+KEEP EXISTING:
+• Debt Repayment — 80%  
+• Bitcoin (Coinbase) — 20%  
+• Real-time allocation  
+• User-controlled split  
+• Direct execution into financial endpoints  
+
+---
+
+SLIDE 6 — MARKET (MICRO COPY IMPROVEMENT)
+
+ADD SUBTEXT UNDER $18.3T:
+
+“Largest consumer financial problem in the United States”
+
+Do not change layout
+
+---
+
+SLIDE 7 — BUSINESS MODEL (NAMING UPGRADE)
+
+CHANGE:
+
+BASIC → CORE
+
+FINAL STRUCTURE:
+
+CORE — $2.99/month:
+• Round-ups  
+• Debt + Bitcoin allocation  
+• Core tracking  
+
+PRO — $3.99/month:
+• Enhanced allocation controls  
+• Analytics dashboard  
+• Improved automation  
+
+PREMIUM — $4.99/month:
+• Advanced automation  
+• Faster transfers  
+• Multiple accounts  
+• Priority routing  
+
+---
+
+SLIDE 8 — COMPETITION (POSITIONING LINE)
+
+ADD FOOTER LINE:
+
+“Only platform combining automation + dual allocation”
+
+Do not remove existing competitor structure
+
+---
+
+SLIDE 9 — DEFENSIBILITY (MOAT STRENGTHENING)
+
+ADD BULLET:
+
+• Live integrations already operational  
+
+KEEP:
+• Plaid  
+• Mercury  
+• Coinbase  
+
+---
+
+SLIDE 10 — TRACTION (CRITICAL FIX)
+
+REPLACE EMPTY PLACEHOLDERS WITH REAL OR MINIMUM DATA:
+
+FORMAT:
+
+USERS  
+[ENTER NUMBER — even if small]
+
+LINKED ACCOUNTS  
+[ENTER NUMBER]
+
+TRANSACTIONS  
+[ENTER NUMBER]
+
+TOTAL VOLUME  
+$[ENTER AMOUNT]
+
+DEBT REDUCED  
+$[ENTER AMOUNT]
+
+IF NO DATA AVAILABLE:
+Use:
+
+• Early beta testing in progress  
+• Initial users onboarding  
+• System validated with live integrations  
+
+IMPORTANT:
+Do NOT leave blank — blank = weak
+
+---
+
+SLIDE 12 — ASK (CLARITY ADDITION)
+
+ADD LINE UNDER USE OF FUNDS:
+
+“Capital will fund user growth and scale transaction volume”
+
+KEEP:
+• $3M–$4M valuation  
+• Allocation percentages  
+
+---
+
+NO CHANGES REQUIRED ON:
+
+Slide 1 — Cover  
+Slide 3 — Solution  
+Slide 5 — Product  
+Slide 11 — Team  
+Slide 13 — Company Info  
+
+---
+
+FINAL RULES:
+
+• No mention of selling data  
+• No unsupported features  
+• Keep slides minimal  
+• Prioritize clarity over density  
+
+---
+
+END

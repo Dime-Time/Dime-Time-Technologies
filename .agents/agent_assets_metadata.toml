@@ -95,13 +95,13 @@ title = "Slide Image 4 — Dashboard"
 id = "xTE8CD_vKQE8yZUYjCwEK"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pdf"
 type = "pdf"
-title = "⭐ Dime Time Pitch Deck — Complete (PDF, all 13 slides)"
+title = "⭐ Dime Time Pitch Deck — Updated (PDF, all 13 slides)"
 
 [[outputs]]
 id = "PwY0MiFJPlJyLEQq1ZP3J"
 uri = "file://attached_assets/pitch-deck-slides/slide-02-problem.png"
 type = "image"
-title = "Slide 2 — Problem"
+title = "Slide 2 — Problem (dominant $18.3T bullet)"
 
 [[outputs]]
 id = "71VbGtcVzMNQWLq7-XIE_"
@@ -113,7 +113,7 @@ title = "Slide 3 — Solution"
 id = "eCDllrCX1hYkPPQSmMnbS"
 uri = "file://attached_assets/pitch-deck-slides/slide-04-breakthrough.png"
 type = "image"
-title = "Slide 4 — Dynamic Allocation Engine"
+title = "Slide 4 — Breakthrough (clarity line added)"
 
 [[outputs]]
 id = "wqgb3WunHaxIcSVNobxmo"
@@ -125,31 +125,31 @@ title = "Slide 5 — Product"
 id = "7xwje5h5djYkByD_nGD8n"
 uri = "file://attached_assets/pitch-deck-slides/slide-06-market.png"
 type = "image"
-title = "Slide 6 — Market"
+title = "Slide 6 — Market (new subtext)"
 
 [[outputs]]
 id = "M2AJPSDTbCWLNv9WFHm0i"
 uri = "file://attached_assets/pitch-deck-slides/slide-07-business.png"
 type = "image"
-title = "Slide 7 — Pricing"
+title = "Slide 7 — Pricing (CORE / Pro / Premium)"
 
 [[outputs]]
 id = "tRiVM3mi679b0-mNmrUN9"
 uri = "file://attached_assets/pitch-deck-slides/slide-08-competition.png"
 type = "image"
-title = "Slide 8 — Competition"
+title = "Slide 8 — Competition (positioning line)"
 
 [[outputs]]
 id = "XMrEsS0C6b3Skh_VQTFFe"
 uri = "file://attached_assets/pitch-deck-slides/slide-09-defensibility.png"
 type = "image"
-title = "Slide 9 — Defensibility"
+title = "Slide 9 — Defensibility (live integrations bullet)"
 
 [[outputs]]
 id = "3bOadUAQdyXtaYIGLbA2E"
 uri = "file://attached_assets/pitch-deck-slides/slide-10-traction.png"
 type = "image"
-title = "Slide 10 — Traction"
+title = "Slide 10 — Traction (status cards)"
 
 [[outputs]]
 id = "nun66Q_ilqxQ3YYkQtr4h"
@@ -161,7 +161,7 @@ title = "Slide 11 — Team"
 id = "01QUL9JhWXZavac5XPSW-"
 uri = "file://attached_assets/pitch-deck-slides/slide-12-ask.png"
 type = "image"
-title = "Slide 12 — Ask + Vision"
+title = "Slide 12 — Ask (capital line added)"
 
 [[outputs]]
 id = "PfqQ6HIVHBOkrD2WTXubl"
