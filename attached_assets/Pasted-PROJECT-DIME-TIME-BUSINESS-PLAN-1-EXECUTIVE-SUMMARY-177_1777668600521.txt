@@ -1,0 +1,235 @@
+PROJECT: DIME TIME — BUSINESS PLAN
+
+═══════════════════════════════════════════
+1. EXECUTIVE SUMMARY
+═══════════════════════════════════════════
+
+Company: Dime Time
+Industry: Fintech (Personal Finance / Micro-Investing / Debt Reduction)
+
+Product:
+A mobile app that rounds up everyday transactions and automatically allocates spare change toward:
+- Debt repayment
+- Cryptocurrency purchases (Bitcoin via Coinbase)
+
+Core Value Proposition:
+“Get out of debt and build assets automatically — one transaction at a time.”
+
+Key Differentiator:
+Dynamic allocation engine allowing users to split round-ups (e.g., 80% debt / 20% crypto)
+
+Business Model (Subscription SaaS):
+- Basic: $2.99/month (Debt only)
+- Pro: $3.99/month (Crypto only)
+- Premium: $4.99/month (Debt + Crypto)
+
+═══════════════════════════════════════════
+2. PROBLEM
+═══════════════════════════════════════════
+
+Consumers struggle with:
+- High-interest debt
+- Lack of consistent savings habits
+- Difficulty investing
+- No automated system for financial progress
+
+Existing solutions:
+- Require manual effort
+- Focus on only one outcome (saving OR investing OR debt)
+- Lack behavioral automation
+
+═══════════════════════════════════════════
+3. SOLUTION
+═══════════════════════════════════════════
+
+Dime Time automates financial progress through:
+
+1. Round-Up Engine
+- Tracks transactions via Plaid
+- Rounds purchases to nearest dollar
+
+2. Allocation System
+- Splits funds dynamically between:
+  - Debt repayment
+  - Bitcoin accumulation
+
+3. Automated Execution
+- ACH transfers
+- Crypto purchases via Coinbase
+- Debt payments
+
+═══════════════════════════════════════════
+4. PRODUCT OVERVIEW
+═══════════════════════════════════════════
+
+Core Features:
+- Bank linking (Plaid)
+- Real-time round-up tracking
+- Allocation slider (0–100%)
+- Debt account integration
+- Crypto execution engine
+- User dashboard with progress tracking
+
+Technical Stack:
+- Frontend: React + TypeScript
+- Backend: Node.js + Express
+- Database: PostgreSQL (Drizzle ORM)
+- Mobile: Capacitor
+
+Integrations:
+- Plaid (transactions + ACH)
+- Mercury (funding account)
+- Coinbase (crypto purchases)
+
+═══════════════════════════════════════════
+5. MARKET OPPORTUNITY
+═══════════════════════════════════════════
+
+Target Users:
+- Age: 22–45
+- Income: $40K–$120K
+- Individuals with debt + interest in investing
+
+Market Data:
+- U.S. consumer debt exceeds $17 trillion
+- ~60 million Americans own cryptocurrency
+- Fintech adoption continues to grow rapidly
+
+Positioning:
+Sits between:
+- Debt reduction apps
+- Micro-investing platforms
+
+═══════════════════════════════════════════
+6. COMPETITIVE LANDSCAPE
+═══════════════════════════════════════════
+
+Qoins:
+- Focus: Debt
+- Weakness: Filed Chapter 11, limited scalability
+
+ChangEd:
+- Focus: Student loans
+- Weakness: Narrow use case
+
+Ditch:
+- Focus: Debt round-ups
+- Weakness: High transaction fees (~8%)
+
+Acorns:
+- Focus: Investing
+- Weakness: No debt integration
+
+Dime Time Advantage:
+- Dual allocation (debt + crypto)
+- Behavioral automation
+- Subscription model (not transaction fees)
+
+═══════════════════════════════════════════
+7. REVENUE MODEL
+═══════════════════════════════════════════
+
+Subscription Pricing:
+
+Basic ($2.99/month):
+- Debt repayment automation
+
+Pro ($3.99/month):
+- Crypto automation
+
+Premium ($4.99/month):
+- Debt + Crypto allocation
+
+Future Revenue Opportunities:
+- Refinancing products
+- Lending services
+- API licensing (allocation engine)
+
+═══════════════════════════════════════════
+8. GO-TO-MARKET STRATEGY
+═══════════════════════════════════════════
+
+Phase 1 — Beta Launch:
+- TestFlight users
+- Founder network
+- Bug validation
+
+Phase 2 — Organic Growth:
+- TikTok / YouTube content
+- LinkedIn launch
+- Word-of-mouth
+
+Phase 3 — Scale:
+- Influencer partnerships
+- Fintech podcasts
+- Paid acquisition campaigns
+
+═══════════════════════════════════════════
+9. TRACTION (CURRENT STATE)
+═══════════════════════════════════════════
+
+- iOS app live on TestFlight
+- Backend fully built
+- Plaid integration in progress (ACH approval pending)
+- 800+ development hours invested
+- Estimated build value: $150K–$300K
+
+═══════════════════════════════════════════
+10. FINANCIAL PROJECTIONS
+═══════════════════════════════════════════
+
+Year 1:
+- Users: 5,000
+- Avg Revenue/User: $3.50/month
+- Monthly Revenue: $17,500
+- Annual Revenue: ~$210,000
+
+Year 2:
+- Users: 25,000
+- Annual Revenue: ~$1,000,000+
+
+Year 3:
+- Users: 100,000+
+- Annual Revenue: ~$4,000,000+
+
+═══════════════════════════════════════════
+11. FUNDING STRATEGY
+═══════════════════════════════════════════
+
+Current Status:
+- Bootstrapped
+
+Seeking:
+- SBA Loan ($250K–$500K)
+- Potential angel investment (post-launch)
+
+Use of Funds:
+- Marketing
+- Infrastructure scaling
+- Legal (C-Corp conversion + patent)
+- Product development
+
+═══════════════════════════════════════════
+12. ROADMAP
+═══════════════════════════════════════════
+
+Next 30–60 Days:
+- Plaid ACH approval
+- App Store + Google Play launch
+- Patent filing
+
+Next 3–6 Months:
+- User acquisition push
+- Analytics + optimization
+- Investor outreach
+
+Long-Term Vision:
+- Financial automation platform
+- Refinancing + lending ecosystem
+- Global expansion
+
+═══════════════════════════════════════════
+13. VISION
+═══════════════════════════════════════════
+
+“Dime Time becomes the default financial automation layer for everyday spending.”

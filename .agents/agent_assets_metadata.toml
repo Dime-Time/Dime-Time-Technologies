@@ -174,3 +174,15 @@ id = "Gv57Vsp4aKd2piUxhlMEw"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pptx"
 type = "slides"
 title = "⭐ Dime Time Pitch Deck — PowerPoint (drop into Google Slides)"
+
+[[outputs]]
+id = "EjV56LOgTpf9aZFgnL9Ua"
+uri = "file://attached_assets/business-plan-slides/dime-time-business-plan.pptx"
+type = "slides"
+title = "Dime Time Business Plan (PowerPoint — drop into Google Slides)"
+
+[[outputs]]
+id = "wpiky_z-8tJ53miGrLPFX"
+uri = "file://attached_assets/business-plan-slides/dime-time-business-plan.pdf"
+type = "pdf"
+title = "Dime Time Business Plan (PDF — for SBA / lenders)"
