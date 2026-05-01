@@ -66,3 +66,27 @@ id = "z-qdPA0N7eJepGeBBZsFa"
 uri = "file://attached_assets/website-mockups/dime-time-phone-mockup.png"
 type = "image"
 title = "Dime Time Phone Mockup — Official Brand Colors + Logo (1400×1100)"
+
+[[outputs]]
+id = "MkDJf_NnI9PITUDEiEzhM"
+uri = "file://attached_assets/slide-deck-phones/01-splash-coming-soon.png"
+type = "image"
+title = "Slide Image 1 — Splash Screen"
+
+[[outputs]]
+id = "-1X_ODolS9GwwE9DKvLSN"
+uri = "file://attached_assets/slide-deck-phones/02-login-welcome-back.png"
+type = "image"
+title = "Slide Image 2 — Welcome Back Login"
+
+[[outputs]]
+id = "BhtvXO2IUVnytlCBYWVYL"
+uri = "file://attached_assets/slide-deck-phones/03-create-account.png"
+type = "image"
+title = "Slide Image 3 — Create Your Account"
+
+[[outputs]]
+id = "rB7yumnpJqW2Ztm8w2kNf"
+uri = "file://attached_assets/slide-deck-phones/04-dashboard.png"
+type = "image"
+title = "Slide Image 4 — Dashboard"
