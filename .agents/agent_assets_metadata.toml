@@ -95,7 +95,7 @@ title = "Slide Image 4 — Dashboard"
 id = "xTE8CD_vKQE8yZUYjCwEK"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pdf"
 type = "pdf"
-title = "⭐ Complete Pitch Deck (PDF, 13 slides)"
+title = "Dime Time Pitch Deck — FINAL (PDF, all 13 slides)"
 
 [[outputs]]
 id = "PwY0MiFJPlJyLEQq1ZP3J"
@@ -113,7 +113,7 @@ title = "Slide 3 — Solution"
 id = "eCDllrCX1hYkPPQSmMnbS"
 uri = "file://attached_assets/pitch-deck-slides/slide-04-breakthrough.png"
 type = "image"
-title = "Slide 4 — Breakthrough"
+title = "Slide 4 — Dynamic Allocation Engine (80/20 split)"
 
 [[outputs]]
 id = "wqgb3WunHaxIcSVNobxmo"
@@ -125,19 +125,19 @@ title = "Slide 5 — Product"
 id = "7xwje5h5djYkByD_nGD8n"
 uri = "file://attached_assets/pitch-deck-slides/slide-06-market.png"
 type = "image"
-title = "Slide 6 — Market"
+title = "Slide 6 — Market (clean layout, no boxes)"
 
 [[outputs]]
 id = "M2AJPSDTbCWLNv9WFHm0i"
 uri = "file://attached_assets/pitch-deck-slides/slide-07-business.png"
 type = "image"
-title = "Slide 7 — Business Model"
+title = "Slide 7 — Pricing (Basic $2.99 / Pro $3.99 / Premium $4.99)"
 
 [[outputs]]
 id = "tRiVM3mi679b0-mNmrUN9"
 uri = "file://attached_assets/pitch-deck-slides/slide-08-competition.png"
 type = "image"
-title = "Slide 8 — Competition + Advantage"
+title = "Slide 8 — Competition (Ditch + Changed)"
 
 [[outputs]]
 id = "XMrEsS0C6b3Skh_VQTFFe"
@@ -149,13 +149,13 @@ title = "Slide 9 — Defensibility"
 id = "3bOadUAQdyXtaYIGLbA2E"
 uri = "file://attached_assets/pitch-deck-slides/slide-10-traction.png"
 type = "image"
-title = "Slide 10 — Traction (fill in metrics)"
+title = "Slide 10 — Traction (with icons + bars)"
 
 [[outputs]]
 id = "nun66Q_ilqxQ3YYkQtr4h"
 uri = "file://attached_assets/pitch-deck-slides/slide-11-team.png"
 type = "image"
-title = "Slide 11 — Team"
+title = "Slide 11 — Team (Tim only)"
 
 [[outputs]]
 id = "01QUL9JhWXZavac5XPSW-"
@@ -167,4 +167,4 @@ title = "Slide 12 — Ask + Vision"
 id = "PfqQ6HIVHBOkrD2WTXubl"
 uri = "file://attached_assets/pitch-deck-slides/slide-13-appendix.png"
 type = "image"
-title = "Slide 13 — Company Information"
+title = "Slide 13 — Company Info (real email)"

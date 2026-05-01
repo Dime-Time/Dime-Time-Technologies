@@ -1,0 +1,305 @@
+PROJECT: DIME TIME — FINAL PITCH DECK (UPDATED PER FOUNDER NOTES)
+
+INSTRUCTIONS:
+- Maintain current visual style from existing deck
+- Keep typography large, minimal, clean
+- Use real iPhone screenshots (no placeholders)
+- Apply requested corrections exactly
+
+---
+
+SLIDE 1 — COVER
+
+TITLE:
+DIME TIME
+
+SUBTITLE:
+Get out of debt, one dime at a time.
+
+FOOTER:
+Tim Carlisle — Founder & CEO  
+Financial Automation Engine  
+
+DESIGN:
+- Gradient (#918EF4 → #6F6BE8)
+- Center logo
+
+---
+
+SLIDE 2 — PROBLEM
+
+TITLE:
+Americans Are Drowning in Debt
+
+BULLETS:
+• $18.3T in U.S. consumer debt  
+• People intend to pay down debt — but don’t follow through  
+• Manual payments require discipline most users don’t maintain  
+• Financial stress is rising across all generations  
+
+RIGHT CALLOUT:
+WHY NOW  
+• 275M+ smartphone users  
+• Plaid and ACH rails enable financial automation  
+
+---
+
+SLIDE 3 — SOLUTION
+
+TITLE:
+Automated Debt Reduction
+
+BULLETS:
+• Every purchase rounds up automatically  
+• Spare change is applied toward financial goals  
+• No behavior change required  
+• Works passively in the background  
+
+IMAGE:
+- iPhone mockup (clean, no borders)
+
+---
+
+SLIDE 4 — BREAKTHROUGH (FIXED)
+
+TITLE:
+Dynamic Allocation Engine
+
+LEFT:
+Round-Up Example  
+$0.37  
+
+RIGHT:
+• Debt Repayment — 80%  
+• Bitcoin (Coinbase) — 20%  
+
+BULLETS:
+• Real-time allocation  
+• User-controlled split  
+• Direct execution into financial endpoints  
+
+FOOTER:
+First system enabling automated allocation from everyday spending
+
+---
+
+SLIDE 5 — PRODUCT
+
+TITLE:
+Live Product — Real Financial Movement
+
+IMAGES (NO BOXES / CLEAN FLOATING):
+1. Splash  
+2. Secure login  
+3. Account creation  
+4. Dashboard  
+
+FOOTER:
+Plaid bank linking · Real-time dashboard · Allocation engine · Transaction tracking  
+
+---
+
+SLIDE 6 — MARKET (VISUAL FIX)
+
+TITLE:
+Massive Market Opportunity
+
+LEFT:
+$18.3T  
+U.S. Consumer Debt  
+
+RIGHT:
+Average Debt by Generation  
+• Gen Z — ~$9K  
+• Millennials — ~$78K  
+• Gen X — ~$135K  
+• Baby Boomers — ~$96K  
+
+DESIGN FIX:
+- Remove boxed phone frames  
+- Use clean layout on blank/light background  
+- Minimal icons only  
+
+---
+
+SLIDE 7 — BUSINESS MODEL (UPDATED PRICING)
+
+TITLE:
+Simple, Scalable Revenue Model
+
+BASIC — $2.99/month:
+• Round-ups  
+• Debt + Bitcoin allocation  
+• Core tracking  
+
+PRO — $3.99/month:
+• Enhanced allocation controls  
+• Analytics dashboard  
+• Improved automation  
+
+PREMIUM — $4.99/month:
+• Advanced automation  
+• Faster transfers  
+• Multiple accounts  
+• Priority routing  
+
+FOOTER:
+Subscription model drives predictable recurring revenue
+
+---
+
+SLIDE 8 — COMPETITION (UPDATED)
+
+TITLE:
+Current Solutions Are Limited
+
+DITCH:
+• Charges ~8% per transaction  
+• Expensive for users at scale  
+• Focused only on debt  
+
+CHANGED:
+• Student loan only  
+• Limited flexibility  
+
+DIME TIME:
+• Dual allocation (debt + Bitcoin)  
+• Real-time automation  
+• Lower cost structure  
+• Built for scale  
+
+FOOTER:
+Dime Time delivers automation + flexibility competitors lack
+
+---
+
+SLIDE 9 — DEFENSIBILITY
+
+TITLE:
+Built to Be Difficult to Replicate
+
+BULLETS:
+• Patent-pending allocation engine  
+• Real-time financial routing system  
+• Behavioral automation model  
+
+INFRASTRUCTURE:
+• Plaid — bank connections  
+• Mercury — ACH transfers  
+• Coinbase — crypto execution  
+
+FOOTER:
+Requires significant compliance, integrations, and engineering to replicate
+
+---
+
+SLIDE 10 — TRACTION (VISUAL UPGRADE)
+
+TITLE:
+Early Usage & Validation
+
+LAYOUT (CARDS OR ICON BLOCKS):
+
+USERS  
+___  
+
+LINKED ACCOUNTS  
+___  
+
+TRANSACTIONS  
+___  
+
+TOTAL VOLUME  
+$___  
+
+DEBT REDUCED  
+$___  
+
+DESIGN:
+- Use icons instead of plain text  
+- Add subtle data visualization (bars or counters)  
+- Keep minimal and clean  
+
+FOOTER:
+Live on TestFlight — update with real data before presenting
+
+---
+
+SLIDE 11 — TEAM (FIXED)
+
+TITLE:
+Focused on Execution
+
+TIM CARLISLE — FOUNDER & CEO  
+
+• U.S. Navy veteran  
+• MBA — Management Information Systems  
+• Built Dime Time end-to-end  
+• Integrated Plaid, Mercury, and Coinbase  
+
+---
+
+SLIDE 12 — ASK
+
+TITLE:
+Scaling Financial Automation
+
+RAISING:
+$X  
+at $3M – $4M valuation (pre-money)
+
+USE OF FUNDS:
+• Product development — 45%  
+• User acquisition — 35%  
+• Compliance & infrastructure — 20%  
+
+VISION:
+Financial automation layer for the next generation —  
+debt down, wealth built one transaction at a time  
+
+---
+
+SLIDE 13 — COMPANY INFORMATION (UPDATED)
+
+TITLE:
+Company Information
+
+COMPANY:
+Dime Time  
+
+FOUNDER:
+Tim Carlisle  
+
+EIN:
+92-3813260  
+
+DUNS:
+128458968  
+
+WEBSITE:
+dime-time.com  
+
+EMAIL:
+tim@dime-time.com  
+
+---
+
+IMAGE REQUIREMENTS
+
+• Use real iPhone mockups  
+• Remove boxed frames (clean floating style)  
+• High resolution only  
+• Purple UI consistency  
+
+---
+
+FINAL RULES
+
+• No mention of selling data  
+• No unsupported features  
+• Keep slides minimal  
+• Let you (founder) do the talking  
+
+---
+
+END
