@@ -95,7 +95,7 @@ title = "Slide Image 4 — Dashboard"
 id = "xTE8CD_vKQE8yZUYjCwEK"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pdf"
 type = "pdf"
-title = "⭐ Dime Time Pitch Deck — Updated (PDF, all 13 slides)"
+title = "Dime Time Pitch Deck — PDF (backup, for email/print)"
 
 [[outputs]]
 id = "PwY0MiFJPlJyLEQq1ZP3J"
@@ -168,3 +168,9 @@ id = "PfqQ6HIVHBOkrD2WTXubl"
 uri = "file://attached_assets/pitch-deck-slides/slide-13-appendix.png"
 type = "image"
 title = "Slide 13 — Company Info"
+
+[[outputs]]
+id = "Gv57Vsp4aKd2piUxhlMEw"
+uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pptx"
+type = "slides"
+title = "⭐ Dime Time Pitch Deck — PowerPoint (drop into Google Slides)"
