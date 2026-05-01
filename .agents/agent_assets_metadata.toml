@@ -59,7 +59,7 @@ title = "Android Wallpaper (1080×2400)"
 id = "svVV64mZi6NokQ0qkeCun"
 uri = "file://attached_assets/pitch-deck-slides/slide-01-cover.png"
 type = "image"
-title = "Slide 1 — Cover (Updated Tagline, Outlined)"
+title = "Slide 1 — Cover"
 
 [[outputs]]
 id = "z-qdPA0N7eJepGeBBZsFa"
@@ -90,3 +90,81 @@ id = "rB7yumnpJqW2Ztm8w2kNf"
 uri = "file://attached_assets/slide-deck-phones/04-dashboard.png"
 type = "image"
 title = "Slide Image 4 — Dashboard"
+
+[[outputs]]
+id = "xTE8CD_vKQE8yZUYjCwEK"
+uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pdf"
+type = "pdf"
+title = "⭐ Complete Pitch Deck (PDF, 13 slides)"
+
+[[outputs]]
+id = "PwY0MiFJPlJyLEQq1ZP3J"
+uri = "file://attached_assets/pitch-deck-slides/slide-02-problem.png"
+type = "image"
+title = "Slide 2 — Problem + Why Now"
+
+[[outputs]]
+id = "71VbGtcVzMNQWLq7-XIE_"
+uri = "file://attached_assets/pitch-deck-slides/slide-03-solution.png"
+type = "image"
+title = "Slide 3 — Solution"
+
+[[outputs]]
+id = "eCDllrCX1hYkPPQSmMnbS"
+uri = "file://attached_assets/pitch-deck-slides/slide-04-breakthrough.png"
+type = "image"
+title = "Slide 4 — Breakthrough"
+
+[[outputs]]
+id = "wqgb3WunHaxIcSVNobxmo"
+uri = "file://attached_assets/pitch-deck-slides/slide-05-product.png"
+type = "image"
+title = "Slide 5 — Product"
+
+[[outputs]]
+id = "7xwje5h5djYkByD_nGD8n"
+uri = "file://attached_assets/pitch-deck-slides/slide-06-market.png"
+type = "image"
+title = "Slide 6 — Market"
+
+[[outputs]]
+id = "M2AJPSDTbCWLNv9WFHm0i"
+uri = "file://attached_assets/pitch-deck-slides/slide-07-business.png"
+type = "image"
+title = "Slide 7 — Business Model"
+
+[[outputs]]
+id = "tRiVM3mi679b0-mNmrUN9"
+uri = "file://attached_assets/pitch-deck-slides/slide-08-competition.png"
+type = "image"
+title = "Slide 8 — Competition + Advantage"
+
+[[outputs]]
+id = "XMrEsS0C6b3Skh_VQTFFe"
+uri = "file://attached_assets/pitch-deck-slides/slide-09-defensibility.png"
+type = "image"
+title = "Slide 9 — Defensibility"
+
+[[outputs]]
+id = "3bOadUAQdyXtaYIGLbA2E"
+uri = "file://attached_assets/pitch-deck-slides/slide-10-traction.png"
+type = "image"
+title = "Slide 10 — Traction (fill in metrics)"
+
+[[outputs]]
+id = "nun66Q_ilqxQ3YYkQtr4h"
+uri = "file://attached_assets/pitch-deck-slides/slide-11-team.png"
+type = "image"
+title = "Slide 11 — Team"
+
+[[outputs]]
+id = "01QUL9JhWXZavac5XPSW-"
+uri = "file://attached_assets/pitch-deck-slides/slide-12-ask.png"
+type = "image"
+title = "Slide 12 — Ask + Vision"
+
+[[outputs]]
+id = "PfqQ6HIVHBOkrD2WTXubl"
+uri = "file://attached_assets/pitch-deck-slides/slide-13-appendix.png"
+type = "image"
+title = "Slide 13 — Company Information"

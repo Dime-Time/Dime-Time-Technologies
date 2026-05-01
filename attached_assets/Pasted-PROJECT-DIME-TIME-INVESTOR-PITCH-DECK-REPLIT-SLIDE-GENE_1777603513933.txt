@@ -1,0 +1,275 @@
+PROJECT: DIME TIME — INVESTOR PITCH DECK (REPLIT SLIDE GENERATION)
+
+INSTRUCTIONS:
+- Build a clean, modern fintech slide deck
+- Use iPhone mockups with real beta screenshots where specified
+- Follow minimal design (large text, few bullets)
+- Use brand color: #918EF4
+
+---
+
+SLIDE 1 — COVER
+
+TITLE:
+Dime Time
+
+SUBTITLE:
+Get out of debt, one dime at a time.
+
+FOOTER:
+Tim Carlisle — Founder & CEO  
+Financial Automation Engine  
+
+DESIGN:
+- Gradient background (#918EF4 → #6F6BE8)
+- Center logo (clock + $ icon)
+
+---
+
+SLIDE 2 — PROBLEM + WHY NOW
+
+TITLE:
+Americans Are Drowning in Debt
+
+BULLETS:
+• $18.3T in U.S. consumer debt  
+• People intend to pay down debt, but don’t follow through  
+• Manual payments require discipline most users don’t maintain  
+• Financial stress is rising across all generations  
+
+RIGHT SIDE CALLOUT:
+• 275M+ smartphone users  
+• Financial automation infrastructure now exists (Plaid, APIs)
+
+---
+
+SLIDE 3 — SOLUTION
+
+TITLE:
+Automated Debt Reduction
+
+BULLETS:
+• Every purchase rounds up automatically  
+• Spare change applied toward financial goals  
+• No behavior change required  
+• Works passively in the background  
+
+IMAGE:
+- iPhone mockup showing round-up confirmation screen
+
+---
+
+SLIDE 4 — BREAKTHROUGH
+
+TITLE:
+Dynamic Multi-Destination Allocation Engine
+
+BULLETS:
+• Automatically splits round-ups across:
+  - Debt repayment  
+  - Savings  
+  - Bitcoin (via Coinbase)  
+
+• Happens in real time  
+• User-controlled allocation  
+
+FOOTER:
+First system enabling simultaneous financial allocation from everyday spending
+
+DESIGN:
+- Gradient background
+
+---
+
+SLIDE 5 — PRODUCT
+
+TITLE:
+Live Product — Real Financial Movement
+
+BULLETS:
+• Secure bank connection (Plaid)  
+• Real-time dashboard  
+• Allocation interface (core feature)  
+• Transaction-level tracking  
+
+IMAGES (REQUIRED):
+- iPhone mockups (4 screens):
+  1. Bank linking screen  
+  2. Dashboard  
+  3. Allocation UI  
+  4. Transactions list  
+
+---
+
+SLIDE 6 — MARKET
+
+TITLE:
+Massive Market Opportunity
+
+LEFT:
+• $18.3T U.S. consumer debt  
+• Millions actively seeking solutions  
+
+RIGHT:
+Average Debt by Generation:
+• Gen Z: ~$9K  
+• Millennials: ~$78K  
+• Gen X: ~$135K  
+
+---
+
+SLIDE 7 — BUSINESS MODEL
+
+TITLE:
+Simple, Scalable Revenue Model
+
+FREE:
+• Basic round-ups (single destination)
+
+PRO — $2.99/month:
+• Multi-destination allocation  
+• Crypto integration  
+• Analytics  
+
+PREMIUM — $4.99/month:
+• Advanced automation  
+• Faster transfers  
+• Multiple accounts  
+
+FOOTER:
+Freemium model drives growth and lifetime value
+
+---
+
+SLIDE 8 — COMPETITION + ADVANTAGE
+
+TITLE:
+Current Solutions Are Limited
+
+Qoins:
+• Single destination  
+• High fees  
+
+ChangEd:
+• Student loans only  
+
+DIME TIME:
+• Multi-destination  
+• Real-time allocation  
+• Flexible financial system  
+
+FOOTER:
+Dime Time is the most flexible and automated solution
+
+---
+
+SLIDE 9 — DEFENSIBILITY
+
+TITLE:
+Built to Be Difficult to Replicate
+
+BULLETS:
+• Patent-pending allocation engine  
+• Real-time financial routing system  
+• Behavioral automation model  
+
+INFRASTRUCTURE:
+• Plaid (bank connections)  
+• Mercury (ACH transfers)  
+• Coinbase (crypto execution)  
+
+FOOTER:
+Replicating this stack requires 6–12 months of compliance and engineering
+
+---
+
+SLIDE 10 — TRACTION (UPDATE WITH REAL DATA)
+
+TITLE:
+Early Usage & Validation
+
+BULLETS:
+• Users onboarded: ___  
+• Linked accounts: ___  
+• Transactions processed: ___  
+• Total volume: $___  
+• Debt reduced: $___  
+
+NOTE:
+Replace with real metrics once live
+
+---
+
+SLIDE 11 — TEAM
+
+TITLE:
+Focused on Execution
+
+Tim Carlisle — Founder / CEO  
+• MBA  
+• Built Dime Time end-to-end  
+
+Greg [Last Name] — Advisor  
+• PhD  
+• National Social Media Marketing Manager  
+• Boy Scouts of America  
+
+---
+
+SLIDE 12 — ASK + VISION
+
+TITLE:
+Scaling Financial Automation
+
+ASK:
+Raising: $X at $3M–$4M valuation  
+
+USE OF FUNDS:
+• Product development  
+• User acquisition  
+• Compliance & infrastructure  
+
+VISION:
+Financial automation layer for the next generation  
+
+DESIGN:
+- Gradient background
+
+---
+
+FINAL SLIDE — COMPANY IDENTIFIERS (OPTIONAL APPENDIX)
+
+TITLE:
+Company Information
+
+DETAILS:
+• Company: Dime Time  
+• Founder: Tim Carlisle  
+• EIN: 92-3813260  
+• DUNS: 128458968  
+• Website: dime-time.com  
+• Email: [INSERT YOUR EMAIL HERE]  
+
+---
+
+IMAGE REQUIREMENTS (IMPORTANT)
+
+Use iPhone mockups showing:
+• Actual TestFlight beta screens  
+• Clean UI with purple theme  
+• High resolution  
+• No placeholders  
+
+---
+
+DESIGN RULES
+
+• Keep slides minimal (3–5 bullets max)  
+• Use large text  
+• Prioritize readability  
+• Use brand color #918EF4 consistently  
+• Only use gradient on key slides  
+
+---
+
+END OF SPEC
