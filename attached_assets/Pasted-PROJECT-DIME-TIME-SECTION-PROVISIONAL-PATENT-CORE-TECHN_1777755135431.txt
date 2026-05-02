@@ -1,0 +1,175 @@
+PROJECT: DIME TIME
+SECTION: PROVISIONAL PATENT — CORE TECHNOLOGY
+TITLE: Dynamic Dual-Split and Multi-Destination Round-Up Microallocation System
+
+────────────────────────────────────────────
+1. FIELD OF INVENTION
+────────────────────────────────────────────
+
+The present invention relates to financial technology (fintech), specifically to systems and methods for automated microallocation of transaction round-up amounts across multiple financial destinations, including but not limited to debt repayment and digital asset acquisition.
+
+────────────────────────────────────────────
+2. PROBLEM STATEMENT
+────────────────────────────────────────────
+
+Existing round-up platforms suffer from:
+• Single-destination allocation (savings OR debt OR investing)
+• Static allocation models (no flexibility)
+• Lack of real-time execution per transaction
+• No intelligent or dynamic allocation capabilities
+
+There is no system that:
+→ Splits round-ups across multiple destinations simultaneously
+→ Allows continuous allocation ratios (0%–100%)
+→ Executes allocations in real-time per transaction
+→ Supports programmable or adaptive allocation logic
+
+────────────────────────────────────────────
+3. CORE INVENTION SUMMARY
+────────────────────────────────────────────
+
+Dime Time introduces a:
+
+→ Dual-Split + Multi-Destination Allocation Engine
+
+Key Capabilities:
+• Continuous allocation spectrum (0/100 → 100/0)
+• Multi-destination routing (Debt + Crypto + Future extensions)
+• Real-time per-transaction execution
+• User-defined OR algorithmically adjusted allocation vectors
+• Secure, idempotent transaction orchestration
+
+────────────────────────────────────────────
+4. SYSTEM ARCHITECTURE (FIG. 1)
+────────────────────────────────────────────
+
+          ┌─────────────────────────┐
+          │   USER BANK ACCOUNT     │
+          │   (via Plaid API)       │
+          └──────────┬──────────────┘
+                     │
+                     ▼
+          ┌─────────────────────────┐
+          │ TRANSACTION DETECTION   │
+          │ (Webhook Listener)      │
+          └──────────┬──────────────┘
+                     │
+                     ▼
+          ┌─────────────────────────┐
+          │ ROUND-UP CALCULATION    │
+          │ (Δ to next dollar)      │
+          └──────────┬──────────────┘
+                     │
+                     ▼
+          ┌─────────────────────────┐
+          │ ALLOCATION ENGINE       │
+          │ (Vector-Based Split)    │
+          └───────┬────────┬────────┘
+                  │        │
+          ┌───────▼───┐  ┌─▼────────────┐
+          │ DEBT API   │  │ CRYPTO API   │
+          │ (ACH Pay)  │  │ (Coinbase)   │
+          └────────────┘  └──────────────┘
+
+────────────────────────────────────────────
+5. ALLOCATION VECTOR MODEL
+────────────────────────────────────────────
+
+Allocation defined as:
+
+A = (d₁, d₂, d₃, … dₙ)
+
+Where:
+• dₙ represents % allocation to each destination
+• Σ dₙ = 100%
+
+Examples:
+• (100, 0) → Full Debt
+• (80, 20) → Debt + Crypto
+• (50, 30, 20) → Multi-destination future model
+
+This creates a **continuous claim space**, preventing design-arounds.
+
+────────────────────────────────────────────
+6. EXECUTION FLOW (FIG. 2)
+────────────────────────────────────────────
+
+[User Transaction Occurs]
+              ↓
+[Round-Up Calculated]
+              ↓
+[Allocation Vector Retrieved]
+              ↓
+[Split Amount Computed]
+              ↓
+[Instruction Queue Created]
+              ↓
+[Parallel Execution Engine]
+       ↓                  ↓
+[Debt Payment]     [Crypto Purchase]
+       ↓                  ↓
+[Ledger Update + Reconciliation]
+
+────────────────────────────────────────────
+7. KEY NOVEL CLAIMS
+────────────────────────────────────────────
+
+CLAIM 1:
+A system for allocating transaction round-ups across multiple financial destinations using a continuous allocation vector.
+
+CLAIM 2:
+The system of Claim 1, wherein allocation ratios span all proportional combinations between 0% and 100%.
+
+CLAIM 3:
+Execution of allocation occurs in real-time or near real-time per financial transaction.
+
+CLAIM 4:
+The system supports multiple destinations including debt repayment and digital asset acquisition.
+
+CLAIM 5:
+Allocation vectors may be dynamically modified based on:
+• User input
+• Behavioral data
+• Algorithmic optimization
+
+CLAIM 6:
+Transactions are processed using secure, idempotent execution protocols to prevent duplication.
+
+CLAIM 7:
+A non-transitory computer-readable medium storing instructions to perform the above methods.
+
+────────────────────────────────────────────
+8. DIFFERENTIATION (PRIOR ART POSITIONING)
+────────────────────────────────────────────
+
+Competitors:
+• Acorns → Savings only
+• Qoins → Debt only
+• ChangEd → Student loans only
+
+Dime Time:
+✔ Multi-destination simultaneous allocation
+✔ Continuous allocation spectrum
+✔ Real-time execution per transaction
+✔ Expandable architecture (N-destinations)
+✔ Crypto integration at micro-transaction level
+
+────────────────────────────────────────────
+9. FUTURE EXTENSIONS (COVERED BY CLAIMS)
+────────────────────────────────────────────
+
+• AI-driven allocation optimization
+• Risk-based allocation adjustments
+• Yield-bearing destinations
+• API licensing model for third-party fintech apps
+
+────────────────────────────────────────────
+10. INVESTOR POSITIONING STATEMENT
+────────────────────────────────────────────
+
+Dime Time is not a feature — it is a **patent-protected financial allocation framework**.
+
+The allocation vector system creates:
+→ Defensible IP moat
+→ Licensing opportunities
+→ Platform-level scalability across fintech ecosystems
