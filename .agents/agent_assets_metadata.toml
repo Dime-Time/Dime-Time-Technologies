@@ -186,3 +186,27 @@ id = "wpiky_z-8tJ53miGrLPFX"
 uri = "file://attached_assets/business-plan-slides/dime-time-business-plan.pdf"
 type = "pdf"
 title = "Dime Time Business Plan (PDF — for SBA / lenders)"
+
+[[outputs]]
+id = "t5ybIU8PiPHtxJHuCOrhI"
+uri = "file://attached_assets/pitch-deck-slides/dime-time-ip-appendix.pptx"
+type = "slides"
+title = "IP Appendix — 3 slides (PowerPoint)"
+
+[[outputs]]
+id = "ZpGBfo6sy39AX3MFxUdLN"
+uri = "file://attached_assets/pitch-deck-slides/dime-time-ip-appendix.pdf"
+type = "pdf"
+title = "IP Appendix — 3 slides (PDF)"
+
+[[outputs]]
+id = "Lyhaidm3PTbBaa589o63A"
+uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck-with-ip.pptx"
+type = "slides"
+title = "Full Pitch Deck + IP Appendix — 16 slides (PowerPoint)"
+
+[[outputs]]
+id = "BK-MZR9aaU0LbiMcQYOKC"
+uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck-with-ip.pdf"
+type = "pdf"
+title = "Full Pitch Deck + IP Appendix — 16 slides (PDF)"
