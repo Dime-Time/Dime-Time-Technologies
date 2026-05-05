@@ -47,6 +47,12 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
     - **Funding Account Validation**: Explicit failure if `MERCURY_PLAID_FUNDING_ID` is not set in production.
 - **Mobile Deployment**: CodeMagic CI/CD on Mac mini M2, distribution via App Store Connect (TestFlight → App Store) with Apple Developer Account certificates.
 
+## Investor / Patent Materials
+- `attached_assets/patent-application/` — USPTO provisional draft (.pdf + .docx) and 7 black-and-white figures
+- `attached_assets/patent-deck-slides/dime-time-patent-deck.pptx` — 12-slide investor patent overview deck (Google Slides-uploadable). PDF and per-slide PNG previews in same folder.
+- `attached_assets/pitch-deck-slides/` — 13-slide pitch deck (.pptx + .pdf)
+- `attached_assets/business-plan-slides/` — 14-slide business plan (.pptx + .pdf)
+
 ## External Dependencies
 - **Plaid**: For banking integration and linking user bank accounts.
 - **Coinbase**: For cryptocurrency features and Bitcoin purchases.

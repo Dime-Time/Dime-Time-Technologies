@@ -264,3 +264,15 @@ id = "cnZcw5fcxGKKXCUNc27_9"
 uri = "file://attached_assets/patent-application/FIG_7_Ledger_Lifecycle.png"
 type = "image"
 title = "FIG. 7 — Ledger Lifecycle"
+
+[[outputs]]
+id = "fN1BM1HzUCseCWWSXtmWs"
+uri = "file://attached_assets/patent-deck-slides/dime-time-patent-deck.pptx"
+type = "slides"
+title = "Dime Time — Patent Overview Deck (PowerPoint, Google Slides-ready)"
+
+[[outputs]]
+id = "B0hFb6xdERr8O9cdmBd3p"
+uri = "file://attached_assets/patent-deck-slides/dime-time-patent-deck.pdf"
+type = "pdf"
+title = "Dime Time — Patent Overview Deck (PDF preview)"
