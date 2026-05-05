@@ -1,0 +1,688 @@
+PROJECT: DIME TIME — USPTO-STYLE PATENT APPLICATION DRAFT
+
+TITLE:
+Dynamic Dual-Split and Multi-Destination Round-Up Microallocation System
+
+APPLICANT:
+Dime Time
+
+INVENTOR:
+Tim [Insert Full Legal Name]
+
+FIELD OF THE INVENTION
+
+The present invention relates generally to financial technology systems, transaction processing systems, automated debt repayment systems, digital asset acquisition systems, and user-controlled microallocation systems.
+
+More specifically, the invention relates to systems and methods for receiving transaction data, calculating transaction round-up amounts, applying a user-defined or dynamically adjusted allocation vector, and routing the resulting microallocated funds across two or more financial destinations, including debt repayment destinations and digital asset acquisition destinations.
+
+BACKGROUND OF THE INVENTION
+
+Consumers frequently carry high-interest debt while also desiring to build long-term financial assets. Existing personal finance tools generally focus on a single financial destination, such as savings, student loan repayment, investing, or debt payoff. These systems do not provide a flexible, user-controlled allocation engine capable of splitting a single transaction-derived round-up amount across multiple financial destinations in configurable percentages.
+
+Existing round-up systems may round purchases to the nearest dollar and direct the resulting difference to a single account or investment destination. However, these systems typically lack an allocation vector allowing the user to divide round-up value between debt repayment and asset acquisition. They also generally lack extensibility to multiple destinations, real-time execution orchestration, destination-specific rules, idempotent transfer handling, and reconciliation across heterogeneous financial endpoints.
+
+Accordingly, there is a need for a system that enables users to convert everyday transactions into structured financial microactions that can simultaneously reduce liabilities and acquire assets.
+
+SUMMARY OF THE INVENTION
+
+The invention provides a computerized financial microallocation platform that detects user transactions, calculates round-up amounts, applies an allocation vector, and executes transfers across multiple financial destinations.
+
+In one embodiment, the system receives transaction data from a linked financial account through a financial data provider. The system computes a round-up amount by determining the difference between a transaction amount and a next currency increment, such as the next whole dollar. The system applies an allocation vector to split the round-up amount into two or more allocation portions.
+
+In a preferred embodiment, the allocation destinations include:
+1. A debt repayment destination; and
+2. A digital asset acquisition destination, such as Bitcoin.
+
+The allocation vector may represent any split across the full 0 percent to 100 percent range. Examples include:
+- 100 percent debt / 0 percent digital asset
+- 90 percent debt / 10 percent digital asset
+- 80 percent debt / 20 percent digital asset
+- 50 percent debt / 50 percent digital asset
+- 20 percent debt / 80 percent digital asset
+- 0 percent debt / 100 percent digital asset
+
+The allocation vector may also extend to N destinations, including credit cards, student loans, auto loans, mortgages, savings accounts, investment accounts, brokerage accounts, digital wallets, cryptocurrency exchanges, custodial wallets, charitable accounts, or other financial endpoints.
+
+The system may execute payments through ACH, transfer networks, payment processors, banking APIs, crypto exchange APIs, or other financial rails.
+
+The system may maintain a reconciliation ledger to track calculated round-ups, authorization status, transfer status, settlement status, failed transactions, returned payments, canceled transfers, and destination-level allocation records.
+
+BRIEF DESCRIPTION OF THE DRAWINGS
+
+FIG. 1 illustrates a high-level system architecture of the Dime Time platform.
+
+FIG. 2 illustrates a transaction round-up calculation and allocation vector flow.
+
+FIG. 3 illustrates an example dual-destination allocation between debt repayment and Bitcoin acquisition.
+
+FIG. 4 illustrates an N-destination allocation model.
+
+FIG. 5 illustrates an execution orchestration workflow including authorization, creation, settlement, failure handling, and reconciliation.
+
+FIG. 6 illustrates a user interface allocation slider enabling a user to select allocation percentages.
+
+FIG. 7 illustrates a ledger lifecycle for round-up records and destination-level transfer states.
+
+DETAILED DESCRIPTION OF THE INVENTION
+
+1. SYSTEM OVERVIEW
+
+The system includes:
+- A mobile application;
+- A backend application server;
+- A transaction ingestion module;
+- A round-up calculation engine;
+- An allocation vector engine;
+- A destination routing engine;
+- An execution orchestration engine;
+- A reconciliation ledger;
+- A user interface layer;
+- Third-party financial integrations.
+
+The mobile application may be implemented using React, TypeScript, Capacitor, or another mobile application framework. The backend server may be implemented using Node.js, Express, PostgreSQL, Drizzle ORM, or equivalent backend technologies.
+
+The system may communicate with third-party providers, including:
+- Plaid or similar providers for bank linking, transaction data, and ACH transfer authorization;
+- Mercury or similar banking platforms for funding-account operations;
+- Coinbase or similar digital asset platforms for cryptocurrency acquisition;
+- Debt payment endpoints, loan servicers, card issuers, or bill payment systems.
+
+2. TRANSACTION INGESTION MODULE
+
+The transaction ingestion module receives transaction data associated with a user-linked financial account.
+
+Transaction data may include:
+- Transaction identifier;
+- Merchant name;
+- Transaction amount;
+- Transaction date;
+- Transaction category;
+- Account identifier;
+- Pending or posted status;
+- Currency;
+- Authorization status.
+
+The ingestion module may receive transaction data through:
+- Webhooks;
+- Periodic sync;
+- User-initiated refresh;
+- Batch import;
+- API polling.
+
+The system may ignore duplicate transactions using transaction identifiers, account identifiers, timestamps, idempotency keys, or a combination thereof.
+
+3. ROUND-UP CALCULATION ENGINE
+
+The round-up calculation engine calculates a round-up amount for each eligible transaction.
+
+Example:
+Transaction amount: $4.35
+Next whole dollar: $5.00
+Round-up amount: $0.65
+
+Formula:
+ROUND_UP_AMOUNT = CEILING(TRANSACTION_AMOUNT) - TRANSACTION_AMOUNT
+
+For transactions already equal to a whole dollar, the system may:
+- Generate a zero round-up;
+- Generate a fixed round-up;
+- Generate a user-configured minimum round-up;
+- Skip the transaction.
+
+The system may support:
+- Whole-dollar round-ups;
+- Five-dollar round-ups;
+- Ten-dollar round-ups;
+- Multiplier round-ups;
+- Minimum round-up thresholds;
+- Maximum daily, weekly, or monthly limits;
+- Merchant-specific rules;
+- Category-specific rules.
+
+4. ALLOCATION VECTOR ENGINE
+
+The allocation vector engine applies a user-defined or system-generated allocation vector to the round-up amount.
+
+A two-destination vector may be represented as:
+
+V = [D, A]
+
+Where:
+D = percentage allocated to debt repayment
+A = percentage allocated to asset acquisition
+D + A = 100%
+
+Example:
+V = [80, 20]
+
+If round-up amount = $1.00:
+Debt allocation = $0.80
+Bitcoin allocation = $0.20
+
+The allocation vector may support continuous values across the entire 0–100 range, including integer, decimal, or fractional values.
+
+Examples:
+- [100, 0]
+- [99, 1]
+- [80, 20]
+- [67.5, 32.5]
+- [50, 50]
+- [12.25, 87.75]
+- [0, 100]
+
+5. N-DESTINATION ALLOCATION MODEL
+
+The system may extend beyond two destinations.
+
+An N-destination vector may be represented as:
+
+V = [w1, w2, w3, ... wn]
+
+Where:
+w1 + w2 + w3 + ... wn = 100%
+
+Destinations may include:
+- Credit card debt;
+- Student loan debt;
+- Auto loan debt;
+- Mortgage debt;
+- Personal loan debt;
+- Bitcoin;
+- Ethereum;
+- Stablecoins;
+- Brokerage investments;
+- Savings accounts;
+- Emergency funds;
+- Charitable giving accounts;
+- Retirement accounts.
+
+Example:
+V = [50 debt, 20 Bitcoin, 20 savings, 10 charity]
+
+For a $2.00 round-up:
+- Debt: $1.00
+- Bitcoin: $0.40
+- Savings: $0.40
+- Charity: $0.20
+
+6. DESTINATION ROUTING ENGINE
+
+The destination routing engine determines where each allocation portion should be sent.
+
+The routing engine may use:
+- User-selected destination accounts;
+- Priority ranking;
+- Debt interest rate;
+- Outstanding balance;
+- Asset preference;
+- Risk tolerance;
+- Recurring schedule;
+- Minimum transfer thresholds;
+- Destination eligibility rules.
+
+Debt repayment destinations may include:
+- Credit card accounts;
+- Loan servicers;
+- ACH-enabled bill payment accounts;
+- Payment processors;
+- Internal pooled repayment accounts.
+
+Digital asset destinations may include:
+- Coinbase accounts;
+- Exchange accounts;
+- Custodial wallets;
+- Non-custodial wallet addresses;
+- Brokerage crypto accounts.
+
+7. EXECUTION ORCHESTRATION ENGINE
+
+The execution orchestration engine manages the financial movement of funds.
+
+The engine may:
+- Create transfer authorization;
+- Create ACH transfer;
+- Monitor transfer status;
+- Execute debt payment;
+- Execute digital asset purchase;
+- Record success or failure;
+- Retry eligible failed actions;
+- Reverse or cancel pending actions;
+- Reconcile settled items.
+
+The execution may include:
+1. Round-up record created;
+2. Transfer authorization requested;
+3. ACH transfer created;
+4. Transfer pending;
+5. Transfer posted;
+6. Funds settled;
+7. Destination payment initiated;
+8. Destination payment settled;
+9. Ledger updated.
+
+8. IDEMPOTENCY AND DUPLICATE PREVENTION
+
+The system may generate idempotency keys for:
+- Transaction ingestion;
+- Round-up creation;
+- ACH authorization;
+- Transfer creation;
+- Debt payment execution;
+- Digital asset purchase execution;
+- Ledger reconciliation.
+
+An idempotency key may be derived from:
+- User ID;
+- Transaction ID;
+- Account ID;
+- Allocation vector version;
+- Destination ID;
+- Timestamp;
+- Transfer attempt number.
+
+This prevents duplicate payments or duplicate asset purchases from the same source transaction.
+
+9. RECONCILIATION LEDGER
+
+The reconciliation ledger stores each round-up event and allocation portion.
+
+Ledger states may include:
+- created;
+- calculated;
+- authorized;
+- pending;
+- posted;
+- settled;
+- failed;
+- returned;
+- canceled;
+- reversed;
+- reconciled.
+
+Each ledger entry may include:
+- User ID;
+- Transaction ID;
+- Source account ID;
+- Original transaction amount;
+- Round-up amount;
+- Allocation vector;
+- Destination IDs;
+- Allocation amounts;
+- Transfer IDs;
+- Payment IDs;
+- Crypto order IDs;
+- Status;
+- Error codes;
+- Retry count;
+- Settlement timestamps.
+
+10. USER INTERFACE LAYER
+
+The user interface may include:
+- Bank-linking screen;
+- Dashboard;
+- Round-up history;
+- Debt destination setup;
+- Crypto destination setup;
+- Allocation slider;
+- Progress tracker;
+- Transfer status screen;
+- Settings screen.
+
+The allocation slider may allow the user to choose:
+- 100% debt / 0% Bitcoin
+- 80% debt / 20% Bitcoin
+- 50% debt / 50% Bitcoin
+- 20% debt / 80% Bitcoin
+- 0% debt / 100% Bitcoin
+
+The interface may display:
+- Projected debt payoff acceleration;
+- Bitcoin accumulation estimate;
+- Monthly round-up volume;
+- Total amount allocated;
+- Total debt reduced;
+- Total assets acquired.
+
+11. DYNAMIC ALLOCATION EMBODIMENTS
+
+The allocation vector may be static, user-defined, or dynamically adjusted.
+
+Dynamic adjustment may consider:
+- Debt interest rate;
+- Debt balance;
+- User income;
+- Spending behavior;
+- Market volatility;
+- Bitcoin price movement;
+- User risk preference;
+- Emergency fund status;
+- Payment due dates;
+- Delinquency risk;
+- Cash flow thresholds.
+
+Example:
+If a user’s credit card APR exceeds a threshold, the system may increase the debt allocation percentage.
+
+Example:
+If Bitcoin price decreases by a threshold and the user has enabled opportunistic buying, the system may increase the digital asset allocation percentage.
+
+Example:
+If the user’s bank balance drops below a safety threshold, the system may pause transfers.
+
+12. SECURITY EMBODIMENTS
+
+The system may include:
+- Encrypted access tokens;
+- AES-256-GCM encryption;
+- Hashed user credentials;
+- HMAC verification for webhooks;
+- Role-based access control;
+- Device-level authentication;
+- Secure session handling;
+- Audit logs;
+- Transfer limits;
+- Fraud detection rules.
+
+Sensitive tokens may be encrypted at rest and decrypted only when required for transaction execution.
+
+13. EXAMPLE USE CASE
+
+A user buys coffee for $4.35.
+
+The system:
+1. Receives transaction data.
+2. Calculates round-up:
+   $5.00 - $4.35 = $0.65
+3. Retrieves user allocation vector:
+   80% debt / 20% Bitcoin
+4. Calculates allocations:
+   Debt = $0.52
+   Bitcoin = $0.13
+5. Creates ledger entries.
+6. Aggregates microallocations until minimum transfer threshold is met.
+7. Initiates ACH collection from linked bank account.
+8. Routes debt portion to repayment destination.
+9. Routes Bitcoin portion to crypto purchase destination.
+10. Updates user dashboard.
+
+14. CLAIMS
+
+Claim 1:
+A computer-implemented method comprising:
+receiving transaction data associated with a user financial account;
+calculating, by one or more processors, a round-up amount based on a difference between a transaction amount and a higher currency increment;
+retrieving an allocation vector associated with the user;
+dividing the round-up amount into at least two allocation portions according to the allocation vector;
+routing a first allocation portion to a debt repayment destination;
+routing a second allocation portion to a digital asset acquisition destination; and
+recording status data associated with the first allocation portion and the second allocation portion in a reconciliation ledger.
+
+Claim 2:
+The method of claim 1, wherein the allocation vector comprises a first percentage assigned to debt repayment and a second percentage assigned to digital asset acquisition.
+
+Claim 3:
+The method of claim 2, wherein the first percentage and the second percentage are user-adjustable across a continuous range from 0 percent to 100 percent.
+
+Claim 4:
+The method of claim 1, wherein the digital asset acquisition destination comprises a cryptocurrency exchange account.
+
+Claim 5:
+The method of claim 1, wherein the digital asset comprises Bitcoin.
+
+Claim 6:
+The method of claim 1, further comprising generating an idempotency key associated with the transaction data and the allocation vector.
+
+Claim 7:
+The method of claim 1, further comprising aggregating multiple round-up amounts before initiating a transfer.
+
+Claim 8:
+The method of claim 1, wherein the allocation vector includes more than two financial destinations.
+
+Claim 9:
+The method of claim 8, wherein the financial destinations include at least one of a credit card account, loan account, savings account, investment account, brokerage account, cryptocurrency account, or charitable account.
+
+Claim 10:
+The method of claim 1, further comprising dynamically adjusting the allocation vector based on debt balance, interest rate, market conditions, spending behavior, user cash flow, or user risk preference.
+
+Claim 11:
+A system comprising:
+one or more processors;
+a memory storing instructions that, when executed, cause the one or more processors to:
+receive user transaction data;
+calculate a round-up amount;
+apply an allocation vector to the round-up amount;
+generate destination-specific allocation records;
+initiate transfer execution for each allocation record;
+and update a reconciliation ledger.
+
+Claim 12:
+The system of claim 11, wherein the allocation vector is adjustable through a graphical user interface slider.
+
+Claim 13:
+The system of claim 11, wherein a first destination is a debt repayment account and a second destination is a digital asset acquisition account.
+
+Claim 14:
+The system of claim 11, wherein the system prevents duplicate transfer execution using idempotency keys.
+
+Claim 15:
+The system of claim 11, wherein the reconciliation ledger tracks states comprising created, authorized, pending, posted, settled, failed, returned, canceled, or reconciled.
+
+Claim 16:
+A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to:
+receive transaction data;
+calculate a transaction round-up;
+split the transaction round-up according to an allocation vector;
+route a first split portion to a liability reduction destination;
+route a second split portion to an asset acquisition destination;
+and record execution status in a ledger.
+
+Claim 17:
+The non-transitory computer-readable medium of claim 16, wherein the asset acquisition destination is a cryptocurrency purchase destination.
+
+Claim 18:
+The non-transitory computer-readable medium of claim 16, wherein the allocation vector supports any ratio from 100/0 through 0/100.
+
+Claim 19:
+The non-transitory computer-readable medium of claim 16, wherein the allocation vector supports an N-dimensional financial destination model.
+
+Claim 20:
+The non-transitory computer-readable medium of claim 16, wherein transfer execution is paused based on a user account balance threshold.
+
+ABSTRACT
+
+A computerized financial microallocation system receives transaction data from a user-linked financial account, calculates transaction round-up amounts, applies a user-defined or dynamically adjusted allocation vector, and routes portions of the round-up amounts to multiple financial destinations. In one embodiment, a first allocation portion is routed to a debt repayment destination and a second allocation portion is routed to a digital asset acquisition destination, such as Bitcoin. The system may support continuous allocation ratios across a full 0 percent to 100 percent range and may extend to N financial destinations. The system includes transaction ingestion, round-up calculation, allocation vector processing, destination routing, transfer execution orchestration, idempotency controls, and reconciliation ledger tracking.
+
+FIGURE DIAGRAM INSTRUCTIONS FOR REPLIT
+
+Create the following patent-style black-and-white diagrams. Use simple boxes, arrows, labels, and figure numbers. Avoid decorative color.
+
+FIG. 1 — SYSTEM ARCHITECTURE
+
+Diagram layout:
+
+[User Mobile App]
+        |
+        v
+[Application Server]
+        |
+        +--> [Transaction Ingestion Module]
+        |
+        +--> [Round-Up Calculation Engine]
+        |
+        +--> [Allocation Vector Engine]
+        |
+        +--> [Destination Routing Engine]
+        |
+        +--> [Execution Orchestration Engine]
+        |
+        +--> [Reconciliation Ledger]
+        |
+        +--> [Security / Idempotency Layer]
+
+External integrations:
+[Plaid / Financial Data Provider] --> [Transaction Ingestion Module]
+[ACH / Banking Provider] <--> [Execution Orchestration Engine]
+[Debt Payment Destination] <--> [Destination Routing Engine]
+[Crypto Exchange / Coinbase] <--> [Destination Routing Engine]
+
+FIG. 2 — ROUND-UP + ALLOCATION FLOW
+
+[Transaction: $4.35]
+        |
+        v
+[Calculate Next Dollar: $5.00]
+        |
+        v
+[Round-Up Amount: $0.65]
+        |
+        v
+[Apply Allocation Vector: 80% / 20%]
+        |
+        +--> [Debt Portion: $0.52]
+        |
+        +--> [Bitcoin Portion: $0.13]
+
+FIG. 3 — DUAL DESTINATION MODEL
+
+[Round-Up Pool]
+        |
+        v
+[Allocation Vector Engine]
+        |
+        +--> [Debt Repayment Rail]
+        |         |
+        |         v
+        |   [Credit Card / Loan Account]
+        |
+        +--> [Digital Asset Rail]
+                  |
+                  v
+            [Bitcoin Purchase Destination]
+
+FIG. 4 — N-DESTINATION MODEL
+
+[Round-Up Amount]
+        |
+        v
+[Allocation Vector V = w1, w2, w3 ... wn]
+        |
+        +--> [Destination 1: Credit Card]
+        +--> [Destination 2: Bitcoin]
+        +--> [Destination 3: Savings]
+        +--> [Destination 4: Investment]
+        +--> [Destination N: Additional Endpoint]
+
+FIG. 5 — EXECUTION ORCHESTRATION WORKFLOW
+
+[Round-Up Created]
+        |
+        v
+[Authorization Requested]
+        |
+        v
+[Transfer Created]
+        |
+        v
+[Pending]
+        |
+        v
+[Posted]
+        |
+        v
+[Settled]
+        |
+        +--> [Debt Payment Executed]
+        |
+        +--> [Crypto Purchase Executed]
+        |
+        v
+[Ledger Reconciled]
+
+Failure branch:
+[Pending] --> [Failed / Returned / Canceled] --> [Retry / Pause / User Notification]
+
+FIG. 6 — USER ALLOCATION SLIDER
+
+Create a UI-style diagram:
+
+Debt 100% |--------------------------------| Bitcoin 0%
+Debt 80%  |-------------------------●------| Bitcoin 20%
+Debt 50%  |------------------●-------------| Bitcoin 50%
+Debt 0%   |●-------------------------------| Bitcoin 100%
+
+Include:
+[User selects allocation]
+        |
+        v
+[Allocation Vector Stored]
+        |
+        v
+[Applied to Future Round-Ups]
+
+FIG. 7 — LEDGER LIFECYCLE
+
+[Created]
+   |
+[Calculated]
+   |
+[Authorized]
+   |
+[Pending]
+   |
+[Posted]
+   |
+[Settled]
+   |
+[Reconciled]
+
+Alternative terminal states:
+[Failed]
+[Returned]
+[Canceled]
+[Reversed]
+
+REPLIT TASK
+
+Use the above patent draft to generate:
+1. A DOCX file titled:
+   Dime_Time_Provisional_Patent_Draft.docx
+
+2. A separate PDF titled:
+   Dime_Time_Provisional_Patent_Draft.pdf
+
+3. Seven black-and-white patent-style figures titled:
+   FIG_1_System_Architecture.png
+   FIG_2_Roundup_Allocation_Flow.png
+   FIG_3_Dual_Destination_Model.png
+   FIG_4_N_Destination_Model.png
+   FIG_5_Execution_Workflow.png
+   FIG_6_User_Allocation_Slider.png
+   FIG_7_Ledger_Lifecycle.png
+
+4. Insert the figures into the DOCX after the Brief Description of the Drawings.
+
+5. Use formal patent-style formatting:
+   - 8.5 x 11 page size
+   - 1-inch margins
+   - Times New Roman
+   - 12-point font
+   - Numbered paragraphs optional
+   - Claims begin on a new page
+   - Abstract on separate page
+
+IMPORTANT NOTES FOR REPLIT
+
+This is a drafting package, not legal advice.
+
+Do not add marketing language.
+
+Do not use colors in the patent figures.
+
+Do not use decorative icons.
+
+Keep all diagrams simple, reproducible, black-and-white, and label-driven.
+
+Make sure every claimed feature is supported somewhere in the specification.
+
+Make sure every diagram has a figure number and a short title.
