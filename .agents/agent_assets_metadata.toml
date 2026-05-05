@@ -269,7 +269,7 @@ title = "FIG. 7 — Ledger Lifecycle"
 id = "fN1BM1HzUCseCWWSXtmWs"
 uri = "file://attached_assets/patent-deck-slides/dime-time-patent-deck.pptx"
 type = "slides"
-title = "Dime Time — Patent Overview Deck (PowerPoint, Google Slides-ready)"
+title = "Dime Time — Patent Overview Deck (Google Slides-compatible, normalized)"
 
 [[outputs]]
 id = "B0hFb6xdERr8O9cdmBd3p"
