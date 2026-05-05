@@ -210,3 +210,57 @@ id = "BK-MZR9aaU0LbiMcQYOKC"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck-with-ip.pdf"
 type = "pdf"
 title = "Full Pitch Deck + IP Appendix — 16 slides (PDF)"
+
+[[outputs]]
+id = "Zts5fV5VCe2gOII1ArIOU"
+uri = "file://attached_assets/patent-application/Dime_Time_Provisional_Patent_Draft.pdf"
+type = "pdf"
+title = "Dime Time — Provisional Patent Draft (PDF)"
+
+[[outputs]]
+id = "4hd5fqIenCO5UjsmQkj6K"
+uri = "file://attached_assets/patent-application/Dime_Time_Provisional_Patent_Draft.docx"
+type = "word_document"
+title = "Dime Time — Provisional Patent Draft (DOCX, editable)"
+
+[[outputs]]
+id = "rQIeyav-8EO0_6DMCIGsX"
+uri = "file://attached_assets/patent-application/FIG_1_System_Architecture.png"
+type = "image"
+title = "FIG. 1 — System Architecture"
+
+[[outputs]]
+id = "JM3KoWfBZtHCoDOr_SUiO"
+uri = "file://attached_assets/patent-application/FIG_2_Roundup_Allocation_Flow.png"
+type = "image"
+title = "FIG. 2 — Round-Up & Allocation Flow"
+
+[[outputs]]
+id = "kl9PiwuWJXXuI7mi17fcb"
+uri = "file://attached_assets/patent-application/FIG_3_Dual_Destination_Model.png"
+type = "image"
+title = "FIG. 3 — Dual-Destination Model"
+
+[[outputs]]
+id = "2C5bILLofsLojQi-k4C-y"
+uri = "file://attached_assets/patent-application/FIG_4_N_Destination_Model.png"
+type = "image"
+title = "FIG. 4 — N-Destination Model"
+
+[[outputs]]
+id = "rr-YUVzgbbO7ngY3wOuRw"
+uri = "file://attached_assets/patent-application/FIG_5_Execution_Workflow.png"
+type = "image"
+title = "FIG. 5 — Execution Workflow"
+
+[[outputs]]
+id = "hhFnKZB8y_zgI7JJlb8rh"
+uri = "file://attached_assets/patent-application/FIG_6_User_Allocation_Slider.png"
+type = "image"
+title = "FIG. 6 — User Allocation Slider"
+
+[[outputs]]
+id = "cnZcw5fcxGKKXCUNc27_9"
+uri = "file://attached_assets/patent-application/FIG_7_Ledger_Lifecycle.png"
+type = "image"
+title = "FIG. 7 — Ledger Lifecycle"

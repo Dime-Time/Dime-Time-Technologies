@@ -1,0 +1,210 @@
+PROJECT: DIME TIME — USPTO PATENT DRAFT (CONTINUATION)
+
+13. EXAMPLE USE CASE (CONTINUED)
+
+3. Retrieves user allocation vector:
+   The system retrieves the user-defined allocation vector V = [80%, 20%], where 80% is allocated to debt repayment and 20% is allocated to digital asset acquisition.
+
+4. Applies allocation vector:
+   The system calculates allocation portions:
+   Debt allocation = $0.65 × 0.80 = $0.52
+   Bitcoin allocation = $0.65 × 0.20 = $0.13
+
+5. Creates ledger entry (state: CREATED):
+   A new ledger record is created containing:
+   - Transaction ID
+   - Source account ID
+   - Original transaction amount ($4.35)
+   - Round-up amount ($0.65)
+   - Allocation vector [80, 20]
+   - Destination records for debt and Bitcoin
+   - Initial state: CREATED
+
+6. Transitions to CALCULATED:
+   The system marks the ledger entry as CALCULATED after verifying round-up computation and allocation splits.
+
+7. Aggregation phase:
+   The system aggregates multiple round-up events until a minimum transfer threshold is reached.
+
+8. Authorization phase (state: AUTHORIZED):
+   Transfer authorization is requested and approved.
+
+9. Transfer creation (state: PENDING):
+   ACH transfer is created and submitted.
+
+10. Posting phase (state: POSTED):
+    Transfer is posted to the originating account.
+
+11. Settlement phase (state: SETTLED):
+    Funds settle in the funding account.
+
+12. Destination routing execution:
+    Debt portion routed to repayment account.
+    Bitcoin portion routed to crypto purchase.
+
+13. Destination completion:
+    Debt: pending → posted → settled.
+    Bitcoin: order placed → executed → credited.
+
+14. Ledger reconciliation (state: RECONCILED):
+    Final statuses, timestamps, and IDs are recorded.
+
+15. Failure branch:
+    If failure occurs:
+    - State transitions to FAILED, RETURNED, or CANCELED
+    - Retry logic may execute
+    - User may be notified
+    - Idempotency prevents duplication
+
+16. User dashboard update:
+    Displays updated debt reduction and asset accumulation.
+
+14. ADDITIONAL EMBODIMENTS
+
+The system may support:
+- Round-up multipliers
+- Time-based allocation rules
+- Goal-based allocation adjustments
+- Aggregated pooled accounts
+- Subscription or transaction fee models
+
+15. ERROR HANDLING
+
+The system handles:
+- Authorization failure
+- Insufficient funds
+- Network/API errors
+- Duplicate transactions
+
+Error responses:
+- Retry with backoff
+- Cancel transaction
+- Notify user
+- Log event
+
+16. RETURNED PAYMENTS
+
+Returned payments:
+- State set to RETURNED
+- Funds reversed
+- User notified
+- Transfers paused if necessary
+
+17. MULTI-CURRENCY SUPPORT
+
+The system may:
+- Calculate round-ups in local currency
+- Convert currency for destinations
+- Use real-time or cached exchange rates
+
+18. INTERNATIONAL RAILS
+
+Supported rails may include:
+- SEPA
+- SWIFT
+- Faster Payments
+- Open Banking APIs
+
+Compliance may include:
+- KYC
+- AML
+- Regional regulations
+
+19. SECURITY
+
+The system may include:
+- Encryption (AES-256)
+- Tokenization
+- Secure APIs
+- HMAC verification
+- Access control
+- Audit logs
+
+20. FUTURE EXTENSIONS
+
+The system may include:
+- AI allocation optimization
+- Yield-generating destinations
+- Refinancing tools
+- Credit optimization
+- API licensing
+
+CLAIMS
+
+1. A system for automated financial microallocation, comprising:
+   (a) one or more processors;
+   (b) a memory storing instructions; and
+   (c) modules configured to:
+       receive transaction data;
+       calculate a round-up amount;
+       apply an allocation vector;
+       divide the round-up amount;
+       route a first portion to debt repayment; and
+       route a second portion to digital asset acquisition.
+
+2. The system of claim 1, wherein the allocation vector is adjustable from 0% to 100%.
+
+3. The system of claim 1, wherein the allocation vector supports more than two destinations.
+
+4. The system of claim 3, wherein destinations include credit, loans, savings, or cryptocurrency.
+
+5. The system of claim 1, wherein allocation is dynamically adjusted.
+
+6. The system of claim 1, further comprising idempotent execution.
+
+7. The system of claim 1, further comprising a reconciliation ledger.
+
+8. The system of claim 7, wherein states include created, pending, settled, failed, returned, and reconciled.
+
+9. The system of claim 1, further comprising a UI slider.
+
+10. The system of claim 1, wherein the digital asset is Bitcoin.
+
+11. A computer-implemented method comprising:
+    receiving transaction data;
+    calculating a round-up;
+    applying an allocation vector;
+    dividing the round-up;
+    routing portions to debt and asset destinations.
+
+12. The method of claim 11, wherein allocation is continuous.
+
+13. The method of claim 11, wherein allocation includes N destinations.
+
+14. The method of claim 11, further comprising dynamic adjustment.
+
+15. The method of claim 11, further comprising idempotency keys.
+
+16. The method of claim 11, further comprising ledger tracking.
+
+17. A non-transitory computer-readable medium storing instructions to:
+    calculate round-ups;
+    apply allocation;
+    route funds;
+    record results.
+
+18. The medium of claim 17, wherein allocation spans 0–100%.
+
+19. The medium of claim 17, wherein routing includes crypto acquisition.
+
+20. The medium of claim 17, further comprising API execution.
+
+ABSTRACT
+
+A computerized financial microallocation system receives transaction data, calculates round-up amounts, applies an allocation vector, and distributes funds across multiple destinations including debt repayment and digital asset acquisition. The system supports continuous allocation ratios, multi-destination routing, real-time execution, idempotent processing, and reconciliation tracking.
+
+FIGURE DESCRIPTIONS
+
+FIG. 1 describes a system architecture including mobile app, backend modules, and external integrations.
+
+FIG. 2 describes round-up calculation and allocation processing.
+
+FIG. 3 describes dual allocation to debt and digital assets.
+
+FIG. 4 describes multi-destination allocation.
+
+FIG. 5 describes execution workflow including transfer lifecycle.
+
+FIG. 6 describes a user allocation slider interface.
+
+FIG. 7 describes ledger lifecycle states from creation to reconciliation.
