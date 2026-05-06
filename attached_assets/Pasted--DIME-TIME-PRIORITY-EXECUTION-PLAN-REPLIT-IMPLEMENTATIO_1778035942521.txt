@@ -1,0 +1,545 @@
+# DIME TIME — PRIORITY EXECUTION PLAN (REPLIT IMPLEMENTATION VERSION)
+
+## CURRENT REALITY
+
+Dime Time is no longer in “prototype mode.”
+
+The product already has:
+
+* Functional architecture
+* Plaid integration
+* Transfer ledger
+* Encryption
+* Idempotency
+* Reconciliation
+* Patent draft
+* Investor materials
+* TestFlight pipeline
+
+The current phase is:
+➡️ LAUNCH READINESS
+➡️ COMPLIANCE READINESS
+➡️ INVESTOR READINESS
+
+DO NOT spend the next two weeks building random features.
+
+The highest leverage work now is:
+
+1. Legal/compliance
+2. Store readiness
+3. Patent filing
+4. Investor prep
+5. Growth infrastructure
+
+---
+
+## WEEK 1 — HIGHEST PRIORITY
+
+# 1. LEGAL + COMPLIANCE IMPLEMENTATION
+
+STATUS: CRITICAL
+
+## REQUIRED DOCUMENTS
+
+Create:
+
+* Privacy Policy
+* Terms of Service
+* ACH Authorization Agreement
+* Crypto Risk Disclosure
+* Refund / Cancellation Policy
+* Account Deletion Policy
+* Support Policy
+
+## REPLIT TASKS
+
+### A. Create Legal Pages
+
+Add routes/pages:
+
+* /privacy
+* /terms
+* /ach-authorization
+* /crypto-disclosure
+* /account-deletion
+* /support
+
+Implement:
+
+* React pages
+* Mobile responsive
+* Footer links globally
+
+### B. Add User Consent Logging
+
+Database table:
+consent_logs
+
+Fields:
+
+* id
+* user_id
+* consent_type
+* version
+* ip_address
+* accepted_at
+
+Track acceptance for:
+
+* Terms
+* Privacy
+* ACH authorization
+* Crypto disclosure
+
+### C. Store Legal Versioning
+
+Add:
+LEGAL_VERSION constant
+
+Persist accepted versions per user.
+
+### D. Add Support Infrastructure
+
+Create:
+[support@dime-time.com](mailto:support@dime-time.com)
+
+Backend:
+
+* /api/support-ticket
+* SendGrid or Resend integration
+* Ticket logging table
+
+Suggested fields:
+
+* id
+* user_id
+* category
+* message
+* status
+* created_at
+
+---
+
+# 2. APP STORE + PLAY STORE READINESS
+
+## STATUS: CRITICAL
+
+## REPLIT TASKS
+
+### A. Create Review Demo Mode
+
+Add:
+DEMO_MODE=true
+
+Mock:
+
+* transactions
+* debts
+* balances
+* crypto allocations
+
+Apple reviewers MUST be able to use app without real banking.
+
+### B. Build App Review Account Seeder
+
+Create endpoint:
+POST /api/demo/reset
+
+Purpose:
+
+* Reset demo account state
+* Re-seed transactions
+* Re-seed ledger
+
+### C. App Metadata JSON
+
+Create structured file:
+app-store-metadata.json
+
+Include:
+
+* title
+* subtitle
+* keywords
+* description
+* support_url
+* privacy_url
+* marketing_url
+
+### D. Privacy Nutrition Label Mapping
+
+Create internal JSON:
+privacy-data-map.json
+
+Track:
+
+* emails
+* financial data
+* device identifiers
+* analytics
+* Plaid-linked information
+
+### E. Add Account Deletion Confirmation Flow
+
+Current delete-account flow exists.
+
+Add:
+
+* final confirmation modal
+* email confirmation
+* deletion receipt logging
+
+---
+
+# 3. PATENT FILING
+
+## STATUS: HIGH PRIORITY
+
+## RECOMMENDATION
+
+FILE NOW.
+
+Reason:
+
+* Working implementation exists
+* Investor conversations are approaching
+* Public disclosures increase over time
+* Filing date matters
+
+## REPLIT TASKS
+
+### A. Generate Patent Diagrams
+
+Create clean SVG exports for:
+
+* allocation vector engine
+* reconciliation ledger
+* transfer orchestration
+* multi-destination routing
+
+### B. Create Internal Patent Archive Folder
+
+/patent/
+
+* provisional-draft-v1.pdf
+* figures/
+* filing-receipt/
+* claims/
+* continuation-notes/
+
+### C. Add Internal Architecture Documentation
+
+Generate markdown docs:
+
+* ACH flow
+* webhook flow
+* idempotency flow
+* crypto allocation flow
+* reconciliation states
+
+---
+
+# 4. INVESTOR DATA ROOM
+
+## STATUS: HIGH PRIORITY
+
+## CREATE:
+
+Google Drive / Notion / Dropbox structure
+
+Folders:
+
+* Company
+* Product
+* Compliance
+* IP
+* Financials
+* Fundraising
+* Technical
+
+## REPLIT TASKS
+
+### A. Create Architecture Diagram
+
+Generate:
+system-architecture.svg
+
+Include:
+
+* frontend
+* backend
+* Plaid
+* Coinbase
+* PostgreSQL
+* webhook flow
+* transfer orchestration
+
+### B. Build Demo Dashboard Snapshot Export
+
+Feature:
+Export investor screenshots automatically.
+
+Create:
+
+* high-resolution dashboard screenshots
+* sample allocation visuals
+* repayment flows
+
+### C. Add Environment Documentation
+
+Create:
+ENVIRONMENT_SETUP.md
+
+Document:
+
+* env vars
+* Plaid environments
+* Coinbase setup
+* CodeMagic setup
+* build process
+
+---
+
+# 5. DEMO VIDEO
+
+## STATUS: HIGH PRIORITY
+
+## VIDEO STRUCTURE
+
+Length:
+2–3 minutes
+
+Flow:
+
+1. Debt problem
+2. Round-up automation
+3. Allocation slider
+4. Plaid linking
+5. Debt routing
+6. Bitcoin allocation
+7. Security architecture
+8. ACH pending → imminent launch
+
+## REPLIT TASKS
+
+### A. Build “Presentation Mode”
+
+Create:
+?presentation=true
+
+Effects:
+
+* cleaner UI
+* hide debug buttons
+* hide unfinished features
+* smooth animations
+* polished charts
+
+### B. Add Seeded Financial Journey
+
+Create:
+sample-user-scenarios.json
+
+Examples:
+
+* Credit card payoff
+* Student loan reduction
+* BTC accumulation
+
+---
+
+## WEEK 2 — GROWTH + INVESTOR PIPELINE
+
+# 6. WAITLIST SYSTEM
+
+STATUS: HIGH PRIORITY
+
+## REPLIT TASKS
+
+### A. Build Waitlist Landing Page
+
+Route:
+/waitlist
+
+Capture:
+
+* email
+* debt type
+* debt amount range
+* Bitcoin interest
+* referral source
+
+### B. Referral Tracking
+
+Add:
+referral_code field
+
+Generate:
+
+* unique referral URLs
+* leaderboard logic later
+
+### C. Email Automation
+
+Integrate:
+
+* Resend
+  OR
+* Mailchimp
+  OR
+* ConvertKit
+
+Automations:
+
+* welcome email
+* beta interest email
+* launch countdown
+
+---
+
+# 7. ACH RISK CONTROLS
+
+## STATUS: VERY IMPORTANT
+
+## REPLIT TASKS
+
+### A. Add Transfer Limits
+
+Database fields:
+
+* daily_limit
+* weekly_limit
+* monthly_limit
+
+### B. Add Velocity Monitoring
+
+Track:
+
+* transfers/day
+* failed transfers
+* suspicious retries
+
+### C. ACH Return Handling
+
+Implement:
+
+* R01 insufficient funds
+* R02 account closed
+* R03 invalid account
+* R29 corporate unauthorized
+
+### D. Add Risk Flags
+
+risk_flags table:
+
+* user_id
+* flag_type
+* severity
+* notes
+
+---
+
+# 8. KYC / AML BOUNDARY DOCUMENTATION
+
+## STATUS: IMPORTANT
+
+## YOU NEED CLEAR ANSWERS TO:
+
+* Does Dime Time custody money?
+* Does Dime Time custody crypto?
+* Who performs KYC?
+* Who performs AML checks?
+* Is Coinbase responsible for crypto verification?
+* Is Plaid handling identity verification?
+
+## REPLIT TASKS
+
+### A. Build Compliance Documentation Folder
+
+/compliance/
+
+Files:
+
+* kyc-boundary.md
+* aml-responsibilities.md
+* custody-model.md
+* data-retention-policy.md
+
+### B. Add Audit Logging
+
+audit_logs table:
+
+* user_id
+* action
+* entity_type
+* entity_id
+* metadata
+* timestamp
+
+Track:
+
+* login
+* transfer creation
+* transfer failures
+* Plaid relinks
+* account deletion
+* allocation changes
+
+---
+
+# 9. STOP BUILDING RANDOM FEATURES
+
+## STATUS: CRITICAL
+
+DO NOT:
+
+* add social features
+* redesign UI repeatedly
+* over-engineer analytics
+* add extra crypto assets
+* build gamification
+* rebuild architecture
+
+FOCUS:
+
+* legal readiness
+* operational readiness
+* investor readiness
+* ACH readiness
+* launch execution
+
+---
+
+## FINAL PRIORITY ORDER
+
+1. Legal/compliance pages
+2. App Store readiness
+3. Patent filing
+4. Investor data room
+5. Demo video
+6. Waitlist infrastructure
+7. ACH risk controls
+8. KYC/AML documentation
+9. Investor outreach
+
+---
+
+## MOST IMPORTANT STRATEGIC POINT
+
+Dime Time already looks substantially more advanced than most pre-seed fintech concepts.
+
+The biggest risk now is NOT lack of features.
+
+The biggest risks are:
+
+* compliance gaps
+* App Store rejection
+* ACH risk management
+* weak operational documentation
+* delaying launch through endless iteration
+
+The correct move now:
+➡️ make the company look operationally credible
+➡️ make the product legally defensible
+➡️ make the investor story easy to understand
+➡️ make launch execution smooth
