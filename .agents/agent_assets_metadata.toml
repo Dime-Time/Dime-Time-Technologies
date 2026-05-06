@@ -276,3 +276,9 @@ id = "B0hFb6xdERr8O9cdmBd3p"
 uri = "file://attached_assets/patent-deck-slides/dime-time-patent-deck.pdf"
 type = "pdf"
 title = "Dime Time — Patent Overview Deck (PDF preview)"
+
+[[outputs]]
+id = "gxD-yjddCr1mb29JxmJvE"
+uri = "file://attached_assets/patent-application/DimeTime_Provisional_Specification_USPTO.pdf"
+type = "pdf"
+title = "DimeTime Provisional Specification — USPTO-compliant (all fonts embedded)"
