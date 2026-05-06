@@ -5,7 +5,8 @@ import {
   ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { clearAuthToken } from "@/lib/authToken";
+import { Capacitor } from "@capacitor/core";
+import { clearAuthToken, getAuthToken, hasStoredToken } from "@/lib/authToken";
 import { getApiUrl } from "@/lib/queryClient";
 import { getCachedUser, cacheUser, clearDashboardCache } from "@/lib/dashboardCache";
 
@@ -58,9 +59,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, USER_FETCH_TIMEOUT_MS);
 
       try {
+        // On native (Capacitor) the WebView origin is capacitor://localhost,
+        // so cross-origin cookies to dime-time.com won't be sent. Attach the
+        // Bearer token instead — same pattern queryClient.ts uses for all
+        // other API calls.
+        const headers: Record<string, string> = {};
+        if (Capacitor.isNativePlatform() && hasStoredToken()) {
+          try {
+            const token = await getAuthToken();
+            if (token) {
+              headers["Authorization"] = `Bearer ${token}`;
+            }
+          } catch (err) {
+            console.warn("[DimeTime] failed to attach bearer token to /api/user", err);
+          }
+        }
+
         const res = await fetch(getApiUrl("/api/user"), {
           credentials: "include",
           signal: controller.signal,
+          headers,
         });
         clearTimeout(timeoutId);
         console.log(`[DimeTime] /api/user responded in ${(performance.now() - t0).toFixed(0)}ms (status ${res.status})`);

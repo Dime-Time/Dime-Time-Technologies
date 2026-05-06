@@ -36,20 +36,31 @@ const config: CapacitorConfig = {
      * If Apple ever rejects "60" as already used, bump this again
      * (to "61", "62", etc.), commit, push, and rebuild on Codemagic.
      */
-    buildNumber: '60',
+    buildNumber: '61',
   },
 
   server: {
     /**
-     * Production backend URL for the app.
-     * This should be the same host your web app is deployed to.
+     * IMPORTANT — DO NOT add `url` here.
      *
-     * In your case this is your Replit autoscale app with the custom
-     * domain wired in:
+     * Setting `server.url` makes the native WebView load the ENTIRE
+     * HTML/JS/CSS bundle from the network on every cold start. On
+     * iOS TestFlight that produced a ~10 second blank/splash delay
+     * before the React app could even begin mounting, because the
+     * WebView had to download the whole Vite bundle on first launch.
      *
-     *   https://dime-time.com
+     * With no `url` set, Capacitor loads the JS that was bundled into
+     * the IPA at build time (from `webDir` -> `ios/App/App/public/`),
+     * so first paint happens in milliseconds.
+     *
+     * API calls still go to https://dime-time.com — that is handled
+     * separately in `client/src/lib/queryClient.ts` via
+     * `Capacitor.isNativePlatform()`, which prefixes every fetch with
+     * the production host. This split (bundled UI + remote API) is
+     * the standard Capacitor pattern.
      */
-    url: 'https://dime-time.com',
+    androidScheme: 'https',
+    iosScheme: 'https',
     cleartext: false,
   },
 };

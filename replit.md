@@ -46,6 +46,7 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
     - **Structured Reconciliation Logging**: JSON logs with `correlationId` for all transfer operations.
     - **Funding Account Validation**: Explicit failure if `MERCURY_PLAID_FUNDING_ID` is not set in production.
 - **Mobile Deployment**: CodeMagic CI/CD on Mac mini M2, distribution via App Store Connect (TestFlight → App Store) with Apple Developer Account certificates.
+- **Capacitor Cold-Start Rule**: NEVER set `server.url` in `capacitor.config.ts`. Doing so makes the iOS WebView download the entire Vite bundle from `https://dime-time.com` on every cold launch (~10s delay observed in TestFlight). Bundled web assets must ship inside the IPA (`webDir: 'dist'` → `ios/App/App/public/`); API calls are routed to production via `Capacitor.isNativePlatform()` in `client/src/lib/queryClient.ts`. Before each Codemagic build, run `npm run build && npx cap sync ios` so `ios/App/App/public/` contains a fresh bundle (otherwise stale placeholders ship).
 
 ## Investor / Patent Materials
 - `attached_assets/patent-application/` — USPTO provisional draft (.pdf + .docx) and 7 black-and-white figures
