@@ -33,6 +33,7 @@ import multer from "multer";
 import { randomBytes } from "crypto";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./services/emailService";
 import { getFlags } from "./lib/flags";
+import { withCanonicalStatus } from "@shared/transactionStatus";
 
 const PASSWORD_RESET_TOKEN_TTL_MINUTES = 60;
 const EMAIL_VERIFICATION_TTL_MINUTES = 60 * 24; // 24 hours
@@ -773,6 +774,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's transfers (canonical ledger across roundup + debt payment rails)
+  app.get("/api/transfers", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const transfers = await storage.getTransfersByUserId(userId);
+      // Strip provider IDs / raw payloads — those are operational logs,
+      // not user-facing data. Only expose the fields a status surface
+      // actually needs.
+      const safe = transfers.map((t) => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount,
+        status: t.status,
+        debtId: t.debtId,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      }));
+      res.json(safe.map(withCanonicalStatus));
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get user's payments
   app.get("/api/payments", async (req: Request, res: Response) => {
     try {
@@ -781,7 +808,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const payments = await storage.getPaymentsByUserId(userId);
-      res.json(payments);
+      // Normalise legacy status strings into the canonical TransactionStatus
+      // enum so the client can render a single shared <StatusBadge/>.
+      res.json(payments.map(withCanonicalStatus));
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -1062,7 +1091,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const purchases = await storage.getCryptoPurchasesByUserId(userId);
-      res.json(purchases);
+      // Same canonical-status normalisation as /api/payments.
+      res.json(purchases.map(withCanonicalStatus));
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -1178,7 +1208,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const purchases = await storage.getCryptoPurchasesByUserId(userId);
-      const completedPurchases = purchases.filter(p => p.status === 'completed');
+      // Use canonical status so legacy / provider strings like 'succeeded',
+      // 'settled', 'posted' all aggregate into the portfolio (matches the
+      // <StatusBadge/> rendering the user sees).
+      const completedPurchases = purchases
+        .map(withCanonicalStatus)
+        .filter(p => p.status === 'completed');
       
       // Group by crypto symbol
       const portfolio = completedPurchases.reduce((acc, purchase) => {

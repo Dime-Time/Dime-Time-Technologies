@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { PlaidLink } from "@/components/PlaidLink";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, DollarSign, CreditCard, AlertCircle, Building2, ArrowUpRight, ArrowDownRight } from "lucide-react";
@@ -130,9 +131,10 @@ export default function Banking() {
                       )}
                       <div>
                         <p className="text-sm font-medium">{tx.counterpartyName || 'Transfer'}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(tx.createdAt).toLocaleDateString()} · {tx.status}
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>{new Date(tx.createdAt).toLocaleDateString()}</span>
+                          <StatusBadge status={tx.status} compact />
+                        </div>
                       </div>
                     </div>
                     <span className={`font-semibold text-sm ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>

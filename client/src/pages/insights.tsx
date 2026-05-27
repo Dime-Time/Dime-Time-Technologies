@@ -13,6 +13,18 @@ import {
   BarChart3
 } from "lucide-react";
 import type { Transaction, Debt, Payment } from "@shared/schema";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { TransactionStatus } from "@shared/transactionStatus";
+
+interface TransferRow {
+  id: string;
+  type: string;
+  amount: string;
+  status: TransactionStatus;
+  debtId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface DashboardSummary {
   totalDebt: string;
@@ -34,6 +46,10 @@ export default function Insights() {
 
   const { data: payments = [] } = useQuery<Payment[]>({
     queryKey: ["/api/payments"],
+  });
+
+  const { data: transfers = [] } = useQuery<TransferRow[]>({
+    queryKey: ["/api/transfers"],
   });
 
   const { data: summary } = useQuery<DashboardSummary>({
@@ -289,6 +305,42 @@ export default function Insights() {
             </div>
           </CardContent>
         </Card>
+
+        {transfers.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Recent Transfers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {transfers
+                  .slice()
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .slice(0, 5)
+                  .map((t) => (
+                    <li
+                      key={t.id}
+                      className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2"
+                      data-testid={`transfer-row-${t.id}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-sm font-medium text-slate-900">
+                          {formatCurrency(t.amount)}
+                        </span>
+                        <StatusBadge status={t.status} timestamp={t.createdAt} />
+                      </div>
+                      <span className="text-xs text-slate-500 capitalize">
+                        {t.type.replace(/_/g, " ")}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-dime-accent/5 border border-dime-accent/10">
           <CardHeader>

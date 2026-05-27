@@ -7,6 +7,7 @@ import { PaymentModal } from "@/components/payment-modal";
 import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
 import { CreditCard, TrendingDown, Calendar, Plus, DollarSign } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
 import type { Debt, Payment } from "@shared/schema";
 
 export default function Debts() {
@@ -214,6 +215,36 @@ export default function Debts() {
                       View History
                     </Button>
                   </div>
+
+                  {/* Recent Payments — last 3 with canonical status badge */}
+                  {debtPayments.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-slate-600 mb-2">Recent Payments</h4>
+                      <ul className="space-y-2">
+                        {debtPayments
+                          .slice()
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .slice(0, 3)
+                          .map((p) => (
+                            <li
+                              key={p.id}
+                              className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2"
+                              data-testid={`payment-row-${p.id}`}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span className="text-sm font-medium text-slate-900">
+                                  {formatCurrency(p.amount)}
+                                </span>
+                                <StatusBadge status={p.status} timestamp={p.date} />
+                              </div>
+                              <span className="text-xs text-slate-500 capitalize">
+                                {p.source.replace(/_/g, " ")}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {/* One-Tap Accelerated Payment */}
                   <AcceleratedPayment debt={debt} />
