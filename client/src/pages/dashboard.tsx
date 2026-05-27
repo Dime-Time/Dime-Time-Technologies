@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { StatusBadge } from "@/components/StatusBadge";
 import { DebtProgressChart } from "@/components/debt-progress-chart";
 import { PaymentModal } from "@/components/payment-modal";
 import { formatCurrency, formatTime, formatDate, calculateDebtProgress } from "@/lib/calculations";
@@ -278,6 +279,9 @@ export default function Dashboard() {
                       <div className="text-right">
                         <p className="font-medium text-slate-900">-{formatCurrency(transaction.amount)}</p>
                         <p className="text-sm text-dime-accent">+{formatCurrency(transaction.roundUpAmount)} round-up</p>
+                        <div className="mt-1 flex justify-end">
+                          <StatusBadge status="completed" compact />
+                        </div>
                       </div>
                     </div>
                   ))
