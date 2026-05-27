@@ -2,6 +2,9 @@ import { Link } from "wouter";
 import { ArrowLeft, FileText } from "lucide-react";
 import logoUrl from "@/assets/dime-time-app-icon.png";
 
+// NOTE: Update EFFECTIVE_DATE only when the policy text below actually changes.
+const EFFECTIVE_DATE = "May 27, 2026";
+
 export default function Terms() {
   return (
     <div className="dt-marketing min-h-screen bg-white text-slate-900 antialiased">
@@ -33,7 +36,7 @@ export default function Terms() {
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">Terms of Service</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Effective {new Date().toLocaleDateString()}
+              Effective {EFFECTIVE_DATE}
             </p>
           </div>
         </div>
@@ -126,7 +129,10 @@ export default function Terms() {
           </section>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-slate-200">
+        <div className="mt-12 pt-6 border-t border-slate-200 space-y-3">
+          <p className="text-xs text-slate-500 italic">
+            These policies may be updated as Dime Time's services evolve.
+          </p>
           <Link href="/" className="text-sm text-dime-purple hover:underline">
             ← Back to Home
           </Link>

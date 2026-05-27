@@ -91,6 +91,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     validate: { xForwardedForHeader: false },
   });
 
+  // Public contact form: 5 submissions per IP per minute.
+  // TODO: add Cloudflare Turnstile / hCaptcha before public launch.
+  const contactLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { message: "Too many messages. Please try again in a minute." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
+  });
+
   async function checkIdempotency(key: string, userId: string, endpoint: string): Promise<{ status: number; body: any } | null> {
     const existing = await storage.getIdempotencyKey(key, userId, endpoint);
     if (existing) {
@@ -258,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contact form submission (public endpoint)
-  app.post("/api/contact", async (req: Request, res: Response) => {
+  app.post("/api/contact", contactLimiter, async (req: Request, res: Response) => {
     try {
       const validatedData = insertContactSubmissionSchema.parse(req.body);
       const submission = await storage.createContactSubmission(validatedData);
