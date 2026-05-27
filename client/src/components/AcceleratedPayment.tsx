@@ -7,7 +7,7 @@ import { Zap, CreditCard, DollarSign } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Debt } from "@shared/schema";
-import { BetaModeBanner } from "@/components/BetaModeBanner";
+import { BetaModeBanner, ComplianceDisclaimer } from "@/components/BetaModeBanner";
 
 interface AcceleratedPaymentProps {
   debt: Debt;
@@ -90,6 +90,7 @@ export function AcceleratedPayment({ debt, className = "" }: AcceleratedPaymentP
       
       <CardContent className="space-y-4">
         <BetaModeBanner variant="compact" />
+        <ComplianceDisclaimer />
         {/* Quick Payment Buttons */}
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">Quick Payments</p>
