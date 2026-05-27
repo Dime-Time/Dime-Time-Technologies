@@ -1,3 +1,9 @@
+// Sentry MUST be imported and initialized before anything else so the Node
+// SDK can install its global instrumentation hooks. No-op when SENTRY_DSN
+// is unset.
+import { initSentry, Sentry } from "./lib/sentry";
+initSentry();
+
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
@@ -5,6 +11,16 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
 
 const app = express();
+
+// Defense-in-depth: never serve source maps publicly, even if a future build
+// step accidentally emits them into the static dir. Returns 404 before
+// express.static gets a chance to read them off disk.
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path.endsWith(".map")) {
+    return res.status(404).end();
+  }
+  next();
+});
 
 /**
  * Simple health check – kept first so it works even if other middleware misbehaves.
@@ -149,6 +165,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     /**
      * 3) Global error handler – catches thrown errors from routes/middleware
      */
+    // Sentry's Express error handler is installed BEFORE our own handler so
+    // 5xxs are captured. No-op when SENTRY_DSN is unset.
+    Sentry.setupExpressErrorHandler(app);
+
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";

@@ -5,6 +5,7 @@ import { plaidService } from "../services/plaidService";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "../middleware/authHelper";
 import { z } from "zod";
+import { setCorrelationTag } from "../lib/sentry";
 
 const MAX_ROUNDUP_DOLLARS = 5;
 const MAX_DEBT_PAYMENT_DOLLARS = 500;
@@ -21,6 +22,10 @@ const payDebtSchema = z.object({
 });
 
 function transferLog(correlationId: string, event: string, data?: Record<string, unknown>): void {
+  // Cross-stack correlation: tag the current Sentry isolation scope so any
+  // exception captured during this request carries the same correlationId
+  // already in our structured logs.
+  setCorrelationTag(correlationId);
   console.log(JSON.stringify({
     ts: new Date().toISOString(),
     service: 'MercuryRoutes',

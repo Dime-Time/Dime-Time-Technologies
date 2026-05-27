@@ -112,6 +112,34 @@ Flag env vars (all read with tolerant parsing — `1` / `true` / `yes` / `on` / 
 
 To add a new flag: append to `FLAG_DEFINITIONS` in `shared/flags.ts` and add a row above. Server and client pick it up automatically — no other plumbing needed.
 
+## Error Tracking (Sentry)
+
+Production error visibility is provided by Sentry on both the Express server and the React client. Wiring lives in `server/lib/sentry.ts`, `client/src/lib/sentry.ts`, and the shared redactor in `shared/sentryRedact.ts`.
+
+**Env vars (all optional — Sentry is silent if unset):**
+
+| Env var | Side | Purpose |
+|---|---|---|
+| `SENTRY_DSN` | server | Node SDK DSN. Missing → SDK does not initialize, app behavior identical to today. |
+| `VITE_SENTRY_DSN` | client (build time) | React SDK DSN. Missing → SDK never loads. |
+| `SENTRY_ENVIRONMENT` / `VITE_SENTRY_ENVIRONMENT` | both | Override the environment tag (defaults to `NODE_ENV` / Vite `MODE`). |
+| `SENTRY_RELEASE` / `VITE_SENTRY_RELEASE` | both | Release name (matched between client & server for cross-stack grouping). |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | build time | Required to enable client source-map upload via the Sentry Vite plugin (prod build only). |
+
+**Redaction guarantees (enforced by `server/lib/__tests__/sentry-redact.test.ts`):**
+
+- Query strings AND URL fragments are stripped from `request.url`, all `breadcrumbs[].data.url` (and `to` / `from`), and any string in `extra` / `contexts` / `request.data` that looks like an http(s) URL.
+- Any field whose key matches `/token|password|secret|api[_-]?key|authorization|cookie|plaid[_-]?access[_-]?token|access[_-]?token|refresh[_-]?token/i` (case-insensitive) is replaced with the literal string `[Filtered]`.
+- `Authorization`, `Cookie`, and `Set-Cookie` request headers are filtered.
+- Free-form `message` and `exception.value` strings have `token=…` / `password=…` / `access_token=…` query-style params scrubbed.
+- **Hard assertion:** `/verify-email` and `/reset-password` (and the corresponding POST endpoints) MUST NOT carry a query string in any captured event. The test suite asserts that the redacted `request.url` for these paths contains neither `?` nor `token=`.
+
+**CorrelationId propagation:** the `transferLog` / `log` helpers in `server/routes/mercuryRoutes.ts`, `server/services/mercuryService.ts`, and `server/services/plaidService.ts` call `setCorrelationTag(correlationId)` on the current Sentry isolation scope, so any exception captured during a transfer / ACH request carries the same `correlationId` already present in our structured logs. On the client, `throwIfResNotOk` in `client/src/lib/queryClient.ts` parses the server's JSON error body and, if a `correlationId` is present, tags the current Sentry scope with it — so a client-side exception thrown from a failed API call carries the same id as the server's Sentry event.
+
+**Source maps:** the Sentry Vite plugin uploads source maps only when `NODE_ENV=production` AND all three of `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` are set. Generated `.map` files are deleted after upload (`sourcemaps.filesToDeleteAfterUpload: ["**/*.map"]`), and `server/index.ts` returns 404 for any request whose path ends in `.map` as a second layer of defense.
+
+**Running the redaction test:** `npx tsx --test server/lib/__tests__/sentry-redact.test.ts`
+
 ## Investor / Patent Materials
 - `attached_assets/patent-application/` — USPTO provisional draft (.pdf + .docx) and 7 black-and-white figures
 - `attached_assets/patent-deck-slides/dime-time-patent-deck.pptx` — 12-slide investor patent overview deck (Google Slides-uploadable). PDF and per-slide PNG previews in same folder.

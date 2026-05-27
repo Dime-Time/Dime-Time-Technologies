@@ -34,7 +34,10 @@ export interface MercuryTransferResponse {
   note?: string;
 }
 
+import { setCorrelationTag } from '../lib/sentry';
+
 function log(correlationId: string, event: string, data?: Record<string, unknown>): void {
+  setCorrelationTag(correlationId);
   const entry: Record<string, unknown> = {
     ts: new Date().toISOString(),
     service: 'MercuryService',

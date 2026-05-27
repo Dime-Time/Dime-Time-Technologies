@@ -1,6 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { getAuthToken, hasStoredToken } from "./authToken";
+import { setCorrelationTag } from "./sentry";
 
 /**
  * Normalize a path so it always starts with "/".
@@ -87,6 +88,18 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    // If the server returned a JSON error with a correlationId (transfer /
+    // ACH paths do this — see server/routes/mercuryRoutes.ts), tag the
+    // current Sentry scope so client-captured exceptions can be cross-
+    // referenced with the server-side log + Sentry event for the same call.
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.correlationId === "string") {
+        setCorrelationTag(parsed.correlationId);
+      }
+    } catch {
+      // non-JSON body — nothing to correlate, fall through
+    }
     throw new Error(`${res.status}: ${text}`);
   }
 }
