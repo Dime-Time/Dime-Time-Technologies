@@ -1,6 +1,11 @@
 import { Link } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Banknote,
   Repeat,
@@ -10,6 +15,8 @@ import {
   ShieldCheck,
   Menu,
   X,
+  Mail,
+  ChevronDown,
 } from "lucide-react";
 import logoUrl from "@/assets/dime-time-app-icon.png";
 
@@ -17,11 +24,76 @@ const NAV_LINKS = [
   { label: "Home", href: "#home" },
   { label: "About", href: "#about" },
   { label: "How It Works", href: "#how-it-works" },
+  { label: "FAQ", href: "#faq" },
   { label: "Contact", href: "#contact" },
 ];
 
+const FAQS = [
+  {
+    q: "What is Dime Time?",
+    a: "Dime Time is a financial-technology app that helps you pay down debt and build better money habits by automating small, recurring payments and round-ups from your everyday spending.",
+  },
+  {
+    q: "Is Dime Time a bank?",
+    a: "No. Dime Time is a fintech platform, not a bank. Banking services and money movement are provided through regulated financial partners.",
+  },
+  {
+    q: "How does the round-up feature work?",
+    a: "When you make an everyday purchase, Dime Time rounds it up to the next dollar and directs the spare change toward the debts you've chosen — so you make progress automatically.",
+  },
+  {
+    q: "Is my financial data secure?",
+    a: "Yes. Sensitive data is encrypted in transit (TLS 1.2+) and at rest (AES-256-GCM). Account credentials are hashed, and bank connections are tokenized through trusted infrastructure providers.",
+  },
+  {
+    q: "Does Dime Time cost anything to use?",
+    a: "Creating an account is free. Some advanced features may have a small subscription fee, which will always be clearly disclosed before you sign up.",
+  },
+  {
+    q: "How do I cancel or delete my account?",
+    a: "You can delete your account anytime from the Settings page inside the app. We'll remove your personal data, subject to the financial-records retention rules required by law.",
+  },
+];
+
+const CONTACT_EMAIL = "support@dimetime.com";
+
 export default function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  async function handleContactSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      toast({
+        title: "Please fill out all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await apiRequest("POST", "/api/contact", { name, email, message });
+      toast({
+        title: "Message sent",
+        description: "Thanks — we'll get back to you shortly.",
+      });
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      toast({
+        title: "Couldn't send message",
+        description: `Please email us directly at ${CONTACT_EMAIL}.`,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="dt-marketing min-h-screen bg-white text-slate-900 antialiased">
@@ -236,11 +308,127 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer
-        id="contact"
-        className="px-4 sm:px-6 lg:px-8 py-12 bg-white border-t border-slate-200"
+      {/* ── FAQ ─────────────────────────────────────────────────────────── */}
+      <section
+        id="faq"
+        className="px-4 sm:px-6 lg:px-8 py-20"
       >
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
+              Frequently Asked Questions
+            </h2>
+            <p className="mt-4 text-slate-600">
+              Everything you need to know about Dime Time.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {FAQS.map(({ q, a }) => (
+              <details
+                key={q}
+                className="group bg-white rounded-xl border border-slate-200 open:border-dime-purple/40"
+              >
+                <summary className="flex items-center justify-between cursor-pointer list-none px-5 py-4 text-base font-medium text-slate-900">
+                  <span>{q}</span>
+                  <ChevronDown className="w-5 h-5 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="px-5 pb-5 text-sm text-slate-600 leading-relaxed">
+                  {a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Contact ─────────────────────────────────────────────────────── */}
+      <section
+        id="contact"
+        className="px-4 sm:px-6 lg:px-8 py-20 bg-slate-50 border-y border-slate-200"
+      >
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="w-14 h-14 mx-auto rounded-full bg-dime-purple/10 flex items-center justify-center mb-5">
+              <Mail className="w-7 h-7 text-dime-purple" />
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
+              Get in Touch
+            </h2>
+            <p className="mt-4 text-slate-600">
+              Questions, feedback, or partnership inquiries? Send us a message —
+              or email{" "}
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="text-dime-purple hover:underline"
+              >
+                {CONTACT_EMAIL}
+              </a>
+              .
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleContactSubmit}
+            className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 space-y-5"
+            data-testid="form-contact"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="contact-name" className="text-sm font-medium text-slate-700">
+                Name
+              </Label>
+              <Input
+                id="contact-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                required
+                data-testid="input-contact-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact-email" className="text-sm font-medium text-slate-700">
+                Email
+              </Label>
+              <Input
+                id="contact-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                data-testid="input-contact-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact-message" className="text-sm font-medium text-slate-700">
+                Message
+              </Label>
+              <Textarea
+                id="contact-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="How can we help?"
+                rows={5}
+                required
+                data-testid="input-contact-message"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
+              data-testid="button-contact-submit"
+            >
+              {submitting ? "Sending…" : "Send Message"}
+            </Button>
+          </form>
+        </div>
+      </section>
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer className="px-4 sm:px-6 lg:px-8 py-12 bg-white border-t border-slate-200">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <Link href="/" className="flex items-center gap-2">
@@ -253,10 +441,10 @@ export default function LandingPage() {
             </Link>
 
             <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
-              <Link href="/legal" className="hover:text-dime-purple">
+              <Link href="/privacy" className="hover:text-dime-purple">
                 Privacy Policy
               </Link>
-              <Link href="/legal" className="hover:text-dime-purple">
+              <Link href="/terms" className="hover:text-dime-purple">
                 Terms of Service
               </Link>
               <a href="#about" className="hover:text-dime-purple">

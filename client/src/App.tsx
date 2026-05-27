@@ -37,6 +37,8 @@ import QRCodePage from "@/pages/qr";
 import Settings from "@/pages/settings";
 import Notifications from "@/pages/notifications";
 import Legal from "@/pages/legal";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 import Signup from "@/pages/signup";
 import Login from "@/pages/Login";
 import ComingSoon from "@/pages/ComingSoon";
@@ -241,6 +243,9 @@ function AppContent() {
       <Route path="/signup">
         <AuthScreen><Signup /></AuthScreen>
       </Route>
+
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
 
       <Route path="/bank-setup">
         {effectivelyAuthenticated ? (
