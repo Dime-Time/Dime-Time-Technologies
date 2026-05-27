@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,6 +56,29 @@ const FAQS = [
 ];
 
 const CONTACT_EMAIL = "tim@dime-time.com";
+const TURNSTILE_SITE_KEY: string | undefined = (import.meta as any).env
+  ?.VITE_TURNSTILE_SITE_KEY;
+const TURNSTILE_SCRIPT_SRC =
+  "https://challenges.cloudflare.com/turnstile/v0/api.js";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        el: HTMLElement,
+        opts: {
+          sitekey: string;
+          callback?: (token: string) => void;
+          "expired-callback"?: () => void;
+          "error-callback"?: () => void;
+          theme?: "light" | "dark" | "auto";
+        }
+      ) => string;
+      reset: (widgetId?: string) => void;
+      remove: (widgetId?: string) => void;
+    };
+  }
+}
 
 export default function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -63,7 +86,61 @@ export default function LandingPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
   const { toast } = useToast();
+
+  // Load the Turnstile script + render the widget once mounted.
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return;
+
+    let cancelled = false;
+
+    const renderWidget = () => {
+      if (cancelled) return;
+      if (!window.turnstile || !turnstileContainerRef.current) return;
+      if (turnstileWidgetIdRef.current) return;
+      turnstileWidgetIdRef.current = window.turnstile.render(
+        turnstileContainerRef.current,
+        {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token: string) => setTurnstileToken(token),
+          "expired-callback": () => setTurnstileToken(null),
+          "error-callback": () => setTurnstileToken(null),
+          theme: "light",
+        }
+      );
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      let script = document.querySelector<HTMLScriptElement>(
+        `script[src="${TURNSTILE_SCRIPT_SRC}"]`
+      );
+      if (!script) {
+        script = document.createElement("script");
+        script.src = TURNSTILE_SCRIPT_SRC;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+      script.addEventListener("load", renderWidget);
+    }
+
+    return () => {
+      cancelled = true;
+      if (turnstileWidgetIdRef.current && window.turnstile) {
+        try {
+          window.turnstile.remove(turnstileWidgetIdRef.current);
+        } catch {
+          /* noop */
+        }
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, []);
 
   async function handleContactSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,9 +151,22 @@ export default function LandingPage() {
       });
       return;
     }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      toast({
+        title: "Please complete the captcha",
+        description: "Verify you're not a robot before sending.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
-      await apiRequest("POST", "/api/contact", { name, email, message });
+      await apiRequest("POST", "/api/contact", {
+        name,
+        email,
+        message,
+        ...(turnstileToken ? { turnstileToken } : {}),
+      });
       toast({
         title: "Message sent",
         description: "Thanks — we'll get back to you shortly.",
@@ -84,12 +174,28 @@ export default function LandingPage() {
       setName("");
       setEmail("");
       setMessage("");
+      setTurnstileToken(null);
+      if (turnstileWidgetIdRef.current && window.turnstile) {
+        try {
+          window.turnstile.reset(turnstileWidgetIdRef.current);
+        } catch {
+          /* noop */
+        }
+      }
     } catch (err) {
       toast({
         title: "Couldn't send message",
         description: `Please email us directly at ${CONTACT_EMAIL}.`,
         variant: "destructive",
       });
+      setTurnstileToken(null);
+      if (turnstileWidgetIdRef.current && window.turnstile) {
+        try {
+          window.turnstile.reset(turnstileWidgetIdRef.current);
+        } catch {
+          /* noop */
+        }
+      }
     } finally {
       setSubmitting(false);
     }
@@ -415,9 +521,16 @@ export default function LandingPage() {
                 data-testid="input-contact-message"
               />
             </div>
+            {TURNSTILE_SITE_KEY ? (
+              <div
+                ref={turnstileContainerRef}
+                className="flex justify-center"
+                data-testid="contact-turnstile"
+              />
+            ) : null}
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (!!TURNSTILE_SITE_KEY && !turnstileToken)}
               className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
               data-testid="button-contact-submit"
             >

@@ -71,6 +71,72 @@ function getSessionSecret(): string {
   return secret;
 }
 
+// Verify a Cloudflare Turnstile token against Cloudflare's siteverify endpoint.
+// Behavior:
+//   - If TURNSTILE_SECRET_KEY is unset and NODE_ENV !== 'production', we skip
+//     verification (developer convenience). In production this MUST be set; if
+//     it is missing the token is rejected so the contact form fails closed.
+//   - If a secret is configured we always require a token and a valid response
+//     from Cloudflare's siteverify.
+async function verifyTurnstileToken(
+  token: string | undefined,
+  req: Request
+): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(JSON.stringify({
+        event: "turnstile_misconfigured",
+        message: "TURNSTILE_SECRET_KEY is not set in production",
+      }));
+      return false;
+    }
+    return true;
+  }
+
+  if (!token) return false;
+
+  try {
+    const form = new URLSearchParams();
+    form.append("secret", secret);
+    form.append("response", token);
+    const ip =
+      (req.headers["cf-connecting-ip"] as string) ||
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+      req.ip ||
+      "";
+    if (ip) form.append("remoteip", ip);
+
+    const resp = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      { method: "POST", body: form }
+    );
+    if (!resp.ok) {
+      console.error(JSON.stringify({
+        event: "turnstile_siteverify_http_error",
+        status: resp.status,
+      }));
+      return false;
+    }
+    const data = (await resp.json()) as { success?: boolean; ["error-codes"]?: string[] };
+    if (!data.success) {
+      console.warn(JSON.stringify({
+        event: "turnstile_verification_failed",
+        errorCodes: data["error-codes"] ?? [],
+      }));
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(JSON.stringify({
+      event: "turnstile_siteverify_exception",
+      error: err instanceof Error ? err.message : String(err),
+    }));
+    return false;
+  }
+}
+
 // Generate auth token for native apps (userId + timestamp signed with hash)
 function generateAuthToken(userId: string): string {
   const timestamp = Date.now();
@@ -92,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Public contact form: 5 submissions per IP per minute.
-  // TODO: add Cloudflare Turnstile / hCaptcha before public launch.
+  // Defense-in-depth: rate limiter + Cloudflare Turnstile (see verifyTurnstileToken).
   const contactLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 5,
@@ -271,7 +337,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contact form submission (public endpoint)
   app.post("/api/contact", contactLimiter, async (req: Request, res: Response) => {
     try {
-      const validatedData = insertContactSubmissionSchema.parse(req.body);
+      const turnstileToken: string | undefined =
+        typeof req.body?.turnstileToken === "string" ? req.body.turnstileToken : undefined;
+      const turnstileOk = await verifyTurnstileToken(turnstileToken, req);
+      if (!turnstileOk) {
+        return res.status(400).json({ message: "Captcha verification failed. Please try again." });
+      }
+
+      const { turnstileToken: _omit, ...payload } = req.body ?? {};
+      const validatedData = insertContactSubmissionSchema.parse(payload);
       const submission = await storage.createContactSubmission(validatedData);
       res.json({ success: true, submission });
     } catch (error) {

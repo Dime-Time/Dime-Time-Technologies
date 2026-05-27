@@ -33,7 +33,7 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
 - Use only the official logo (`@/assets/dime-time-app-icon.png`) and color `#918EF4` (`bg-dime-purple` / `text-dime-purple`)
 
 ### Backend Invariants
-- `POST /api/contact` is rate-limited via `contactLimiter` (5 req/min/IP). TODO: add Turnstile/hCaptcha before public launch.
+- `POST /api/contact` is rate-limited via `contactLimiter` (5 req/min/IP) AND requires a valid Cloudflare Turnstile token (`turnstileToken` in body) when `TURNSTILE_SECRET_KEY` is configured. In production, missing `TURNSTILE_SECRET_KEY` causes the endpoint to fail closed (fails verification). The frontend reads `VITE_TURNSTILE_SITE_KEY` and renders the widget only when set. Required secrets before public launch: `TURNSTILE_SECRET_KEY` (server) + `VITE_TURNSTILE_SITE_KEY` (client build).
 - Webhooks and ACH endpoints stay signature-verified, idempotent, and structured-logged with `correlationId` (see ACH Production Hardening below).
 
 ### External Infrastructure Status (as of 2026-05-27)
