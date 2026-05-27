@@ -24,6 +24,7 @@ __export(schema_exports, {
   dttRewards: () => dttRewards,
   dttStaking: () => dttStaking,
   dttTokenInfo: () => dttTokenInfo,
+  idempotencyKeys: () => idempotencyKeys,
   insertBankAccountSchema: () => insertBankAccountSchema,
   insertBusinessAccountSchema: () => insertBusinessAccountSchema,
   insertContactSubmissionSchema: () => insertContactSubmissionSchema,
@@ -34,6 +35,7 @@ __export(schema_exports, {
   insertDttRewardsSchema: () => insertDttRewardsSchema,
   insertDttStakingSchema: () => insertDttStakingSchema,
   insertDttTokenInfoSchema: () => insertDttTokenInfoSchema,
+  insertIdempotencyKeySchema: () => insertIdempotencyKeySchema,
   insertInterestEarningsSchema: () => insertInterestEarningsSchema,
   insertNotificationSchema: () => insertNotificationSchema,
   insertNotificationSettingsSchema: () => insertNotificationSettingsSchema,
@@ -43,6 +45,7 @@ __export(schema_exports, {
   insertSweepAccountSchema: () => insertSweepAccountSchema,
   insertSweepDepositSchema: () => insertSweepDepositSchema,
   insertTransactionSchema: () => insertTransactionSchema,
+  insertTransferSchema: () => insertTransferSchema,
   insertUserSchema: () => insertUserSchema,
   insertUserSessionSchema: () => insertUserSessionSchema,
   insertWeeklyDispersalSchema: () => insertWeeklyDispersalSchema,
@@ -57,6 +60,7 @@ __export(schema_exports, {
   sweepAccounts: () => sweepAccounts,
   sweepDeposits: () => sweepDeposits,
   transactions: () => transactions,
+  transfers: () => transfers,
   userSessions: () => userSessions,
   users: () => users,
   weeklyDispersals: () => weeklyDispersals,
@@ -78,6 +82,7 @@ var users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
   password: varchar("password"),
+  passwordAlgo: varchar("password_algo").default("sha256"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -96,6 +101,10 @@ var debts = pgTable("debts", {
   dueDate: integer("due_date").notNull(),
   // day of month
   isActive: boolean("is_active").default(true).notNull(),
+  payeeAccountNumber: text("payee_account_number"),
+  // Creditor's bank account number for ACH payment (set by admin)
+  payeeRoutingNumber: text("payee_routing_number"),
+  // Creditor's bank routing number for ACH payment (set by admin)
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 var transactions = pgTable("transactions", {
@@ -247,6 +256,41 @@ var interestEarnings = pgTable("interest_earnings", {
   interestEarned: decimal("interest_earned", { precision: 10, scale: 2 }).notNull(),
   daysInPeriod: integer("days_in_period").notNull(),
   calculatedDate: timestamp("calculated_date").defaultNow().notNull()
+});
+var transfers = pgTable("transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(),
+  // 'roundup_collection' | 'debt_payment'
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("created"),
+  // created | authorized | pending | posted | settled | failed | returned | cancelled
+  plaidTransferId: text("plaid_transfer_id"),
+  plaidAuthorizationId: text("plaid_authorization_id"),
+  mercuryTransferId: text("mercury_transfer_id"),
+  debtId: varchar("debt_id"),
+  correlationId: varchar("correlation_id").notNull(),
+  idempotencyKey: text("idempotency_key"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  rawRequest: text("raw_request"),
+  rawResponse: text("raw_response"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+var insertTransferSchema = createInsertSchema(transfers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+var idempotencyKeys = pgTable("idempotency_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  idempotencyKey: varchar("idempotency_key").notNull(),
+  userId: varchar("user_id").notNull(),
+  endpoint: varchar("endpoint").notNull(),
+  responseStatus: integer("response_status").notNull(),
+  responseBody: text("response_body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 var insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -490,6 +534,57 @@ var insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit(
   createdAt: true,
   status: true
 });
+var insertIdempotencyKeySchema = createInsertSchema(idempotencyKeys).omit({
+  id: true,
+  createdAt: true
+});
+
+// server/services/encryptionService.ts
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+var ALGORITHM = "aes-256-gcm";
+var IV_LENGTH = 12;
+var TAG_LENGTH = 16;
+var KEY_ENV = "PLAID_TOKEN_ENCRYPTION_KEY";
+function getEncryptionKey() {
+  const raw = process.env[KEY_ENV];
+  if (!raw) {
+    if (process.env.NODE_ENV === "production" || process.env.PLAID_ENV === "production") {
+      throw new Error(
+        `[encryptionService] ${KEY_ENV} is not set. This is required in production to encrypt Plaid access tokens at rest. Generate a key with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" and set it as a secret.`
+      );
+    }
+    console.warn(`[encryptionService] WARNING: ${KEY_ENV} not set. Using insecure dev-only key. Set this env var before going to production.`);
+    return Buffer.alloc(32, "devkey-dime-time-insecure-do-not-use");
+  }
+  const key = Buffer.from(raw, "base64");
+  if (key.length !== 32) {
+    throw new Error(`[encryptionService] ${KEY_ENV} must be a 32-byte key encoded as base64. Got ${key.length} bytes. Regenerate with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`);
+  }
+  return key;
+}
+function encryptToken(plaintext) {
+  const key = getEncryptionKey();
+  const iv = randomBytes(IV_LENGTH);
+  const cipher = createCipheriv(ALGORITHM, key, iv);
+  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  const combined = Buffer.concat([iv, encrypted, tag]);
+  return `enc:${combined.toString("base64")}`;
+}
+function decryptToken(stored) {
+  if (!stored.startsWith("enc:")) {
+    return stored;
+  }
+  const key = getEncryptionKey();
+  const combined = Buffer.from(stored.slice(4), "base64");
+  const iv = combined.subarray(0, IV_LENGTH);
+  const tag = combined.subarray(combined.length - TAG_LENGTH);
+  const ciphertext = combined.subarray(IV_LENGTH, combined.length - TAG_LENGTH);
+  const decipher = createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  return decrypted.toString("utf8");
+}
 
 // server/storage.ts
 import { randomUUID } from "crypto";
@@ -508,7 +603,7 @@ var pool = new Pool({ connectionString: process.env.DATABASE_URL });
 var db = drizzle({ client: pool, schema: schema_exports });
 
 // server/storage.ts
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql as sql2 } from "drizzle-orm";
 var DatabaseStorage = class {
   // User methods
   async getUser(id) {
@@ -623,22 +718,31 @@ var DatabaseStorage = class {
     const [result] = await db.update(cryptoPurchases).set({ status, coinbaseOrderId }).where(eq(cryptoPurchases.id, id)).returning();
     return result;
   }
-  // Bank account methods
+  // Bank account methods — access tokens are encrypted at rest
   async getBankAccountsByUserId(userId) {
-    return await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+    const rows = await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+    return rows.map((a) => ({ ...a, plaidAccessToken: "[encrypted]" }));
   }
   async createBankAccount(account) {
     const id = randomUUID();
-    const [result] = await db.insert(bankAccounts).values({ ...account, id }).returning();
-    return result;
+    const encrypted = encryptToken(account.plaidAccessToken);
+    const [result] = await db.insert(bankAccounts).values({ ...account, id, plaidAccessToken: encrypted }).returning();
+    return { ...result, plaidAccessToken: "[encrypted]" };
   }
   async getBankAccountByPlaidItemId(itemId) {
     const [account] = await db.select().from(bankAccounts).where(eq(bankAccounts.plaidItemId, itemId));
-    return account;
+    if (!account) return void 0;
+    return { ...account, plaidAccessToken: "[encrypted]" };
   }
   async updateBankAccountStatus(id, isActive) {
     const [result] = await db.update(bankAccounts).set({ isActive }).where(eq(bankAccounts.id, id)).returning();
-    return result;
+    if (!result) return void 0;
+    return { ...result, plaidAccessToken: "[encrypted]" };
+  }
+  async getPlaidAccessToken(bankAccountId) {
+    const [account] = await db.select({ token: bankAccounts.plaidAccessToken }).from(bankAccounts).where(eq(bankAccounts.id, bankAccountId));
+    if (!account) return void 0;
+    return decryptToken(account.token);
   }
   // User session methods
   async createUserSession(session2) {
@@ -773,6 +877,72 @@ var DatabaseStorage = class {
   async getContactSubmissions() {
     return await db.select().from(contactSubmissions).orderBy(desc(contactSubmissions.createdAt));
   }
+  async updateUserPassword(userId, passwordHash, algo) {
+    await db.update(users).set({ password: passwordHash, passwordAlgo: algo }).where(eq(users.id, userId));
+  }
+  async deleteUserAccount(userId) {
+    await db.delete(weeklyDispersals).where(eq(weeklyDispersals.userId, userId));
+    await db.delete(sweepDeposits).where(eq(sweepDeposits.userId, userId));
+    await db.delete(sweepAccounts).where(eq(sweepAccounts.userId, userId));
+    await db.delete(distributionPayments).where(eq(distributionPayments.userId, userId));
+    await db.delete(roundUpCollections).where(eq(roundUpCollections.userId, userId));
+    await db.delete(userSessions).where(eq(userSessions.userId, userId));
+    await db.delete(notifications).where(eq(notifications.userId, userId));
+    await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
+    await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
+    await db.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
+    await db.delete(dttRewards).where(eq(dttRewards.userId, userId));
+    await db.delete(dttStaking).where(eq(dttStaking.userId, userId));
+    await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
+    await db.delete(payments).where(eq(payments.userId, userId));
+    await db.delete(transactions).where(eq(transactions.userId, userId));
+    await db.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
+    await db.delete(debts).where(eq(debts.userId, userId));
+    await db.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
+    await db.delete(transfers).where(eq(transfers.userId, userId));
+    await db.delete(users).where(eq(users.id, userId));
+  }
+  async getIdempotencyKey(key, userId, endpoint) {
+    const result = await db.execute(
+      sql2`SELECT response_status, response_body FROM idempotency_keys WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint} AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`
+    );
+    if (result.rows && result.rows.length > 0) {
+      const row = result.rows[0];
+      return { responseStatus: row.response_status, responseBody: row.response_body };
+    }
+    return void 0;
+  }
+  async createIdempotencyKey(data) {
+    await db.execute(
+      sql2`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body) VALUES (gen_random_uuid(), ${data.idempotencyKey}, ${data.userId}, ${data.endpoint}, ${data.responseStatus}, ${data.responseBody})`
+    );
+  }
+  // Transfer ledger methods
+  async createTransfer(data) {
+    const id = randomUUID();
+    const now = /* @__PURE__ */ new Date();
+    const [result] = await db.insert(transfers).values({ ...data, id, createdAt: now, updatedAt: now }).returning();
+    return result;
+  }
+  async getTransfer(id) {
+    const [result] = await db.select().from(transfers).where(eq(transfers.id, id));
+    return result;
+  }
+  async getTransferByCorrelationId(correlationId) {
+    const [result] = await db.select().from(transfers).where(eq(transfers.correlationId, correlationId));
+    return result;
+  }
+  async getTransferByPlaidTransferId(plaidTransferId) {
+    const [result] = await db.select().from(transfers).where(eq(transfers.plaidTransferId, plaidTransferId));
+    return result;
+  }
+  async updateTransferStatus(id, status, updates) {
+    const [result] = await db.update(transfers).set({ status, updatedAt: /* @__PURE__ */ new Date(), ...updates }).where(eq(transfers.id, id)).returning();
+    return result;
+  }
+  async getTransfersByUserId(userId) {
+    return await db.select().from(transfers).where(eq(transfers.userId, userId)).orderBy(desc(transfers.createdAt));
+  }
 };
 var storage = new DatabaseStorage();
 
@@ -897,19 +1067,56 @@ var DimeTokenService = class {
 var dimeTokenService = new DimeTokenService();
 
 // server/routes.ts
-import { createHash } from "crypto";
+import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
+import bcrypt from "bcrypt";
+import rateLimit from "express-rate-limit";
 import { z as z4 } from "zod";
 
 // server/services/plaidService.ts
-import { Configuration, PlaidApi, PlaidEnvironments, CountryCode, Products } from "plaid";
+import {
+  Configuration,
+  PlaidApi,
+  PlaidEnvironments,
+  CountryCode,
+  Products,
+  TransferType,
+  TransferNetwork,
+  ACHClass
+} from "plaid";
+function resolvePlaidEnvironment() {
+  const env = process.env.PLAID_ENV || "sandbox";
+  switch (env.toLowerCase()) {
+    case "production":
+      return PlaidEnvironments.production;
+    case "development":
+      return PlaidEnvironments.development;
+    default:
+      return PlaidEnvironments.sandbox;
+  }
+}
+function maskToken(token) {
+  if (!token || token.length < 8) return "[masked]";
+  return `${token.slice(0, 8)}...[masked]`;
+}
+function log(correlationId, event, data) {
+  const entry = {
+    ts: (/* @__PURE__ */ new Date()).toISOString(),
+    service: "PlaidService",
+    correlationId,
+    event,
+    ...data
+  };
+  console.log(JSON.stringify(entry));
+}
 var PlaidService = class {
   client = null;
   isConfigured = false;
+  environment;
   constructor() {
+    this.environment = process.env.PLAID_ENV || "sandbox";
     try {
       const configuration = new Configuration({
-        basePath: PlaidEnvironments.sandbox,
-        // Use sandbox for development
+        basePath: resolvePlaidEnvironment(),
         baseOptions: {
           headers: {
             "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
@@ -919,6 +1126,9 @@ var PlaidService = class {
       });
       this.client = new PlaidApi(configuration);
       this.isConfigured = !!(process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET);
+      if (this.isConfigured) {
+        console.log(`Plaid service initialized in ${this.environment} environment`);
+      }
     } catch (error) {
       console.error("Failed to initialize Plaid service:", error);
       this.isConfigured = false;
@@ -1013,6 +1223,114 @@ var PlaidService = class {
       console.error("Error fetching balance:", error);
       throw error;
     }
+  }
+  async getAccountAuth(accessToken) {
+    if (!this.isConfigured) {
+      throw new Error("Plaid service not configured");
+    }
+    try {
+      const response = await this.getClient().authGet({ access_token: accessToken });
+      const numbers = response.data.numbers.ach || [];
+      return numbers.map((n) => ({
+        accountId: n.account_id,
+        accountNumber: n.account,
+        routingNumber: n.routing,
+        name: response.data.accounts.find((a) => a.account_id === n.account_id)?.name || "Bank Account"
+      }));
+    } catch (error) {
+      console.error("Error fetching Plaid Auth:", error);
+      throw error;
+    }
+  }
+  /**
+   * Validate that funding account configuration is present for production.
+   * Fails explicitly if MERCURY_PLAID_FUNDING_ID is missing in production.
+   */
+  validateFundingAccountConfig(correlationId) {
+    const fundingId = process.env.MERCURY_PLAID_FUNDING_ID;
+    if (!fundingId) {
+      if (this.environment === "production") {
+        log(correlationId, "funding_account_missing", {
+          severity: "ERROR",
+          message: "MERCURY_PLAID_FUNDING_ID is not set. This is required in production to route Plaid Transfer funds to Mercury. Set this env var to the Mercury Plaid funding account ID."
+        });
+        throw new Error(
+          "[PlaidService] MERCURY_PLAID_FUNDING_ID is required in production for Plaid Transfer to route funds to Mercury. Set this env var to the funding account ID provided by Plaid for your Mercury account."
+        );
+      }
+      log(correlationId, "funding_account_not_set", {
+        severity: "WARN",
+        message: "MERCURY_PLAID_FUNDING_ID not set \u2014 funds will route to Plaid default funding account. Set this for Mercury in production."
+      });
+    }
+    return fundingId || void 0;
+  }
+  /**
+   * Initiate an ACH debit from the user's linked bank account via Plaid Transfer.
+   * Structured reconciliation logging included throughout.
+   * Flow: transferAuthorizationCreate → transferCreate → return ids
+   */
+  async createRoundUpTransfer(params) {
+    if (!this.isConfigured) {
+      throw new Error("Plaid service not configured");
+    }
+    const { correlationId } = params;
+    const client2 = this.getClient();
+    const fundingAccountId = params.mercuryFundingAccountId ?? this.validateFundingAccountConfig(correlationId);
+    log(correlationId, "transfer_auth_request", {
+      accountId: params.accountId,
+      amount: params.amount,
+      amountStr: params.amount.toFixed(2),
+      userLegalName: params.userLegalName,
+      accessToken: maskToken(params.accessToken),
+      fundingAccountId: fundingAccountId || "not_set"
+    });
+    const authRequest = {
+      access_token: params.accessToken,
+      account_id: params.accountId,
+      type: TransferType.Debit,
+      network: TransferNetwork.Ach,
+      amount: params.amount.toFixed(2),
+      ach_class: ACHClass.Ppd,
+      user: { legal_name: params.userLegalName },
+      ...fundingAccountId ? { funding_account_id: fundingAccountId } : {}
+    };
+    const authResponse = await client2.transferAuthorizationCreate(authRequest);
+    const authorization = authResponse.data.authorization;
+    log(correlationId, "transfer_auth_response", {
+      authorizationId: authorization.id,
+      decision: authorization.decision,
+      decisionRationaleCode: authorization.decision_rationale?.code,
+      decisionRationaleDescription: authorization.decision_rationale?.description
+    });
+    if (authorization.decision !== "approved") {
+      throw new Error(
+        `Plaid Transfer authorization denied: ${authorization.decision_rationale?.code || "UNKNOWN"} \u2014 ${authorization.decision_rationale?.description || ""}`
+      );
+    }
+    const createRequest = {
+      access_token: params.accessToken,
+      account_id: params.accountId,
+      authorization_id: authorization.id,
+      description: params.description.slice(0, 15)
+    };
+    log(correlationId, "transfer_create_request", {
+      authorizationId: authorization.id,
+      description: createRequest.description
+    });
+    const transferResponse = await client2.transferCreate(createRequest);
+    const transfer = transferResponse.data.transfer;
+    log(correlationId, "transfer_create_response", {
+      transferId: transfer.id,
+      status: transfer.status,
+      amount: transfer.amount,
+      network: transfer.network
+    });
+    return {
+      transferId: transfer.id,
+      authorizationId: authorization.id,
+      status: transfer.status
+    };
   }
   isServiceConfigured() {
     return this.isConfigured;
@@ -2097,694 +2415,622 @@ async function calculateNextFriday() {
   return nextFriday.toISOString().split("T")[0];
 }
 
-// server/services/silaService.ts
+// server/routes/mercuryRoutes.ts
+import { randomUUID as randomUUID2 } from "crypto";
+
+// server/services/mercuryService.ts
 import axios3 from "axios";
-var SilaService = class {
+var MERCURY_API_BASE = "https://api.mercury.com/api/v1";
+function log2(correlationId, event, data) {
+  const entry = {
+    ts: (/* @__PURE__ */ new Date()).toISOString(),
+    service: "MercuryService",
+    correlationId,
+    event,
+    ...data
+  };
+  console.log(JSON.stringify(entry));
+}
+function maskAccountNumber(acct) {
+  if (!acct || acct.length < 4) return "[masked]";
+  return `\u2022\u2022${acct.slice(-4)}`;
+}
+var MercuryService = class {
   client;
   isConfigured = false;
-  appHandle;
-  environment;
+  cachedAccountId = "";
   constructor() {
-    try {
-      this.appHandle = "dime_time_app";
-      const mode = process.env.SILA_MODE || "live";
-      if (mode === "mock") {
-        this.environment = "sandbox";
-        this.isConfigured = false;
-        console.log("\u{1F3AD} Sila service set to MOCK mode - using MockSilaService for beta testing");
-        return;
-      }
-      this.environment = process.env.NODE_ENV === "production" ? "production" : "sandbox";
-      const baseURL = this.environment === "production" ? "https://api.silamoney.com/0.2" : "https://sandbox.silamoney.com/0.2";
-      this.client = axios3.create({
-        baseURL,
-        headers: {
-          "Content-Type": "application/json",
-          "authsignature": ""
-          // Will be set per request
-        },
-        timeout: 3e4
-      });
-      this.isConfigured = !!(process.env.SILA_APP_HANDLE && process.env.SILA_APP_PRIVATE_KEY);
-      if (this.isConfigured) {
-        console.log(`\u2705 Sila Money service configured successfully (${this.environment})`);
-      } else {
-        console.log("\u26A0\uFE0F Sila Money service not configured - missing SILA_APP_HANDLE and SILA_APP_PRIVATE_KEY for Ed25519 signatures");
-      }
-    } catch (error) {
-      console.error("Failed to initialize Sila service:", error);
-      this.isConfigured = false;
+    const apiKey = process.env.MERCURY_API_KEY || process.env.Mercury_API_Key;
+    this.isConfigured = !!(apiKey && process.env.MERCURY_ACCOUNT_NUMBER && process.env.MERCURY_ROUTING_NUMBER);
+    this.client = axios3.create({
+      baseURL: MERCURY_API_BASE,
+      headers: {
+        "Authorization": `Bearer ${apiKey || ""}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      timeout: 3e4
+    });
+    if (this.isConfigured) {
+      console.log("Mercury banking service configured successfully");
+    } else {
+      console.log("Mercury banking service not configured \u2014 missing MERCURY_API_KEY, MERCURY_ACCOUNT_NUMBER, or MERCURY_ROUTING_NUMBER");
     }
   }
-  generateAuthSignature(message, endpoint) {
-    const timestamp2 = Date.now().toString();
-    return `${process.env.SILA_CLIENT_ID}:${process.env.SILA_CLIENT_SECRET}:${timestamp2}`;
-  }
-  // Register a user with Sila
-  async registerUser(userData) {
-    if (!this.isConfigured) {
-      throw new Error("Sila service not configured");
-    }
-    try {
-      const message = {
-        header: {
-          app_handle: this.appHandle,
-          user_handle: userData.handle
-        },
-        message: "register_msg",
-        ...userData
-      };
-      const signature = this.generateAuthSignature(JSON.stringify(message), "/register");
-      const response = await this.client.post("/register", message, {
-        headers: { authsignature: signature }
-      });
-      return {
-        success: response.data.success || false,
-        message: response.data.message || "Registration completed",
-        reference: response.data.reference
-      };
-    } catch (error) {
-      console.error("Error registering user with Sila:", error);
-      throw new Error("Failed to register user");
-    }
-  }
-  // Link bank account to user
-  async linkAccount(userHandle, accountData) {
-    if (!this.isConfigured) {
-      throw new Error("Sila service not configured");
-    }
-    try {
-      const message = {
-        header: {
-          app_handle: this.appHandle,
-          user_handle: userHandle
-        },
-        message: "link_account_msg",
-        ...accountData
-      };
-      const signature = this.generateAuthSignature(JSON.stringify(message), "/link_account");
-      const response = await this.client.post("/link_account", message, {
-        headers: { authsignature: signature }
-      });
-      return {
-        success: response.data.success || false,
-        message: response.data.message || "Account linked successfully",
-        account_name: response.data.account_name
-      };
-    } catch (error) {
-      console.error("Error linking bank account:", error);
-      throw new Error("Failed to link bank account");
-    }
-  }
-  // Issue (deposit) money from bank account to Sila wallet
-  async issueToWallet(userHandle, amount, accountName, descriptor) {
-    if (!this.isConfigured) {
-      throw new Error("Sila service not configured");
-    }
-    try {
-      const reference = `issue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const message = {
-        header: {
-          app_handle: this.appHandle,
-          user_handle: userHandle
-        },
-        message: "issue_msg",
-        amount,
-        account_name: accountName,
-        descriptor: descriptor || "Dime Time Round-up Collection",
-        business_uuid: process.env.SILA_BUSINESS_UUID || void 0,
-        processing_type: "STANDARD_ACH"
-      };
-      const signature = this.generateAuthSignature(JSON.stringify(message), "/issue");
-      const response = await this.client.post("/issue", message, {
-        headers: { authsignature: signature }
-      });
-      return {
-        reference,
-        status: response.data.status || "pending",
-        message: response.data.message || "Transfer initiated",
-        transaction_id: response.data.transaction_id,
-        effective_date: response.data.effective_date
-      };
-    } catch (error) {
-      console.error("Error issuing to wallet:", error);
-      throw new Error("Failed to issue funds to wallet");
-    }
-  }
-  // Redeem (withdraw) money from Sila wallet to bank account
-  async redeemFromWallet(userHandle, amount, accountName, descriptor) {
-    if (!this.isConfigured) {
-      throw new Error("Sila service not configured");
-    }
-    try {
-      const reference = `redeem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const message = {
-        header: {
-          app_handle: this.appHandle,
-          user_handle: userHandle
-        },
-        message: "redeem_msg",
-        amount,
-        account_name: accountName,
-        descriptor: descriptor || "Dime Time Debt Payment",
-        business_uuid: process.env.SILA_BUSINESS_UUID || void 0,
-        processing_type: "STANDARD_ACH"
-      };
-      const signature = this.generateAuthSignature(JSON.stringify(message), "/redeem");
-      const response = await this.client.post("/redeem", message, {
-        headers: { authsignature: signature }
-      });
-      return {
-        reference,
-        status: response.data.status || "pending",
-        message: response.data.message || "Transfer initiated",
-        transaction_id: response.data.transaction_id,
-        effective_date: response.data.effective_date
-      };
-    } catch (error) {
-      console.error("Error redeeming from wallet:", error);
-      throw new Error("Failed to redeem funds from wallet");
-    }
-  }
-  // Get transaction status
-  async getTransactionStatus(userHandle, transactionId) {
-    if (!this.isConfigured) {
-      throw new Error("Sila service not configured");
-    }
-    try {
-      const message = {
-        header: {
-          app_handle: this.appHandle,
-          user_handle: userHandle
-        },
-        message: "get_transactions_msg",
-        search_filters: {
-          transaction_id: transactionId
-        }
-      };
-      const signature = this.generateAuthSignature(JSON.stringify(message), "/get_transactions");
-      const response = await this.client.post("/get_transactions", message, {
-        headers: { authsignature: signature }
-      });
-      const transaction = response.data.transactions?.[0];
-      return {
-        status: transaction?.status || "unknown",
-        message: transaction?.message || "Transaction not found"
-      };
-    } catch (error) {
-      console.error("Error getting transaction status:", error);
-      throw new Error("Failed to get transaction status");
-    }
-  }
-  // Get user's wallet balance
-  async getWalletBalance(userHandle) {
-    if (!this.isConfigured) {
-      throw new Error("Sila service not configured");
-    }
-    try {
-      const message = {
-        header: {
-          app_handle: this.appHandle,
-          user_handle: userHandle
-        },
-        message: "get_wallet_msg"
-      };
-      const signature = this.generateAuthSignature(JSON.stringify(message), "/get_wallet");
-      const response = await this.client.post("/get_wallet", message, {
-        headers: { authsignature: signature }
-      });
-      return {
-        balance: parseFloat(response.data.wallet?.available_balance || "0"),
-        currency: "USD"
-      };
-    } catch (error) {
-      console.error("Error getting wallet balance:", error);
-      throw new Error("Failed to get wallet balance");
-    }
-  }
-  // Check if service is configured
   isServiceConfigured() {
     return this.isConfigured;
   }
-  // Get environment info
-  getEnvironment() {
-    return this.environment;
+  async resolveCheckingAccountId() {
+    if (this.cachedAccountId) return this.cachedAccountId;
+    const accounts = await this.listAccounts();
+    const accountNumber = process.env.MERCURY_ACCOUNT_NUMBER;
+    const checking = accounts.find((a) => a.accountNumber === accountNumber && a.kind === "checking") || accounts.find((a) => a.kind === "checking") || accounts[0];
+    if (!checking) throw new Error("No Mercury checking account found");
+    this.cachedAccountId = checking.id;
+    return this.cachedAccountId;
   }
-  // Helper method to create a demo user for testing
-  createDemoUser(userId = "demo-user-1") {
+  async listAccounts() {
+    const response = await this.client.get("/accounts");
+    return response.data.accounts || [];
+  }
+  async getAccountBalance() {
+    if (!this.isConfigured) throw new Error("Mercury service not configured");
+    const accounts = await this.listAccounts();
+    const accountNumber = process.env.MERCURY_ACCOUNT_NUMBER;
+    const account = accounts.find((a) => a.accountNumber === accountNumber) || accounts.find((a) => a.kind === "checking") || accounts[0];
+    if (!account) throw new Error("No Mercury accounts found");
     return {
-      handle: `dime_time_${userId}`,
-      first_name: "Demo",
-      last_name: "User",
-      address: {
-        address_alias: "home",
-        street_address_1: "123 Demo Street",
-        city: "Demo City",
-        state: "CA",
-        country: "US",
-        postal_code: "12345"
-      },
-      identity: {
-        identity_alias: "ssn",
-        identity_value: "123456789"
-        // Demo SSN for sandbox
-      },
-      contact: {
-        phone: "555-123-4567",
-        email: "demo@dimetime.app"
-      }
+      balance: account.currentBalance,
+      availableBalance: account.availableBalance,
+      currency: "USD",
+      accountNumber: account.accountNumber,
+      routingNumber: account.routingNumber
     };
+  }
+  async getTransactions(limit = 50) {
+    if (!this.isConfigured) throw new Error("Mercury service not configured");
+    const accountId = await this.resolveCheckingAccountId();
+    const response = await this.client.get(`/account/${accountId}/transactions`, { params: { limit } });
+    return response.data.transactions || [];
+  }
+  async initiateTransfer(params) {
+    if (!this.isConfigured) throw new Error("Mercury service not configured");
+    const { correlationId } = params;
+    const accountId = await this.resolveCheckingAccountId();
+    log2(correlationId, "mercury_transfer_request", {
+      amount: params.amount,
+      recipientName: params.recipientName,
+      recipientAccount: maskAccountNumber(params.recipientAccountNumber),
+      recipientRouting: `\u2022\u2022${params.recipientRoutingNumber.slice(-4)}`,
+      paymentMethod: params.paymentMethod || "ach",
+      mercuryAccountId: accountId
+    });
+    const response = await this.client.post(`/account/${accountId}/transactions`, {
+      amount: params.amount,
+      paymentMethod: params.paymentMethod || "ach",
+      counterparty: {
+        accountNumber: params.recipientAccountNumber,
+        routingNumber: params.recipientRoutingNumber,
+        name: params.recipientName,
+        kind: "individual"
+      },
+      note: params.note
+    });
+    const result = response.data;
+    log2(correlationId, "mercury_transfer_response", {
+      mercuryTransferId: result.id,
+      status: result.status,
+      amount: result.amount,
+      createdAt: result.createdAt
+    });
+    return result;
+  }
+  getMercuryAccountNumber() {
+    return process.env.MERCURY_ACCOUNT_NUMBER || "";
+  }
+  getMercuryRoutingNumber() {
+    return process.env.MERCURY_ROUTING_NUMBER || "";
   }
 };
-var silaService = new SilaService();
+var mercuryService = new MercuryService();
 
-// server/services/mockSilaService.ts
-var MockSilaService = class {
-  isConfigured = false;
-  environment;
-  mockDatabase = /* @__PURE__ */ new Map();
-  // Simple in-memory store for mock data
-  constructor() {
-    this.environment = "mock";
-    this.isConfigured = true;
-    console.log("\u2705 Sila Money service configured successfully (MOCK MODE for beta testing)");
+// server/middleware/authHelper.ts
+import { createHash } from "crypto";
+function getSessionSecret() {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET environment variable is required");
+  return secret;
+}
+function verifyAuthToken(token) {
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf-8");
+    const [userId, timestampStr, signature] = decoded.split(":");
+    const payload = `${userId}:${timestampStr}`;
+    const expectedSignature = createHash("sha256").update(payload + getSessionSecret()).digest("hex").substring(0, 16);
+    if (signature !== expectedSignature) return null;
+    const timestamp2 = parseInt(timestampStr, 10);
+    const thirtyDays = 30 * 24 * 60 * 60 * 1e3;
+    if (Date.now() - timestamp2 > thirtyDays) return null;
+    return userId;
+  } catch {
+    return null;
   }
-  // Register a user (mock implementation)
-  async registerUser(userData) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const reference = `MOCK_REG_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    this.mockDatabase.set(`user:${userData.handle}`, {
-      ...userData,
-      reference,
-      status: "verified",
-      created_at: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    this.mockDatabase.set(`wallet:${userData.handle}`, {
-      balance: 0,
-      currency: "USD",
-      last_updated: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    return {
-      success: true,
-      message: "Entity successfully registered.",
-      reference
-    };
+}
+function getUserIdFromRequest(req) {
+  const sessionUserId = req.session?.userId;
+  if (sessionUserId) return sessionUserId;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return verifyAuthToken(authHeader.substring(7));
   }
-  // Link bank account (mock implementation)
-  async linkAccount(userHandle, accountData) {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    this.mockDatabase.set(`account:${userHandle}:${accountData.account_name}`, {
-      ...accountData,
-      status: "active",
-      verification_status: "verified",
-      created_at: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    return {
-      success: true,
-      message: "Bank account successfully linked and verified.",
-      account_name: accountData.account_name
-    };
-  }
-  // Issue money (collect roundup - mock implementation)
-  async issueToWallet(userHandle, amount, accountName, descriptor) {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const reference = `MOCK_ISSUE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const transactionId = `TXN_${Date.now()}`;
-    const walletKey = `wallet:${userHandle}`;
-    const wallet = this.mockDatabase.get(walletKey) || { balance: 0, currency: "USD" };
-    wallet.balance += amount;
-    wallet.last_updated = (/* @__PURE__ */ new Date()).toISOString();
-    this.mockDatabase.set(walletKey, wallet);
-    this.mockDatabase.set(`transaction:${transactionId}`, {
-      reference,
-      user_handle: userHandle,
-      amount,
-      type: "issue",
-      status: "success",
-      descriptor,
-      account_name: accountName,
-      effective_date: (/* @__PURE__ */ new Date()).toISOString(),
-      created_at: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    return {
-      reference,
-      status: "success",
-      message: `Successfully collected $${amount.toFixed(2)} roundup`,
-      transaction_id: transactionId,
-      effective_date: (/* @__PURE__ */ new Date()).toISOString()
-    };
-  }
-  // Redeem money (pay debt - mock implementation)
-  async redeemFromWallet(userHandle, amount, accountName, descriptor) {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    const reference = `MOCK_REDEEM_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const transactionId = `TXN_${Date.now()}`;
-    const walletKey = `wallet:${userHandle}`;
-    const wallet = this.mockDatabase.get(walletKey) || { balance: 0, currency: "USD" };
-    if (wallet.balance < amount) {
-      return {
-        reference,
-        status: "failed",
-        message: `Insufficient funds. Wallet balance: $${wallet.balance.toFixed(2)}, requested: $${amount.toFixed(2)}`,
-        transaction_id: transactionId
-      };
-    }
-    wallet.balance -= amount;
-    wallet.last_updated = (/* @__PURE__ */ new Date()).toISOString();
-    this.mockDatabase.set(walletKey, wallet);
-    this.mockDatabase.set(`transaction:${transactionId}`, {
-      reference,
-      user_handle: userHandle,
-      amount,
-      type: "redeem",
-      status: "success",
-      descriptor,
-      account_name: accountName,
-      effective_date: (/* @__PURE__ */ new Date()).toISOString(),
-      created_at: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    return {
-      reference,
-      status: "success",
-      message: `Successfully paid $${amount.toFixed(2)} towards debt`,
-      transaction_id: transactionId,
-      effective_date: (/* @__PURE__ */ new Date()).toISOString()
-    };
-  }
-  // Get transaction status (mock implementation)
-  async getTransactionStatus(userHandle, transactionId) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const transaction = this.mockDatabase.get(`transaction:${transactionId}`);
-    if (!transaction) {
-      return {
-        status: "not_found",
-        message: "Transaction not found"
-      };
-    }
-    return {
-      status: transaction.status,
-      message: `Transaction ${transaction.type} of $${transaction.amount.toFixed(2)} is ${transaction.status}`
-    };
-  }
-  // Get wallet balance (mock implementation)
-  async getWalletBalance(userHandle) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const wallet = this.mockDatabase.get(`wallet:${userHandle}`) || { balance: 0, currency: "USD" };
-    return {
-      balance: wallet.balance,
-      currency: wallet.currency
-    };
-  }
-  // Service status methods
-  isServiceConfigured() {
-    return this.isConfigured;
-  }
-  getEnvironment() {
-    return this.environment;
-  }
-  // Helper method to create a demo user for testing
-  createDemoUser(userId = "demo-user-1") {
-    return {
-      handle: `dime_time_${userId}`,
-      first_name: "Demo",
-      last_name: "User",
-      address: {
-        address_alias: "home",
-        street_address_1: "123 Demo Street",
-        city: "Demo City",
-        state: "CA",
-        country: "US",
-        postal_code: "12345"
-      },
-      identity: {
-        identity_alias: "ssn",
-        identity_value: "123456789"
-        // Demo SSN for testing
-      },
-      contact: {
-        phone: "555-123-4567",
-        email: "demo@dimetime.app"
-      }
-    };
-  }
-  // Mock-specific methods for testing and debugging
-  getMockDatabase() {
-    return this.mockDatabase;
-  }
-  clearMockDatabase() {
-    this.mockDatabase.clear();
-    console.log("\u{1F9F9} Mock Sila database cleared");
-  }
-  // Simulate various transaction states for testing
-  async simulateTransactionState(transactionId, newStatus) {
-    const transaction = this.mockDatabase.get(`transaction:${transactionId}`);
-    if (!transaction) {
-      return false;
-    }
-    transaction.status = newStatus;
-    transaction.updated_at = (/* @__PURE__ */ new Date()).toISOString();
-    this.mockDatabase.set(`transaction:${transactionId}`, transaction);
-    console.log(`\u{1F3AD} Simulated transaction ${transactionId} status change to: ${newStatus}`);
+  return null;
+}
+
+// server/routes/mercuryRoutes.ts
+import { z as z3 } from "zod";
+var MAX_ROUNDUP_DOLLARS = 5;
+var MAX_DEBT_PAYMENT_DOLLARS = 500;
+var collectRoundUpSchema = z3.object({
+  amount: z3.number().positive().max(MAX_ROUNDUP_DOLLARS, `Round-up cannot exceed $${MAX_ROUNDUP_DOLLARS}`),
+  descriptor: z3.string().max(60).optional()
+});
+var payDebtSchema = z3.object({
+  debtId: z3.string().min(1),
+  amount: z3.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS, `Payment cannot exceed $${MAX_DEBT_PAYMENT_DOLLARS}`),
+  descriptor: z3.string().max(60).optional()
+});
+function transferLog(correlationId, event, data) {
+  console.log(JSON.stringify({
+    ts: (/* @__PURE__ */ new Date()).toISOString(),
+    service: "MercuryRoutes",
+    correlationId,
+    event,
+    ...data
+  }));
+}
+async function checkIdempotency(idempotencyKey, userId, endpoint, correlationId, res) {
+  if (!idempotencyKey) return false;
+  const cached = await storage.getIdempotencyKey(idempotencyKey, userId, endpoint);
+  if (cached) {
+    transferLog(correlationId, "idempotency_hit", { endpoint, idempotencyKey });
+    const body = JSON.parse(cached.responseBody);
+    res.status(cached.responseStatus).json({ ...body, _idempotencyReplay: true });
     return true;
   }
-};
-var mockSilaService = new MockSilaService();
-
-// server/routes/silaRoutes.ts
-import { z as z3 } from "zod";
-var registerUserSchema = z3.object({
-  handle: z3.string().min(1, "User handle is required"),
-  first_name: z3.string().min(1, "First name is required"),
-  last_name: z3.string().min(1, "Last name is required"),
-  street_address_1: z3.string().min(1, "Street address is required"),
-  city: z3.string().min(1, "City is required"),
-  state: z3.string().length(2, "State must be 2 characters"),
-  postal_code: z3.string().min(5, "Valid postal code required"),
-  phone: z3.string().min(10, "Valid phone number required"),
-  email: z3.string().email("Valid email required"),
-  identity_value: z3.string().min(9, "SSN/EIN required")
-});
-var linkAccountSchema = z3.object({
-  user_handle: z3.string().min(1, "User handle is required"),
-  account_name: z3.string().min(1, "Account name is required"),
-  account_type: z3.enum(["CHECKING", "SAVINGS"]),
-  account_number: z3.string().min(1, "Account number is required"),
-  routing_number: z3.string().length(9, "Routing number must be 9 digits"),
-  account_owner_name: z3.string().min(1, "Account owner name is required")
-});
-var transferSchema = z3.object({
-  user_handle: z3.string().min(1, "User handle is required"),
-  amount: z3.number().positive("Amount must be positive"),
-  account_name: z3.string().min(1, "Account name is required"),
-  descriptor: z3.string().optional()
-});
-function registerSilaRoutes(app2) {
-  const getActiveService = () => {
-    const mode = process.env.SILA_MODE || "mock";
-    return mode === "mock" ? mockSilaService : silaService;
-  };
-  app2.get("/api/sila/status", async (req, res) => {
+  return false;
+}
+async function saveIdempotency(idempotencyKey, userId, endpoint, status, body) {
+  if (!idempotencyKey) return;
+  await storage.createIdempotencyKey({
+    idempotencyKey,
+    userId,
+    endpoint,
+    responseStatus: status,
+    responseBody: JSON.stringify(body)
+  });
+}
+function registerMercuryRoutes(app2) {
+  app2.get("/api/mercury/status", async (req, res) => {
     try {
-      const service = getActiveService();
-      const configured = service.isServiceConfigured();
-      const environment = service.getEnvironment();
-      const mode = process.env.SILA_MODE || "mock";
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!mercuryService.isServiceConfigured()) {
+        return res.json({ configured: false, message: "Mercury service not configured" });
+      }
+      const balance = await mercuryService.getAccountBalance();
       res.json({
-        configured,
-        environment: mode === "mock" ? "mock" : environment,
-        mode,
-        message: configured ? `Sila Money service ready (${mode === "mock" ? "MOCK" : environment})` : "Sila service not configured - missing credentials"
-      });
-    } catch (error) {
-      console.error("Error checking Sila status:", error);
-      res.status(500).json({ message: "Failed to check Sila service status" });
-    }
-  });
-  app2.post("/api/sila/register-demo-user", async (req, res) => {
-    try {
-      const service = getActiveService();
-      if (!service.isServiceConfigured()) {
-        return res.status(503).json({
-          message: "Sila service not configured"
-        });
-      }
-      const userId = req.body.userId || "demo-user-1";
-      const demoUser = service.createDemoUser(userId);
-      const result = await service.registerUser(demoUser);
-      res.json({
-        success: result.success,
-        message: result.message,
-        user_handle: demoUser.handle,
-        reference: result.reference,
-        mode: process.env.SILA_MODE || "mock"
-      });
-    } catch (error) {
-      console.error("Error registering demo user:", error);
-      res.status(500).json({ message: "Failed to register demo user" });
-    }
-  });
-  app2.post("/api/sila/register-user", async (req, res) => {
-    try {
-      const userData = registerUserSchema.parse(req.body);
-      const service = getActiveService();
-      if (!service.isServiceConfigured()) {
-        return res.status(503).json({ message: "Sila service not configured" });
-      }
-      const silaUser = {
-        handle: userData.handle,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        address: {
-          address_alias: "home",
-          street_address_1: userData.street_address_1,
-          city: userData.city,
-          state: userData.state,
-          country: "US",
-          postal_code: userData.postal_code
-        },
-        identity: {
-          identity_alias: "ssn",
-          identity_value: userData.identity_value
-        },
-        contact: {
-          phone: userData.phone,
-          email: userData.email
-        }
-      };
-      const result = await service.registerUser(silaUser);
-      res.status(result.success ? 201 : 400).json(result);
-    } catch (error) {
-      if (error instanceof z3.ZodError) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: error.errors
-        });
-      }
-      console.error("Error registering user:", error);
-      res.status(500).json({ message: "Failed to register user" });
-    }
-  });
-  app2.post("/api/sila/link-account", async (req, res) => {
-    try {
-      const accountData = linkAccountSchema.parse(req.body);
-      const service = getActiveService();
-      if (!service.isServiceConfigured()) {
-        return res.status(503).json({ message: "Sila service not configured" });
-      }
-      const bankAccount = {
-        account_name: accountData.account_name,
-        account_type: accountData.account_type,
-        account_number: accountData.account_number,
-        routing_number: accountData.routing_number,
-        account_owner_name: accountData.account_owner_name
-      };
-      const result = await service.linkAccount(accountData.user_handle, bankAccount);
-      res.status(result.success ? 201 : 400).json(result);
-    } catch (error) {
-      if (error instanceof z3.ZodError) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: error.errors
-        });
-      }
-      console.error("Error linking account:", error);
-      res.status(500).json({ message: "Failed to link bank account" });
-    }
-  });
-  app2.post("/api/sila/collect-roundup", async (req, res) => {
-    try {
-      const transferData = transferSchema.parse(req.body);
-      const service = getActiveService();
-      if (!service.isServiceConfigured()) {
-        return res.status(503).json({ message: "Sila service not configured" });
-      }
-      const result = await service.issueToWallet(
-        transferData.user_handle,
-        transferData.amount,
-        transferData.account_name,
-        transferData.descriptor || `Dime Time round-up collection: $${transferData.amount}`
-      );
-      res.status(201).json({
-        success: true,
-        transfer: result,
-        message: `Successfully initiated round-up collection of $${transferData.amount}`
-      });
-    } catch (error) {
-      if (error instanceof z3.ZodError) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: error.errors
-        });
-      }
-      console.error("Error collecting round-up:", error);
-      res.status(500).json({ message: "Failed to collect round-up" });
-    }
-  });
-  app2.post("/api/sila/pay-debt", async (req, res) => {
-    try {
-      const transferData = transferSchema.parse(req.body);
-      const service = getActiveService();
-      if (!service.isServiceConfigured()) {
-        return res.status(503).json({ message: "Sila service not configured" });
-      }
-      const result = await service.redeemFromWallet(
-        transferData.user_handle,
-        transferData.amount,
-        transferData.account_name,
-        transferData.descriptor || `Dime Time debt payment: $${transferData.amount}`
-      );
-      res.status(201).json({
-        success: true,
-        transfer: result,
-        message: `Successfully initiated debt payment of $${transferData.amount}`
-      });
-    } catch (error) {
-      if (error instanceof z3.ZodError) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: error.errors
-        });
-      }
-      console.error("Error paying debt:", error);
-      res.status(500).json({ message: "Failed to pay debt" });
-    }
-  });
-  app2.get("/api/sila/wallet/:user_handle", async (req, res) => {
-    try {
-      const userHandle = req.params.user_handle;
-      const service = getActiveService();
-      if (!service.isServiceConfigured()) {
-        return res.status(503).json({ message: "Sila service not configured" });
-      }
-      const balance = await service.getWalletBalance(userHandle);
-      res.json({
-        user_handle: userHandle,
-        balance: balance.balance,
+        configured: true,
+        message: "Mercury banking service connected",
+        accountNumber: `\u2022\u2022${balance.accountNumber.slice(-4)}`,
+        currentBalance: balance.balance,
+        availableBalance: balance.availableBalance,
         currency: balance.currency,
-        formatted_balance: `$${balance.balance.toFixed(2)}`
+        formattedBalance: `$${balance.availableBalance.toFixed(2)}`
       });
     } catch (error) {
-      console.error("Error getting wallet balance:", error);
-      res.status(500).json({ message: "Failed to get wallet balance" });
+      console.error("Mercury status error:", error?.response?.data || error.message);
+      res.status(500).json({ message: "Failed to check Mercury service status" });
     }
   });
-  app2.get("/api/sila/transaction/:user_handle/:transaction_id", async (req, res) => {
+  app2.get("/api/mercury/balance", async (req, res) => {
     try {
-      const { user_handle, transaction_id } = req.params;
-      const service = getActiveService();
-      if (!service.isServiceConfigured()) {
-        return res.status(503).json({ message: "Sila service not configured" });
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!mercuryService.isServiceConfigured()) {
+        return res.status(503).json({ message: "Mercury service not configured" });
       }
-      const status = await service.getTransactionStatus(user_handle, transaction_id);
+      const balance = await mercuryService.getAccountBalance();
       res.json({
-        user_handle,
-        transaction_id,
-        status: status.status,
-        message: status.message
+        currentBalance: balance.balance,
+        availableBalance: balance.availableBalance,
+        currency: balance.currency,
+        formattedBalance: `$${balance.availableBalance.toFixed(2)}`
       });
     } catch (error) {
-      console.error("Error getting transaction status:", error);
-      res.status(500).json({ message: "Failed to get transaction status" });
+      console.error("Mercury balance error:", error?.response?.data || error.message);
+      res.status(500).json({ message: "Failed to fetch Mercury account balance" });
+    }
+  });
+  app2.get("/api/mercury/transactions", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!mercuryService.isServiceConfigured()) {
+        return res.status(503).json({ message: "Mercury service not configured" });
+      }
+      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
+      const transactions2 = await mercuryService.getTransactions(limit);
+      res.json({ transactions: transactions2 });
+    } catch (error) {
+      console.error("Mercury transactions error:", error?.response?.data || error.message);
+      res.status(500).json({ message: "Failed to fetch Mercury transactions" });
+    }
+  });
+  app2.post("/api/mercury/collect-roundup", async (req, res) => {
+    const correlationId = randomUUID2();
+    const idempotencyKey = req.headers["idempotency-key"];
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!mercuryService.isServiceConfigured()) {
+        return res.status(503).json({ message: "Mercury service not configured" });
+      }
+      const replayed = await checkIdempotency(idempotencyKey, userId, "/api/mercury/collect-roundup", correlationId, res);
+      if (replayed) return;
+      const { amount, descriptor } = collectRoundUpSchema.parse(req.body);
+      transferLog(correlationId, "collect_roundup_start", { userId, amount, idempotencyKey });
+      const linkedAccounts = await storage.getBankAccountsByUserId(userId);
+      const activeAccount = linkedAccounts.find((a) => a.isActive) || null;
+      if (!activeAccount) {
+        return res.status(422).json({
+          success: false,
+          status: "no_linked_bank",
+          message: "No active linked bank account. Connect a bank account via Plaid first."
+        });
+      }
+      const accessToken = await storage.getPlaidAccessToken(activeAccount.id);
+      if (!accessToken || !activeAccount.accountId) {
+        return res.status(422).json({
+          success: false,
+          status: "plaid_token_missing",
+          message: "Linked bank account is missing Plaid credentials. Please reconnect your bank."
+        });
+      }
+      const user = await storage.getUser(userId);
+      const userLegalName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Account Holder" : "Account Holder";
+      const ledgerEntry = await storage.createTransfer({
+        userId,
+        type: "roundup_collection",
+        amount: amount.toFixed(2),
+        status: "created",
+        correlationId,
+        idempotencyKey: idempotencyKey || null,
+        rawRequest: JSON.stringify({ amount, descriptor, accountId: activeAccount.accountId })
+      });
+      transferLog(correlationId, "transfer_ledger_created", { transferId: ledgerEntry.id });
+      try {
+        const result = await plaidService.createRoundUpTransfer({
+          accessToken,
+          accountId: activeAccount.accountId,
+          amount,
+          userLegalName,
+          description: descriptor || "Dime Time roundup",
+          correlationId,
+          mercuryFundingAccountId: process.env.MERCURY_PLAID_FUNDING_ID || void 0
+        });
+        await storage.updateTransferStatus(ledgerEntry.id, "pending", {
+          plaidTransferId: result.transferId,
+          plaidAuthorizationId: result.authorizationId,
+          rawResponse: JSON.stringify(result)
+        });
+        transferLog(correlationId, "collect_roundup_success", {
+          transferId: ledgerEntry.id,
+          plaidTransferId: result.transferId,
+          status: result.status,
+          amount
+        });
+        const responseBody = {
+          success: true,
+          transferId: result.transferId,
+          authorizationId: result.authorizationId,
+          internalTransferId: ledgerEntry.id,
+          status: result.status,
+          correlationId,
+          message: `Round-up of $${amount.toFixed(2)} initiated \u2014 ACH debit from ${activeAccount.institutionName} \u2022\u2022${activeAccount.mask || ""} to Mercury`,
+          linkedBank: activeAccount.institutionName,
+          amount
+        };
+        await saveIdempotency(idempotencyKey, userId, "/api/mercury/collect-roundup", 201, responseBody);
+        return res.status(201).json(responseBody);
+      } catch (transferErr) {
+        const errCode = transferErr?.response?.data?.error_code || transferErr?.message || "UNKNOWN";
+        await storage.updateTransferStatus(ledgerEntry.id, "failed", {
+          errorCode: errCode,
+          errorMessage: transferErr?.message || "Plaid Transfer failed",
+          rawResponse: JSON.stringify(transferErr?.response?.data || {})
+        });
+        transferLog(correlationId, "collect_roundup_failed", {
+          transferId: ledgerEntry.id,
+          errCode,
+          message: transferErr?.message
+        });
+        if (/INVALID_PRODUCT|NOT_ENABLED|PRODUCT_NOT_ENABLED/i.test(errCode)) {
+          return res.status(503).json({
+            success: false,
+            status: "plaid_transfer_not_enabled",
+            correlationId,
+            message: "Plaid Transfer product not enabled. Enable it in the Plaid Dashboard.",
+            detail: errCode
+          });
+        }
+        if (/authorization denied|UNAUTHORIZED/i.test(errCode)) {
+          return res.status(422).json({
+            success: false,
+            status: "transfer_not_authorized",
+            correlationId,
+            message: `Plaid rejected the transfer: ${errCode}`
+          });
+        }
+        console.error("Plaid Transfer error:", transferErr?.response?.data || transferErr.message);
+        return res.status(502).json({
+          success: false,
+          status: "transfer_failed",
+          correlationId,
+          message: "Round-up transfer could not be initiated. Please try again later.",
+          detail: errCode
+        });
+      }
+    } catch (error) {
+      if (error instanceof z3.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("collect-roundup error:", error?.response?.data || error.message);
+      res.status(500).json({ message: "Failed to collect round-up", correlationId });
+    }
+  });
+  app2.post("/api/mercury/pay-debt", async (req, res) => {
+    const correlationId = randomUUID2();
+    const idempotencyKey = req.headers["idempotency-key"];
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!mercuryService.isServiceConfigured()) {
+        return res.status(503).json({ message: "Mercury service not configured" });
+      }
+      const replayed = await checkIdempotency(idempotencyKey, userId, "/api/mercury/pay-debt", correlationId, res);
+      if (replayed) return;
+      const { debtId, amount, descriptor } = payDebtSchema.parse(req.body);
+      transferLog(correlationId, "pay_debt_start", { userId, debtId, amount, idempotencyKey });
+      const debt = await storage.getDebt(debtId);
+      if (!debt || debt.userId !== userId) {
+        return res.status(403).json({ message: "Debt not found or does not belong to this account" });
+      }
+      const balance = await mercuryService.getAccountBalance();
+      if (balance.availableBalance < amount) {
+        return res.status(422).json({
+          success: false,
+          status: "insufficient_funds",
+          correlationId,
+          message: `Insufficient Mercury balance. Available: $${balance.availableBalance.toFixed(2)}, Requested: $${amount.toFixed(2)}`
+        });
+      }
+      const note = descriptor || `Dime Time debt payment \u2014 ${debt.name}`;
+      if (debt.payeeAccountNumber && debt.payeeRoutingNumber) {
+        if (!/^\d{9}$/.test(debt.payeeRoutingNumber)) {
+          return res.status(422).json({
+            success: false,
+            status: "invalid_payee_routing",
+            correlationId,
+            message: "Debt record has an invalid payee routing number. An administrator must correct it."
+          });
+        }
+        const ledgerEntry = await storage.createTransfer({
+          userId,
+          type: "debt_payment",
+          amount: amount.toFixed(2),
+          status: "created",
+          debtId,
+          correlationId,
+          idempotencyKey: idempotencyKey || null,
+          rawRequest: JSON.stringify({ debtId, amount, debtName: debt.name })
+        });
+        transferLog(correlationId, "transfer_ledger_created", { transferId: ledgerEntry.id });
+        try {
+          const transferResult = await mercuryService.initiateTransfer({
+            amount,
+            note,
+            recipientAccountNumber: debt.payeeAccountNumber,
+            recipientRoutingNumber: debt.payeeRoutingNumber,
+            recipientName: debt.name,
+            paymentMethod: "ach",
+            correlationId
+          });
+          await storage.updateTransferStatus(ledgerEntry.id, "pending", {
+            mercuryTransferId: transferResult.id,
+            rawResponse: JSON.stringify(transferResult)
+          });
+          transferLog(correlationId, "pay_debt_success", {
+            transferId: ledgerEntry.id,
+            mercuryTransferId: transferResult.id,
+            status: transferResult.status,
+            amount
+          });
+          const responseBody = {
+            success: true,
+            transactionId: transferResult.id,
+            internalTransferId: ledgerEntry.id,
+            status: transferResult.status,
+            correlationId,
+            message: `Debt payment of $${amount.toFixed(2)} to ${debt.name} initiated via Mercury ACH`,
+            debtName: debt.name,
+            amount
+          };
+          await saveIdempotency(idempotencyKey, userId, "/api/mercury/pay-debt", 201, responseBody);
+          return res.status(201).json(responseBody);
+        } catch (transferErr) {
+          const errCode = transferErr?.response?.data?.errors || transferErr.message || "UNKNOWN";
+          await storage.updateTransferStatus(ledgerEntry.id, "failed", {
+            errorCode: String(errCode),
+            errorMessage: transferErr?.message || "Mercury ACH failed",
+            rawResponse: JSON.stringify(transferErr?.response?.data || {})
+          });
+          transferLog(correlationId, "pay_debt_failed", {
+            transferId: ledgerEntry.id,
+            errCode
+          });
+          console.error("Mercury debt payment error:", transferErr?.response?.data || transferErr.message);
+          return res.status(502).json({
+            success: false,
+            status: "transfer_failed",
+            correlationId,
+            message: "Mercury ACH transfer failed. Check Mercury account configuration.",
+            error: errCode
+          });
+        }
+      }
+      return res.status(202).json({
+        success: true,
+        transactionId: `debt_queued_${userId}_${Date.now()}`,
+        status: "queued_awaiting_admin_routing",
+        correlationId,
+        message: `Debt payment of $${amount.toFixed(2)} toward ${debt.name} queued. An administrator must set payee routing details on the debt record before Mercury ACH can execute.`,
+        debtName: debt.name,
+        amount,
+        mercuryBalance: balance.availableBalance
+      });
+    } catch (error) {
+      if (error instanceof z3.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("pay-debt error:", error?.response?.data || error.message);
+      res.status(500).json({ message: "Failed to process debt payment", correlationId });
+    }
+  });
+}
+
+// server/routes/webhookRoutes.ts
+import { createHmac, timingSafeEqual } from "crypto";
+var PLAID_TRANSFER_STATUS_MAP = {
+  "pending": "pending",
+  "posted": "posted",
+  "settled": "settled",
+  "cancelled": "cancelled",
+  "failed": "failed",
+  "returned": "returned"
+};
+function webhookLog(event, data) {
+  console.log(JSON.stringify({
+    ts: (/* @__PURE__ */ new Date()).toISOString(),
+    service: "PlaidWebhook",
+    event,
+    ...data
+  }));
+}
+function verifyPlaidSignature(req) {
+  const secret = process.env.PLAID_WEBHOOK_SECRET;
+  if (!secret) {
+    console.warn("[PlaidWebhook] PLAID_WEBHOOK_SECRET not set \u2014 skipping signature verification. Set this env var for production webhook security.");
+    return true;
+  }
+  const plaidSignature = req.headers["plaid-verification"];
+  if (!plaidSignature) {
+    webhookLog("signature_missing", { severity: "WARN" });
+    return false;
+  }
+  try {
+    const body = req.rawBody || JSON.stringify(req.body);
+    const expected = createHmac("sha256", secret).update(body).digest("hex");
+    const expectedBuf = Buffer.from(expected, "utf8");
+    const receivedBuf = Buffer.from(plaidSignature, "utf8");
+    if (expectedBuf.length !== receivedBuf.length) return false;
+    return timingSafeEqual(expectedBuf, receivedBuf);
+  } catch {
+    return false;
+  }
+}
+function registerWebhookRoutes(app2) {
+  app2.post("/webhooks/plaid", async (req, res) => {
+    const payload = req.body;
+    const webhookType = payload?.webhook_type || "UNKNOWN";
+    const webhookCode = payload?.webhook_code || "UNKNOWN";
+    const transferId = payload?.transfer_id;
+    const eventId = payload?.transfer_event_id || payload?.event_id;
+    webhookLog("webhook_received", {
+      webhookType,
+      webhookCode,
+      transferId,
+      eventId,
+      payloadKeys: Object.keys(payload || {})
+    });
+    res.status(200).json({ received: true });
+    if (!verifyPlaidSignature(req)) {
+      webhookLog("signature_invalid", { severity: "ERROR", webhookType, webhookCode });
+      return;
+    }
+    if (webhookType !== "TRANSFER") {
+      webhookLog("webhook_ignored", { reason: "not_transfer_type", webhookType, webhookCode });
+      return;
+    }
+    if (!transferId) {
+      webhookLog("webhook_no_transfer_id", { severity: "WARN", webhookCode });
+      return;
+    }
+    try {
+      const ledgerEntry = await storage.getTransferByPlaidTransferId(transferId);
+      if (!ledgerEntry) {
+        webhookLog("transfer_not_found", {
+          severity: "WARN",
+          plaidTransferId: transferId,
+          message: "Received webhook for a Plaid transfer not in our ledger. May be a test event or a transfer not initiated through this system."
+        });
+        return;
+      }
+      const newPlaidStatus = payload?.new_transfer_status || payload?.transfer_status;
+      const mappedStatus = newPlaidStatus ? PLAID_TRANSFER_STATUS_MAP[newPlaidStatus] : void 0;
+      webhookLog("transfer_status_update", {
+        internalTransferId: ledgerEntry.id,
+        plaidTransferId: transferId,
+        currentStatus: ledgerEntry.status,
+        webhookCode,
+        newPlaidStatus,
+        mappedStatus
+      });
+      if (mappedStatus && ledgerEntry.status === mappedStatus) {
+        webhookLog("webhook_status_already_set", {
+          internalTransferId: ledgerEntry.id,
+          status: mappedStatus
+        });
+        return;
+      }
+      if (mappedStatus) {
+        await storage.updateTransferStatus(ledgerEntry.id, mappedStatus, {
+          rawResponse: JSON.stringify({
+            webhook_type: webhookType,
+            webhook_code: webhookCode,
+            transfer_id: transferId,
+            new_transfer_status: newPlaidStatus,
+            event_id: eventId
+          })
+        });
+        webhookLog("transfer_ledger_updated", {
+          internalTransferId: ledgerEntry.id,
+          plaidTransferId: transferId,
+          previousStatus: ledgerEntry.status,
+          newStatus: mappedStatus
+        });
+      } else {
+        webhookLog("webhook_unhandled_code", {
+          webhookCode,
+          newPlaidStatus,
+          message: "Webhook code did not map to a known transfer status \u2014 logged only."
+        });
+      }
+    } catch (err) {
+      webhookLog("webhook_processing_error", {
+        severity: "ERROR",
+        plaidTransferId: transferId,
+        error: err?.message
+      });
     }
   });
 }
@@ -3980,13 +4226,32 @@ var roundUpSplitService = new RoundUpSplitService();
 
 // server/routes.ts
 import multer from "multer";
-function hashPassword(password) {
-  return createHash("sha256").update(password).digest("hex");
+var BCRYPT_COST = 12;
+function hashPasswordSha256(password) {
+  return createHash2("sha256").update(password).digest("hex");
 }
-function verifyPassword(password, hash) {
-  return hashPassword(password) === hash;
+async function hashPasswordBcrypt(password) {
+  return bcrypt.hash(password, BCRYPT_COST);
 }
-function getSessionSecret() {
+function constantTimeCompare(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual2(bufA, bufB);
+}
+async function verifyPassword(password, hash, algo) {
+  if (algo === "bcrypt") {
+    return bcrypt.compare(password, hash);
+  }
+  const sha256Hash = hashPasswordSha256(password);
+  return constantTimeCompare(sha256Hash, hash);
+}
+function stripSensitiveFields(user) {
+  if (!user) return user;
+  const { password, passwordAlgo, ...safeUser } = user;
+  return safeUser;
+}
+function getSessionSecret2() {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
     throw new Error("SESSION_SECRET environment variable is required");
@@ -3996,39 +4261,45 @@ function getSessionSecret() {
 function generateAuthToken(userId) {
   const timestamp2 = Date.now();
   const payload = `${userId}:${timestamp2}`;
-  const signature = createHash("sha256").update(payload + getSessionSecret()).digest("hex").substring(0, 16);
+  const signature = createHash2("sha256").update(payload + getSessionSecret2()).digest("hex").substring(0, 16);
   return Buffer.from(`${payload}:${signature}`).toString("base64");
 }
-function verifyAuthToken(token) {
-  try {
-    const decoded = Buffer.from(token, "base64").toString("utf-8");
-    const [userId, timestampStr, signature] = decoded.split(":");
-    const payload = `${userId}:${timestampStr}`;
-    const expectedSignature = createHash("sha256").update(payload + getSessionSecret()).digest("hex").substring(0, 16);
-    if (signature !== expectedSignature) return null;
-    const timestamp2 = parseInt(timestampStr, 10);
-    const thirtyDays = 30 * 24 * 60 * 60 * 1e3;
-    if (Date.now() - timestamp2 > thirtyDays) return null;
-    return userId;
-  } catch {
+async function registerRoutes(app2) {
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1e3,
+    max: 10,
+    message: { message: "Too many attempts. Please try again in 15 minutes." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false }
+  });
+  const contactLimiter = rateLimit({
+    windowMs: 60 * 1e3,
+    max: 5,
+    message: { message: "Too many messages. Please try again in a minute." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false }
+  });
+  async function checkIdempotency2(key, userId, endpoint) {
+    const existing = await storage.getIdempotencyKey(key, userId, endpoint);
+    if (existing) {
+      return { status: existing.responseStatus, body: JSON.parse(existing.responseBody) };
+    }
     return null;
   }
-}
-function getUserIdFromRequest(req) {
-  const sessionUserId = req.session?.userId;
-  if (sessionUserId) return sessionUserId;
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.substring(7);
-    return verifyAuthToken(token);
+  async function saveIdempotency2(key, userId, endpoint, status, body) {
+    await storage.createIdempotencyKey({
+      idempotencyKey: key,
+      userId,
+      endpoint,
+      responseStatus: status,
+      responseBody: JSON.stringify(body)
+    });
   }
-  return null;
-}
-async function registerRoutes(app2) {
-  app2.post("/api/signup", async (req, res) => {
+  app2.post("/api/signup", authLimiter, async (req, res) => {
     try {
       const { email, password, firstName, lastName } = req.body;
-      console.log("\u{1F4DD} Signup request:", { email, password: "***", firstName, lastName });
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
@@ -4036,92 +4307,72 @@ async function registerRoutes(app2) {
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
       }
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPasswordBcrypt(password);
       let user;
       try {
         user = await storage.createUser({
           email,
           password: hashedPassword,
+          passwordAlgo: "bcrypt",
           firstName: firstName || email.split("@")[0],
           lastName: lastName || ""
         });
-        console.log("\u2705 User created successfully:", user.id);
       } catch (createError) {
-        console.error("\u274C Error creating user:", createError);
+        console.error("Error creating user");
         throw createError;
-      }
-      const newUserDebts = [
-        {
-          userId: user.id,
-          name: "Credit Card Debt",
-          accountNumber: "\u2022\u2022\u2022\u20225678",
-          originalBalance: "5000.00",
-          currentBalance: "5000.00",
-          interestRate: "18.99",
-          minimumPayment: "150.00",
-          dueDate: 15,
-          isActive: true
-        },
-        {
-          userId: user.id,
-          name: "Student Loan",
-          accountNumber: "\u2022\u2022\u2022\u20221234",
-          originalBalance: "25000.00",
-          currentBalance: "20000.00",
-          interestRate: "4.50",
-          minimumPayment: "200.00",
-          dueDate: 1,
-          isActive: true
-        }
-      ];
-      for (const debtData of newUserDebts) {
-        await storage.createDebt(debtData);
       }
       req.session.userId = user.id;
       const authToken = generateAuthToken(user.id);
       req.session.save((err) => {
         if (err) {
-          console.error("Session save error:", err);
+          console.error("Session save error");
           return res.status(500).json({ message: "Failed to create session" });
         }
         res.status(201).json({
           success: true,
           user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
           authToken
-          // Token for native apps to store and use
         });
       });
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Signup error");
       res.status(500).json({ message: "Failed to create account" });
     }
   });
-  app2.post("/api/login", async (req, res) => {
+  app2.post("/api/login", authLimiter, async (req, res) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
       const user = await storage.getUserByEmail(email);
-      if (!user || !user.password || !verifyPassword(password, user.password)) {
+      if (!user || !user.password) {
         return res.status(401).json({ message: "Invalid credentials" });
+      }
+      const algo = user.passwordAlgo || "sha256";
+      const isValid = await verifyPassword(password, user.password, algo);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      if (algo !== "bcrypt") {
+        const bcryptHash = await hashPasswordBcrypt(password);
+        await storage.updateUserPassword(user.id, bcryptHash, "bcrypt");
       }
       req.session.userId = user.id;
       const authToken = generateAuthToken(user.id);
       req.session.save((err) => {
         if (err) {
-          console.error("Session save error:", err);
+          console.error("Session save error");
           return res.status(500).json({ message: "Failed to create session" });
         }
         res.json({
           success: true,
           user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
           authToken
-          // Token for native apps to store and use
         });
       });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login error");
       res.status(500).json({ message: "Login failed" });
     }
   });
@@ -4135,7 +4386,7 @@ async function registerRoutes(app2) {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(user);
+      res.json(stripSensitiveFields(user));
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -4150,7 +4401,24 @@ async function registerRoutes(app2) {
       res.json({ success: true, message: "Logged out successfully" });
     });
   });
-  app2.post("/api/contact", async (req, res) => {
+  app2.delete("/api/account", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      await storage.deleteUserAccount(userId);
+      req.session.destroy((err) => {
+        if (err) console.error("Session destroy error during account deletion");
+        res.clearCookie("connect.sid");
+        res.json({ success: true, message: "Account deleted successfully" });
+      });
+    } catch (error) {
+      console.error("Account deletion error");
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+  app2.post("/api/contact", contactLimiter, async (req, res) => {
     try {
       const validatedData = insertContactSubmissionSchema.parse(req.body);
       const submission = await storage.createContactSubmission(validatedData);
@@ -4193,9 +4461,14 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const roundUpSettings2 = await storage.getRoundUpSettings(userId);
+      const idempotencyKey = req.headers["idempotency-key"];
+      if (idempotencyKey) {
+        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/transactions");
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
+      const roundUpSettingsData = await storage.getRoundUpSettings(userId);
       const amount = parseFloat(req.body.amount);
-      const multiplier = roundUpSettings2 ? parseFloat(roundUpSettings2.multiplier) : 1;
+      const multiplier = roundUpSettingsData ? parseFloat(roundUpSettingsData.multiplier) : 1;
       const totalRoundUp = calculateRoundUp(amount, multiplier);
       const validatedData = insertTransactionSchema.parse({
         ...req.body,
@@ -4203,14 +4476,14 @@ async function registerRoutes(app2) {
         roundUpAmount: totalRoundUp.toFixed(2)
       });
       const transaction = await storage.createTransaction(validatedData);
-      if (totalRoundUp > 0 && roundUpSettings2?.isEnabled) {
+      if (totalRoundUp > 0 && roundUpSettingsData?.isEnabled) {
         try {
           console.log(`\u{1F504} Processing split round-up: $${totalRoundUp.toFixed(2)}`);
           const splitResult = await roundUpSplitService.processRoundUpSplit(
             userId,
             transaction.id,
             totalRoundUp,
-            roundUpSettings2
+            roundUpSettingsData
           );
           console.log(`\u2705 Split processing complete:`, splitResult);
           await notificationTriggers.onRoundUpCollected(
@@ -4222,6 +4495,9 @@ async function registerRoutes(app2) {
         } catch (splitError) {
           console.error("Error processing round-up split:", splitError);
         }
+      }
+      if (idempotencyKey) {
+        await saveIdempotency2(idempotencyKey, userId, "/api/transactions", 201, transaction);
       }
       res.status(201).json(transaction);
     } catch (error) {
@@ -4249,6 +4525,11 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+      const idempotencyKey = req.headers["idempotency-key"];
+      if (idempotencyKey) {
+        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/payments");
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
       const validatedData = insertPaymentSchema.parse({
         ...req.body,
         userId
@@ -4266,6 +4547,9 @@ async function registerRoutes(app2) {
           parseFloat(validatedData.amount)
         );
       }
+      if (idempotencyKey) {
+        await saveIdempotency2(idempotencyKey, userId, "/api/payments", 201, payment);
+      }
       res.status(201).json(payment);
     } catch (error) {
       if (error instanceof z4.ZodError) {
@@ -4280,17 +4564,26 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+      const idempotencyKey = req.headers["idempotency-key"];
+      if (idempotencyKey) {
+        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/accelerated-payment");
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
       const { debtId, amount } = req.body;
       if (!debtId || !amount) {
         return res.status(400).json({ message: "debtId and amount are required" });
       }
       const result = await storage.makeAcceleratedPayment(userId, debtId, amount);
-      res.json({
+      const responseBody = {
         success: true,
         payment: result.payment,
         updatedDebt: result.updatedDebt,
         message: `Successfully paid $${amount} toward ${result.updatedDebt.name}`
-      });
+      };
+      if (idempotencyKey) {
+        await saveIdempotency2(idempotencyKey, userId, "/api/accelerated-payment", 200, responseBody);
+      }
+      res.json(responseBody);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
@@ -4305,7 +4598,18 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const settings = await storage.getRoundUpSettings(userId);
-      res.json(settings);
+      res.json(settings || {
+        id: null,
+        userId,
+        isEnabled: false,
+        sourceAccountId: null,
+        targetDebtId: null,
+        multiplier: "1.00",
+        autoApplyThreshold: "25.00",
+        cryptoEnabled: false,
+        cryptoPercentage: "0.00",
+        preferredCrypto: "BTC"
+      });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -4440,6 +4744,11 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+      const idempotencyKey = req.headers["idempotency-key"];
+      if (idempotencyKey) {
+        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/crypto-purchases");
+        if (cached) return res.status(cached.status).json(cached.body);
+      }
       const { amount, cryptoSymbol = "BTC" } = req.body;
       if (!amount || parseFloat(amount) <= 0) {
         return res.status(400).json({ message: "Valid amount is required" });
@@ -4459,11 +4768,15 @@ async function registerRoutes(app2) {
               purchasePrice: amount,
               coinbaseOrderId: coinbaseTransaction.id || ""
             });
-            res.status(201).json({
+            const cryptoResponse = {
               ...purchase,
               coinbaseTransaction,
               message: "Real crypto purchase completed via Coinbase"
-            });
+            };
+            if (idempotencyKey) {
+              await saveIdempotency2(idempotencyKey, userId, "/api/crypto-purchases", 201, cryptoResponse);
+            }
+            res.status(201).json(cryptoResponse);
           } else {
             throw new Error("No Coinbase account found");
           }
@@ -4491,10 +4804,14 @@ async function registerRoutes(app2) {
           cryptoAmount,
           purchasePrice: amount
         });
-        res.status(201).json({
+        const demoResponse = {
           ...purchase,
           message: "Demo purchase - Add Coinbase credentials for real trading"
-        });
+        };
+        if (idempotencyKey) {
+          await saveIdempotency2(idempotencyKey, userId, "/api/crypto-purchases", 201, demoResponse);
+        }
+        res.status(201).json(demoResponse);
       }
     } catch (error) {
       if (error instanceof z4.ZodError) {
@@ -5020,7 +5337,8 @@ async function registerRoutes(app2) {
     }
   });
   registerAxosRoutes(app2);
-  registerSilaRoutes(app2);
+  registerMercuryRoutes(app2);
+  registerWebhookRoutes(app2);
   app2.use(notificationRoutes);
   const httpServer = createServer(app2);
   return httpServer;
@@ -5073,7 +5391,7 @@ var vite_config_default = defineConfig({
 // server/vite.ts
 import { nanoid } from "nanoid";
 var viteLogger = createLogger();
-function log(message, source = "express") {
+function log3(message, source = "express") {
   const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -5283,6 +5601,9 @@ var corsOptions = {
     if (!origin || allowed.includes(origin)) {
       return callback(null, true);
     }
+    if (env !== "production" && origin && origin.endsWith(".replit.dev")) {
+      return callback(null, true);
+    }
     console.warn("Blocked CORS origin:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
@@ -5292,6 +5613,26 @@ var corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  if (req.path.startsWith("/webhooks/")) {
+    let data = "";
+    req.setEncoding("utf8");
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
+    req.on("end", () => {
+      req.rawBody = data;
+      try {
+        req.body = JSON.parse(data);
+      } catch {
+        req.body = {};
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+});
 app.use(express2.json());
 app.use(express2.urlencoded({ extended: false }));
 app.use((req, res, next) => {
@@ -5316,7 +5657,7 @@ app.use((req, res, next) => {
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "\u2026";
       }
-      log(logLine);
+      log3(logLine);
     }
   });
   next();
@@ -5371,7 +5712,7 @@ app.use((req, res, next) => {
         reusePort: true
       },
       () => {
-        log(`serving on port ${port}`);
+        log3(`serving on port ${port}`);
       }
     );
   } catch (error) {
