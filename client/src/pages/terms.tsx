@@ -121,8 +121,8 @@ export default function Terms() {
             <h2 className="text-xl font-semibold text-slate-900 mb-3">8. Contact</h2>
             <p>
               Questions about these Terms can be sent to{" "}
-              <a className="text-dime-purple underline" href="mailto:support@dimetime.com">
-                support@dimetime.com
+              <a className="text-dime-purple underline" href="mailto:tim@dime-time.com">
+                tim@dime-time.com
               </a>
               .
             </p>

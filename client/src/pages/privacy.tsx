@@ -151,8 +151,8 @@ export default function Privacy() {
             <h2 className="text-xl font-semibold text-slate-900 mb-3">10. Contact</h2>
             <p>
               Questions about this Privacy Policy can be sent to{" "}
-              <a className="text-dime-purple underline" href="mailto:privacy@dimetime.com">
-                privacy@dimetime.com
+              <a className="text-dime-purple underline" href="mailto:tim@dime-time.com">
+                tim@dime-time.com
               </a>
               . We respond to privacy requests within 30 days.
             </p>

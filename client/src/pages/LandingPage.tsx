@@ -55,7 +55,7 @@ const FAQS = [
   },
 ];
 
-const CONTACT_EMAIL = "support@dimetime.com";
+const CONTACT_EMAIL = "tim@dime-time.com";
 
 export default function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
