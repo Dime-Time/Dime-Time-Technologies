@@ -23,6 +23,8 @@ import { axosService } from "./services/axosService";
 import { registerAxosRoutes } from "./routes/axosRoutes";
 import { registerMercuryRoutes } from "./routes/mercuryRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
+import { registerStripeRoutes, registerStripeWebhook } from "./routes/stripeRoutes";
+import { isFlagEnabled } from "./lib/flags";
 import { getUserIdFromRequest } from "./middleware/authHelper";
 import { notificationRoutes } from "./routes/notificationRoutes";
 import { notificationService } from "./services/notificationService";
@@ -1859,6 +1861,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Plaid webhook routes (no user auth — signature-verified)
   registerWebhookRoutes(app);
+
+  // Register Stripe ACH routes ONLY when the flag is ON. When OFF, the
+  // `stripe` SDK is never loaded (the service uses dynamic import gated on
+  // the same flag) and none of these endpoints are mounted — the surface
+  // simply doesn't exist for unauthenticated probes.
+  if (isFlagEnabled("ENABLE_STRIPE_ACH")) {
+    registerStripeRoutes(app);
+    registerStripeWebhook(app);
+    console.log(JSON.stringify({
+      service: "Server",
+      event: "stripe_routes_mounted",
+      flag: "ENABLE_STRIPE_ACH",
+    }));
+  }
 
   // Register notification routes
   app.use(notificationRoutes);

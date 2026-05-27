@@ -97,6 +97,10 @@ export function mapToTransactionStatus(
     s === "requires_action" ||
     s === "requires_authentication" ||
     s === "requires_verification" ||
+    s === "requires_payment_method" ||
+    s === "requires_confirmation" ||
+    s === "requires_capture" ||
+    s === "requires_source" ||
     s === "action_required"
   ) {
     return "requires_action";

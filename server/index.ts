@@ -87,9 +87,13 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 
-// Capture raw body for Plaid webhook signature verification before JSON parsing
+// Capture raw body for Plaid webhook signature verification before JSON parsing.
+// IMPORTANT: `/webhooks/stripe` is EXCLUDED — that route installs its own
+// `express.raw({ type: "application/json" })` parser because Stripe's
+// signature is computed over the exact raw bytes and consuming the stream
+// here first (even to JSON.parse) corrupts verification.
 app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.path.startsWith('/webhooks/')) {
+  if (req.path.startsWith('/webhooks/') && req.path !== '/webhooks/stripe') {
     let data = '';
     req.setEncoding('utf8');
     req.on('data', (chunk: string) => { data += chunk; });
@@ -103,8 +107,23 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// `/webhooks/stripe` MUST receive the untouched raw body for Stripe's
+// signature verification — the route registers its own
+// `express.raw({ type: "application/json" })`. If the global JSON parser
+// runs first it consumes the stream and `req.body` becomes an object,
+// which makes `Stripe.webhooks.constructEvent` reject every request.
+// Both global parsers below short-circuit for that single path; the
+// route-level raw parser then populates `req.body` as a Buffer.
+const jsonParser = express.json();
+const urlencodedParser = express.urlencoded({ extended: false });
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path === '/webhooks/stripe') return next();
+  return jsonParser(req, res, next);
+});
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path === '/webhooks/stripe') return next();
+  return urlencodedParser(req, res, next);
+});
 
 /**
  * API logging middleware – capture JSON responses for /api/* calls.

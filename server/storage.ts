@@ -37,6 +37,10 @@ import {
   type EmailVerificationToken,
   type InsertEmailVerificationToken,
   emailVerificationTokens,
+  type StripeAccount,
+  type InsertStripeAccount,
+  stripeAccounts,
+  stripeWebhookEvents,
   users, 
   debts, 
   transactions, 
@@ -144,17 +148,49 @@ export interface IStorage {
   // Idempotency methods
   getIdempotencyKey(key: string, userId: string, endpoint: string): Promise<{ responseStatus: number; responseBody: string } | undefined>;
   createIdempotencyKey(data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void>;
+  /**
+   * Atomically claim an idempotency slot. Returns:
+   *   - `{ claimed: true }`  → caller owns the work; must later call finalizeIdempotencyKey.
+   *   - `{ claimed: false, inFlight: true }` → a concurrent retry is mid-flight; caller should 409.
+   *   - `{ claimed: false, cached: {status, body} }` → previous call completed; replay.
+   * Backed by the UNIQUE (idempotency_key, user_id, endpoint) constraint
+   * so the INSERT...ON CONFLICT path is the single race-free gate.
+   */
+  reserveIdempotencyKey(key: string, userId: string, endpoint: string): Promise<
+    | { claimed: true }
+    | { claimed: false; inFlight: true }
+    | { claimed: false; cached: { status: number; body: string } }
+  >;
+  finalizeIdempotencyKey(key: string, userId: string, endpoint: string, status: number, body: string): Promise<void>;
+  releaseIdempotencyKey(key: string, userId: string, endpoint: string): Promise<void>;
 
   // Transfer ledger methods
   createTransfer(data: InsertTransfer): Promise<Transfer>;
   getTransfer(id: string): Promise<Transfer | undefined>;
   getTransferByCorrelationId(correlationId: string): Promise<Transfer | undefined>;
   getTransferByPlaidTransferId(plaidTransferId: string): Promise<Transfer | undefined>;
-  updateTransferStatus(id: string, status: string, updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'errorCode' | 'errorMessage' | 'rawResponse'>>): Promise<Transfer | undefined>;
+  updateTransferStatus(id: string, status: string, updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'stripePaymentIntentId' | 'stripeChargeId' | 'provider' | 'errorCode' | 'errorMessage' | 'rawResponse'>>): Promise<Transfer | undefined>;
   getTransfersByUserId(userId: string): Promise<Transfer[]>;
+  getTransferByStripePaymentIntentId(paymentIntentId: string): Promise<Transfer | undefined>;
 
   // Encrypted bank account token methods
   getPlaidAccessToken(bankAccountId: string): Promise<string | undefined>;
+
+  // Stripe ACH (BETA — gated by ENABLE_STRIPE_ACH) — provider-agnostic ledger
+  // writes go through createTransfer/updateTransferStatus; these methods
+  // manage the encrypted PaymentMethod reference.
+  createStripeAccount(data: Omit<InsertStripeAccount, 'stripePaymentMethodEnc'> & { paymentMethodIdPlaintext: string }): Promise<StripeAccount>;
+  getStripeAccountById(id: string): Promise<StripeAccount | undefined>;
+  getStripeAccountsByUserId(userId: string): Promise<StripeAccount[]>;
+  getStripePaymentMethodId(stripeAccountId: string): Promise<string | undefined>;
+  hasStripeWebhookEvent(eventId: string): Promise<boolean>;
+  /**
+   * Atomic webhook claim. Returns `true` only on the first delivery of
+   * this `event.id` — duplicate deliveries return `false` and MUST NOT
+   * be processed. Backed by `stripe_webhook_events.event_id` PK +
+   * `ON CONFLICT DO NOTHING RETURNING`.
+   */
+  recordStripeWebhookEvent(eventId: string, type: string): Promise<boolean>;
 
   // Password reset token methods
   createPasswordResetToken(data: InsertPasswordResetToken): Promise<PasswordResetToken>;
@@ -1413,6 +1449,9 @@ export class MemStorage implements IStorage {
   }
 
   async createIdempotencyKey(_data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void> {}
+  async reserveIdempotencyKey(_key: string, _userId: string, _endpoint: string): Promise<any> { return { claimed: true }; }
+  async finalizeIdempotencyKey(_key: string, _userId: string, _endpoint: string, _status: number, _body: string): Promise<void> {}
+  async releaseIdempotencyKey(_key: string, _userId: string, _endpoint: string): Promise<void> {}
 
   async createTransfer(_data: InsertTransfer): Promise<Transfer> {
     throw new Error('MemStorage does not support transfer ledger');
@@ -1422,7 +1461,14 @@ export class MemStorage implements IStorage {
   async getTransferByPlaidTransferId(_plaidTransferId: string): Promise<Transfer | undefined> { return undefined; }
   async updateTransferStatus(_id: string, _status: string, _updates?: any): Promise<Transfer | undefined> { return undefined; }
   async getTransfersByUserId(_userId: string): Promise<Transfer[]> { return []; }
+  async getTransferByStripePaymentIntentId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
+  async createStripeAccount(_data: any): Promise<StripeAccount> { throw new Error('MemStorage does not support Stripe accounts'); }
+  async getStripeAccountById(_id: string): Promise<StripeAccount | undefined> { return undefined; }
+  async getStripeAccountsByUserId(_userId: string): Promise<StripeAccount[]> { return []; }
+  async getStripePaymentMethodId(_id: string): Promise<string | undefined> { return undefined; }
+  async hasStripeWebhookEvent(_eventId: string): Promise<boolean> { return false; }
+  async recordStripeWebhookEvent(_eventId: string, _type: string): Promise<boolean> { return true; }
 
   async createPasswordResetToken(_data: InsertPasswordResetToken): Promise<PasswordResetToken> {
     throw new Error('MemStorage does not support password reset tokens');
@@ -1805,8 +1851,74 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createIdempotencyKey(data: { idempotencyKey: string; userId: string; endpoint: string; responseStatus: number; responseBody: string }): Promise<void> {
+    // ON CONFLICT DO NOTHING — relies on the UNIQUE
+    // (idempotency_key, user_id, endpoint) index. Safe for the legacy
+    // Mercury callsites which still check-then-create.
     await db.execute(
-      sql`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body) VALUES (gen_random_uuid(), ${data.idempotencyKey}, ${data.userId}, ${data.endpoint}, ${data.responseStatus}, ${data.responseBody})`
+      sql`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body)
+          VALUES (gen_random_uuid(), ${data.idempotencyKey}, ${data.userId}, ${data.endpoint}, ${data.responseStatus}, ${data.responseBody})
+          ON CONFLICT (idempotency_key, user_id, endpoint) DO NOTHING`
+    );
+  }
+
+  /**
+   * Atomic claim — single INSERT...ON CONFLICT DO NOTHING RETURNING
+   * decides the race. Only one concurrent caller gets `claimed: true`.
+   */
+  async reserveIdempotencyKey(
+    key: string,
+    userId: string,
+    endpoint: string,
+  ): Promise<
+    | { claimed: true }
+    | { claimed: false; inFlight: true }
+    | { claimed: false; cached: { status: number; body: string } }
+  > {
+    const inserted: any = await db.execute(
+      sql`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body)
+          VALUES (gen_random_uuid(), ${key}, ${userId}, ${endpoint}, 0, '')
+          ON CONFLICT (idempotency_key, user_id, endpoint) DO NOTHING
+          RETURNING id`
+    );
+    const insertedRows = (inserted?.rows ?? inserted ?? []) as any[];
+    if (insertedRows.length > 0) return { claimed: true };
+
+    const existing: any = await db.execute(
+      sql`SELECT response_status, response_body FROM idempotency_keys
+          WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}
+          LIMIT 1`
+    );
+    const rows = (existing?.rows ?? existing ?? []) as any[];
+    const row = rows[0];
+    if (!row) return { claimed: true }; // race window closed; treat as claimed
+    const status = Number(row.response_status ?? row.responseStatus ?? 0);
+    if (status === 0) return { claimed: false, inFlight: true };
+    return {
+      claimed: false,
+      cached: { status, body: String(row.response_body ?? row.responseBody ?? "") },
+    };
+  }
+
+  async finalizeIdempotencyKey(
+    key: string,
+    userId: string,
+    endpoint: string,
+    status: number,
+    body: string,
+  ): Promise<void> {
+    await db.execute(
+      sql`UPDATE idempotency_keys SET response_status = ${status}, response_body = ${body}
+          WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}`
+    );
+  }
+
+  async releaseIdempotencyKey(key: string, userId: string, endpoint: string): Promise<void> {
+    // Only release rows still in the `reserved` state (status=0). Never
+    // delete a finalized response — that would expose us to replays.
+    await db.execute(
+      sql`DELETE FROM idempotency_keys
+          WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}
+          AND response_status = 0`
     );
   }
 
@@ -1836,7 +1948,7 @@ export class DatabaseStorage implements IStorage {
   async updateTransferStatus(
     id: string,
     status: string,
-    updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'errorCode' | 'errorMessage' | 'rawResponse'>>
+    updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'stripePaymentIntentId' | 'stripeChargeId' | 'provider' | 'errorCode' | 'errorMessage' | 'rawResponse'>>
   ): Promise<Transfer | undefined> {
     const [result] = await db
       .update(transfers)
@@ -1930,6 +2042,57 @@ export class DatabaseStorage implements IStorage {
 
   async markUserEmailVerified(userId: string, when: Date = new Date()): Promise<void> {
     await db.update(users).set({ emailVerifiedAt: when }).where(eq(users.id, userId));
+  }
+
+  async getTransferByStripePaymentIntentId(paymentIntentId: string): Promise<Transfer | undefined> {
+    const [result] = await db.select().from(transfers).where(eq(transfers.stripePaymentIntentId, paymentIntentId));
+    return result;
+  }
+
+  // ----- Stripe ACH (BETA, flagged) -----
+  async createStripeAccount(
+    data: Omit<InsertStripeAccount, 'stripePaymentMethodEnc'> & { paymentMethodIdPlaintext: string },
+  ): Promise<StripeAccount> {
+    const { paymentMethodIdPlaintext, ...rest } = data;
+    const encrypted = encryptToken(paymentMethodIdPlaintext);
+    const [result] = await db.insert(stripeAccounts).values({
+      ...rest,
+      stripePaymentMethodEnc: encrypted,
+    }).returning();
+    return result;
+  }
+
+  async getStripeAccountById(id: string): Promise<StripeAccount | undefined> {
+    const [result] = await db.select().from(stripeAccounts).where(eq(stripeAccounts.id, id));
+    return result;
+  }
+
+  async getStripeAccountsByUserId(userId: string): Promise<StripeAccount[]> {
+    return await db.select().from(stripeAccounts).where(eq(stripeAccounts.userId, userId)).orderBy(desc(stripeAccounts.createdAt));
+  }
+
+  async getStripePaymentMethodId(stripeAccountId: string): Promise<string | undefined> {
+    const [row] = await db.select().from(stripeAccounts).where(eq(stripeAccounts.id, stripeAccountId));
+    if (!row?.stripePaymentMethodEnc) return undefined;
+    return decryptToken(row.stripePaymentMethodEnc);
+  }
+
+  async hasStripeWebhookEvent(eventId: string): Promise<boolean> {
+    const [row] = await db.select().from(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
+    return Boolean(row);
+  }
+
+  async recordStripeWebhookEvent(eventId: string, type: string): Promise<boolean> {
+    // Single-statement atomic claim. `RETURNING event_id` yields exactly
+    // one row on first delivery and zero rows on duplicate delivery, so
+    // no caller needs a separate `hasStripeWebhookEvent` precheck (which
+    // had a TOCTOU race window between SELECT and INSERT).
+    const inserted = await db
+      .insert(stripeWebhookEvents)
+      .values({ eventId, type })
+      .onConflictDoNothing({ target: stripeWebhookEvents.eventId })
+      .returning({ eventId: stripeWebhookEvents.eventId });
+    return inserted.length > 0;
   }
 }
 

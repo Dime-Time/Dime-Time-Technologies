@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -198,12 +198,18 @@ export type User = typeof users.$inferSelect;
 export const transfers = pgTable("transfers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  type: text("type").notNull(), // 'roundup_collection' | 'debt_payment'
+  // 'roundup_collection' | 'debt_payment' | 'stripe_ach_debit'
+  type: text("type").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  status: text("status").notNull().default('created'), // created | authorized | pending | posted | settled | failed | returned | cancelled
+  status: text("status").notNull().default('created'), // created | authorized | pending | processing | posted | settled | failed | returned | cancelled | requires_action
+  // Plaid / Mercury provider IDs
   plaidTransferId: text("plaid_transfer_id"),
   plaidAuthorizationId: text("plaid_authorization_id"),
   mercuryTransferId: text("mercury_transfer_id"),
+  // Stripe ACH provider IDs (provider-agnostic ledger — Stripe writes here too)
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeChargeId: text("stripe_charge_id"),
+  provider: text("provider"), // 'plaid' | 'mercury' | 'stripe' — set when a provider is selected
   debtId: varchar("debt_id"),
   correlationId: varchar("correlation_id").notNull(),
   idempotencyKey: text("idempotency_key"),
@@ -215,6 +221,43 @@ export const transfers = pgTable("transfers", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Stripe Financial Connections accounts — separate from bank_accounts (Plaid)
+// so the two adapters stay independent and the Plaid encryption / decryption
+// path is untouched.
+export const stripeAccounts = pgTable("stripe_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  // Stripe Customer ID (created lazily on first Financial Connections session)
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  // Stripe Financial Connections account id (fca_...)
+  stripeFcAccountId: text("stripe_fc_account_id").notNull().unique(),
+  // Stripe PaymentMethod id (ba_... / pm_...) created from the FC account.
+  // Encrypted at rest via encryptionService (same AES-256-GCM key as Plaid tokens).
+  stripePaymentMethodEnc: text("stripe_payment_method_enc"),
+  institutionName: text("institution_name"),
+  last4: text("last4"),
+  status: text("status").notNull().default('linked'), // linked | unlinked | failed
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertStripeAccountSchema = createInsertSchema(stripeAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type StripeAccount = typeof stripeAccounts.$inferSelect;
+export type InsertStripeAccount = z.infer<typeof insertStripeAccountSchema>;
+
+// Stripe webhook event dedup — `event.id` is unique per delivery.
+export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
+  eventId: text("event_id").primaryKey(),
+  type: text("type").notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+});
+
 export const insertTransferSchema = createInsertSchema(transfers).omit({
   id: true,
   createdAt: true,
@@ -224,16 +267,32 @@ export const insertTransferSchema = createInsertSchema(transfers).omit({
 export type Transfer = typeof transfers.$inferSelect;
 export type InsertTransfer = z.infer<typeof insertTransferSchema>;
 
-// Idempotency keys table for request deduplication
-export const idempotencyKeys = pgTable("idempotency_keys", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  idempotencyKey: varchar("idempotency_key").notNull(),
-  userId: varchar("user_id").notNull(),
-  endpoint: varchar("endpoint").notNull(),
-  responseStatus: integer("response_status").notNull(),
-  responseBody: text("response_body").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+// Idempotency keys table for request deduplication.
+// UNIQUE (idempotency_key, user_id, endpoint) makes the reservation
+// atomic — `reserveIdempotencyKey` does INSERT ... ON CONFLICT DO NOTHING
+// RETURNING so two concurrent retries with the same key cannot both
+// proceed past the reservation gate and create duplicate ledger rows.
+// `response_status = 0` means "reserved / in-flight"; a real HTTP status
+// is written by `finalizeIdempotencyKey` once the work completes.
+export const idempotencyKeys = pgTable(
+  "idempotency_keys",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    idempotencyKey: varchar("idempotency_key").notNull(),
+    userId: varchar("user_id").notNull(),
+    endpoint: varchar("endpoint").notNull(),
+    responseStatus: integer("response_status").notNull(),
+    responseBody: text("response_body").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("idempotency_keys_key_user_endpoint_uniq").on(
+      table.idempotencyKey,
+      table.userId,
+      table.endpoint,
+    ),
+  ],
+);
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({

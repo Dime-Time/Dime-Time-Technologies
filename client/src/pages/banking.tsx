@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PlaidLink } from "@/components/PlaidLink";
+import { StripeConnectButton } from "@/components/StripeConnectButton";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, DollarSign, CreditCard, AlertCircle, Building2, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -85,6 +86,7 @@ export default function Banking() {
             Refresh
           </Button>
           <PlaidLink onSuccess={handlePlaidSuccess} />
+          <StripeConnectButton />
         </div>
       </div>
 

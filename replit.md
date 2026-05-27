@@ -112,6 +112,35 @@ Flag env vars (all read with tolerant parsing — `1` / `true` / `yes` / `on` / 
 
 To add a new flag: append to `FLAG_DEFINITIONS` in `shared/flags.ts` and add a row above. Server and client pick it up automatically — no other plumbing needed.
 
+## Stripe ACH (BETA — flagged off by default)
+
+Stripe Financial Connections + ACH debit support lives behind the `ENABLE_STRIPE_ACH` flag. When OFF (the production default) **none** of the Stripe code paths exist at runtime:
+
+- `server/services/stripeService.ts` uses `await import("stripe")` gated on `isStripeAchEnabled()` → the `stripe` npm package is never required and never added to the server's import graph at boot.
+- `server/routes.ts` skips `registerStripeRoutes(app)` / `registerStripeWebhook(app)` so `/api/stripe/*` and `/webhooks/stripe` return 404, not 401 — there is no attack surface to probe.
+- The client component `StripeConnectButton` returns `null` when `useFlag("ENABLE_STRIPE_ACH")` is false, so `@stripe/stripe-js` is only fetched on click in a build where the flag is on.
+
+**Required secrets when flipping the flag ON** (all live as Replit Secrets — never in `.replit` or `codemagic.yaml`):
+
+| Secret | Side | Purpose |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | server | `sk_test_…` / `sk_live_…`. Mandatory — `isStripeAchEnabled()` returns false without it even when the flag env var is true (fails closed). |
+| `STRIPE_WEBHOOK_SECRET` | server | `whsec_…`. Mandatory before flipping the flag — `verifyStripeWebhook` throws (→ 400) if missing, so unsigned events can never mutate the ledger. |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | client (build) | `pk_test_…` / `pk_live_…`. Read by `StripeConnectButton` to call `loadStripe(...)` at click time. |
+
+**Routes (only mounted when flag ON):**
+
+- `POST /api/stripe/financial-connections/session` — auth-gated. Creates/reuses a Stripe Customer for the user and starts a Financial Connections session. Returns `clientSecret` for the browser to feed into Stripe.js.
+- `POST /api/stripe/financial-connections/exchange` — auth-gated. Materialises an FC account id into a `us_bank_account` PaymentMethod, attaches it to the customer, encrypts the PM id (AES-256-GCM via `encryptionService` — same key as Plaid tokens), and writes the row to `stripe_accounts`.
+- `POST /api/stripe/ach/debit` — auth-gated, **requires `Idempotency-Key` header**. The key is stored in our `idempotency_keys` table AND forwarded to Stripe so a retry never double-charges. Writes a row to the `transfers` ledger (`provider="stripe"`, `stripePaymentIntentId`) before calling Stripe.
+- `POST /webhooks/stripe` — signature-verified via `Stripe.webhooks.constructEvent`, deduped on `event.id` in `stripe_webhook_events`, updates the matching `transfers` row by `stripePaymentIntentId`. Mounted with `express.raw({ type: "application/json" })` on this single path — Stripe's signature is computed over the raw body.
+
+**Ledger contract:** the `transfers` table is provider-agnostic. Stripe writes the same row shape as Plaid/Mercury, populating `provider`, `stripePaymentIntentId`, and `stripeChargeId`. The canonical status mapper in `shared/transactionStatus.ts` collapses Stripe's `succeeded` → `completed`, `processing` → `processing`, `requires_payment_method` / `requires_action` → `requires_action`, `canceled` → `failed` — UI never branches on raw Stripe strings.
+
+**Encryption parity with Plaid:** `stripe_accounts.stripe_payment_method_enc` reuses `encryptToken`/`decryptToken` from `server/services/encryptionService.ts`, so `PLAID_TOKEN_ENCRYPTION_KEY` is the single canonical secret for ALL at-rest provider credentials. The same rotation runbook applies — when rotating, the Stripe PM ids re-encrypt as part of the same migration (see "Plaid Token Encryption Key Rotation").
+
+**Sentry / correlationId:** every route's `stripeLog(correlationId, ...)` calls `setCorrelationTag(correlationId)` so any captured exception during a Stripe request carries the same id as the structured log line and the ledger row.
+
 ## Error Tracking (Sentry)
 
 Production error visibility is provided by Sentry on both the Express server and the React client. Wiring lives in `server/lib/sentry.ts`, `client/src/lib/sentry.ts`, and the shared redactor in `shared/sentryRedact.ts`.
