@@ -2,11 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/EmptyState";
 import { formatCurrency, formatDate, formatTime } from "@/lib/calculations";
-import { Coffee, Car, ShoppingBag, DollarSign, Plus } from "lucide-react";
+import { Coffee, Car, ShoppingBag, DollarSign, Plus, Receipt } from "lucide-react";
+import { useLocation } from "wouter";
 import type { Transaction } from "@shared/schema";
 
 export default function Transactions() {
+  const [, setLocation] = useLocation();
   const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
   });
@@ -105,12 +109,35 @@ export default function Transactions() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {transactions.length === 0 ? (
-              <div className="text-center py-8">
-                <DollarSign className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">No transactions found</p>
-                <p className="text-sm text-slate-400 mt-1">Your transactions will appear here once you start using Dime Time</p>
-              </div>
+            {isLoading && transactions.length === 0 ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-4 border border-slate-200 rounded-lg"
+                  data-testid={`skeleton-transaction-row-${i}`}
+                >
+                  <div className="flex items-center space-x-4">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-28" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <Skeleton className="h-4 w-16 ml-auto" />
+                    <Skeleton className="h-3 w-20 ml-auto" />
+                  </div>
+                </div>
+              ))
+            ) : transactions.length === 0 ? (
+              <EmptyState
+                icon={Receipt}
+                title="No transactions yet"
+                description="Connect a bank account to start tracking purchases and rounding up spare change."
+                ctaLabel="Connect a bank"
+                onCtaClick={() => setLocation("/banking")}
+                testIdPrefix="empty-transactions-page"
+              />
             ) : (
               transactions.map((transaction) => (
                 <div key={transaction.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { EmptyState } from "@/components/EmptyState";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -409,13 +410,12 @@ export default function CryptoPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Coins className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">No purchases yet</h3>
-                <p className="text-slate-500">
-                  Your crypto purchase history will appear here
-                </p>
-              </div>
+              <EmptyState
+                icon={Coins}
+                title="No purchases yet"
+                description="Your crypto purchase history will appear here as round-ups are converted."
+                testIdPrefix="empty-crypto-purchases"
+              />
             )}
           </CardContent>
         </Card>

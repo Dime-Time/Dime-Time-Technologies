@@ -8,6 +8,8 @@ import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
 import { CreditCard, TrendingDown, Calendar, Plus, DollarSign } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/EmptyState";
 import type { Debt, Payment } from "@shared/schema";
 
 export default function Debts() {
@@ -130,15 +132,34 @@ export default function Debts() {
 
       {/* Debt Cards */}
       <div className="space-y-6">
-        {debts.length === 0 ? (
+        {isLoading && debts.length === 0 ? (
+          Array.from({ length: 2 }).map((_, i) => (
+            <Card key={i} data-testid={`skeleton-debt-card-${i}`}>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+                <div className="grid grid-cols-3 gap-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : debts.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-12">
-              <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">No debts found</h3>
-              <p className="text-slate-500">Add your first debt to start tracking your payoff progress</p>
-              <Button className="mt-4 bg-dime-purple hover:bg-dime-purple/90">
-                Add Debt Account
-              </Button>
+            <CardContent className="p-2">
+              <EmptyState
+                icon={CreditCard}
+                title="No debts yet"
+                description="Add your first debt to start tracking your payoff progress."
+                ctaLabel="Add Debt Account"
+                onCtaClick={() => { /* hook into add-debt flow when wired */ }}
+                testIdPrefix="empty-debts-page"
+              />
             </CardContent>
           </Card>
         ) : (
