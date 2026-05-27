@@ -1,794 +1,285 @@
+import { Link } from "wouter";
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import {
-  ArrowRight, Shield, Zap, TrendingDown, BarChart3,
-  Lock, ChevronRight, Bitcoin, CreditCard, CheckCircle2,
-  Menu, X
+  Banknote,
+  Repeat,
+  Zap,
+  LineChart,
+  Building2,
+  ShieldCheck,
+  Menu,
+  X,
 } from "lucide-react";
-import appDashboardImage from "@assets/generated_images/App_dashboard_screenshot_29cdedbe.png";
-import logoImg from "@assets/9C86D612-C9E4-448E-8F8B-CC8F618BAE03_1756051233947.png";
+import logoUrl from "@/assets/dime-time-app-icon.png";
 
-function NavLink({ label, href }: { label: string; href: string }) {
-  const scroll = () => {
-    const el = document.getElementById(href);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-  };
-  return (
-    <button onClick={scroll} className="text-sm font-medium text-gray-400 hover:text-white transition-colors">
-      {label}
-    </button>
-  );
-}
+const NAV_LINKS = [
+  { label: "Home", href: "#home" },
+  { label: "About", href: "#about" },
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Contact", href: "#contact" },
+];
 
 export default function LandingPage() {
-  const [, navigate] = useLocation();
-  const { toast } = useToast();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [betaSuccess, setBetaSuccess] = useState(false);
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<{
-    name: string;
-    email: string;
-    phone?: string;
-  }>();
-
-  const betaMutation = useMutation({
-    mutationFn: (data: { name: string; email: string; phone?: string }) =>
-      apiRequest("POST", "/api/contact", {
-        name: data.name,
-        email: data.email,
-        message: `Landing page beta signup${data.phone ? ` | Phone: ${data.phone}` : ""}`,
-      }),
-    onSuccess: () => { setBetaSuccess(true); reset(); },
-    onError: () => {
-      toast({
-        title: "Something went wrong",
-        description: "Please try again or email us directly.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onBetaSubmit = (data: { name: string; email: string; phone?: string }) => {
-    betaMutation.mutate(data);
-  };
-
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setMobileMenuOpen(false);
-  };
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white font-sans antialiased overflow-x-hidden">
-
-      {/* ─── Navigation ──────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0a0a0f]/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-[#918EF4] flex items-center justify-center">
-              <img src={logoImg} alt="Dime Time" className="w-6 h-6 object-contain" />
-            </div>
-            <span className="font-bold text-white tracking-tight text-lg">Dime Time</span>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-8">
-            <NavLink label="How It Works" href="how-it-works" />
-            <NavLink label="Features" href="features" />
-            <NavLink label="Security" href="security" />
-            <NavLink label="Investors" href="investors" />
-          </nav>
-
-          {/* Desktop CTAs — acquisition focused, no Sign In */}
-          <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => scrollTo("investors")}
-              className="text-sm font-medium text-gray-400 hover:text-white transition-colors px-4 py-2"
+    <div className="dt-marketing min-h-screen bg-white text-slate-900 antialiased">
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <Link
+              href="/"
+              className="flex items-center gap-2"
+              aria-label="Dime Time home"
             >
-              Investor Info
-            </button>
-            <button
-              onClick={() => scrollTo("beta")}
-              className="text-sm font-semibold bg-[#918EF4] hover:bg-[#7b78e0] text-white px-5 py-2 rounded-lg transition-colors"
-            >
-              Join Beta
-            </button>
-          </div>
+              <img
+                src={logoUrl}
+                alt="Dime Time logo"
+                className="h-9 w-9 rounded-lg"
+              />
+              <span className="text-lg font-semibold text-slate-900">
+                Dime Time
+              </span>
+            </Link>
 
-          <button
-            className="md:hidden text-gray-400 hover:text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/5 bg-[#0a0a0f] px-6 py-4 flex flex-col gap-4">
-            {[
-              { id: "how-it-works", label: "How It Works" },
-              { id: "features", label: "Features" },
-              { id: "security", label: "Security" },
-              { id: "investors", label: "Investors" },
-            ].map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => scrollTo(id)}
-                className="text-sm text-gray-400 text-left"
-              >
-                {label}
-              </button>
-            ))}
-            <div className="flex gap-3 pt-2 border-t border-white/5">
-              <button
-                onClick={() => scrollTo("investors")}
-                className="flex-1 text-sm text-gray-400 border border-white/10 rounded-lg py-2"
-              >
-                Investor Info
-              </button>
-              <button
-                onClick={() => scrollTo("beta")}
-                className="flex-1 text-sm font-semibold bg-[#918EF4] text-white rounded-lg py-2"
-              >
-                Join Beta
-              </button>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* ─── Hero ────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-24 pb-16 overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-[#918EF4]/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-[#6366f1]/5 rounded-full blur-[80px] pointer-events-none" />
-
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 border border-[#918EF4]/30 bg-[#918EF4]/10 text-[#a5a3f7] text-xs font-semibold px-4 py-2 rounded-full mb-8 uppercase tracking-widest">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#918EF4] animate-pulse" />
-            Patent Filing in Preparation · Now in Beta
-          </div>
-
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] mb-6">
-            Turn Everyday Purchases Into
-            <br />
-            <span className="text-[#918EF4]">Debt Paydown</span> and
-            <br />
-            <span className="text-[#918EF4]">Bitcoin Accumulation.</span>
-          </h1>
-
-          <p className="text-gray-400 text-xl md:text-2xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Dime Time automatically rounds up card purchases and routes spare change toward debt repayment and Bitcoin purchases based on your chosen allocation.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <button
-              onClick={() => scrollTo("beta")}
-              className="inline-flex items-center justify-center gap-2 bg-[#918EF4] hover:bg-[#7b78e0] text-white font-semibold px-8 py-4 rounded-xl text-base transition-all hover:shadow-[0_0_30px_rgba(145,142,244,0.4)]"
-            >
-              Join the Beta
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => scrollTo("investors")}
-              className="inline-flex items-center justify-center gap-2 border border-white/10 hover:border-white/25 text-gray-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-base transition-all"
-            >
-              Investor Information
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Inline trust row */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-16 text-xs text-gray-500 font-medium">
-            <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#918EF4]" />Patent Filing in Preparation</span>
-            <span className="text-white/10">•</span>
-            <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#918EF4]" />Built with Plaid Connectivity</span>
-            <span className="text-white/10">•</span>
-            <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#918EF4]" />Bank-Level Security</span>
-          </div>
-
-          {/* Product preview */}
-          <div className="relative max-w-2xl mx-auto">
-            <div className="absolute inset-0 bg-[#918EF4]/20 rounded-3xl blur-3xl" />
-            <div className="relative border border-white/10 rounded-3xl overflow-hidden bg-[#0f0f1a] shadow-2xl">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-[#0d0d18]">
-                <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-                <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
-                <div className="w-3 h-3 rounded-full bg-[#28c840]" />
-                <div className="mx-auto text-xs text-gray-600 font-mono">dime-time.com/dashboard</div>
-              </div>
-              <img src={appDashboardImage} alt="Dime Time Dashboard" className="w-full h-auto" />
-            </div>
-
-            {/* Floating allocation card */}
-            <div className="absolute -right-4 md:-right-12 top-1/3 bg-[#13131f] border border-white/10 rounded-2xl p-4 shadow-2xl w-44 hidden sm:block">
-              <div className="text-xs text-gray-500 mb-3 font-medium">Round-Up Allocation</div>
-              <div className="space-y-2">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-300">Debt</span>
-                    <span className="text-[#918EF4] font-semibold">80%</span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#918EF4] rounded-full" style={{ width: "80%" }} />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-300">Bitcoin</span>
-                    <span className="text-orange-400 font-semibold">20%</span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-orange-400 rounded-full" style={{ width: "20%" }} />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-white/5 text-xs text-gray-500">
-                Last round-up: <span className="text-white font-medium">$0.63</span>
-              </div>
-            </div>
-
-            {/* Floating transaction card */}
-            <div className="absolute -left-4 md:-left-12 bottom-1/4 bg-[#13131f] border border-white/10 rounded-2xl p-4 shadow-2xl w-44 hidden sm:block">
-              <div className="text-xs text-gray-500 mb-2 font-medium">Latest Round-Up</div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-full bg-[#918EF4]/20 flex items-center justify-center flex-shrink-0">
-                  <CreditCard className="w-3.5 h-3.5 text-[#918EF4]" />
-                </div>
-                <div>
-                  <div className="text-xs text-white font-medium">Purchase</div>
-                  <div className="text-[10px] text-gray-500">$4.37 → $5.00</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#918EF4]">+$0.63</span>
-                <span className="text-green-400 text-[10px]">Processed</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Problem ─────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-[#0d0d18]">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">The Problem</p>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 leading-tight">
-            Most People Have Two Financial Problems
-          </h2>
-          <div className="grid md:grid-cols-2 gap-5 mb-10 text-left">
-            <div className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6 flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                <TrendingDown className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-2">Debt keeps growing</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">Debt keeps growing faster than people can realistically pay it down.</p>
-              </div>
-            </div>
-            <div className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6 flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                <Bitcoin className="w-5 h-5 text-orange-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-2">Investing feels out of reach</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">Investing consistently is difficult for most households to maintain.</p>
-              </div>
-            </div>
-          </div>
-          <p className="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-            People spend money every day, but most purchases do nothing to reduce debt or build long-term financial value. Dime Time turns everyday spending into an opportunity for progress.
-          </p>
-        </div>
-      </section>
-
-      {/* ─── Solution ────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-[#0a0a0f]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">The Solution</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-              Dime Time Automates the Solution
-            </h2>
-            <p className="text-gray-400 text-lg mt-5 max-w-2xl mx-auto leading-relaxed">
-              Every eligible card purchase rounds up automatically. The spare change is then allocated toward debt payoff and Bitcoin accumulation based on the user's chosen allocation.
-            </p>
-          </div>
-
-          {/* Example card */}
-          <div className="max-w-sm mx-auto bg-[#0f0f1a] border border-white/5 rounded-3xl p-8">
-            <div className="text-xs text-gray-500 mb-5 font-medium text-center uppercase tracking-widest">Live Example</div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-sm">Coffee Purchase</span>
-              <span className="text-white font-semibold">$4.25</span>
-            </div>
-            <div className="flex items-center justify-between mb-5 pb-5 border-b border-white/5">
-              <span className="text-[#918EF4] text-sm font-medium">Round-Up</span>
-              <span className="text-[#918EF4] font-bold">+ $0.75</span>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between bg-[#918EF4]/10 border border-[#918EF4]/20 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4 text-[#918EF4]" />
-                  <span className="text-sm text-gray-300">Debt Paydown</span>
-                </div>
-                <span className="text-[#918EF4] font-bold">$0.45</span>
-              </div>
-              <div className="flex items-center justify-between bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Bitcoin className="w-4 h-4 text-orange-400" />
-                  <span className="text-sm text-gray-300">Bitcoin</span>
-                </div>
-                <span className="text-orange-400 font-bold">$0.30</span>
-              </div>
-            </div>
-            <div className="mt-5 pt-5 border-t border-white/5 text-xs text-gray-600 text-center">
-              60% debt · 40% Bitcoin allocation
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Allocation Feature ───────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-[#0d0d18]">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">Full Control</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight mb-5">
-              Choose Your Allocation
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
-              Users control how their round-ups are split. Dime Time automatically follows the allocation rule you choose and applies it to every qualifying purchase.
-            </p>
-          </div>
-
-          <div className="bg-[#0a0a0f] border border-white/5 rounded-3xl p-8 max-w-2xl mx-auto">
-            <div className="flex justify-between text-xs font-semibold mb-5">
-              <span className="text-[#918EF4]">← Debt</span>
-              <span className="text-gray-500 uppercase tracking-widest">Allocation Split</span>
-              <span className="text-orange-400">Bitcoin →</span>
-            </div>
-            <div className="space-y-3">
-              {[
-                { debt: 100, btc: 0 },
-                { debt: 75, btc: 25 },
-                { debt: 50, btc: 50 },
-                { debt: 25, btc: 75 },
-                { debt: 0, btc: 100 },
-              ].map(({ debt, btc }) => (
-                <div key={`${debt}-${btc}`} className="flex items-center gap-3">
-                  <span className="text-xs text-[#918EF4] font-semibold w-8 text-right">{debt}%</span>
-                  <div className="flex-1 h-3 rounded-full overflow-hidden flex gap-0.5">
-                    {debt > 0 && (
-                      <div className="h-full bg-[#918EF4] rounded-l-full transition-all" style={{ width: `${debt}%` }} />
-                    )}
-                    {btc > 0 && (
-                      <div className="h-full bg-orange-400 rounded-r-full transition-all" style={{ width: `${btc}%` }} />
-                    )}
-                  </div>
-                  <span className="text-xs text-orange-400 font-semibold w-8">{btc}%</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 pt-6 border-t border-white/5 text-xs text-gray-600 text-center">
-              Adjust your split anytime. Every purchase follows your rule automatically.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Trust Bar ───────────────────────────────────────────────── */}
-      <div className="border-y border-white/5 bg-[#0d0d18] py-6 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-12 text-gray-600 text-sm font-medium">
-          <span>Built with</span>
-          <div className="flex flex-wrap items-center justify-center gap-8">
-            {["Plaid Connectivity", "Coinbase Integration", "Encrypted Data Handling", "Secure Web Sessions"].map((name) => (
-              <span key={name} className="text-gray-400 text-sm font-semibold">{name}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ─── How It Works ────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-28 px-6 bg-[#0a0a0f]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-3">How It Works</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Three steps. Fully automated.</h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 relative">
-            <div className="hidden md:block absolute top-10 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px bg-gradient-to-r from-transparent via-[#918EF4]/30 to-transparent" />
-            {[
-              {
-                num: "01",
-                icon: <Shield className="w-5 h-5 text-[#918EF4]" />,
-                title: "Connect Your Account",
-                desc: "Securely link your bank account. Your credentials stay with your bank — Dime Time only reads transaction data to identify qualifying purchases.",
-              },
-              {
-                num: "02",
-                icon: <Zap className="w-5 h-5 text-[#918EF4]" />,
-                title: "Every Purchase Rounds Up",
-                desc: "Each qualifying transaction is rounded to the next dollar. The difference — your spare change — is collected and queued for allocation.",
-              },
-              {
-                num: "03",
-                icon: <TrendingDown className="w-5 h-5 text-[#918EF4]" />,
-                title: "Spare Change Goes to Work",
-                desc: "Your round-up is split according to your chosen allocation: a portion toward debt repayment and the remainder toward Bitcoin purchases.",
-              },
-            ].map((step) => (
-              <div key={step.num} className="relative bg-[#0f0f1a] border border-white/5 rounded-2xl p-8 hover:border-[#918EF4]/20 transition-all">
-                <div className="absolute top-6 right-6 text-4xl font-black text-white/3 select-none">{step.num}</div>
-                <div className="w-10 h-10 rounded-xl bg-[#918EF4]/10 flex items-center justify-center mb-5">{step.icon}</div>
-                <h3 className="text-lg font-bold mb-3 text-white">{step.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Why Dime Time ───────────────────────────────────────────── */}
-      <section className="py-28 px-6 bg-[#0d0d18]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div>
-              <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">Why Dime Time</p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight">
-                Put Every Purchase To Work.
-              </h2>
-              <p className="text-gray-400 text-lg leading-relaxed mb-6">
-                Most round-up apps move spare change into savings. Dime Time takes a different approach by routing round-ups toward debt repayment and Bitcoin accumulation.
-              </p>
-              <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                Instead of letting spare change sit idle, users can apply each round-up toward paying down liabilities while also building digital asset exposure through automated allocation.
-              </p>
-              <div className="space-y-3">
-                {[
-                  "No manual transfers required",
-                  "Works automatically with everyday purchases",
-                  "Adjustable allocation between debt repayment and Bitcoin",
-                  "Built around a proprietary round-up allocation model",
-                ].map((point) => (
-                  <div key={point} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#918EF4] flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300 text-sm">{point}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Allocation visual */}
-            <div className="bg-[#0a0a0f] border border-white/5 rounded-3xl p-8">
-              <div className="text-sm text-gray-500 mb-6 font-medium">Example Allocation — $0.63 round-up</div>
-              <div className="flex gap-3 mb-8">
-                <div className="flex-1 bg-[#918EF4]/10 border border-[#918EF4]/20 rounded-2xl p-5 text-center">
-                  <TrendingDown className="w-6 h-6 text-[#918EF4] mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-[#918EF4] mb-1">80%</div>
-                  <div className="text-xs text-gray-400">$0.50</div>
-                  <div className="text-xs text-gray-500 mt-1">→ Debt Repayment</div>
-                </div>
-                <div className="flex-1 bg-orange-500/5 border border-orange-500/20 rounded-2xl p-5 text-center">
-                  <Bitcoin className="w-6 h-6 text-orange-400 mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-orange-400 mb-1">20%</div>
-                  <div className="text-xs text-gray-400">$0.13</div>
-                  <div className="text-xs text-gray-500 mt-1">→ Bitcoin</div>
-                </div>
-              </div>
-              <div className="h-3 rounded-full overflow-hidden flex gap-0.5 mb-4">
-                <div className="h-full bg-[#918EF4] rounded-l-full" style={{ width: "80%" }} />
-                <div className="h-full bg-orange-400 rounded-r-full" style={{ width: "20%" }} />
-              </div>
-              <div className="flex justify-between text-xs text-gray-600">
-                <span>← Debt Repayment</span>
-                <span>Bitcoin →</span>
-              </div>
-              <div className="mt-6 pt-6 border-t border-white/5 text-xs text-gray-500 text-center">
-                Allocation is fully adjustable. You set the split.
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Features ────────────────────────────────────────────────── */}
-      <section id="features" className="py-28 px-6 bg-[#0a0a0f]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-3">Platform Features</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Built for serious financial progress.</h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              {
-                icon: <TrendingDown className="w-5 h-5 text-[#918EF4]" />,
-                title: "Automated Debt Repayment",
-                desc: "Every qualifying round-up can be directed toward debt paydown automatically, reducing the need for manual transfers or extra financial admin.",
-              },
-              {
-                icon: <Bitcoin className="w-5 h-5 text-orange-400" />,
-                title: "Bitcoin Allocation",
-                desc: "A configurable percentage of each round-up can be used for Bitcoin purchases, allowing users to build exposure gradually through everyday spending.",
-              },
-              {
-                icon: <Zap className="w-5 h-5 text-yellow-400" />,
-                title: "Flexible Allocation Controls",
-                desc: "Choose how each round-up is divided between debt repayment and Bitcoin purchases. Adjust your allocation at any time.",
-              },
-              {
-                icon: <CreditCard className="w-5 h-5 text-blue-400" />,
-                title: "Transaction-Based Automation",
-                desc: "Round-ups are triggered by qualifying purchases, turning routine card activity into a consistent automated allocation workflow.",
-              },
-              {
-                icon: <BarChart3 className="w-5 h-5 text-green-400" />,
-                title: "Progress Tracking",
-                desc: "Users can monitor cumulative round-ups, projected debt impact, and Bitcoin accumulation over time within the product experience.",
-              },
-              {
-                icon: <Lock className="w-5 h-5 text-purple-400" />,
-                title: "Secure Financial Connectivity",
-                desc: "Built with modern financial connectivity and secure authentication practices designed for consumer fintech applications.",
-              },
-            ].map((f) => (
-              <div
-                key={f.title}
-                className="group bg-[#0f0f1a] border border-white/5 rounded-2xl p-6 hover:border-[#918EF4]/20 hover:bg-[#111120] transition-all cursor-default"
-              >
-                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center mb-4">{f.icon}</div>
-                <h3 className="text-base font-bold text-white mb-2">{f.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Security ────────────────────────────────────────────────── */}
-      <section id="security" className="py-28 px-6 bg-[#0d0d18]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-3">Security & Trust</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Privacy-first. Security-forward.</h2>
-            <p className="text-gray-400 text-lg mt-4 max-w-2xl mx-auto">
-              We handle financial data with the same rigor as established fintech institutions.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {[
-              {
-                icon: <Shield className="w-6 h-6 text-[#918EF4]" />,
-                title: "Secure Connectivity",
-                desc: "Financial account connections are handled through trusted connectivity providers built for modern fintech applications.",
-              },
-              {
-                icon: <Lock className="w-6 h-6 text-[#918EF4]" />,
-                title: "Encrypted Data Handling",
-                desc: "Sensitive data is transmitted and stored using modern encryption and access-control practices appropriate for financial software.",
-              },
-              {
-                icon: <CheckCircle2 className="w-6 h-6 text-[#918EF4]" />,
-                title: "Privacy-Conscious Design",
-                desc: "Dime Time is being built with a focus on data minimization, controlled access, and responsible handling of user financial information.",
-              },
-              {
-                icon: <Zap className="w-6 h-6 text-[#918EF4]" />,
-                title: "Security-Oriented Architecture",
-                desc: "The platform is designed with authentication, secure session handling, and operational safeguards intended to support reliable financial workflows.",
-              },
-            ].map((t) => (
-              <div key={t.title} className="flex gap-5 bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
-                <div className="w-12 h-12 rounded-xl bg-[#918EF4]/10 flex items-center justify-center flex-shrink-0">{t.icon}</div>
-                <div>
-                  <h3 className="text-base font-bold text-white mb-2">{t.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{t.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Vision ──────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-[#0a0a0f] border-y border-white/5">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="text-5xl mb-6 opacity-60">❝</div>
-          <blockquote className="text-2xl md:text-3xl font-medium text-gray-200 leading-relaxed mb-6">
-            Dime Time helps turn everyday spending into automated financial action by routing spare change toward debt repayment and Bitcoin accumulation.
-          </blockquote>
-          <div className="text-gray-500 text-sm font-medium">Company Mission Statement</div>
-        </div>
-      </section>
-
-      {/* ─── Investors ───────────────────────────────────────────────── */}
-      <section id="investors" className="py-28 px-6 bg-[#0d0d18]">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">For Investors</p>
-              <h2 className="text-4xl font-bold tracking-tight mb-6 leading-tight">
-                Built for a large consumer pain point.
-              </h2>
-              <p className="text-gray-400 leading-relaxed mb-4">
-                Dime Time is an early-stage consumer fintech platform focused on automated round-up allocations for debt repayment and Bitcoin purchases.
-              </p>
-              <p className="text-gray-400 leading-relaxed mb-8">
-                We are developing the product for users who want a more intentional use of spare change than traditional savings-based round-up apps provide.
-              </p>
-
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                {[
-                  { label: "Stage", value: "Pre-Seed" },
-                  { label: "Status", value: "Beta Active" },
-                  { label: "IP", value: "Filing in Preparation" },
-                  { label: "Founded", value: "2025" },
-                ].map((item) => (
-                  <div key={item.label} className="bg-[#0a0a0f] border border-white/5 rounded-xl p-4">
-                    <div className="text-gray-500 text-xs mb-1">{item.label}</div>
-                    <div className="text-white font-semibold">{item.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
+            <nav className="hidden md:flex items-center gap-8">
+              {NAV_LINKS.map((link) => (
                 <a
-                  href="mailto:tim@dime-time.com?subject=Investor Deck Request"
-                  className="inline-flex items-center justify-center gap-2 bg-[#918EF4] hover:bg-[#7b78e0] text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all"
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-medium text-slate-600 hover:text-dime-purple transition-colors"
                 >
-                  Request Investor Deck
-                  <ArrowRight className="w-4 h-4" />
+                  {link.label}
                 </a>
-                <a
-                  href="mailto:tim@dime-time.com?subject=Founder Contact"
-                  className="inline-flex items-center justify-center gap-2 border border-white/10 hover:border-white/25 text-gray-300 hover:text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all"
-                >
-                  Contact the Founder
-                </a>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { metric: "Patent Filing in Preparation", detail: "Dynamic Dual-Split Round-Up Microallocation System — USPTO provisional filing in preparation" },
-                { metric: "Live on TestFlight", detail: "iOS app built and distributed to beta testers via Apple TestFlight" },
-                { metric: "Built with Plaid Connectivity", detail: "Dime Time is being developed with Plaid connectivity for linked account workflows." },
-                { metric: "Veteran-Owned", detail: "Proudly built and operated by a U.S. military veteran" },
-              ].map((item) => (
-                <div key={item.metric} className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-5 flex gap-4">
-                  <div className="w-2 flex-shrink-0 flex flex-col items-center pt-1">
-                    <div className="w-2 h-2 rounded-full bg-[#918EF4]" />
-                    <div className="w-px flex-1 bg-[#918EF4]/20 mt-2" />
-                  </div>
-                  <div>
-                    <div className="text-white font-bold text-sm mb-1">{item.metric}</div>
-                    <div className="text-gray-500 text-xs leading-relaxed">{item.detail}</div>
-                  </div>
-                </div>
               ))}
+            </nav>
+
+            <div className="hidden md:block">
+              <Link href="/signup">
+                <Button className="bg-dime-purple text-white hover:bg-dime-purple/90">
+                  Get Started
+                </Button>
+              </Link>
             </div>
+
+            <button
+              className="md:hidden p-2 text-slate-700"
+              aria-label="Toggle menu"
+              onClick={() => setMobileOpen((v) => !v)}
+            >
+              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
-        </div>
-      </section>
 
-      {/* ─── Beta Signup ─────────────────────────────────────────────── */}
-      <section id="beta" className="py-28 px-6 bg-[#0a0a0f] relative overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[600px] h-[300px] bg-[#918EF4]/8 rounded-full blur-[100px]" />
-        </div>
-        <div className="relative z-10 max-w-xl mx-auto text-center">
-          <p className="text-[#918EF4] text-sm font-semibold uppercase tracking-widest mb-4">Early Access</p>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Join the Beta.</h2>
-          <p className="text-gray-400 text-lg mb-10 leading-relaxed">
-            Be among the first to experience automated debt repayment and Bitcoin accumulation through Dime Time.
-          </p>
-
-          {betaSuccess ? (
-            <div className="bg-[#918EF4]/10 border border-[#918EF4]/30 rounded-2xl p-8 text-center">
-              <CheckCircle2 className="w-10 h-10 text-[#918EF4] mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">You're on the list.</h3>
-              <p className="text-gray-400 text-sm">We'll be in touch when early access opens.</p>
+          {mobileOpen && (
+            <div className="md:hidden border-t border-slate-200 py-4">
+              <div className="flex flex-col gap-4">
+                {NAV_LINKS.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="text-sm font-medium text-slate-600 hover:text-dime-purple"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+                <Link href="/signup">
+                  <Button className="w-full bg-dime-purple text-white hover:bg-dime-purple/90">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit(onBetaSubmit)} className="bg-[#0f0f1a] border border-white/5 rounded-2xl p-8 text-left space-y-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2 font-medium">Full Name <span className="text-red-400">*</span></label>
-                <input
-                  {...register("name", { required: true })}
-                  placeholder="Jane Smith"
-                  className="w-full bg-[#0a0a0f] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#918EF4]/50 transition-colors"
-                />
-                {errors.name && <p className="text-red-400 text-xs mt-1">Name is required</p>}
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2 font-medium">Email Address <span className="text-red-400">*</span></label>
-                <input
-                  {...register("email", { required: true, pattern: /^\S+@\S+$/i })}
-                  type="email"
-                  placeholder="jane@example.com"
-                  className="w-full bg-[#0a0a0f] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#918EF4]/50 transition-colors"
-                />
-                {errors.email && <p className="text-red-400 text-xs mt-1">Valid email is required</p>}
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2 font-medium">Phone <span className="text-gray-600 font-normal">(optional)</span></label>
-                <input
-                  {...register("phone")}
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  className="w-full bg-[#0a0a0f] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#918EF4]/50 transition-colors"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={betaMutation.isPending}
-                className="w-full bg-[#918EF4] hover:bg-[#7b78e0] disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl text-sm transition-all mt-2"
-              >
-                {betaMutation.isPending ? "Submitting..." : "Request Early Access"}
-              </button>
-              <p className="text-xs text-gray-600 text-center">
-                Request early access and we'll reach out when beta capacity opens.
-              </p>
-            </form>
           )}
         </div>
+      </header>
+
+      {/* ── Hero ────────────────────────────────────────────────────────── */}
+      <section id="home" className="px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900">
+            Get out of debt, one dime at a time
+            <br />
+            with <span className="text-dime-purple">Dime Time</span>.
+          </h1>
+          <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Dime Time helps consumers automate payments, manage ACH transfers,
+            and build healthier financial habits through secure digital money
+            tools.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/signup">
+              <Button
+                size="lg"
+                className="bg-dime-purple text-white hover:bg-dime-purple/90 px-8"
+              >
+                Get Started
+              </Button>
+            </Link>
+            <a href="#how-it-works">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-dime-purple text-dime-purple hover:bg-dime-purple/5 px-8"
+              >
+                Learn More
+              </Button>
+            </a>
+          </div>
+        </div>
       </section>
 
-      {/* ─── Footer ──────────────────────────────────────────────────── */}
-      <footer className="border-t border-white/5 bg-[#0d0d18] py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-10 mb-12">
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-7 h-7 rounded-lg bg-[#918EF4] flex items-center justify-center">
-                  <img src={logoImg} alt="Dime Time" className="w-5 h-5 object-contain" />
-                </div>
-                <span className="font-bold text-white tracking-tight">Dime Time</span>
-              </div>
-              <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-5">
-                Automated debt repayment and Bitcoin accumulation through a proprietary round-up allocation model.
-              </p>
-              <a href="mailto:tim@dime-time.com" className="text-[#918EF4] text-sm hover:underline">tim@dime-time.com</a>
-            </div>
-
-            <div>
-              <div className="text-white font-semibold text-sm mb-4">Product</div>
-              <ul className="space-y-3 text-sm text-gray-500">
-                <li><button onClick={() => scrollTo("how-it-works")} className="hover:text-gray-300 transition-colors">How It Works</button></li>
-                <li><button onClick={() => scrollTo("features")} className="hover:text-gray-300 transition-colors">Features</button></li>
-                <li><button onClick={() => scrollTo("security")} className="hover:text-gray-300 transition-colors">Security</button></li>
-                <li><button onClick={() => scrollTo("beta")} className="hover:text-gray-300 transition-colors">Join Beta</button></li>
-              </ul>
-            </div>
-
-            <div>
-              <div className="text-white font-semibold text-sm mb-4">Company</div>
-              <ul className="space-y-3 text-sm text-gray-500">
-                <li><button onClick={() => scrollTo("investors")} className="hover:text-gray-300 transition-colors">Investors</button></li>
-                <li><a href="mailto:tim@dime-time.com" className="hover:text-gray-300 transition-colors">Contact</a></li>
-                <li><button onClick={() => navigate("/login")} className="hover:text-gray-300 transition-colors">Sign In</button></li>
-                {/* TODO: Separate /privacy and /terms routes when distinct legal pages are created */}
-                <li><button onClick={() => navigate("/legal")} className="hover:text-gray-300 transition-colors">Privacy Policy</button></li>
-                <li><button onClick={() => navigate("/legal")} className="hover:text-gray-300 transition-colors">Terms of Service</button></li>
-              </ul>
-            </div>
+      {/* ── How It Works ────────────────────────────────────────────────── */}
+      <section
+        id="how-it-works"
+        className="px-4 sm:px-6 lg:px-8 py-20 bg-slate-50 border-y border-slate-200"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
+              How It Works
+            </h2>
+            <p className="mt-4 text-slate-600">
+              Three simple steps to put your money on autopilot.
+            </p>
           </div>
 
-          <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-600">
-            <div>&copy; {new Date().getFullYear()} Dime Time Technologies. All rights reserved.</div>
-            <div className="flex items-center gap-4">
-              <span className="text-[#918EF4]/70">Patent Filing in Preparation</span>
-              <span>·</span>
-              <span>Veteran-Owned Business</span>
-              <span>·</span>
-              <a href="https://dime-time.com" className="hover:text-gray-400 transition-colors">dime-time.com</a>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                step: "1",
+                title: "Connect your bank account securely",
+                body: "Link your bank in seconds using bank-grade encryption.",
+              },
+              {
+                step: "2",
+                title: "Schedule recurring ACH payments and transfers",
+                body: "Set it once and let Dime Time handle the rest.",
+              },
+              {
+                step: "3",
+                title: "Track your financial progress",
+                body: "See your balances, payments, and progress in one place.",
+              },
+            ].map(({ step, title, body }) => (
+              <div
+                key={step}
+                className="bg-white rounded-xl border border-slate-200 p-6"
+              >
+                <div className="w-10 h-10 rounded-full bg-dime-purple text-white flex items-center justify-center font-semibold mb-4">
+                  {step}
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  {title}
+                </h3>
+                <p className="text-slate-600 text-sm leading-relaxed">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ────────────────────────────────────────────────────── */}
+      <section className="px-4 sm:px-6 lg:px-8 py-20">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
+              Features
+            </h2>
+            <p className="mt-4 text-slate-600">
+              Everything you need to move money with confidence.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {[
+              { icon: Banknote, label: "ACH Transfers" },
+              { icon: Repeat, label: "Recurring Payments" },
+              { icon: Zap, label: "Payment Automation" },
+              { icon: LineChart, label: "Financial Tracking" },
+              { icon: Building2, label: "Bank Connectivity" },
+            ].map(({ icon: Icon, label }) => (
+              <div
+                key={label}
+                className="bg-white rounded-xl border border-slate-200 p-6 text-center hover:border-dime-purple/40 transition-colors"
+              >
+                <div className="w-12 h-12 mx-auto rounded-lg bg-dime-purple/10 flex items-center justify-center mb-4">
+                  <Icon className="w-6 h-6 text-dime-purple" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900">{label}</h3>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Trust / Security ────────────────────────────────────────────── */}
+      <section
+        id="about"
+        className="px-4 sm:px-6 lg:px-8 py-20 bg-slate-50 border-y border-slate-200"
+      >
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="w-14 h-14 mx-auto rounded-full bg-dime-purple/10 flex items-center justify-center mb-6">
+            <ShieldCheck className="w-7 h-7 text-dime-purple" />
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
+            Built on trusted financial infrastructure
+          </h2>
+          <p className="text-lg text-slate-600 leading-relaxed">
+            Dime Time works with established financial infrastructure providers
+            and banking partners to support secure payment processing,
+            encrypted banking connections, and responsible money movement.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer
+        id="contact"
+        className="px-4 sm:px-6 lg:px-8 py-12 bg-white border-t border-slate-200"
+      >
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <Link href="/" className="flex items-center gap-2">
+              <img
+                src={logoUrl}
+                alt="Dime Time logo"
+                className="h-8 w-8 rounded-md"
+              />
+              <span className="font-semibold text-slate-900">Dime Time</span>
+            </Link>
+
+            <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
+              <Link href="/legal" className="hover:text-dime-purple">
+                Privacy Policy
+              </Link>
+              <Link href="/legal" className="hover:text-dime-purple">
+                Terms of Service
+              </Link>
+              <a href="#about" className="hover:text-dime-purple">
+                About
+              </a>
+              <a href="#contact" className="hover:text-dime-purple">
+                Contact
+              </a>
+              <a href="#faq" className="hover:text-dime-purple">
+                FAQ
+              </a>
+            </nav>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-200 text-center md:text-left">
+            <p className="text-xs text-slate-500 leading-relaxed max-w-3xl">
+              Dime Time is a financial technology platform and is not a bank.
+              Banking services and payment infrastructure are provided through
+              regulated financial partners.
+            </p>
+            <p className="mt-2 text-xs text-slate-400">
+              © {new Date().getFullYear()} Dime Time. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
