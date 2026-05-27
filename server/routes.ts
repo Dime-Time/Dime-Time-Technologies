@@ -30,6 +30,10 @@ import { notificationTriggers } from "./services/notificationTriggers";
 import { roundUpSplitService } from "./services/roundUpSplitService";
 import { calculateRoundUp } from "../client/src/lib/calculations";
 import multer from "multer";
+import { randomBytes } from "crypto";
+import { sendPasswordResetEmail } from "./services/emailService";
+
+const PASSWORD_RESET_TOKEN_TTL_MINUTES = 60;
 
 const BCRYPT_COST = 12;
 
@@ -278,6 +282,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Login error");
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Password reset — request link
+  // Always returns a generic 200 so attackers can't enumerate which emails
+  // are registered. Rate-limited via authLimiter.
+  app.post("/api/auth/forgot-password", authLimiter, async (req: Request, res: Response) => {
+    try {
+      const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+
+      if (user) {
+        // Resolve the canonical app origin for the reset link.
+        // SECURITY: never derive this from request headers in production —
+        // an attacker could forge a Host header to redirect the emailed
+        // reset link to a domain they control and steal the token. In
+        // production we REQUIRE PUBLIC_APP_URL to be configured.
+        let baseUrl: string | undefined = process.env.PUBLIC_APP_URL;
+        if (!baseUrl) {
+          if (process.env.NODE_ENV === "production") {
+            console.error(JSON.stringify({
+              event: "password_reset_misconfigured",
+              message: "PUBLIC_APP_URL must be set in production",
+            }));
+            return res.json({
+              success: true,
+              message: "If an account exists for that email, a reset link has been sent.",
+            });
+          }
+          // Dev only: synthesize from the request. Safe because dev hosts
+          // aren't reachable from the public internet.
+          const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+          const host = req.get("host");
+          baseUrl = `${proto}://${host}`;
+        }
+
+        // Generate a 32-byte URL-safe token. The plaintext goes in the email
+        // link; only the SHA-256 hash is stored at rest.
+        const rawToken = randomBytes(32).toString("base64url");
+        const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 * 1000);
+
+        await storage.createPasswordResetToken({
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        });
+
+        const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
+
+        const sendResult = await sendPasswordResetEmail({
+          to: user.email!,
+          firstName: user.firstName,
+          resetUrl,
+          expiresInMinutes: PASSWORD_RESET_TOKEN_TTL_MINUTES,
+        });
+
+        console.log(JSON.stringify({
+          event: "password_reset_requested",
+          userId: user.id,
+          provider: sendResult.provider,
+          ok: sendResult.ok,
+        }));
+      } else {
+        console.log(JSON.stringify({
+          event: "password_reset_requested_unknown_email",
+        }));
+      }
+
+      // Always succeed regardless of whether the email exists.
+      res.json({
+        success: true,
+        message: "If an account exists for that email, a reset link has been sent.",
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to process request" });
+    }
+  });
+
+  // Password reset — consume token + set new password
+  app.post("/api/auth/reset-password", authLimiter, async (req: Request, res: Response) => {
+    try {
+      const { token, password } = req.body ?? {};
+      if (typeof token !== "string" || typeof password !== "string") {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+
+      // Atomic consume: returns the row ONLY if it was unused AND not
+      // expired at the moment of the UPDATE. Eliminates the
+      // SELECT-then-UPDATE race where two concurrent requests could both
+      // see "not used" before either marks it used.
+      const record = await storage.consumePasswordResetToken(tokenHash);
+      if (!record) {
+        return res.status(400).json({ message: "Invalid, expired, or already-used reset link" });
+      }
+
+      const newHash = await hashPasswordBcrypt(password);
+      await storage.updateUserPassword(record.userId, newHash, "bcrypt");
+      // Invalidate any sibling outstanding tokens for this user.
+      await storage.invalidatePasswordResetTokensForUser(record.userId);
+      // SECURITY: kill every active session/token for this user so any
+      // attacker who currently holds a stolen cookie or auth token is
+      // logged out as soon as the legitimate user resets their password.
+      await storage.invalidateAllUserSessions(record.userId);
+
+      console.log(JSON.stringify({
+        event: "password_reset_completed",
+        userId: record.userId,
+      }));
+
+      res.json({ success: true, message: "Password updated. You can now sign in." });
+    } catch (error) {
+      console.error("Reset password error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to reset password" });
     }
   });
 

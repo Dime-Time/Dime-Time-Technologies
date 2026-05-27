@@ -97,6 +97,16 @@ export default function Login() {
           >
             {loginMutation.isPending ? "Logging in..." : "Login"}
           </Button>
+
+          <div className="text-center">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-white/80 hover:text-white hover:underline"
+              data-testid="link-forgot-password"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </form>
 
         <p className="text-sm text-center mt-6 text-white/80">

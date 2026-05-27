@@ -41,6 +41,8 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Signup from "@/pages/signup";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import ComingSoon from "@/pages/ComingSoon";
 import DimeToken from "@/pages/dime-token";
 import BusinessAnalytics from "@/pages/business-analytics";
@@ -242,6 +244,14 @@ function AppContent() {
 
       <Route path="/signup">
         <AuthScreen><Signup /></AuthScreen>
+      </Route>
+
+      <Route path="/forgot-password">
+        <AuthScreen><ForgotPassword /></AuthScreen>
+      </Route>
+
+      <Route path="/reset-password">
+        <AuthScreen><ResetPassword /></AuthScreen>
       </Route>
 
       <Route path="/privacy" component={Privacy} />

@@ -1,0 +1,111 @@
+import { useState } from "react";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { getApiUrl } from "@/lib/queryClient";
+import { LogoWithText } from "@/components/logo";
+
+export default function ForgotPassword() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const { toast } = useToast();
+
+  const mutation = useMutation({
+    mutationFn: async (payload: { email: string }) => {
+      const response = await fetch(getApiUrl("/api/auth/forgot-password"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || "Unable to send reset link");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setSubmitted(true);
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Couldn't send reset link",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    mutation.mutate({ email });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#a8a4f0] flex items-center justify-center px-4 safe-area-top safe-area-bottom">
+      <div className="w-full max-w-md bg-[#918EF4] rounded-3xl p-8">
+        <div className="flex justify-center mb-4">
+          <LogoWithText size={100} />
+        </div>
+
+        <h1 className="text-2xl font-bold text-white text-center mb-1">
+          Forgot password?
+        </h1>
+        <p className="text-white/80 text-center mb-8 text-sm">
+          Enter the email you signed up with and we'll send you a secure reset link.
+        </p>
+
+        {submitted ? (
+          <div className="space-y-4 text-center" data-testid="text-forgot-password-success">
+            <div className="bg-white/10 rounded-xl p-4 text-white text-sm leading-relaxed">
+              If an account exists for <span className="font-semibold">{email}</span>, a reset link has been sent.
+              The link expires in 60 minutes.
+            </div>
+            <p className="text-white/70 text-xs">
+              Didn't receive it? Check your spam folder or try again in a few minutes.
+            </p>
+            <Link
+              href="/login"
+              className="block text-white underline text-sm"
+              data-testid="link-back-to-login-success"
+            >
+              Back to login
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              type="email"
+              placeholder="Email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              data-testid="input-email"
+              className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+            />
+            <Button
+              type="submit"
+              variant="ghost"
+              className="w-full text-white hover:bg-white/10 h-12"
+              disabled={mutation.isPending}
+              data-testid="button-send-reset-link"
+            >
+              {mutation.isPending ? "Sending..." : "Send reset link"}
+            </Button>
+          </form>
+        )}
+
+        <p className="text-sm text-center mt-6 text-white/80">
+          Remembered it?{" "}
+          <Link href="/login" className="text-white hover:underline" data-testid="link-back-to-login">
+            Back to login
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}

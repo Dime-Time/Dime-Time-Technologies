@@ -31,6 +31,9 @@ import {
   type InsertContactSubmission,
   type Transfer,
   type InsertTransfer,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
+  passwordResetTokens,
   users, 
   debts, 
   transactions, 
@@ -149,6 +152,12 @@ export interface IStorage {
 
   // Encrypted bank account token methods
   getPlaidAccessToken(bankAccountId: string): Promise<string | undefined>;
+
+  // Password reset token methods
+  createPasswordResetToken(data: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  consumePasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined>;
+  invalidatePasswordResetTokensForUser(userId: string): Promise<void>;
+  invalidateAllUserSessions(userId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1405,6 +1414,13 @@ export class MemStorage implements IStorage {
   async updateTransferStatus(_id: string, _status: string, _updates?: any): Promise<Transfer | undefined> { return undefined; }
   async getTransfersByUserId(_userId: string): Promise<Transfer[]> { return []; }
   async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
+
+  async createPasswordResetToken(_data: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    throw new Error('MemStorage does not support password reset tokens');
+  }
+  async consumePasswordResetToken(_tokenHash: string): Promise<PasswordResetToken | undefined> { return undefined; }
+  async invalidatePasswordResetTokensForUser(_userId: string): Promise<void> {}
+  async invalidateAllUserSessions(_userId: string): Promise<void> {}
 }
 
 // DatabaseStorage class for persistent storage using PostgreSQL
@@ -1816,6 +1832,51 @@ export class DatabaseStorage implements IStorage {
 
   async getTransfersByUserId(userId: string): Promise<Transfer[]> {
     return await db.select().from(transfers).where(eq(transfers.userId, userId)).orderBy(desc(transfers.createdAt));
+  }
+
+  // Password reset token methods
+  async createPasswordResetToken(data: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const [result] = await db.insert(passwordResetTokens).values(data).returning();
+    return result;
+  }
+
+  /**
+   * Atomically consume a password reset token. Returns the row only if it
+   * was unused AND not expired AT THE MOMENT of the update — eliminates the
+   * SELECT-then-UPDATE race where two callers could both pass the
+   * "not used yet" check. The conditional UPDATE ... RETURNING is the
+   * single source of truth.
+   */
+  async consumePasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined> {
+    const now = new Date();
+    const [result] = await db.update(passwordResetTokens)
+      .set({ usedAt: now })
+      .where(and(
+        eq(passwordResetTokens.tokenHash, tokenHash),
+        sql`${passwordResetTokens.usedAt} IS NULL`,
+        sql`${passwordResetTokens.expiresAt} > ${now}`,
+      ))
+      .returning();
+    return result;
+  }
+
+  async invalidatePasswordResetTokensForUser(userId: string): Promise<void> {
+    // Mark all unused tokens for this user as used (defensive: prevents
+    // re-use of any outstanding token after a successful password change).
+    await db.update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(and(eq(passwordResetTokens.userId, userId), sql`${passwordResetTokens.usedAt} IS NULL`));
+  }
+
+  /**
+   * Wipe every active session for a user after a sensitive event
+   * (password reset). Covers both:
+   *   - express-session rows in `sessions` (sid PK, sess jsonb)
+   *   - app-level user_sessions rows (used by native auth tokens)
+   */
+  async invalidateAllUserSessions(userId: string): Promise<void> {
+    await db.execute(sql`DELETE FROM sessions WHERE sess->>'userId' = ${userId}`);
+    await db.delete(userSessions).where(eq(userSessions.userId, userId));
   }
 }
 
