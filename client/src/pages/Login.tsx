@@ -15,6 +15,8 @@ export default function Login() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
       const response = await fetch(getApiUrl("/api/login"), {
@@ -35,21 +37,21 @@ export default function Login() {
         await saveAuthToken(data.authToken);
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ title: "Welcome back!" });
+      toast({ title: "Welcome back" });
       setLocation("/dashboard");
     },
     onError: () => {
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
+      setFormError("Invalid email or password. Please try again.");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    setFormError(null);
+    if (!email || !password) {
+      setFormError("Please enter your email and password.");
+      return;
+    }
     loginMutation.mutate({ email, password });
   };
 
@@ -67,13 +69,13 @@ export default function Login() {
           Login to your Dime Time account
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <Input
             type="email"
             placeholder="Email"
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); if (formError) setFormError(null); }}
             required
             data-testid="input-email"
             className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
@@ -83,19 +85,28 @@ export default function Login() {
             placeholder="Password"
             autoComplete="current-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => { setPassword(e.target.value); if (formError) setFormError(null); }}
             required
             data-testid="input-password"
             className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
           />
+          {formError && (
+            <p
+              className="text-sm text-white bg-red-500/30 border border-red-300/60 rounded-md px-3 py-2"
+              role="alert"
+              data-testid="text-login-error"
+            >
+              {formError}
+            </p>
+          )}
           <Button
             type="submit"
             variant="ghost"
-            className="w-full text-white hover:bg-white/10 h-12"
+            className="w-full text-white hover:bg-white/10 h-12 disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={loginMutation.isPending}
             data-testid="button-login"
           >
-            {loginMutation.isPending ? "Logging in..." : "Login"}
+            {loginMutation.isPending ? "Logging in…" : "Login"}
           </Button>
 
           <div className="text-center">

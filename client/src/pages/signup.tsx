@@ -18,10 +18,19 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName || !lastName || !email || !password) return;
+    setFormError(null);
+    if (!firstName || !lastName || !email || !password) {
+      setFormError("Please fill in every field.");
+      return;
+    }
+    if (password.length < 8) {
+      setFormError("Password must be at least 8 characters.");
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -45,14 +54,13 @@ export default function Signup() {
 
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
 
-      toast({ title: `Welcome to Dime Time, ${firstName}!` });
+      toast({
+        title: `Welcome to Dime Time, ${firstName}!`,
+        description: "Check your email to verify your account.",
+      });
       setLocation("/dashboard");
     } catch (err: any) {
-      toast({
-        title: "Signup failed",
-        description: err.message || "Please try again",
-        variant: "destructive",
-      });
+      setFormError(err?.message || "Signup failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -72,15 +80,16 @@ export default function Signup() {
           Start your debt-free journey today
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="flex gap-3">
             <Input
               type="text"
               placeholder="First Name"
               autoComplete="given-name"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => { setFirstName(e.target.value); if (formError) setFormError(null); }}
               required
+              data-testid="input-firstname"
               className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
             />
             <Input
@@ -88,8 +97,9 @@ export default function Signup() {
               placeholder="Last Name"
               autoComplete="family-name"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => { setLastName(e.target.value); if (formError) setFormError(null); }}
               required
+              data-testid="input-lastname"
               className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
             />
           </div>
@@ -99,28 +109,47 @@ export default function Signup() {
             placeholder="Email"
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); if (formError) setFormError(null); }}
             required
+            data-testid="input-email"
             className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
           />
 
-          <Input
-            type="password"
-            placeholder="Password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
-          />
+          <div className="space-y-1">
+            <Input
+              type="password"
+              placeholder="Password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); if (formError) setFormError(null); }}
+              required
+              minLength={8}
+              data-testid="input-password"
+              className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+            />
+            <p className="text-xs text-white/70 px-1">
+              At least 8 characters.
+            </p>
+          </div>
+
+          {formError && (
+            <p
+              className="text-sm text-white bg-red-500/30 border border-red-300/60 rounded-md px-3 py-2"
+              role="alert"
+              data-testid="text-signup-error"
+            >
+              {formError}
+            </p>
+          )}
 
           <Button
             type="submit"
             variant="ghost"
-            className="w-full text-white hover:bg-white/10 h-12"
+            className="w-full text-white hover:bg-white/10 h-12 disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={isLoading}
+            data-testid="button-signup"
           >
-            {isLoading ? "Creating account..." : "Create Account"}
+            {isLoading ? "Creating account…" : "Create Account"}
           </Button>
         </form>
 

@@ -2,9 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/EmptyState";
 import { DebtProgressChart } from "@/components/debt-progress-chart";
 import { PaymentModal } from "@/components/payment-modal";
 import { formatCurrency, formatTime, formatDate, calculateDebtProgress } from "@/lib/calculations";
+import { useLocation } from "wouter";
 import { 
   DollarSign, 
   CreditCard, 
@@ -14,7 +17,9 @@ import {
   Car,
   Coffee,
   Plus,
-  ArrowUp
+  ArrowUp,
+  Receipt,
+  Wallet
 } from "lucide-react";
 import type { Transaction, Debt } from "@shared/schema";
 import {
@@ -45,6 +50,7 @@ const EMPTY_SUMMARY: DashboardSummary = {
 };
 
 export default function Dashboard() {
+  const [, setLocation] = useLocation();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const t0 = useRef(performance.now());
 
@@ -65,14 +71,26 @@ export default function Dashboard() {
   });
 
   // ── Debts — cache-first ───────────────────────────────────────────────────
-  const { data: debts = [], isFetched: debtsFetched } = useQuery<Debt[]>({
+  const {
+    data: debts = [],
+    isFetched: debtsFetched,
+    isFetchedAfterMount: debtsFetchedAfterMount,
+    isError: debtsError,
+    refetch: refetchDebts,
+  } = useQuery<Debt[]>({
     queryKey: ["/api/debts"],
     initialData: getCachedDebts<Debt[]>(),
     initialDataUpdatedAt: 0,
   });
 
   // ── Transactions — deferred, non-critical for first paint ─────────────────
-  const { data: transactions = [] } = useQuery<Transaction[]>({
+  const {
+    data: transactions = [],
+    isLoading: transactionsLoading,
+    isFetchedAfterMount: transactionsFetchedAfterMount,
+    isError: transactionsError,
+    refetch: refetchTransactions,
+  } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
     staleTime: 30000,
   });
@@ -205,10 +223,44 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4">
-                {recentTransactions.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-4">
-                    Transactions loading…
-                  </p>
+                {recentTransactions.length === 0 && transactionsError ? (
+                  <EmptyState
+                    icon={Receipt}
+                    title="Couldn't load transactions"
+                    description="Check your connection and try again."
+                    ctaLabel="Retry"
+                    onCtaClick={() => refetchTransactions()}
+                    testIdPrefix="error-transactions"
+                  />
+                ) : recentTransactions.length === 0 && transactionsLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-4 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10"
+                      data-testid={`skeleton-transaction-${i}`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <Skeleton className="w-10 h-10 rounded-lg bg-white/20" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32 bg-white/20" />
+                          <Skeleton className="h-3 w-24 bg-white/15" />
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-right">
+                        <Skeleton className="h-4 w-16 ml-auto bg-white/20" />
+                        <Skeleton className="h-3 w-20 ml-auto bg-white/15" />
+                      </div>
+                    </div>
+                  ))
+                ) : recentTransactions.length === 0 && transactionsFetchedAfterMount ? (
+                  <EmptyState
+                    icon={Receipt}
+                    title="No transactions yet"
+                    description="Connect a bank account to start tracking purchases and rounding up spare change."
+                    ctaLabel="Connect a bank"
+                    onCtaClick={() => setLocation("/banking")}
+                    testIdPrefix="empty-transactions"
+                  />
                 ) : (
                   recentTransactions.map((transaction) => (
                     <div key={transaction.id} className="flex items-center justify-between p-4 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10">
@@ -282,8 +334,41 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4">
-                {debts.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-4">Loading debts…</p>
+                {debts.length === 0 && debtsError ? (
+                  <EmptyState
+                    icon={Wallet}
+                    title="Couldn't load debts"
+                    description="Check your connection and try again."
+                    ctaLabel="Retry"
+                    onCtaClick={() => refetchDebts()}
+                    testIdPrefix="error-debts"
+                  />
+                ) : debts.length === 0 && !debtsFetchedAfterMount ? (
+                  Array.from({ length: 2 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="bg-dime-accent/5 rounded-lg border border-dime-accent/10 p-4 space-y-3"
+                      data-testid={`skeleton-debt-${i}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-28 bg-white/20" />
+                          <Skeleton className="h-3 w-20 bg-white/15" />
+                        </div>
+                        <Skeleton className="h-4 w-16 bg-white/20" />
+                      </div>
+                      <Skeleton className="h-2 w-full rounded-full bg-white/15" />
+                    </div>
+                  ))
+                ) : debts.length === 0 ? (
+                  <EmptyState
+                    icon={Wallet}
+                    title="No debts added"
+                    description="Add your credit cards, loans, or other debts to start tracking your payoff progress."
+                    ctaLabel="Add a debt"
+                    onCtaClick={() => setLocation("/debts")}
+                    testIdPrefix="empty-debts"
+                  />
                 ) : (
                   debts.map((debt) => {
                     const progress = calculateDebtProgress(debt.originalBalance, debt.currentBalance);
