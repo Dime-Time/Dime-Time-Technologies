@@ -81,6 +81,15 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
     - **Plaid Webhook Endpoint**: `POST /webhooks/plaid` for status updates, signature-verified and idempotent.
     - **Structured Reconciliation Logging**: JSON logs with `correlationId` for all transfer operations.
     - **Funding Account Validation**: Explicit failure if `MERCURY_PLAID_FUNDING_ID` is not set in production.
+    - **Plaid Token Encryption Key Rotation**: `PLAID_TOKEN_ENCRYPTION_KEY` lives only as a Replit Secret (never in `.replit`). To rotate (e.g. after a suspected leak), perform steps in this order — the order matters, otherwise a token can be written with the old key after migration but before the Secret swap and become permanently unreadable:
+        1. **Stop the `Start application` workflow.** This guarantees no new `bank_accounts` rows are inserted under the old key during or just after the migration. (The migration script also takes an `ACCESS EXCLUSIVE` table lock as defense-in-depth.)
+        2. Generate a new key: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+        3. Dry run against prod to confirm every row decrypts cleanly:
+           `PLAID_TOKEN_ENCRYPTION_KEY_OLD=<old> PLAID_TOKEN_ENCRYPTION_KEY_NEW=<new> DATABASE_URL=$PROD_DATABASE_URL DRY_RUN=1 npx tsx scripts/rotate-plaid-encryption-key.ts`
+        4. Re-run without `DRY_RUN=1` to re-encrypt every `bank_accounts.plaid_access_token` in a single transaction (the script rolls back if any row fails).
+        5. Update the `PLAID_TOKEN_ENCRYPTION_KEY` Replit Secret to the NEW key value.
+        6. Restart the `Start application` workflow and verify a test user's balances/transactions still load end-to-end.
+        7. Discard the old key value from any local shells / password manager entries.
 - **Mobile Deployment**: CodeMagic CI/CD on Mac mini M2, distribution via App Store Connect (TestFlight → App Store) with Apple Developer Account certificates.
 - **Capacitor Cold-Start Rule**: NEVER set `server.url` in `capacitor.config.ts`. Doing so makes the iOS WebView download the entire Vite bundle from `https://dime-time.com` on every cold launch (~10s delay observed in TestFlight). Bundled web assets must ship inside the IPA (`webDir: 'dist'` → `ios/App/App/public/`); API calls are routed to production via `Capacitor.isNativePlatform()` in `client/src/lib/queryClient.ts`. Before each Codemagic build, run `npm run build && npx cap sync ios` so `ios/App/App/public/` contains a fresh bundle (otherwise stale placeholders ship).
 
