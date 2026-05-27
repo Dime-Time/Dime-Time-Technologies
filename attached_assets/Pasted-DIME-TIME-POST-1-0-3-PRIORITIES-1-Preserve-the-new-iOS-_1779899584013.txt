@@ -1,0 +1,76 @@
+DIME TIME — POST-1.0.3 PRIORITIES
+
+1. Preserve the new iOS/TestFlight build pipeline exactly as-is
+- ios/App/App/Info.plist remains source of truth
+- Never reintroduce CFBundleVersion overwrites in codemagic.yaml
+- Keep IPA metadata guard checks
+- Keep LAST_ACCEPTED_BY_APPLE enforcement
+- Never set server.url in capacitor.config.ts
+
+2. Begin “Beta Polish Sprint”
+Priority is improving the current TestFlight user experience without major architecture changes.
+
+Focus screens:
+- Login
+- Signup
+- Dashboard
+- Debt tracking
+- Roundup settings
+- Analytics
+- Settings
+- Mobile spacing/layout
+
+Goals:
+- cleaner spacing
+- better typography
+- better card hierarchy
+- polished loading states
+- cleaner empty states
+- more trustworthy fintech feel
+- maintain official purple #918EF4 branding
+
+3. Add clear in-app beta disclosure
+Add visible but professional beta messaging:
+
+“Beta Mode: Some payment, ACH, and crypto features may operate in sandbox or testing mode and may not represent live money movement.”
+
+Add to:
+- onboarding
+- bank connection
+- ACH/payment setup
+- settings/legal section
+
+4. Add fintech disclaimer inside app
+Use exact wording:
+
+“Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners.”
+
+5. Next functional milestone
+Build the first fully working end-to-end flow:
+
+signup →
+connect bank →
+schedule ACH payment →
+track transaction in dashboard
+
+Provider direction:
+- Stripe first
+- Plaid only for verification if available
+- Keep adapter architecture provider-agnostic
+
+6. Build trust features before adding big new features
+High priority:
+- email verification
+- password reset
+- transaction statuses
+- better onboarding UX
+- clearer success/error messaging
+
+7. Do NOT change these invariants
+- only use dime-time.com
+- only use tim@dime-time.com
+- no partner logos
+- legal date remains May 27, 2026
+- keep single-page marketing site
+- keep contact form rate limiting
+- keep native bundled web assets approach
