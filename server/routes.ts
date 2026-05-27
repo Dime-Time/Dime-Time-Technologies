@@ -655,16 +655,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contact form submission (public endpoint)
   app.post("/api/contact", contactLimiter, async (req: Request, res: Response) => {
     try {
-      const turnstileToken: string | undefined =
-        typeof req.body?.turnstileToken === "string" ? req.body.turnstileToken : undefined;
-      const turnstileOk = await verifyTurnstileToken(turnstileToken, req);
-      if (!turnstileOk) {
-        return res.status(400).json({ message: "Captcha verification failed. Please try again." });
+      // If the request is authenticated, treat it as an in-app feedback
+      // submission: server prefills name/email/userId from the session and
+      // skips Turnstile (rate limiter still applies). Otherwise it's a
+      // marketing-site submission and Turnstile is required (same as before).
+      const sessionUserId = getUserIdFromRequest(req);
+      const authedUser = sessionUserId ? await storage.getUser(sessionUserId) : null;
+
+      let toInsert: any;
+
+      if (authedUser) {
+        // In-app feedback: identity is fully server-authoritative.
+        // Client may only supply `message` (and we ignore everything else).
+        if (!authedUser.email) {
+          return res.status(400).json({ message: "Your account is missing an email address. Please add one before sending feedback." });
+        }
+        const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+        if (!message) {
+          return res.status(400).json({ message: "Message is required" });
+        }
+        const displayName =
+          [authedUser.firstName, authedUser.lastName].filter(Boolean).join(" ").trim() ||
+          authedUser.email;
+        toInsert = {
+          name: displayName,
+          email: authedUser.email,
+          message,
+          source: "in_app" as const,
+          userId: authedUser.id,
+        };
+      } else {
+        // Public marketing-site submission: Turnstile required + Zod-validated name/email/message.
+        const turnstileToken: string | undefined =
+          typeof req.body?.turnstileToken === "string" ? req.body.turnstileToken : undefined;
+        const turnstileOk = await verifyTurnstileToken(turnstileToken, req);
+        if (!turnstileOk) {
+          return res.status(400).json({ message: "Captcha verification failed. Please try again." });
+        }
+        const { turnstileToken: _omit, source: _clientSource, userId: _clientUserId, ...payload } = req.body ?? {};
+        const validatedData = insertContactSubmissionSchema.parse(payload);
+        toInsert = { ...validatedData, source: "marketing" as const };
       }
 
-      const { turnstileToken: _omit, ...payload } = req.body ?? {};
-      const validatedData = insertContactSubmissionSchema.parse(payload);
-      const submission = await storage.createContactSubmission(validatedData);
+      const submission = await storage.createContactSubmission(toInsert);
       res.json({ success: true, submission });
     } catch (error) {
       if (error instanceof z.ZodError) {

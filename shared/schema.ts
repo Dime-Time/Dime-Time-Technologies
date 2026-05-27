@@ -566,6 +566,8 @@ export const contactSubmissions = pgTable("contact_submissions", {
   email: text("email").notNull(),
   message: text("message").notNull(),
   status: text("status").default('new').notNull(), // 'new', 'read', 'responded'
+  source: text("source").default('marketing').notNull(), // 'marketing' | 'in_app'
+  userId: varchar("user_id"), // set server-side for in-app submissions
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -573,6 +575,8 @@ export const insertContactSubmissionSchema = createInsertSchema(contactSubmissio
   id: true,
   createdAt: true,
   status: true,
+  source: true,
+  userId: true,
 });
 
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;

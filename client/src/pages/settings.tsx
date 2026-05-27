@@ -31,8 +31,19 @@ import {
   KeyRound,
   LogOut,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare,
+  Send
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface RoundUpSettings {
   id: string;
@@ -71,6 +82,47 @@ export default function Settings() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackSubject, setFeedbackSubject] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  const sendFeedbackMutation = useMutation({
+    mutationFn: async (payload: { subject: string; message: string }) => {
+      // Server prefills name/email/userId from the session and sets
+      // source="in_app". The only client-supplied field that's honored
+      // on the authenticated path is `message`.
+      const composed = payload.subject
+        ? `[${payload.subject}]\n\n${payload.message}`
+        : payload.message;
+      const res = await apiRequest("POST", "/api/contact", { message: composed });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Feedback sent", description: "Thanks — we'll review it shortly." });
+      setFeedbackSubject("");
+      setFeedbackMessage("");
+      setFeedbackOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Couldn't send feedback",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendFeedback = () => {
+    if (!feedbackMessage.trim()) {
+      toast({ title: "Please write a message", variant: "destructive" });
+      return;
+    }
+    sendFeedbackMutation.mutate({
+      subject: feedbackSubject.trim(),
+      message: feedbackMessage.trim(),
+    });
+  };
 
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
@@ -499,6 +551,92 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Send Feedback (beta) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-dime-purple" />
+              Send Feedback
+            </CardTitle>
+            <CardDescription>
+              Found a bug or have an idea? Send a note straight to the team.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={() => setFeedbackOpen(true)}
+              data-testid="button-open-feedback"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Send feedback
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Send feedback</DialogTitle>
+              <DialogDescription>
+                Your name and email are attached automatically from your account.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="feedback-from">From</Label>
+                <Input
+                  id="feedback-from"
+                  value={user?.email ?? ""}
+                  readOnly
+                  disabled
+                  data-testid="input-feedback-from"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="feedback-subject">Subject (optional)</Label>
+                <Input
+                  id="feedback-subject"
+                  value={feedbackSubject}
+                  onChange={(e) => setFeedbackSubject(e.target.value)}
+                  placeholder="Short summary"
+                  maxLength={120}
+                  data-testid="input-feedback-subject"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="feedback-message">Message</Label>
+                <Textarea
+                  id="feedback-message"
+                  value={feedbackMessage}
+                  onChange={(e) => setFeedbackMessage(e.target.value)}
+                  placeholder="Tell us what's working, what's broken, or what you'd love to see."
+                  rows={6}
+                  maxLength={4000}
+                  data-testid="textarea-feedback-message"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setFeedbackOpen(false)}
+                disabled={sendFeedbackMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSendFeedback}
+                disabled={sendFeedbackMutation.isPending || !feedbackMessage.trim()}
+                className="bg-dime-purple text-white hover:bg-dime-purple/90"
+                data-testid="button-send-feedback"
+              >
+                {sendFeedbackMutation.isPending ? "Sending..." : "Send"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* App Information */}
         <Card>
