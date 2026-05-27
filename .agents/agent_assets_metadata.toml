@@ -282,3 +282,27 @@ id = "gxD-yjddCr1mb29JxmJvE"
 uri = "file://attached_assets/patent-application/DimeTime_Provisional_Specification_USPTO.pdf"
 type = "pdf"
 title = "Dime Time — USPTO Provisional Patent (file this one)"
+
+[[outputs]]
+id = "z8C0rtoWg-ddLL0MteUJz"
+uri = "file://screenshots/01-landing-hero.jpg"
+type = "image"
+title = "1. Landing Page — Hero (dime-time.com)"
+
+[[outputs]]
+id = "_Vs_XMzQ5CoCDcttzqAPy"
+uri = "file://screenshots/02-privacy-policy.jpg"
+type = "image"
+title = "2. Privacy Policy (dime-time.com/privacy)"
+
+[[outputs]]
+id = "9WxaYDM2usWZ398xI0Wgr"
+uri = "file://screenshots/03-terms-of-service.jpg"
+type = "image"
+title = "3. Terms of Service (dime-time.com/terms)"
+
+[[outputs]]
+id = "Gh62etL_PAPuuxxqnBlKN"
+uri = "file://screenshots/04-signup.jpg"
+type = "image"
+title = "4. Account Signup (dime-time.com/signup)"
