@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate, formatTime } from "@/lib/calculations";
 import { Coffee, Car, ShoppingBag, DollarSign, Plus, Receipt } from "lucide-react";
 import { useLocation } from "wouter";
@@ -38,26 +39,6 @@ export default function Transactions() {
       return new Date(trans.date) >= thisMonth;
     })
     .reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount), 0);
-
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-slate-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 bg-slate-200 rounded-lg"></div>
-            ))}
-          </div>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-20 bg-slate-200 rounded-lg"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
@@ -165,6 +146,12 @@ export default function Transactions() {
                     <div className="flex items-center gap-1 text-sm text-dime-accent">
                       <Plus className="w-3 h-3" />
                       <span>{formatCurrency(transaction.roundUpAmount)} round-up</span>
+                    </div>
+                    <div className="mt-1 flex justify-end">
+                      <StatusBadge
+                        status={(transaction as Transaction & { status?: string }).status ?? "completed"}
+                        compact
+                      />
                     </div>
                   </div>
                 </div>
