@@ -1,0 +1,52 @@
+Show command
+Showing the last 50 lines. Click this button to load the full log
+}
+    httpBody: {
+  "errors" : [ {
+    "id" : "709cb324-519d-45e4-87a3-70f71bf5b057",
+    "status" : "409",
+    "code" : "ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE",
+    "title" : "The provided entity includes an attribute with a value that has already been used",
+    "detail" : "The bundle version must be higher than the previously uploaded version.",
+    "source" : {
+      "pointer" : "/data/attributes/cfBundleVersion"
+    },
+    "meta" : {
+      "previousBundleVersion" : "200"
+    }
+  } ]
+}
+=======================================
+2026-05-27 16:16:16.567 ERROR: [ContentDelivery.Uploader.ADD02C580] The provided entity includes an attribute with a value that has already been used (-19232) The bundle version must be higher than the previously uploaded version: ‘200’. (ID: 709cb324-519d-45e4-87a3-70f71bf5b057)
+   NSUnderlyingError : The provided entity includes an attribute with a value that has already been used (-19241) The bundle version must be higher than the previously uploaded version.
+      status : 409
+      detail : The bundle version must be higher than the previously uploaded version.
+      source : 
+         pointer : /data/attributes/cfBundleVersion
+      id : 709cb324-519d-45e4-87a3-70f71bf5b057
+      code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+      title : The provided entity includes an attribute with a value that has already been used
+      meta : 
+         previousBundleVersion : 200
+   previousBundleVersion : 200
+   iris-code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+2026-05-27 16:16:16.567 ERROR: [altool.ADD02C580] Failed to upload package.
+2026-05-27 16:16:16.567 ERROR: [altool.ADD02C580] The provided entity includes an attribute with a value that has already been used (-19232) The bundle version must be higher than the previously uploaded version: ‘200’. (ID: 709cb324-519d-45e4-87a3-70f71bf5b057)
+   NSUnderlyingError : The provided entity includes an attribute with a value that has already been used (-19241) The bundle version must be higher than the previously uploaded version.
+      status : 409
+      detail : The bundle version must be higher than the previously uploaded version.
+      source : 
+         pointer : /data/attributes/cfBundleVersion
+      id : 709cb324-519d-45e4-87a3-70f71bf5b057
+      code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+      title : The provided entity includes an attribute with a value that has already been used
+      meta : 
+         previousBundleVersion : 200
+   previousBundleVersion : 200
+   iris-code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
+2026-05-27 16:16:16.568 ERROR: [altool.103796D60] ExitFailure (31)
+Failed to upload archive at 'build/ios/ipa/App.ipa'.
+
+
+Build failed :|
+Step 7 script `Upload IPA to App Store Connect (TestFlight, Apple ID)` exited with status code ********

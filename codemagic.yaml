@@ -51,11 +51,23 @@ workflows:
           set -e
           cd ios/App
 
-          # IMPORTANT: This must be strictly higher than the last build Apple accepted
-          # Build 110 attempt rejected as duplicate (April 2026) — Apple had 110 already on file
-          # Jumping to 200 to leave clear headroom above any orphaned uploaded builds
-          NEW_BUILD_NUMBER=200
+          # CFBundleVersion must be strictly > the last value Apple accepted.
+          # History of rejections we've hit:
+          #   - April 2026: hardcoded 110 → rejected, Apple had 110 on file
+          #   - May 2026:   hardcoded 200 → rejected, Apple had 200 on file
+          #
+          # Fix: derive the build number from Codemagic's auto-incrementing
+          # $BUILD_NUMBER counter, offset above the highest value ever
+          # uploaded (currently 200). Every Codemagic build is guaranteed to
+          # produce a monotonically increasing CFBundleVersion with no manual
+          # editing required.
+          #
+          # BUILD_NUMBER_OFFSET should be raised ONLY if Apple ever has a
+          # CFBundleVersion on file that is >= ($BUILD_NUMBER + offset).
+          BUILD_NUMBER_OFFSET=210
+          NEW_BUILD_NUMBER=$((${BUILD_NUMBER:-1} + BUILD_NUMBER_OFFSET))
 
+          echo "=== Codemagic BUILD_NUMBER=${BUILD_NUMBER:-1}, offset=${BUILD_NUMBER_OFFSET} ==="
           echo "=== Setting iOS build number (CFBundleVersion) to $NEW_BUILD_NUMBER with agvtool ==="
           /usr/bin/xcrun agvtool new-version -all "$NEW_BUILD_NUMBER"
 
