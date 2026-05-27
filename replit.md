@@ -10,6 +10,42 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
 - Proper user authentication and data separation
 - Full fintech feature set accessible to users
 
+## Canonical Project Rules (locked — do not drift)
+
+### Domain & Contact
+- Official domain: **https://dime-time.com** (with hyphen)
+- Working business email: **tim@dime-time.com**
+- DO NOT use `dimetime.com` (no hyphen) — Tim does not own that domain
+- All user-facing email references must be `tim@dime-time.com` until further notice
+
+### Compliance Language (use verbatim where contact/legal copy is needed)
+- Positioning: *"Dime Time is a financial technology platform that helps consumers automate payments, manage ACH transfers, and build healthier financial habits through secure digital money tools."*
+- Disclaimer: *"Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners."*
+- DO NOT add Stripe / Plaid / Dwolla / Moov / Increase / bank partner logos until written approval/permission is confirmed.
+
+### Marketing Site Invariants (LandingPage.tsx, privacy.tsx, terms.tsx)
+- Homepage is single-page scroll — no separate `/about`, `/contact`, or `/faq` routes
+- `/privacy` and `/terms` are standalone pages, scoped to `.dt-marketing` wrapper (opts out of in-app lavender theme)
+- Legal effective date: **May 27, 2026** (constant `EFFECTIVE_DATE` — only bump when policy text actually changes)
+- Contact form must POST to `/api/contact` and save to `contact_submissions` table
+- Contact form fallback / mailto link → `tim@dime-time.com`
+- All "Get Started" CTAs route to `/signup`
+- Use only the official logo (`@/assets/dime-time-app-icon.png`) and color `#918EF4` (`bg-dime-purple` / `text-dime-purple`)
+
+### Backend Invariants
+- `POST /api/contact` is rate-limited via `contactLimiter` (5 req/min/IP). TODO: add Turnstile/hCaptcha before public launch.
+- Webhooks and ACH endpoints stay signature-verified, idempotent, and structured-logged with `correlationId` (see ACH Production Hardening below).
+
+### External Infrastructure Status (as of 2026-05-27)
+- Stripe account is **live**; Stripe Treasury review is **in progress**
+- Business bank account is connected in Stripe
+- Pursuing ACH infrastructure via Stripe, Dwolla, Moov, Increase, Plaid (Plaid previously rejected; pursuing alternates)
+- Transfer adapter layer (transfers ledger + idempotency + encrypted access tokens) is provider-agnostic — swapping providers is adapter-level, not core work
+
+### Next Development Priority
+- Build the first end-to-end working ACH/payment flow:
+  signup → bank account connect → schedule payment/transfer → transaction tracked in dashboard
+
 ## System Architecture
 
 ### UI/UX Decisions
