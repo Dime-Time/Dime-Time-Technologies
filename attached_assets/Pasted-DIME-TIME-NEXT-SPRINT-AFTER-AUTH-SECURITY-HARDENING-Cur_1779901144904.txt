@@ -1,0 +1,123 @@
+DIME TIME — NEXT SPRINT AFTER AUTH + SECURITY HARDENING
+
+Current state is strong:
+- Password reset shipped
+- Email verification shipped
+- Severe token leakage issues fixed correctly
+- Turnstile/rate limiting active
+- iOS/TestFlight pipeline stabilized
+- Treasury/ACH blocked only by external approvals
+
+Next priority should NOT be large new features.
+
+NEXT SPRINT PRIORITIES
+
+1. Beta UX / Trust Polish Sprint
+Focus on making the app feel cleaner, more stable, and more trustworthy.
+
+Priority screens:
+- Login
+- Signup
+- Dashboard
+- Debt tracking
+- Roundup settings
+- Analytics
+- Settings
+- Mobile layout spacing
+
+Focus improvements:
+- spacing consistency
+- typography hierarchy
+- cleaner cards
+- loading skeletons/spinners
+- polished empty states
+- better success/error states
+- consistent button sizing
+- cleaner onboarding flow
+- more “real fintech app” feel
+
+Do NOT redesign architecture.
+Do NOT rewrite major flows.
+
+2. Transaction Status System
+Before live ACH:
+Add consistent status states everywhere payment flows exist.
+
+Canonical statuses:
+- Pending
+- Processing
+- Completed
+- Failed
+- Requires Action
+
+Need:
+- shared enum/type
+- reusable UI badge component
+- consistent colors/icons
+- timestamp support
+
+This will become critical once ACH goes live.
+
+3. Stripe ACH Preparation (without waiting for Treasury)
+Continue building behind feature flags.
+
+Preferred direction:
+- Stripe Financial Connections for bank linking
+- Stripe ACH debit via Stripe Payments
+- Treasury later for stored balances/accounts
+
+Do NOT block beta progress waiting for Treasury approval.
+
+4. Feature Flag System
+If not already centralized, create a clean feature-flag pattern.
+
+Examples:
+- ENABLE_STRIPE_ACH
+- ENABLE_REAL_TRANSFERS
+- ENABLE_CRYPTO
+- ENABLE_BETA_BANNER
+
+Need:
+- environment-based gating
+- easy TestFlight toggles
+- safe rollback capability
+
+5. Observability / Error Tracking
+Before expanding beta testers:
+Add production-safe monitoring.
+
+Recommended:
+- Sentry for frontend + backend
+- correlationId propagation everywhere
+- redact secrets/tokens from logs
+- ACH/payment events logged structurally
+
+6. Beta Feedback Collection
+Add a lightweight “Send Feedback” entry inside Settings.
+
+Could:
+- POST to DB
+- email tim@dime-time.com
+- or create admin-viewable feedback entries
+
+This is higher value than many new features.
+
+7. Do NOT regress any security fixes
+Especially preserve:
+- sanitized analytics URLs
+- immediate history.replaceState token scrubbing
+- atomic token consume semantics
+- session invalidation on password reset
+- fail-closed behavior in production
+
+8. Keep all locked invariants unchanged
+- only dime-time.com
+- only tim@dime-time.com
+- no partner logos
+- no server.url
+- Info.plist remains source of truth
+- legal date remains May 27 2026
+- native bundled web assets only
+
+Goal of next sprint:
+Make Dime Time feel significantly more polished, trustworthy, and operational while ACH approvals continue in parallel.
