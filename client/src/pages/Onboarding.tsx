@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
+import { BetaModeBanner } from "@/components/BetaModeBanner";
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
@@ -152,6 +153,13 @@ export default function Onboarding() {
               Auto-navigating in 3 seconds...
             </p>
           )}
+
+          <BetaModeBanner variant="inline-light" className="mt-2" />
+          <p className="text-[11px] text-white/70 leading-snug text-center px-2">
+            Dime Time is a financial technology platform and is not a bank.
+            Banking services and payment infrastructure are provided through
+            regulated financial partners.
+          </p>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Shield, AlertTriangle, Info } from "lucide-react";
+import { BetaModeBanner } from "@/components/BetaModeBanner";
 
 export default function Legal() {
   return (
@@ -11,6 +12,8 @@ export default function Legal() {
       </div>
 
       <div className="space-y-8">
+
+        <BetaModeBanner variant="full" showCompliance />
         
         {/* Risk Disclosure */}
         <Card>

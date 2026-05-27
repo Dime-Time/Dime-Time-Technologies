@@ -1,0 +1,71 @@
+DIME TIME — NEXT RELEASE DIRECTION (1.0.3)
+
+We are moving forward with a beta polish/trust release, not waiting for live ACH approval.
+
+VERSIONING
+----------
+- Bump marketing version from 1.0.2 → 1.0.3
+- Build number stays 201+ (increment as needed)
+
+ACH / PAYMENT STRATEGY
+----------------------
+Primary direction:
+- Use Stripe first for the initial end-to-end ACH/payment flow
+- Stripe Treasury review is still in progress
+- If Plaid Link remains available for verification only, use:
+    Plaid = bank account verification
+    Stripe = money movement
+- Continue keeping Dwolla / Moov / Increase conversations active as future options
+- Do NOT rewrite the provider-agnostic transfer adapter layer
+
+BETA MODE POLICY
+----------------
+We are NOT waiting for live ACH before continuing TestFlight.
+
+Add clear in-app beta language:
+“Beta Mode: No live transfers are currently being processed. Payment and ACH features may operate in sandbox or testing mode.”
+
+This should appear:
+- onboarding
+- bank connection screens
+- ACH/payment setup screens
+- settings/legal area
+
+COMPLIANCE LANGUAGE
+-------------------
+Add or verify this language inside onboarding/settings/legal screens:
+
+“Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners.”
+
+UI / UX PRIORITY
+----------------
+This release is focused on:
+- visual polish
+- trust
+- onboarding quality
+- dashboard clarity
+- mobile experience
+- consistency
+
+Do NOT:
+- add new large features
+- redesign the architecture
+- change domain/email rules
+- add partner logos
+- change legal effective dates
+- add server.url to capacitor.config.ts
+
+KEEP THESE RULES LOCKED
+-----------------------
+- Only use https://dime-time.com
+- Only use tim@dime-time.com
+- No dimetime.com references
+- No partner logos without written approval
+- Effective legal date remains May 27, 2026
+- Keep current single-page marketing site
+- Keep contact form rate limiting
+- Keep provider-agnostic ACH adapter structure
+
+GOAL OF 1.0.3
+-------------
+Ship a significantly cleaner, more trustworthy, more polished TestFlight experience while Stripe Treasury review continues in parallel.

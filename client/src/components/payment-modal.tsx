@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/calculations";
 import type { Debt } from "@shared/schema";
+import { BetaModeBanner } from "@/components/BetaModeBanner";
 
 interface PaymentModalProps {
   open: boolean;
@@ -78,6 +79,7 @@ export function PaymentModal({ open, onOpenChange, debts, roundUpBalance }: Paym
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <BetaModeBanner variant="compact" />
           <div>
             <Label htmlFor="debt-select">Select Debt Account</Label>
             <Select value={selectedDebtId} onValueChange={setSelectedDebtId}>

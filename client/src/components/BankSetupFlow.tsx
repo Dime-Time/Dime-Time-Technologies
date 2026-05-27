@@ -23,6 +23,7 @@ import {
   Percent
 } from "lucide-react";
 import type { BankAccount, Debt } from "@shared/schema";
+import { BetaModeBanner } from "@/components/BetaModeBanner";
 
 type AllocationMode = 'debt' | 'bitcoin' | 'both';
 
@@ -274,6 +275,7 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
       case 0:
         return (
           <div className="space-y-6">
+            <BetaModeBanner variant="full" showCompliance />
             <div className="text-center space-y-4">
               <div className="w-20 h-20 bg-dime-purple/10 rounded-full flex items-center justify-center mx-auto">
                 <Building2 className="w-10 h-10 text-dime-purple" />

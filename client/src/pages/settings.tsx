@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useSecurity } from "@/hooks/useSecurity";
 import { useAuth } from "@/hooks/useAuth";
+import { BetaModeBanner, ComplianceDisclaimer } from "@/components/BetaModeBanner";
 import { hasPinSet, isBiometricEnabled, setBiometricEnabled } from "@/lib/securityStore";
 import { 
   Bell, 
@@ -587,6 +588,9 @@ export default function Settings() {
             )}
           </CardContent>
         </Card>
+
+        {/* Beta + Compliance */}
+        <BetaModeBanner variant="full" showCompliance />
 
         {/* Logout */}
         <Button 
