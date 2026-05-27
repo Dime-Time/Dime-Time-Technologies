@@ -46,36 +46,49 @@ workflows:
           echo "=== Applying Codemagic signing profiles ==="
           xcode-project use-profiles
 
-      - name: Bump iOS build number (CFBundleVersion via agvtool)
+      - name: Verify iOS build number from Info.plist (NO OVERWRITE)
         script: |
           set -e
           cd ios/App
 
-          # CFBundleVersion must be strictly > the last value Apple accepted.
-          # History of rejections we've hit:
-          #   - April 2026: hardcoded 110 → rejected, Apple had 110 on file
-          #   - May 2026:   hardcoded 200 → rejected, Apple had 200 on file
+          # SOURCE OF TRUTH: ios/App/App/Info.plist's CFBundleVersion
+          # is authoritative. This step ONLY reads + verifies — it does
+          # NOT overwrite (previous versions of this script hardcoded
+          # 110 and 200, which caused April + May 2026 upload rejections).
           #
-          # Fix: derive the build number from Codemagic's auto-incrementing
-          # $BUILD_NUMBER counter, offset above the highest value ever
-          # uploaded (currently 200). Every Codemagic build is guaranteed to
-          # produce a monotonically increasing CFBundleVersion with no manual
-          # editing required.
-          #
-          # BUILD_NUMBER_OFFSET should be raised ONLY if Apple ever has a
-          # CFBundleVersion on file that is >= ($BUILD_NUMBER + offset).
-          BUILD_NUMBER_OFFSET=210
-          NEW_BUILD_NUMBER=$((${BUILD_NUMBER:-1} + BUILD_NUMBER_OFFSET))
+          # To bump the build number for a new TestFlight release:
+          #   1) Bump CFBundleVersion in ios/App/App/Info.plist
+          #   2) (optional but recommended) bump CURRENT_PROJECT_VERSION
+          #      in ios/App/App.xcodeproj/project.pbxproj to match
+          #   3) commit, push, trigger Codemagic
 
-          echo "=== Codemagic BUILD_NUMBER=${BUILD_NUMBER:-1}, offset=${BUILD_NUMBER_OFFSET} ==="
-          echo "=== Setting iOS build number (CFBundleVersion) to $NEW_BUILD_NUMBER with agvtool ==="
-          /usr/bin/xcrun agvtool new-version -all "$NEW_BUILD_NUMBER"
+          CURRENT_BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "App/Info.plist")
+          CURRENT_SHORT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "App/Info.plist")
 
-          echo "=== Forcing CFBundleVersion via PlistBuddy (belt-and-suspenders for Capacitor projects) ==="
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD_NUMBER" "App/Info.plist"
+          echo "=== Info.plist authoritative values ==="
+          echo "    CFBundleShortVersionString = $CURRENT_SHORT_VERSION"
+          echo "    CFBundleVersion            = $CURRENT_BUILD_NUMBER"
 
-          echo "=== Verifying CFBundleVersion in Info.plist ==="
-          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "App/Info.plist"
+          # Hard guard against shipping a build <= the last one Apple has on
+          # file. Update LAST_ACCEPTED_BY_APPLE whenever a build is accepted.
+          LAST_ACCEPTED_BY_APPLE=200
+          if [ "$CURRENT_BUILD_NUMBER" -le "$LAST_ACCEPTED_BY_APPLE" ]; then
+            echo "FATAL: CFBundleVersion ($CURRENT_BUILD_NUMBER) must be strictly greater than the last value Apple accepted ($LAST_ACCEPTED_BY_APPLE)."
+            echo "       Bump CFBundleVersion in ios/App/App/Info.plist, commit, push, and re-trigger."
+            exit 1
+          fi
+
+          # Defensive: also propagate to project.pbxproj's CURRENT_PROJECT_VERSION
+          # via agvtool so xcodebuild reads a consistent value (without changing it).
+          /usr/bin/xcrun agvtool new-version -all "$CURRENT_BUILD_NUMBER"
+
+          echo "=== Verifying Info.plist was NOT mutated by agvtool ==="
+          FINAL_BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "App/Info.plist")
+          if [ "$FINAL_BUILD_NUMBER" != "$CURRENT_BUILD_NUMBER" ]; then
+            echo "FATAL: agvtool unexpectedly changed CFBundleVersion from $CURRENT_BUILD_NUMBER to $FINAL_BUILD_NUMBER"
+            exit 1
+          fi
+          echo "    CFBundleVersion confirmed = $FINAL_BUILD_NUMBER"
 
       - name: Build and export IPA
         script: |
@@ -84,6 +97,45 @@ workflows:
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+
+      - name: Inspect final IPA metadata (fail closed if build number is stale)
+        script: |
+          set -e
+          IPA_PATH="build/ios/ipa/App.ipa"
+          if [ ! -f "$IPA_PATH" ]; then
+            echo "FATAL: IPA not found at $IPA_PATH"
+            ls -R build || true
+            exit 1
+          fi
+
+          echo "=== Extracting Info.plist from the built IPA ==="
+          WORK_DIR=$(mktemp -d)
+          unzip -q "$IPA_PATH" -d "$WORK_DIR"
+          BUILT_PLIST="$WORK_DIR/Payload/App.app/Info.plist"
+
+          if [ ! -f "$BUILT_PLIST" ]; then
+            echo "FATAL: Info.plist not found inside the IPA at $BUILT_PLIST"
+            find "$WORK_DIR" -name Info.plist
+            exit 1
+          fi
+
+          # IPA Info.plist is binary plist — convert to xml1 for PlistBuddy
+          plutil -convert xml1 "$BUILT_PLIST"
+
+          IPA_BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$BUILT_PLIST")
+          IPA_SHORT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$BUILT_PLIST")
+
+          echo "=== IPA metadata (what Apple will see) ==="
+          echo "    CFBundleShortVersionString = $IPA_SHORT_VERSION"
+          echo "    CFBundleVersion            = $IPA_BUILD_NUMBER"
+
+          LAST_ACCEPTED_BY_APPLE=200
+          if [ "$IPA_BUILD_NUMBER" -le "$LAST_ACCEPTED_BY_APPLE" ]; then
+            echo "FATAL: Final IPA CFBundleVersion ($IPA_BUILD_NUMBER) is not strictly greater than the last value Apple accepted ($LAST_ACCEPTED_BY_APPLE)."
+            echo "       Apple WILL reject this upload. Aborting before we waste an altool round-trip."
+            exit 1
+          fi
+          echo "    Build number gate passed: $IPA_BUILD_NUMBER > $LAST_ACCEPTED_BY_APPLE"
 
       - name: Upload IPA to App Store Connect (TestFlight, Apple ID)
         script: |
