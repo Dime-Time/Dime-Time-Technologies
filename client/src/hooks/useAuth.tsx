@@ -18,6 +18,7 @@ interface User {
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: string | null;
+  emailVerifiedAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }

@@ -34,6 +34,9 @@ import {
   type PasswordResetToken,
   type InsertPasswordResetToken,
   passwordResetTokens,
+  type EmailVerificationToken,
+  type InsertEmailVerificationToken,
+  emailVerificationTokens,
   users, 
   debts, 
   transactions, 
@@ -158,6 +161,12 @@ export interface IStorage {
   consumePasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined>;
   invalidatePasswordResetTokensForUser(userId: string): Promise<void>;
   invalidateAllUserSessions(userId: string): Promise<void>;
+
+  // Email verification token methods
+  createEmailVerificationToken(data: InsertEmailVerificationToken): Promise<EmailVerificationToken>;
+  consumeEmailVerificationToken(tokenHash: string): Promise<EmailVerificationToken | undefined>;
+  invalidateEmailVerificationTokensForUser(userId: string): Promise<void>;
+  markUserEmailVerified(userId: string, when?: Date): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1421,6 +1430,13 @@ export class MemStorage implements IStorage {
   async consumePasswordResetToken(_tokenHash: string): Promise<PasswordResetToken | undefined> { return undefined; }
   async invalidatePasswordResetTokensForUser(_userId: string): Promise<void> {}
   async invalidateAllUserSessions(_userId: string): Promise<void> {}
+
+  async createEmailVerificationToken(_data: InsertEmailVerificationToken): Promise<EmailVerificationToken> {
+    throw new Error('MemStorage does not support email verification tokens');
+  }
+  async consumeEmailVerificationToken(_tokenHash: string): Promise<EmailVerificationToken | undefined> { return undefined; }
+  async invalidateEmailVerificationTokensForUser(_userId: string): Promise<void> {}
+  async markUserEmailVerified(_userId: string, _when?: Date): Promise<void> {}
 }
 
 // DatabaseStorage class for persistent storage using PostgreSQL
@@ -1877,6 +1893,43 @@ export class DatabaseStorage implements IStorage {
   async invalidateAllUserSessions(userId: string): Promise<void> {
     await db.execute(sql`DELETE FROM sessions WHERE sess->>'userId' = ${userId}`);
     await db.delete(userSessions).where(eq(userSessions.userId, userId));
+  }
+
+  // Email verification token methods
+  async createEmailVerificationToken(data: InsertEmailVerificationToken): Promise<EmailVerificationToken> {
+    const [result] = await db.insert(emailVerificationTokens).values(data).returning();
+    return result;
+  }
+
+  /**
+   * Atomically consume an email verification token. Same single-update
+   * pattern as password reset: returns the row only if it was unused AND
+   * not expired AT THE MOMENT of the update.
+   */
+  async consumeEmailVerificationToken(tokenHash: string): Promise<EmailVerificationToken | undefined> {
+    const now = new Date();
+    const [result] = await db.update(emailVerificationTokens)
+      .set({ usedAt: now })
+      .where(and(
+        eq(emailVerificationTokens.tokenHash, tokenHash),
+        sql`${emailVerificationTokens.usedAt} IS NULL`,
+        sql`${emailVerificationTokens.expiresAt} > ${now}`,
+      ))
+      .returning();
+    return result;
+  }
+
+  async invalidateEmailVerificationTokensForUser(userId: string): Promise<void> {
+    await db.update(emailVerificationTokens)
+      .set({ usedAt: new Date() })
+      .where(and(
+        eq(emailVerificationTokens.userId, userId),
+        sql`${emailVerificationTokens.usedAt} IS NULL`,
+      ));
+  }
+
+  async markUserEmailVerified(userId: string, when: Date = new Date()): Promise<void> {
+    await db.update(users).set({ emailVerifiedAt: when }).where(eq(users.id, userId));
   }
 }
 

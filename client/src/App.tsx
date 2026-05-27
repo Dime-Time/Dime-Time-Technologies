@@ -43,6 +43,8 @@ import Signup from "@/pages/signup";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import VerifyEmail from "@/pages/VerifyEmail";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import ComingSoon from "@/pages/ComingSoon";
 import DimeToken from "@/pages/dime-token";
 import BusinessAnalytics from "@/pages/business-analytics";
@@ -52,6 +54,7 @@ import NotFound from "@/pages/not-found";
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
+      <EmailVerificationBanner />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
         {children}
       </main>
@@ -252,6 +255,10 @@ function AppContent() {
 
       <Route path="/reset-password">
         <AuthScreen><ResetPassword /></AuthScreen>
+      </Route>
+
+      <Route path="/verify-email">
+        <AuthScreen><VerifyEmail /></AuthScreen>
       </Route>
 
       <Route path="/privacy" component={Privacy} />

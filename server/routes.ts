@@ -31,9 +31,102 @@ import { roundUpSplitService } from "./services/roundUpSplitService";
 import { calculateRoundUp } from "../client/src/lib/calculations";
 import multer from "multer";
 import { randomBytes } from "crypto";
-import { sendPasswordResetEmail } from "./services/emailService";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./services/emailService";
 
 const PASSWORD_RESET_TOKEN_TTL_MINUTES = 60;
+const EMAIL_VERIFICATION_TTL_MINUTES = 60 * 24; // 24 hours
+
+/**
+ * Resolve the canonical app origin for emailed links.
+ *
+ * SECURITY: in production we REQUIRE PUBLIC_APP_URL because an attacker can
+ * forge the Host header on the unauthenticated forgot-password / resend-
+ * verification endpoints and redirect the emailed link to a domain they
+ * control, stealing the token on click. In dev we synthesize from the
+ * request because dev hosts aren't reachable publicly.
+ *
+ * Returns null in production when PUBLIC_APP_URL is missing — callers
+ * should bail out (and log) instead of sending a broken link.
+ */
+function resolveAppBaseUrl(req: Request): string | null {
+  const configured = process.env.PUBLIC_APP_URL;
+  if (configured) return configured.replace(/\/+$/, "");
+  if (process.env.NODE_ENV === "production") return null;
+  const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+  const host = req.get("host");
+  return `${proto}://${host}`;
+}
+
+type IssueVerificationResult =
+  | { ok: true; provider: "resend" | "console" }
+  | { ok: false; reason: "no_email" | "misconfigured" | "persist_failed" | "send_failed"; error?: string };
+
+/**
+ * Issue an email verification token + send the verification email.
+ * Returns a structured result so callers can decide whether to surface
+ * failure to the user (resend endpoint) or fire-and-forget (signup).
+ */
+async function issueAndSendVerificationEmail(
+  req: Request,
+  user: { id: string; email: string | null; firstName: string | null },
+): Promise<IssueVerificationResult> {
+  if (!user.email) return { ok: false, reason: "no_email" };
+
+  const baseUrl = resolveAppBaseUrl(req);
+  if (!baseUrl) {
+    console.error(JSON.stringify({
+      event: "email_verification_misconfigured",
+      message: "PUBLIC_APP_URL must be set in production",
+      userId: user.id,
+    }));
+    return { ok: false, reason: "misconfigured" };
+  }
+
+  // Invalidate any outstanding token so the email always contains the
+  // freshest link — prevents confusion with multiple live verify links.
+  try {
+    await storage.invalidateEmailVerificationTokensForUser(user.id);
+  } catch (err) {
+    console.error("Failed to invalidate prior verification tokens", err instanceof Error ? err.message : "unknown");
+  }
+
+  const rawToken = randomBytes(32).toString("base64url");
+  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+  const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MINUTES * 60 * 1000);
+
+  try {
+    await storage.createEmailVerificationToken({
+      userId: user.id,
+      email: user.email,
+      tokenHash,
+      expiresAt,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "unknown";
+    console.error("Failed to persist verification token", message);
+    return { ok: false, reason: "persist_failed", error: message };
+  }
+
+  const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}`;
+  const sendResult = await sendVerificationEmail({
+    to: user.email,
+    firstName: user.firstName,
+    verifyUrl,
+    expiresInMinutes: EMAIL_VERIFICATION_TTL_MINUTES,
+  });
+
+  console.log(JSON.stringify({
+    event: "email_verification_sent",
+    userId: user.id,
+    provider: sendResult.provider,
+    ok: sendResult.ok,
+  }));
+
+  if (!sendResult.ok) {
+    return { ok: false, reason: "send_failed", error: sendResult.error };
+  }
+  return { ok: true, provider: sendResult.provider };
+}
 
 const BCRYPT_COST = 12;
 
@@ -222,6 +315,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       
       const authToken = generateAuthToken(user.id);
+
+      // Best-effort: send verification email. We fire-and-forget so a slow
+      // Resend response doesn't delay signup. Failures are logged inside
+      // issueAndSendVerificationEmail and never bubble up to the user.
+      void issueAndSendVerificationEmail(req, {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+      });
       
       req.session.save((err) => {
         if (err) {
@@ -406,6 +508,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Reset password error:", error instanceof Error ? error.message : "unknown");
       res.status(500).json({ message: "Unable to reset password" });
+    }
+  });
+
+  // Email verification — re-send link for the currently signed-in user.
+  // Authenticated to prevent abuse (only the account owner can request a
+  // new link to their own email). Also rate-limited.
+  app.post("/api/auth/send-verification", authLimiter, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (user.emailVerifiedAt) {
+        return res.json({ success: true, alreadyVerified: true, message: "Email already verified" });
+      }
+      if (!user.email) {
+        return res.status(400).json({ message: "No email on file for this account" });
+      }
+
+      const result = await issueAndSendVerificationEmail(req, {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+      });
+
+      if (!result.ok) {
+        // Surface a generic but truthful 503 so the client doesn't show a
+        // false "sent" toast when persistence or the provider actually
+        // failed. We don't leak which failure mode occurred.
+        return res.status(503).json({
+          message: "We couldn't send the verification email right now. Please try again in a moment.",
+        });
+      }
+
+      res.json({ success: true, message: "Verification email sent" });
+    } catch (error) {
+      console.error("Send verification error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to send verification email" });
+    }
+  });
+
+  // Email verification — consume token. Unauthenticated (link is the proof).
+  app.post("/api/auth/verify-email", authLimiter, async (req: Request, res: Response) => {
+    try {
+      const token = typeof req.body?.token === "string" ? req.body.token : "";
+      if (!token) {
+        return res.status(400).json({ message: "Verification token is required" });
+      }
+
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      // Atomic consume — same single-update pattern as password reset.
+      const record = await storage.consumeEmailVerificationToken(tokenHash);
+      if (!record) {
+        return res.status(400).json({ message: "Invalid, expired, or already-used verification link" });
+      }
+
+      // Only mark verified if the token's captured email still matches the
+      // user's current email — defends against the case where the user
+      // changed their email after the link was generated.
+      const user = await storage.getUser(record.userId);
+      if (!user || user.email !== record.email) {
+        return res.status(400).json({ message: "This link is no longer valid for the current email on your account" });
+      }
+
+      if (!user.emailVerifiedAt) {
+        await storage.markUserEmailVerified(user.id);
+      }
+
+      console.log(JSON.stringify({
+        event: "email_verification_completed",
+        userId: user.id,
+      }));
+
+      res.json({ success: true, message: "Email verified" });
+    } catch (error) {
+      console.error("Verify email error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to verify email" });
     }
   });
 

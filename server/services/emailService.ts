@@ -147,3 +147,63 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     text,
   });
 }
+
+export interface VerificationEmailParams {
+  to: string;
+  firstName?: string | null;
+  verifyUrl: string;
+  expiresInMinutes: number;
+}
+
+export async function sendVerificationEmail(params: VerificationEmailParams): Promise<SendEmailResult> {
+  const greeting = params.firstName ? `Hi ${params.firstName},` : "Hi,";
+  const hours = Math.round(params.expiresInMinutes / 60);
+  const expiryLabel = params.expiresInMinutes >= 120
+    ? `${hours} hours`
+    : `${params.expiresInMinutes} minutes`;
+
+  const text = [
+    greeting,
+    "",
+    "Welcome to Dime Time. Please confirm this is your email address so we can keep your account secure and send you important notifications about your debt payoff progress.",
+    "",
+    `Verify your email using this link (expires in ${expiryLabel}):`,
+    params.verifyUrl,
+    "",
+    "If you didn't create a Dime Time account, you can safely ignore this email.",
+    "",
+    "— The Dime Time team",
+    "",
+    "Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners.",
+  ].join("\n");
+
+  const html = `
+<!doctype html>
+<html>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f7fb; padding: 24px; color: #111;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
+      <tr><td>
+        <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">Confirm your email</h1>
+        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${greeting}</p>
+        <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5;">Welcome to Dime Time. Please confirm this is your email address so we can keep your account secure and send you important notifications about your debt payoff progress.</p>
+        <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5;">This link expires in <strong>${expiryLabel}</strong>.</p>
+        <p style="text-align: center; margin: 0 0 24px;">
+          <a href="${params.verifyUrl}" style="display: inline-block; background: #918EF4; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: 600;">Verify email</a>
+        </p>
+        <p style="margin: 0 0 8px; font-size: 13px; color: #666; line-height: 1.5;">Or paste this link into your browser:</p>
+        <p style="margin: 0 0 24px; font-size: 13px; color: #918EF4; word-break: break-all;">${params.verifyUrl}</p>
+        <p style="margin: 24px 0 0; font-size: 13px; color: #666; line-height: 1.5;">If you didn't create a Dime Time account, you can safely ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="margin: 0; font-size: 11px; color: #888; line-height: 1.5;">Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners.</p>
+      </td></tr>
+    </table>
+  </body>
+</html>`.trim();
+
+  return sendEmail({
+    to: params.to,
+    subject: "Confirm your Dime Time email address",
+    html,
+    text,
+  });
+}

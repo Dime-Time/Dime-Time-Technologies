@@ -13,7 +13,14 @@ export default function ResetPassword() {
 
   const token = useMemo(() => {
     if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("token") || "";
+    const t = new URLSearchParams(window.location.search).get("token") || "";
+    // SECURITY: remove ?token=... from the address bar / browser history /
+    // referrer header immediately. Defense-in-depth against the token
+    // leaking via analytics or outbound link Referer headers.
+    if (t && typeof window.history?.replaceState === "function") {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    return t;
   }, []);
 
   const [password, setPassword] = useState("");

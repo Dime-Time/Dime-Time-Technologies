@@ -69,15 +69,46 @@ export const updateConsent = (granted: boolean) => {
   });
 };
 
+/**
+ * Build a sanitized page_location string for analytics — strips query
+ * string AND fragment so we never exfiltrate secrets like
+ *   /reset-password?token=...
+ *   /verify-email?token=...
+ *   /reset-password#token=...
+ * to Google Analytics or anyone with analytics-export access.
+ */
+const sanitizedPageLocation = (): string => {
+  if (typeof window === 'undefined') return '';
+  try {
+    const u = new URL(window.location.href);
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return window.location.origin + window.location.pathname;
+  }
+};
+
+const sanitizedPath = (path: string): string => {
+  // Strip query + hash from the wouter-supplied path as well — defensive,
+  // since callers may pass `useLocation()` values that include them.
+  const qIdx = path.indexOf('?');
+  const hIdx = path.indexOf('#');
+  let end = path.length;
+  if (qIdx >= 0) end = Math.min(end, qIdx);
+  if (hIdx >= 0) end = Math.min(end, hIdx);
+  return path.slice(0, end);
+};
+
 // Track page views - improved for single-page applications
 export const trackPageView = (url: string, title?: string) => {
   if (typeof window === 'undefined' || !window.gtag || !isAnalyticsEnabled()) return;
-  
-  // Send explicit page_view event instead of config to avoid resetting settings
+
+  // Send explicit page_view event instead of config to avoid resetting settings.
+  // SECURITY: never forward query strings or fragments to GA — they can
+  // contain one-time secrets (reset/verify tokens). See sanitizedPageLocation.
   window.gtag('event', 'page_view', {
-    page_path: url,
+    page_path: sanitizedPath(url),
     page_title: title || document.title,
-    page_location: window.location.href,
+    page_location: sanitizedPageLocation(),
   });
 };
 
@@ -336,7 +367,8 @@ export const trackDownload = (fileName: string, fileType: string) => {
   window.gtag?.('event', 'file_download', {
     file_name: fileName,
     file_extension: fileType,
-    link_url: window.location.href
+    // SECURITY: do not include query/hash — sanitizedPageLocation strips tokens.
+    link_url: sanitizedPageLocation()
   });
 };
 
