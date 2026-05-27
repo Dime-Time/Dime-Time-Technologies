@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useState,
   ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import { Capacitor } from "@capacitor/core";
 import { clearAuthToken, getAuthToken, hasStoredToken } from "@/lib/authToken";
 import { getApiUrl } from "@/lib/queryClient";
 import { getCachedUser, cacheUser, clearDashboardCache } from "@/lib/dashboardCache";
+import { DEFAULT_FLAGS, type FlagMap } from "@shared/flags";
 
 const USER_FETCH_TIMEOUT_MS = 8000;
 
@@ -25,6 +27,12 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  /**
+   * Feature flag map resolved server-side and piggybacked onto the
+   * /api/user bootstrap response. Falls back to compile-time defaults
+   * before the bootstrap arrives or when the user is unauthenticated.
+   */
+  flags: FlagMap;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => void;
@@ -44,6 +52,11 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const cachedUser = getCachedUser<User>();
+  // Flags live in local state instead of in the React Query cache so they
+  // can survive a 401 (when the user query data becomes null but the
+  // server still sent a flag map). Seeded with compile-time defaults so
+  // useFlag never returns undefined.
+  const [flags, setFlags] = useState<FlagMap>(DEFAULT_FLAGS);
 
   const {
     data: user,
@@ -94,6 +107,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const json = await res.json();
 
+        // Extract `_flags` envelope if present. The server piggybacks the
+        // resolved feature flag map onto /api/user so we get flags in the
+        // same cold-start request (important on iOS WebView). `_flags` is
+        // stripped from the User object before it's cached.
+        if (json && typeof json === "object" && "_flags" in json) {
+          const { _flags, ...userOnly } = json as Record<string, unknown> & {
+            _flags?: Partial<FlagMap>;
+          };
+          if (_flags && typeof _flags === "object") {
+            setFlags({ ...DEFAULT_FLAGS, ..._flags });
+          }
+          if ("user" in userOnly) {
+            return (userOnly as { user: User }).user;
+          }
+          return userOnly as unknown as User;
+        }
+
         if (json && typeof json === "object" && "user" in json) {
           return json.user as User;
         }
@@ -139,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: user || null, isLoading, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user: user || null, flags, isLoading, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

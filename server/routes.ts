@@ -32,6 +32,7 @@ import { calculateRoundUp } from "../client/src/lib/calculations";
 import multer from "multer";
 import { randomBytes } from "crypto";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./services/emailService";
+import { getFlags } from "./lib/flags";
 
 const PASSWORD_RESET_TOKEN_TTL_MINUTES = 60;
 const EMAIL_VERIFICATION_TTL_MINUTES = 60 * 24; // 24 hours
@@ -606,7 +607,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      res.json(stripSensitiveFields(user));
+      // Piggyback the resolved feature flag map onto the auth bootstrap
+      // response so the client receives flags in the same cold-start round
+      // trip (critical on iOS WebView where every extra request hurts
+      // perceived launch time). `_flags` is additive — other consumers
+      // of /api/user safely ignore it.
+      res.json({ ...stripSensitiveFields(user), _flags: getFlags() });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }

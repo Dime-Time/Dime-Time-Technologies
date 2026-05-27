@@ -94,6 +94,24 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
 - **Capacitor Cold-Start Rule**: NEVER set `server.url` in `capacitor.config.ts`. Doing so makes the iOS WebView download the entire Vite bundle from `https://dime-time.com` on every cold launch (~10s delay observed in TestFlight). Bundled web assets must ship inside the IPA (`webDir: 'dist/public'` → `ios/App/App/public/`); API calls are routed to production via `Capacitor.isNativePlatform()` in `client/src/lib/queryClient.ts`. Before each Codemagic build, run `npm run build && npx cap sync ios` so `ios/App/App/public/` contains a fresh bundle (otherwise stale placeholders ship).
 - **iOS Build Number Source of Truth**: `ios/App/App/Info.plist` is authoritative for BOTH `CFBundleShortVersionString` (marketing version, e.g. `1.0.3`) and `CFBundleVersion` (build number, e.g. `201`). `codemagic.yaml` READS from Info.plist and does NOT overwrite it. Two guards prevent Apple rejections: (1) the "Verify iOS build number from Info.plist" step fails the build if Info.plist's CFBundleVersion is `<= LAST_ACCEPTED_BY_APPLE`, (2) the "Inspect final IPA metadata" step unzips the built IPA and re-checks before upload. To bump the build number: edit `CFBundleVersion` in Info.plist, also bump `CURRENT_PROJECT_VERSION` in `ios/App/App.xcodeproj/project.pbxproj` to match, commit, push, trigger Codemagic. After Apple accepts the upload, update `LAST_ACCEPTED_BY_APPLE` in `codemagic.yaml`. Historical rejections (do not repeat): build 110 hardcoded April 2026, build 200 hardcoded May 2026 — both caused by a prior agvtool step that OVERWROTE Info.plist.
 
+## Feature Flags
+
+All feature flags are defined once in `shared/flags.ts` and read on both sides:
+
+- **Server**: `server/lib/flags.ts` exposes `getFlags()` / `isFlagEnabled(name)`. Resolved once at module load — flipping a flag requires restarting the `Start application` workflow (matches our env-var deployment model).
+- **Client**: `useFlag(name)` hook in `client/src/hooks/useFlag.ts`. Values are piggybacked onto the `/api/user` bootstrap response as `_flags` (no extra round trip — important for iOS WebView cold-start latency). NEVER read flags from `import.meta.env` on the client; build-time env vars can't be flipped without a redeploy.
+
+Flag env vars (all read with tolerant parsing — `1` / `true` / `yes` / `on` / `0` / `false` / `no` / `off`, case-insensitive):
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `ENABLE_STRIPE_ACH` | OFF | Gate Stripe Financial Connections + ACH debit code paths. OFF means the Stripe SDK is not initialized and Stripe routes are not mounted. |
+| `ENABLE_REAL_TRANSFERS` | OFF | Allow money-movement endpoints to actually move money. OFF keeps the app in sandbox/no-op mode — transfers are recorded but never settled. |
+| `ENABLE_CRYPTO` | **ON** | Enable the crypto / Bitcoin round-up surfaces. ON preserves current behavior. |
+| `ENABLE_BETA_BANNER` | OFF | Render the in-app beta banner across every authed screen. Flip ON for the TestFlight beta window, OFF for the public launch build. |
+
+To add a new flag: append to `FLAG_DEFINITIONS` in `shared/flags.ts` and add a row above. Server and client pick it up automatically — no other plumbing needed.
+
 ## Investor / Patent Materials
 - `attached_assets/patent-application/` — USPTO provisional draft (.pdf + .docx) and 7 black-and-white figures
 - `attached_assets/patent-deck-slides/dime-time-patent-deck.pptx` — 12-slide investor patent overview deck (Google Slides-uploadable). PDF and per-slide PNG previews in same folder.

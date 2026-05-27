@@ -45,6 +45,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { BetaBanner } from "@/components/BetaBanner";
 import ComingSoon from "@/pages/ComingSoon";
 import DimeToken from "@/pages/dime-token";
 import BusinessAnalytics from "@/pages/business-analytics";
@@ -54,6 +55,7 @@ import NotFound from "@/pages/not-found";
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
+      <BetaBanner />
       <EmailVerificationBanner />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
         {children}
