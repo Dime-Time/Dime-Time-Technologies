@@ -1,23 +1,26 @@
-import * as Sentry from "@sentry/node";
+/**
+ * Sentry server init — LAZY. When SENTRY_DSN is unset, the @sentry/node SDK
+ * is never imported, so the only runtime cost is this tiny shim. When the
+ * DSN is set, the SDK is loaded once via dynamic import() and cached.
+ */
+import type { Express } from "express";
 import { redactSentryEvent } from "@shared/sentryRedact";
 
+type SentryNodeModule = typeof import("@sentry/node");
+
+let sentryModule: SentryNodeModule | null = null;
 let initialized = false;
 
-/**
- * Initialize Sentry on the Node server. No-op if SENTRY_DSN is unset, so the
- * SDK is completely silent in dev / local environments unless the operator
- * opts in. Safe to call multiple times.
- */
-export function initSentry(): void {
+export async function initSentry(): Promise<void> {
   if (initialized) return;
   const dsn = process.env.SENTRY_DSN;
   if (!dsn) return;
 
+  const Sentry = (await import("@sentry/node")) as SentryNodeModule;
   Sentry.init({
     dsn,
     environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
     release: process.env.SENTRY_RELEASE || process.env.npm_package_version || undefined,
-    // Errors only for this pass — no performance / profiling / replay.
     tracesSampleRate: 0,
     profilesSampleRate: 0,
     sendDefaultPii: false,
@@ -37,6 +40,7 @@ export function initSentry(): void {
       return breadcrumb;
     },
   });
+  sentryModule = Sentry;
   initialized = true;
 }
 
@@ -54,18 +58,22 @@ export function isSentryEnabled(): boolean {
   return initialized;
 }
 
-/**
- * Tag the current isolation scope (request-bound) with a correlationId so
- * server errors captured during the request carry the same id our structured
- * logs already include.
- */
+/** Tag the current isolation scope with a correlationId. No-op when disabled. */
 export function setCorrelationTag(correlationId: string | undefined | null): void {
-  if (!initialized || !correlationId) return;
+  if (!initialized || !sentryModule || !correlationId) return;
   try {
-    Sentry.getIsolationScope().setTag("correlationId", correlationId);
+    sentryModule.getIsolationScope().setTag("correlationId", correlationId);
   } catch {
     // never let Sentry instrumentation break a request
   }
 }
 
-export { Sentry };
+/** Install Sentry's Express error handler. No-op when disabled. */
+export function setupExpressErrorHandler(app: Express): void {
+  if (!initialized || !sentryModule) return;
+  try {
+    sentryModule.setupExpressErrorHandler(app);
+  } catch {
+    // never let Sentry instrumentation block startup
+  }
+}

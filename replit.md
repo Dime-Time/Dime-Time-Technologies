@@ -120,10 +120,9 @@ Production error visibility is provided by Sentry on both the Express server and
 
 | Env var | Side | Purpose |
 |---|---|---|
-| `SENTRY_DSN` | server | Node SDK DSN. Missing → SDK does not initialize, app behavior identical to today. |
-| `VITE_SENTRY_DSN` | client (build time) | React SDK DSN. Missing → SDK never loads. |
-| `SENTRY_ENVIRONMENT` / `VITE_SENTRY_ENVIRONMENT` | both | Override the environment tag (defaults to `NODE_ENV` / Vite `MODE`). |
-| `SENTRY_RELEASE` / `VITE_SENTRY_RELEASE` | both | Release name (matched between client & server for cross-stack grouping). |
+| `SENTRY_DSN` | server + client | Single canonical DSN. The server reads it at runtime; `vite.config.ts` forwards it to the client bundle at build time as `VITE_SENTRY_DSN`. Missing → no SDK init on either side AND the `@sentry/node` / `@sentry/react` packages are never imported (dynamic `import()` is gated on the DSN being present), so neither the server process nor the client bundle pays SDK overhead beyond the tiny init shim. |
+| `SENTRY_ENVIRONMENT` | both | Override the environment tag (defaults to `NODE_ENV` / Vite `MODE`). Also forwarded to the client bundle. |
+| `SENTRY_RELEASE` | both | Release name (matched between client & server for cross-stack grouping). Also forwarded to the client bundle. |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | build time | Required to enable client source-map upload via the Sentry Vite plugin (prod build only). |
 
 **Redaction guarantees (enforced by `server/lib/__tests__/sentry-redact.test.ts`):**

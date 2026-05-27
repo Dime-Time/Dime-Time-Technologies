@@ -6,9 +6,11 @@ import { initSentry } from "./lib/sentry";
 import App from "./App";
 import "./index.css";
 
-// Initialize Sentry as early as possible so the SDK can catch errors thrown
-// during module evaluation. No-op when VITE_SENTRY_DSN is unset.
-initSentry();
+// Initialize Sentry as early as possible. When VITE_SENTRY_DSN is unset (the
+// vite config sources it from the SENTRY_DSN secret at build time) the SDK
+// is never imported — this is just a tiny shim. Fire-and-forget: the dynamic
+// import resolves shortly after first paint.
+void initSentry();
 
 const container = document.getElementById("root");
 

@@ -1,8 +1,8 @@
-// Sentry MUST be imported and initialized before anything else so the Node
-// SDK can install its global instrumentation hooks. No-op when SENTRY_DSN
-// is unset.
-import { initSentry, Sentry } from "./lib/sentry";
-initSentry();
+// Sentry MUST be initialized before anything else so the Node SDK can install
+// its global instrumentation hooks. The init shim is a tiny no-op when
+// SENTRY_DSN is unset — the @sentry/node SDK itself is only imported (via
+// dynamic import) when a DSN is configured.
+import { initSentry, setupExpressErrorHandler as setupSentryExpressErrorHandler } from "./lib/sentry";
 
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
@@ -143,6 +143,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 (async () => {
   try {
+    // Initialize Sentry first. No-op when SENTRY_DSN is unset (the @sentry/node
+    // SDK is not even imported in that case).
+    await initSentry();
+
     console.log("Starting server...");
     console.log("NODE_ENV:", process.env.NODE_ENV);
     console.log("Express env:", app.get("env"));
@@ -167,7 +171,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
      */
     // Sentry's Express error handler is installed BEFORE our own handler so
     // 5xxs are captured. No-op when SENTRY_DSN is unset.
-    Sentry.setupExpressErrorHandler(app);
+    setupSentryExpressErrorHandler(app);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
