@@ -1,0 +1,89 @@
+DIME TIME — NEXT SPRINT KICKOFF
+
+Please run the next sprint as separate reviewable tasks, not one giant push.
+
+TASK ORDER
+
+1. Feature flag scaffolding
+- Add shared/flags.ts
+- Add useFlag hook
+- Support flags like:
+  ENABLE_STRIPE_ACH
+  ENABLE_REAL_TRANSFERS
+  ENABLE_CRYPTO
+  ENABLE_BETA_BANNER
+
+2. Transaction Status System
+- Add shared status enum/type
+- Add reusable StatusBadge component
+- Apply to:
+  debt payments
+  roundups
+  crypto purchases
+  transfers table/status views
+
+Canonical statuses:
+- Pending
+- Processing
+- Completed
+- Failed
+- Requires Action
+
+3. Beta feedback in Settings
+- Add “Send Feedback” in Settings
+- Reuse existing /api/contact
+- Save to contact_submissions table with source: "in_app"
+- Keep rate limiting / Turnstile behavior intact
+
+4. Beta UX / Trust polish
+Prioritize:
+- Login
+- Signup
+- Dashboard
+- Empty states
+- Loading states
+- Mobile spacing
+- Transaction status visibility
+
+Secondary:
+- Debt tracking
+- Roundup settings
+- Analytics
+
+Keep it simple and trustworthy. No flashy redesigns.
+
+5. Sentry wiring
+- Add after core UX/status work
+- Requires SENTRY_DSN secret
+- Redact tokens/secrets
+- Never capture reset or verification tokens
+- Preserve sanitized analytics and URL-scrubbing behavior
+
+6. Stripe ACH beta work
+- Use Stripe Financial Connections + ACH debit via Stripe Payments
+- Put behind ENABLE_STRIPE_ACH
+- Keep provider adapter abstraction intact
+- Do not build full Dwolla/Moov/Increase adapters yet
+- Design Stripe adapter so other providers can be added later
+
+IMPORTANT RULES
+
+Do not change:
+- dime-time.com only
+- tim@dime-time.com only
+- no partner logos
+- no server.url in capacitor.config.ts
+- Info.plist is authoritative for iOS build numbers
+- native bundled web assets only
+- legal effective date May 27, 2026
+- existing auth/security hardening
+
+Preserve:
+- sanitized analytics URLs
+- history.replaceState token scrubbing
+- atomic token consume
+- session invalidation on password reset
+- fail-closed production behavior
+
+Goal:
+Ship a cleaner, safer, more trustworthy TestFlight experience before expanding ACH beta behavior.
