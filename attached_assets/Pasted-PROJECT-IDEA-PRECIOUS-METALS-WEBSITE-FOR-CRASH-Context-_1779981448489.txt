@@ -1,0 +1,167 @@
+PROJECT IDEA — PRECIOUS METALS WEBSITE FOR “CRASH”
+
+Context:
+My friend “Crash” lives in Lake Oswego and has built up approximately $50,000 worth of precious metals inventory (gold, silver, etc.) that he currently stores privately. He may potentially purchase an existing brick-and-mortar precious metals shop from a retiring couple in the future.
+
+The immediate goal is to build a professional website where he can:
+- showcase inventory
+- upload photos
+- manage inventory
+- potentially sell online
+- eventually support ACH/bank transfer payments
+
+This is NOT intended to be flashy or overbuilt initially. The first goal is a trustworthy, professional, functional precious-metals inventory and ecommerce platform.
+
+POSSIBLE DOMAIN
+- metalstacker.com (or similar)
+- Crash would own the domain personally
+- likely purchased through GoDaddy
+- I would need developer/admin access for DNS + deployment setup
+
+INITIAL WEBSITE GOALS
+1. Professional homepage
+2. Inventory/shop page
+3. Individual product pages
+4. Admin inventory management dashboard
+5. Contact/purchase inquiry flow
+6. Basic ecommerce/payment support
+7. Future ACH/bank transfer capability
+
+PRODUCT / INVENTORY REQUIREMENTS
+Each precious metal item should support:
+- Product title
+- Gold / silver / platinum type
+- Weight
+- Purity/fineness
+- Mint/brand
+- Year
+- Serial number (if applicable)
+- Condition
+- Quantity available
+- Spot price reference
+- Premium over spot
+- Final sale price
+- Multiple photos
+- Certificate/assay information
+- Availability status (available/sold/reserved)
+
+ADMIN DASHBOARD REQUIREMENTS
+Crash needs the ability to:
+- Upload products
+- Upload/edit photos
+- Edit inventory
+- Update prices
+- Mark items sold
+- View customer inquiries/orders
+- Manage shipment/tracking information
+- Export reports if needed
+
+PAYMENT / FINTECH REQUIREMENTS
+Likely future payment methods:
+- ACH/bank transfer
+- Wire transfer
+- Debit/credit cards if approved
+- Manual invoice/payment flow initially
+
+Important:
+Precious metals are considered a higher-risk ecommerce category, so payment processor approval may require underwriting/review.
+
+Possible processors to research:
+- Authorize.net
+- NMI
+- PaymentCloud
+- Soar Payments
+- TailoredPay
+- SeamlessChex
+- Durango Merchant Services
+
+Do NOT assume Stripe/Shopify Payments will automatically approve precious metals sales.
+
+TECH STACK IDEAS
+Frontend:
+- React
+- TypeScript
+- Tailwind/shadcn UI
+
+Backend:
+- Express or Next.js API routes
+- PostgreSQL database
+
+Storage:
+- AWS S3 for product images
+- AWS or Replit backend hosting
+
+Infrastructure:
+- Cloudflare DNS/security
+- Google Analytics
+- Google Search Console
+
+DATABASE REQUIREMENTS
+Need storage for:
+- Products
+- Inventory
+- Photos
+- Customers
+- Orders
+- Payment records
+- Shipment tracking
+- Admin accounts
+
+SECURITY / FRAUD PREVENTION
+Needed because precious metals are high-value:
+- Admin authentication
+- Two-factor authentication
+- Fraud screening
+- Manual order review
+- Signature-required shipping
+- Shipment tracking
+- IP/device logging
+- Limits on large purchases if needed
+
+LEGAL / COMPLIANCE
+Need proper:
+- Privacy Policy
+- Terms of Service
+- Shipping policy
+- Refund/cancellation policy
+- Authenticity policy
+- Potential sales-tax handling
+- Precious-metals dealer compliance review
+
+RECOMMENDED MVP (Version 1)
+Keep the first version simple:
+- Homepage
+- Inventory catalog
+- Product detail pages
+- Contact / “Request to Buy” button
+- Admin inventory dashboard
+- Manual invoice/payment process
+
+DO NOT build a huge marketplace initially.
+
+Long-term:
+Can later expand into:
+- live spot-price integration
+- automatic pricing updates
+- ACH checkout
+- customer accounts
+- shipping automation
+- full ecommerce checkout
+- brick-and-mortar inventory sync
+
+IMPORTANT PRODUCT DIRECTION
+The site should feel:
+- trustworthy
+- professional
+- secure
+- modern
+- simple
+
+Avoid:
+- flashy crypto aesthetics
+- meme branding
+- cluttered UI
+- unnecessary animations
+
+The goal is:
+“a trustworthy online precious metals business with strong inventory management and secure purchasing workflows.”
