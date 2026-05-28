@@ -1,0 +1,168 @@
+DIME TIME — CURRENT STATE + NEXT PRIORITIES
+
+DATE
+----
+May 28, 2026
+
+CURRENT STATE
+-------------
+Dime Time is now in a controlled fintech activation phase.
+The main blockers are no longer engineering architecture.
+
+Primary blockers are now:
+- Stripe approval/capability activation
+- operational rollout sequencing
+- beta support readiness
+
+The current architecture should remain stable and intact.
+
+WHAT IS ALREADY WORKING
+-----------------------
+- Feature flag system
+- Stripe ACH adapter scaffold
+- Stripe Financial Connections integration
+- Dynamic Stripe SDK loading behind ENABLE_STRIPE_ACH
+- Atomic idempotency protections
+- Atomic webhook deduplication
+- Encrypted Stripe PaymentMethod storage
+- Transaction lifecycle UX
+- ACH failure/recovery UX
+- Password reset
+- Email verification
+- Security hardening
+- Stable TestFlight pipeline
+- iOS build guards
+- Contact rate limiting + Turnstile
+- Fail-closed production behavior
+
+DO NOT REWRITE
+--------------
+Do not refactor or redesign the current Stripe ACH architecture unless absolutely necessary.
+
+The following are already correct:
+- provider abstraction
+- webhook handling
+- raw-body parsing
+- idempotency handling
+- feature flag gating
+- encrypted token/payment method storage
+- transaction lifecycle mapping
+
+NEXT PRIORITIES
+---------------
+
+1. INTERNAL STRIPE TEST-MODE WALKTHROUGH (highest priority)
+Goal:
+Complete one successful internal ACH walkthrough.
+
+Add internal-only test secrets:
+- STRIPE_SECRET_KEY (sk_test_…)
+- STRIPE_WEBHOOK_SECRET (whsec_…)
+- VITE_STRIPE_PUBLISHABLE_KEY (pk_test_…)
+
+Then:
+- ENABLE_STRIPE_ACH=true internally only
+- restart workflow
+- create Financial Connections session
+- link bank account
+- create ACH debit
+- verify transfers row creation
+- verify webhook delivery
+- verify status transitions
+- verify retry/idempotency behavior
+
+Keep INTERNAL ONLY.
+
+2. INTERNAL TRANSFER ADMIN TOOLING
+Build admin-only read-only tooling for:
+- transfer state
+- webhook deliveries
+- Stripe IDs
+- retry history
+- timeline events
+- failure reasons
+
+Goal:
+Operational visibility and support tooling for ACH beta testing.
+
+No write actions.
+
+3. SENTRY ROLLOUT
+Defer until after admin tooling.
+
+Before enabling:
+- verify no token leaks
+- verify no ACH identifier leaks
+- preserve URL sanitization guarantees
+- preserve analytics sanitization guarantees
+
+Then add:
+- SENTRY_DSN
+- optional source-map upload support
+
+4. LIVE ACH ACTIVATION
+Still blocked on Stripe approval.
+
+When approved:
+- add live Stripe secrets
+- configure production webhook endpoint
+- run internal $1 ACH test
+- verify settlement lifecycle
+- slowly expand beta access
+
+ENABLE_STRIPE_ACH must remain OFF in production until approval.
+
+UX / PRODUCT DIRECTION
+----------------------
+The next major challenge is NOT backend engineering.
+
+It is:
+ACH clarity and user trust.
+
+Continue improving:
+- transaction status visibility
+- failure messaging
+- settlement explanations
+- retry messaging
+- onboarding clarity
+
+Users must clearly understand:
+- Pending
+- Processing
+- Completed
+- Failed
+- Requires Action
+- Canceled
+
+Avoid:
+- flashy redesigns
+- unnecessary animations
+- new crypto features
+- multi-provider ACH work
+- large architecture rewrites
+
+CORE PRODUCT GOAL
+-----------------
+The goal is:
+“one trustworthy real ACH flow with strong UX and operational visibility.”
+
+NOT:
+“launch fintech as fast as possible.”
+
+LOCKED INVARIANTS
+-----------------
+Do NOT change:
+- dime-time.com only
+- tim@dime-time.com only
+- no partner logos
+- no server.url in capacitor.config.ts
+- Info.plist authoritative for iOS build numbers
+- native bundled web assets only
+- legal effective date May 27, 2026
+- fail-closed production behavior
+- sanitized analytics URLs
+- history.replaceState token scrubbing
+- atomic token consume semantics
+- webhook dedup protections
+- idempotency protections
+- ENABLE_STRIPE_ACH stays OFF in production until Stripe approves live ACH
