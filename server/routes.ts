@@ -820,12 +820,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Strip provider IDs / raw payloads — those are operational logs,
       // not user-facing data. Only expose the fields a status surface
       // actually needs.
+      // `errorCode` / `errorMessage` are short operator strings written
+      // by our adapters (Stripe `code`, Plaid `error_code`, our own
+      // synthetic codes). They never contain tokens, customer IDs, or
+      // raw provider payloads — those live in `rawResponse`, which we
+      // deliberately strip here. The client uses `errorCode` to look up
+      // friendly recovery copy via `describeTransferError`.
       const safe = transfers.map((t) => ({
         id: t.id,
         type: t.type,
         amount: t.amount,
         status: t.status,
         debtId: t.debtId,
+        errorCode: t.errorCode ?? null,
+        errorMessage: t.errorMessage ?? null,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
       }));

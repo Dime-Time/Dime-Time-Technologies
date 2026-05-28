@@ -1,0 +1,116 @@
+DIME TIME — RESUME POINT AFTER INTERRUPTED SESSION
+
+Context:
+The previous Replit session was interrupted because my laptop battery died while backend work was running. Please continue from the current merged state without undoing or rewriting completed work.
+
+CURRENT STATE
+-------------
+Stripe ACH beta architecture is already implemented behind ENABLE_STRIPE_ACH=false.
+
+Already completed:
+- Feature flag system
+- Stripe ACH adapter scaffold
+- Stripe Financial Connections support
+- Stripe webhook verification
+- Atomic idempotency protections
+- Webhook dedup protections
+- Encrypted Stripe payment method storage
+- Transaction status mapping
+- Password reset
+- Email verification
+- Security hardening
+- Beta disclosure banners
+- Fintech disclaimer
+- Stable TestFlight pipeline
+
+IMPORTANT:
+Do NOT rewrite or refactor the current Stripe ACH architecture unless necessary.
+The provider abstraction and security/idempotency work should remain intact.
+
+CURRENT STATUS
+--------------
+We are mostly waiting on Stripe approval / capability activation for live ACH money movement.
+
+DO NOT:
+- enable live ACH for production users
+- flip ENABLE_STRIPE_ACH=true in production
+- remove feature flags
+- add partner logos
+- change domain/email rules
+- change iOS pipeline rules
+- add server.url to capacitor.config.ts
+
+NEXT PRIORITIES
+---------------
+
+1. Verify Stripe test-mode flow works internally
+Internal-only testing:
+- create Financial Connections session
+- link bank account
+- create ACH debit
+- verify transfers row creation
+- verify webhook delivery
+- verify status transitions
+- verify idempotency protections
+
+2. Improve transaction lifecycle UX
+Standardize statuses:
+- Pending
+- Processing
+- Completed
+- Failed
+- Requires Action
+- Canceled
+
+Need:
+- reusable StatusBadge component
+- timestamps
+- icons/colors
+- clear human-readable descriptions
+
+3. Add ACH failure/recovery UX
+Need graceful handling for:
+- insufficient funds
+- duplicate retry attempts
+- delayed settlement
+- failed ACH debit
+- webhook timing delays
+
+4. Add internal transfer visibility/admin tooling
+Goal:
+Make it easy to inspect:
+- transfer state
+- webhook state
+- Stripe IDs
+- retry behavior
+- timeline events
+
+5. Sentry rollout
+Add production-safe monitoring AFTER the above UX/status work stabilizes.
+Preserve all token redaction and URL sanitization guarantees.
+
+6. Keep Stripe integration behind feature flags
+ENABLE_STRIPE_ACH must remain OFF by default until Stripe approves live ACH capabilities.
+
+WHEN STRIPE APPROVES
+--------------------
+Then:
+- add live Stripe secrets
+- configure production webhook
+- run internal $1 ACH tests
+- test settlement lifecycle
+- slowly expand beta access
+
+LOCKED INVARIANTS
+-----------------
+- only use dime-time.com
+- only use tim@dime-time.com
+- no partner logos
+- no server.url in capacitor.config.ts
+- Info.plist authoritative for iOS build numbers
+- native bundled web assets only
+- preserve all auth/security hardening
+- preserve sanitized analytics URLs
+- preserve history.replaceState token scrubbing
+- preserve atomic token consume semantics
+- preserve fail-closed production behavior

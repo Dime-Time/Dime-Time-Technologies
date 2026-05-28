@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import type { Transaction, Debt, Payment } from "@shared/schema";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { TransactionStatus } from "@shared/transactionStatus";
+import {
+  describeTransactionStatus,
+  describeTransferError,
+  type TransactionStatus,
+} from "@shared/transactionStatus";
 
 interface TransferRow {
   id: string;
@@ -22,6 +26,8 @@ interface TransferRow {
   amount: string;
   status: TransactionStatus;
   debtId: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -320,23 +326,56 @@ export default function Insights() {
                   .slice()
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                   .slice(0, 5)
-                  .map((t) => (
-                    <li
-                      key={t.id}
-                      className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2"
-                      data-testid={`transfer-row-${t.id}`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-sm font-medium text-slate-900">
-                          {formatCurrency(t.amount)}
-                        </span>
-                        <StatusBadge status={t.status} timestamp={t.createdAt} />
-                      </div>
-                      <span className="text-xs text-slate-500 capitalize">
-                        {t.type.replace(/_/g, " ")}
-                      </span>
-                    </li>
-                  ))}
+                  .map((t) => {
+                    // For failed transfers, prefer a tailored recovery
+                    // hint mapped from `errorCode` when we have one;
+                    // otherwise fall back to the generic transfer-status
+                    // description so the user always sees plain English.
+                    const errorDetail =
+                      t.status === "failed" || t.status === "requires_action"
+                        ? describeTransferError(t.errorCode)
+                        : null;
+                    const fallback =
+                      (t.status === "failed" || t.status === "requires_action") && !errorDetail
+                        ? describeTransactionStatus(t.status, "transfer")
+                        : null;
+                    return (
+                      <li
+                        key={t.id}
+                        className="rounded-md border border-slate-200 px-3 py-2"
+                        data-testid={`transfer-row-${t.id}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="text-sm font-medium text-slate-900">
+                              {formatCurrency(t.amount)}
+                            </span>
+                            <StatusBadge status={t.status} timestamp={t.createdAt} />
+                          </div>
+                          <span className="text-xs text-slate-500 capitalize">
+                            {t.type.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        {errorDetail && (
+                          <div
+                            className="mt-2 rounded border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-900"
+                            data-testid={`transfer-error-${t.id}`}
+                          >
+                            <div className="font-medium">{errorDetail.headline}</div>
+                            <div className="mt-0.5 opacity-90">{errorDetail.suggestion}</div>
+                          </div>
+                        )}
+                        {fallback && (
+                          <div
+                            className="mt-2 rounded border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700"
+                            data-testid={`transfer-fallback-${t.id}`}
+                          >
+                            {fallback}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
               </ul>
             </CardContent>
           </Card>
