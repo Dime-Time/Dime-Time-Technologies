@@ -22,8 +22,8 @@ export function StripeConnectButton() {
     const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
     if (!publishableKey) {
       toast({
-        title: "Stripe not configured",
-        description: "VITE_STRIPE_PUBLISHABLE_KEY is missing in this build.",
+        title: "Bank connect not configured",
+        description: "Payment provider key is missing in this build.",
         variant: "destructive",
       });
       return;
@@ -45,7 +45,7 @@ export function StripeConnectButton() {
       const result = await (stripe as any).collectFinancialConnectionsAccounts({
         clientSecret,
       });
-      if (result.error) throw new Error(result.error.message || "Stripe Connect cancelled");
+      if (result.error) throw new Error(result.error.message || "Bank connect cancelled");
 
       const accounts = result.financialConnectionsSession?.accounts || [];
       if (accounts.length === 0) {
@@ -66,12 +66,12 @@ export function StripeConnectButton() {
 
       queryClient.invalidateQueries({ queryKey: ["/api/stripe/status"] });
       toast({
-        title: "Bank linked via Stripe",
+        title: "Bank account linked",
         description: `Connected ${accounts.length} account${accounts.length === 1 ? "" : "s"}.`,
       });
     } catch (err: any) {
       toast({
-        title: "Stripe Connect failed",
+        title: "Bank connect failed",
         description: err?.message || "Please try again.",
         variant: "destructive",
       });
@@ -90,7 +90,7 @@ export function StripeConnectButton() {
       data-testid="button-stripe-connect"
     >
       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Building2 className="w-4 h-4" />}
-      Connect with Stripe (beta)
+      Connect bank account (beta)
     </Button>
   );
 }

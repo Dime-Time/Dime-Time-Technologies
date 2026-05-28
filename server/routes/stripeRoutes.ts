@@ -15,6 +15,7 @@
 
 import type { Express, Request, Response } from "express";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { storage } from "../storage";
@@ -96,6 +97,24 @@ async function finalizeIdempotency(
   await storage.finalizeIdempotencyKey(key, userId, endpoint, status, JSON.stringify(body));
 }
 
+// Per-user + IP rate limit for the Financial Connections session endpoint.
+// Each session call creates / reuses a Stripe Customer and opens a session
+// against Stripe's API, so unthrottled invocation is both an upstream-cost
+// risk and a credential-probing risk. Keyed on the authenticated userId
+// when present (falls back to IP) so a logged-in client can't bypass the
+// limit by rotating cookies.
+const fcSessionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const uid = getUserIdFromRequest(req);
+    return uid ? `u:${uid}` : `ip:${req.ip}`;
+  },
+  message: { message: "Too many Stripe Connect attempts. Try again in a minute." },
+});
+
 export function registerStripeRoutes(app: Express): void {
   app.get("/api/stripe/status", async (req: Request, res: Response) => {
     const userId = getUserIdFromRequest(req);
@@ -116,7 +135,7 @@ export function registerStripeRoutes(app: Express): void {
 
   // Begin Financial Connections — returns a client_secret the browser feeds
   // into Stripe.js to render the connect modal.
-  app.post("/api/stripe/financial-connections/session", async (req: Request, res: Response) => {
+  app.post("/api/stripe/financial-connections/session", fcSessionLimiter, async (req: Request, res: Response) => {
     const correlationId = randomUUID();
     try {
       const userId = getUserIdFromRequest(req);
