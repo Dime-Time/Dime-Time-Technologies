@@ -172,6 +172,9 @@ export interface IStorage {
   updateTransferStatus(id: string, status: string, updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'stripePaymentIntentId' | 'stripeChargeId' | 'provider' | 'errorCode' | 'errorMessage' | 'rawResponse'>>): Promise<Transfer | undefined>;
   getTransfersByUserId(userId: string): Promise<Transfer[]>;
   getTransferByStripePaymentIntentId(paymentIntentId: string): Promise<Transfer | undefined>;
+  // Admin (read-only operator surface — gated by requireAdmin middleware)
+  getRecentTransfers(opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]>;
+  getRecentStripeWebhookEvents(limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>>;
 
   // Encrypted bank account token methods
   getPlaidAccessToken(bankAccountId: string): Promise<string | undefined>;
@@ -1461,6 +1464,8 @@ export class MemStorage implements IStorage {
   async getTransferByPlaidTransferId(_plaidTransferId: string): Promise<Transfer | undefined> { return undefined; }
   async updateTransferStatus(_id: string, _status: string, _updates?: any): Promise<Transfer | undefined> { return undefined; }
   async getTransfersByUserId(_userId: string): Promise<Transfer[]> { return []; }
+  async getRecentTransfers(_opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]> { return []; }
+  async getRecentStripeWebhookEvents(_limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>> { return []; }
   async getTransferByStripePaymentIntentId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
   async createStripeAccount(_data: any): Promise<StripeAccount> { throw new Error('MemStorage does not support Stripe accounts'); }
@@ -1960,6 +1965,25 @@ export class DatabaseStorage implements IStorage {
 
   async getTransfersByUserId(userId: string): Promise<Transfer[]> {
     return await db.select().from(transfers).where(eq(transfers.userId, userId)).orderBy(desc(transfers.createdAt));
+  }
+
+  async getRecentTransfers(opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]> {
+    const limit = Math.max(1, Math.min(500, opts.limit));
+    const conds: any[] = [];
+    if (opts.provider) conds.push(eq(transfers.provider, opts.provider));
+    if (opts.status) conds.push(eq(transfers.status, opts.status));
+    const base = db.select().from(transfers);
+    const filtered = conds.length > 0 ? base.where(and(...conds)) : base;
+    return await filtered.orderBy(desc(transfers.createdAt)).limit(limit);
+  }
+
+  async getRecentStripeWebhookEvents(limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>> {
+    const capped = Math.max(1, Math.min(500, limit));
+    return await db
+      .select({ eventId: stripeWebhookEvents.eventId, type: stripeWebhookEvents.type, receivedAt: stripeWebhookEvents.receivedAt })
+      .from(stripeWebhookEvents)
+      .orderBy(desc(stripeWebhookEvents.receivedAt))
+      .limit(capped);
   }
 
   // Password reset token methods

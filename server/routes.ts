@@ -24,6 +24,8 @@ import { registerAxosRoutes } from "./routes/axosRoutes";
 import { registerMercuryRoutes } from "./routes/mercuryRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
 import { registerStripeRoutes, registerStripeWebhook } from "./routes/stripeRoutes";
+import { registerAdminRoutes } from "./routes/adminRoutes";
+import { isAdminUserId } from "./lib/admin";
 import { isFlagEnabled } from "./lib/flags";
 import { getUserIdFromRequest } from "./middleware/authHelper";
 import { notificationRoutes } from "./routes/notificationRoutes";
@@ -615,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // trip (critical on iOS WebView where every extra request hurts
       // perceived launch time). `_flags` is additive — other consumers
       // of /api/user safely ignore it.
-      res.json({ ...stripSensitiveFields(user), _flags: getFlags() });
+      res.json({ ...stripSensitiveFields(user), _flags: getFlags(), _isAdmin: isAdminUserId(userId) });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -1883,6 +1885,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       flag: "ENABLE_STRIPE_ACH",
     }));
   }
+
+  // Register internal admin (read-only) routes — always mounted; every
+  // endpoint requires `requireAdmin`, which fails closed when ADMIN_USER_IDS
+  // is unset/empty.
+  registerAdminRoutes(app);
 
   // Register notification routes
   app.use(notificationRoutes);

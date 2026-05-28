@@ -23,6 +23,7 @@ interface User {
   emailVerifiedAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -111,17 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // resolved feature flag map onto /api/user so we get flags in the
         // same cold-start request (important on iOS WebView). `_flags` is
         // stripped from the User object before it's cached.
-        if (json && typeof json === "object" && "_flags" in json) {
-          const { _flags, ...userOnly } = json as Record<string, unknown> & {
+        if (json && typeof json === "object" && ("_flags" in json || "_isAdmin" in json)) {
+          const { _flags, _isAdmin, ...userOnly } = json as Record<string, unknown> & {
             _flags?: Partial<FlagMap>;
+            _isAdmin?: boolean;
           };
           if (_flags && typeof _flags === "object") {
             setFlags({ ...DEFAULT_FLAGS, ..._flags });
           }
           if ("user" in userOnly) {
-            return (userOnly as { user: User }).user;
+            const u = (userOnly as { user: User }).user;
+            return { ...u, isAdmin: Boolean(_isAdmin) };
           }
-          return userOnly as unknown as User;
+          return { ...(userOnly as unknown as User), isAdmin: Boolean(_isAdmin) };
         }
 
         if (json && typeof json === "object" && "user" in json) {

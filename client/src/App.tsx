@@ -50,6 +50,7 @@ import ComingSoon from "@/pages/ComingSoon";
 import DimeToken from "@/pages/dime-token";
 import BusinessAnalytics from "@/pages/business-analytics";
 import StatsPage from "@/pages/StatsPage";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
@@ -300,6 +301,14 @@ function AppContent() {
       <Route path="/stats">
         {effectivelyAuthenticated ? (
           <AuthenticatedLayout><StatsPage /></AuthenticatedLayout>
+        ) : (
+          UnauthenticatedRoot
+        )}
+      </Route>
+
+      <Route path="/admin">
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><AdminPage /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}

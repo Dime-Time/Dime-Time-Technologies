@@ -168,6 +168,18 @@ Production error visibility is provided by Sentry on both the Express server and
 
 **Running the redaction test:** `npx tsx --test server/lib/__tests__/sentry-redact.test.ts`
 
+## Internal Admin (read-only operator surface)
+
+Gated by `ADMIN_USER_IDS` (Replit Secret, comma-separated user UUIDs). Empty/unset = no admins (fails closed). Restart required after changes.
+
+- Backend: `server/lib/admin.ts` (`requireAdmin` middleware), `server/routes/adminRoutes.ts`. All endpoints are GET-only and strip `rawRequest` / `rawResponse` from transfer rows before serialization.
+  - `GET /api/admin/me` — 200 `{isAdmin:true}` if caller is admin, else 401/403.
+  - `GET /api/admin/transfers?limit=&provider=&status=` — recent transfers across all users (clamp 1..500).
+  - `GET /api/admin/transfers/:id` — one transfer with full operational fields (no raw payloads).
+  - `GET /api/admin/webhooks/stripe?limit=` — recent Stripe webhook events (eventId, type, receivedAt).
+- `/api/user` piggybacks `_isAdmin: boolean` alongside `_flags` so the client knows whether to show the admin surface (no extra round trip).
+- Frontend: `/admin` route → `client/src/pages/admin.tsx` (Transfers + Stripe Webhooks tabs). Non-admin users see a "not authorized" card; backend stays the source of truth regardless of client state.
+
 ## Investor / Patent Materials
 - `attached_assets/patent-application/` — USPTO provisional draft (.pdf + .docx) and 7 black-and-white figures
 - `attached_assets/patent-deck-slides/dime-time-patent-deck.pptx` — 12-slide investor patent overview deck (Google Slides-uploadable). PDF and per-slide PNG previews in same folder.
