@@ -220,11 +220,23 @@ export async function createAchDebit(args: {
   customerId: string;
   paymentMethodId: string;
   idempotencyKey: string;
+  /** Real client IP captured when the user accepted the ACH authorization. */
+  mandateIpAddress: string;
+  /** Real browser User-Agent captured at authorization time. */
+  mandateUserAgent: string;
   descriptor?: string;
   metadata?: Record<string, string>;
 }): Promise<{ id: string; status: string; chargeId: string | null }> {
   const stripe = await getStripe();
   if (!stripe) throw new Error("Stripe is not configured");
+
+  // Nacha "online" mandate evidence MUST reflect the actual customer who
+  // authorized the debit — never hardcoded server values. The caller pulls
+  // these from the stored `ach_authorizations` row and fails closed if no
+  // authorization is on file.
+  if (!args.mandateIpAddress || !args.mandateUserAgent) {
+    throw new Error("ACH mandate requires a real customer IP and user agent");
+  }
 
   const intent = await stripe.paymentIntents.create(
     {
@@ -238,8 +250,8 @@ export async function createAchDebit(args: {
         customer_acceptance: {
           type: "online",
           online: {
-            ip_address: "0.0.0.0",
-            user_agent: "Dime Time Server",
+            ip_address: args.mandateIpAddress,
+            user_agent: args.mandateUserAgent,
           },
         },
       } as any,

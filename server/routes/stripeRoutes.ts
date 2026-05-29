@@ -21,6 +21,8 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "../middleware/authHelper";
 import { setCorrelationTag } from "../lib/sentry";
+import { isFlagEnabled } from "../lib/flags";
+import { ACH_AUTHORIZATION_TEXT, ACH_AUTHORIZATION_VERSION } from "@shared/achAuthorization";
 import {
   attachFcAccountAsPaymentMethod,
   createAchDebit,
@@ -42,6 +44,16 @@ const debitSchema = z.object({
   debtId: z.string().min(1).optional(),
   descriptor: z.string().max(22).optional(),
 });
+
+/**
+ * Best-effort real client IP. `trust proxy` is set (server/replitAuth.ts) so
+ * `req.ip` already reflects the X-Forwarded-For client behind Replit's proxy;
+ * the fallbacks cover odd deployment topologies.
+ */
+function clientIp(req: Request): string {
+  const fwd = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim();
+  return req.ip || fwd || req.socket?.remoteAddress || "unknown";
+}
 
 function stripeLog(correlationId: string, event: string, data?: Record<string, unknown>): void {
   setCorrelationTag(correlationId);
@@ -231,6 +243,52 @@ export function registerStripeRoutes(app: Express): void {
     }
   });
 
+  // Record the user's explicit ACH debit authorization (Nacha "online"
+  // mandate consent). Captures the REAL client IP + User-Agent at the moment
+  // of consent and the exact wording version. The most recent row feeds
+  // `mandate_data.customer_acceptance.online` on every subsequent debit.
+  app.post("/api/stripe/ach/authorize", async (req: Request, res: Response) => {
+    const correlationId = randomUUID();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!isStripeAchEnabled()) {
+        return res.status(503).json({ message: "Stripe ACH is not enabled" });
+      }
+
+      const ipAddress = clientIp(req);
+      const userAgent = (req.headers["user-agent"] as string | undefined)?.slice(0, 1024) || "unknown";
+
+      const auth = await storage.createAchAuthorization({
+        userId,
+        version: ACH_AUTHORIZATION_VERSION,
+        text: ACH_AUTHORIZATION_TEXT,
+        ipAddress,
+        userAgent,
+      });
+
+      stripeLog(correlationId, "ach_authorization_recorded", {
+        userId,
+        authorizationId: auth.id,
+        version: auth.version,
+      });
+
+      return res.status(201).json({
+        success: true,
+        authorizationId: auth.id,
+        version: auth.version,
+        authorizedAt: auth.createdAt,
+        correlationId,
+      });
+    } catch (err: any) {
+      stripeLog(correlationId, "ach_authorization_failed", {
+        severity: "ERROR",
+        error: err?.message,
+      });
+      return res.status(500).json({ message: "Failed to record ACH authorization", correlationId });
+    }
+  });
+
   // ACH debit against a saved Stripe PaymentMethod. Writes to the transfers
   // ledger before calling Stripe; updates ledger on response.
   app.post("/api/stripe/ach/debit", async (req: Request, res: Response) => {
@@ -282,17 +340,59 @@ export function registerStripeRoutes(app: Express): void {
         return res.status(422).json(body);
       }
 
+      // PRIORITY 1 — real-money kill switch. When ENABLE_REAL_TRANSFERS is
+      // OFF we never create a PaymentIntent and never move money; we record a
+      // `simulated` ledger row and return a simulated success so the rest of
+      // the flow (UI, idempotency, ledger) can be exercised safely.
+      const realTransfers = isFlagEnabled("ENABLE_REAL_TRANSFERS");
+
+      // PRIORITY 2 — a REAL debit requires Nacha mandate evidence on file.
+      // Fail closed if the user never authorized ACH (no fabricated IP/UA).
+      // Skipped in simulation since no Stripe mandate is created.
+      let mandate: { ipAddress: string; userAgent: string } | undefined;
+      if (realTransfers) {
+        const latest = await storage.getLatestAchAuthorization(userId);
+        if (!latest) {
+          const body = {
+            message: "ACH authorization required before debiting. Please authorize ACH in the app.",
+          };
+          await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
+          return res.status(422).json(body);
+        }
+        mandate = { ipAddress: latest.ipAddress, userAgent: latest.userAgent };
+      }
+
       const ledger = await storage.createTransfer({
         userId,
         type: debtId ? "debt_payment" : "stripe_ach_debit",
         amount: amount.toFixed(2),
-        status: "created",
+        status: realTransfers ? "created" : "simulated",
         provider: "stripe",
         debtId: debtId || null,
         correlationId,
         idempotencyKey,
-        rawRequest: JSON.stringify({ stripeAccountId, amount, debtId }),
+        rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, simulated: !realTransfers }),
       });
+
+      if (!realTransfers) {
+        console.log("[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false");
+        stripeLog(correlationId, "ach_debit_simulated", {
+          severity: "WARN",
+          ledgerId: ledger.id,
+          stripeAccountId,
+          amount,
+          message: "[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false",
+        });
+        const body = {
+          success: true,
+          simulated: true,
+          ledgerId: ledger.id,
+          status: "simulated",
+          correlationId,
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 201, body);
+        return res.status(201).json(body);
+      }
 
       stripeLog(correlationId, "ach_debit_start", {
         ledgerId: ledger.id,
@@ -306,6 +406,8 @@ export function registerStripeRoutes(app: Express): void {
           customerId: stripeAccount.stripeCustomerId,
           paymentMethodId,
           idempotencyKey,
+          mandateIpAddress: mandate!.ipAddress,
+          mandateUserAgent: mandate!.userAgent,
           descriptor,
           metadata: {
             dimeTimeUserId: userId,
@@ -361,7 +463,23 @@ export function registerStripeRoutes(app: Express): void {
       }
     } catch (err: any) {
       if (err instanceof z.ZodError) {
+        // The Zod path already released the reservation before re-throwing.
         return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      // Unexpected (likely transient, e.g. DB) failure AFTER the slot was
+      // reserved but BEFORE we finalized a deterministic response. Release the
+      // reservation so the same Idempotency-Key can legitimately retry rather
+      // than being stranded in-flight and 409ing forever.
+      const cleanupUserId = getUserIdFromRequest(req);
+      if (idempotencyKey && cleanupUserId) {
+        try {
+          await storage.releaseIdempotencyKey(idempotencyKey, cleanupUserId, endpoint);
+        } catch (releaseErr: any) {
+          stripeLog(correlationId, "idempotency_release_failed", {
+            severity: "ERROR",
+            error: releaseErr?.message,
+          });
+        }
       }
       stripeLog(correlationId, "ach_debit_unexpected_error", {
         severity: "ERROR",
@@ -447,6 +565,73 @@ export function registerStripeWebhook(app: Express): void {
               });
             }
           }
+        } else if (event.type === "charge.refunded") {
+          // ACH debit was refunded/reversed — the money is no longer ours.
+          // Look the ledger up by the PaymentIntent the charge belongs to.
+          const charge = event.data.object;
+          // Prefer the PaymentIntent (our canonical key) but fall back to the
+          // charge id so refunds on rows that only ever recorded a charge id
+          // (or where the PI lookup misses) are still reconciled.
+          let ledger = charge.payment_intent
+            ? await storage.getTransferByStripePaymentIntentId(charge.payment_intent as string)
+            : undefined;
+          if (!ledger && charge.id) {
+            ledger = await storage.getTransferByStripeChargeId(charge.id as string);
+          }
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: charge.id,
+              paymentIntentId: charge.payment_intent,
+            });
+          } else if (ledger.status !== "refunded") {
+            await storage.updateTransferStatus(ledger.id, "refunded", {
+              stripeChargeId: charge.id as string,
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, amountRefunded: charge.amount_refunded }),
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: "refunded",
+            });
+          }
+        } else if (event.type === "charge.dispute.created") {
+          // ACH return/dispute (e.g. R10 unauthorized). Flag for operator
+          // follow-up — collapses to `requires_action` in the status mapper.
+          const dispute = event.data.object;
+          const ledger = await storage.getTransferByStripeChargeId(dispute.charge as string);
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: dispute.charge,
+              disputeId: dispute.id,
+            });
+          } else if (ledger.status !== "disputed") {
+            await storage.updateTransferStatus(ledger.id, "disputed", {
+              stripeChargeId: dispute.charge as string,
+              errorCode: dispute.reason,
+              errorMessage: `ACH dispute: ${dispute.reason}`,
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, disputeId: dispute.id, status: dispute.status }),
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: "disputed",
+            });
+          }
+        } else if (
+          event.type === "setup_intent.succeeded" ||
+          event.type === "payment_method.attached"
+        ) {
+          // No ledger row to mutate — these confirm bank linkage. Log for
+          // operational visibility / correlation only.
+          stripeLog(correlationId, "webhook_noop_acknowledged", {
+            eventId: event.id,
+            type: event.type,
+            objectId: event.data.object?.id,
+          });
+        } else {
+          stripeLog(correlationId, "webhook_unhandled", { eventId: event.id, type: event.type });
         }
         return res.status(200).json({ received: true });
       } catch (err: any) {

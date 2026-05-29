@@ -1,0 +1,221 @@
+REPLIT TASK: ACH GO-LIVE HARDENING FOR DIME TIME
+
+Current Status
+--------------
+Stripe ACH Direct Debit is ENABLED.
+Financial Connections is working.
+ACH debit PaymentIntent flow exists.
+Webhook verification exists.
+We are close to launch.
+
+DO NOT redesign the payment architecture.
+DO NOT remove existing ACH functionality.
+Implement the items below in order.
+
+==================================================
+PRIORITY 1 — IMPLEMENT REAL MONEY KILL SWITCH
+==================================================
+
+Problem:
+ENABLE_REAL_TRANSFERS is documented but not actually used anywhere.
+
+Requirement:
+Before ANY ACH debit is sent to Stripe, check:
+
+process.env.ENABLE_REAL_TRANSFERS
+
+If false:
+- Do NOT create a real PaymentIntent
+- Do NOT move money
+- Return a simulated success response
+- Log clearly:
+  "[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false"
+
+If true:
+- Run current ACH debit logic normally
+
+Deliverables:
+- Exact files changed
+- Git diff
+- Test results
+
+==================================================
+PRIORITY 2 — FIX ACH AUTHORIZATION EVIDENCE
+==================================================
+
+Current issue:
+Mandate captures:
+
+ip_address = "0.0.0.0"
+user_agent = "Dime Time Server"
+
+This is not acceptable.
+
+Requirement:
+
+Capture REAL customer:
+
+- IP address
+- User-Agent
+- Authorization timestamp
+
+Store them when customer authorizes ACH.
+
+Update mandate_data.customer_acceptance.online:
+
+ip_address = real client IP
+user_agent = real browser UA
+
+Never use hardcoded values.
+
+Deliverables:
+- Exact source files modified
+- Database fields added (if needed)
+- Example stored record
+
+==================================================
+PRIORITY 3 — ADD ACH AUTHORIZATION SCREEN
+==================================================
+
+Before bank linking or ACH authorization,
+display ACH authorization text.
+
+Requirements:
+
+User must explicitly agree.
+
+Store:
+
+- timestamp
+- text version
+- user id
+- IP address
+- user agent
+
+Suggested fields:
+
+ach_authorized_at
+ach_authorization_version
+ach_authorization_text
+ach_authorization_ip
+ach_authorization_user_agent
+
+Deliverables:
+- UI location
+- Component name
+- Database migration
+
+==================================================
+PRIORITY 4 — ACH RETURNS / DISPUTES SUPPORT
+==================================================
+
+Current webhook only handles:
+
+payment_intent.*
+
+Add support for:
+
+charge.refunded
+charge.dispute.created
+setup_intent.succeeded
+payment_method.attached
+
+Requirements:
+
+Create statuses:
+
+pending
+processing
+succeeded
+failed
+refunded
+disputed
+returned
+
+Add:
+
+getTransferByStripeChargeId()
+
+Update ledger appropriately.
+
+Deliverables:
+- Events handled
+- Exact files modified
+- Example event flow
+
+==================================================
+PRIORITY 5 — PRODUCTION SECRET VALIDATION
+==================================================
+
+At startup validate:
+
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+VITE_STRIPE_PUBLISHABLE_KEY
+PLAID_TOKEN_ENCRYPTION_KEY
+
+Fail startup if missing.
+
+Requirements:
+
+Throw startup error.
+
+Example:
+
+"FATAL: PLAID_TOKEN_ENCRYPTION_KEY missing"
+
+Deliverables:
+- Validation file
+- Startup logs
+
+==================================================
+PRIORITY 6 — ACH GO-LIVE TEST PLAN
+==================================================
+
+Create a checklist for:
+
+1. ENABLE_REAL_TRANSFERS=false
+2. Internal ACH test
+3. Webhook verification
+4. Ledger verification
+5. ACH pending state verification
+6. ACH success state verification
+7. ACH failure simulation
+8. Refund simulation
+9. Dispute simulation
+10. ENABLE_REAL_TRANSFERS=true
+
+==================================================
+OPTIONAL (POST-LAUNCH)
+==================================================
+
+Evaluate SetupIntent architecture.
+
+Current flow:
+PaymentIntent + mandate at debit time.
+
+Keep current flow for launch.
+
+Create proposal only:
+- SetupIntent
+- save-for-future-use ACH
+- recurring ACH support
+
+DO NOT implement yet.
+
+==================================================
+OUTPUT REQUIRED
+==================================================
+
+After code inspection provide:
+
+1. Files to modify
+2. Exact code changes
+3. Database migrations
+4. Security concerns
+5. Deployment order
+6. Estimated completion time
+7. Launch readiness score (0-100)
+
+Assume Stripe ACH Direct Debit is already approved and enabled.
+Focus only on production readiness and safe ACH launch.

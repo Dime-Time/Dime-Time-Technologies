@@ -79,12 +79,15 @@ export function mapToTransactionStatus(
     return "processing";
   }
 
-  // Permanent failure
+  // Permanent failure (includes ACH returns and refunds — in every case the
+  // money was NOT collected and retained, so the honest user-facing label is
+  // "failed" rather than a false "completed").
   if (
     s === "failed" ||
     s === "failure" ||
     s === "error" ||
     s === "returned" ||
+    s === "refunded" ||
     s === "cancelled" ||
     s === "canceled" ||
     s === "declined"
@@ -92,7 +95,8 @@ export function mapToTransactionStatus(
     return "failed";
   }
 
-  // User action required (Plaid re-auth, micro-deposit verification, etc.)
+  // User action required (Plaid re-auth, micro-deposit verification, ACH
+  // dispute that needs operator/user follow-up, etc.)
   if (
     s === "requires_action" ||
     s === "requires_authentication" ||
@@ -101,7 +105,8 @@ export function mapToTransactionStatus(
     s === "requires_confirmation" ||
     s === "requires_capture" ||
     s === "requires_source" ||
-    s === "action_required"
+    s === "action_required" ||
+    s === "disputed"
   ) {
     return "requires_action";
   }

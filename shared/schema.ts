@@ -258,6 +258,31 @@ export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
   receivedAt: timestamp("received_at").defaultNow().notNull(),
 });
 
+// ACH debit authorization (Nacha "online" mandate) evidence. One row per
+// time a user explicitly accepts the authorization text — captures the exact
+// wording version plus the real client IP / User-Agent at the moment of
+// consent. The most recent row feeds `mandate_data.customer_acceptance.online`
+// on every Stripe ACH debit (no more hardcoded 0.0.0.0).
+export const achAuthorizations = pgTable("ach_authorizations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  version: text("version").notNull(),
+  text: text("text").notNull(),
+  ipAddress: text("ip_address").notNull(),
+  userAgent: text("user_agent").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("ach_auth_user_idx").on(table.userId),
+}));
+
+export const insertAchAuthorizationSchema = createInsertSchema(achAuthorizations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AchAuthorization = typeof achAuthorizations.$inferSelect;
+export type InsertAchAuthorization = z.infer<typeof insertAchAuthorizationSchema>;
+
 export const insertTransferSchema = createInsertSchema(transfers).omit({
   id: true,
   createdAt: true,

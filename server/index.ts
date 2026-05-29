@@ -3,6 +3,7 @@
 // SENTRY_DSN is unset — the @sentry/node SDK itself is only imported (via
 // dynamic import) when a DSN is configured.
 import { initSentry, setupExpressErrorHandler as setupSentryExpressErrorHandler } from "./lib/sentry";
+import { validateProductionSecrets } from "./lib/validateEnv";
 
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
@@ -165,6 +166,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     // Initialize Sentry first. No-op when SENTRY_DSN is unset (the @sentry/node
     // SDK is not even imported in that case).
     await initSentry();
+
+    // Fail fast in production if required secrets are missing — better to
+    // refuse to boot than to accept money-movement requests that will throw
+    // (or, worse, silently misbehave) at runtime. No-op outside production.
+    validateProductionSecrets();
 
     console.log("Starting server...");
     console.log("NODE_ENV:", process.env.NODE_ENV);

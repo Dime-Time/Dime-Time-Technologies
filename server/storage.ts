@@ -41,6 +41,9 @@ import {
   type InsertStripeAccount,
   stripeAccounts,
   stripeWebhookEvents,
+  type AchAuthorization,
+  type InsertAchAuthorization,
+  achAuthorizations,
   users, 
   debts, 
   transactions, 
@@ -172,6 +175,7 @@ export interface IStorage {
   updateTransferStatus(id: string, status: string, updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'stripePaymentIntentId' | 'stripeChargeId' | 'provider' | 'errorCode' | 'errorMessage' | 'rawResponse'>>): Promise<Transfer | undefined>;
   getTransfersByUserId(userId: string): Promise<Transfer[]>;
   getTransferByStripePaymentIntentId(paymentIntentId: string): Promise<Transfer | undefined>;
+  getTransferByStripeChargeId(chargeId: string): Promise<Transfer | undefined>;
   // Admin (read-only operator surface — gated by requireAdmin middleware)
   getRecentTransfers(opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]>;
   getRecentStripeWebhookEvents(limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>>;
@@ -194,6 +198,10 @@ export interface IStorage {
    * `ON CONFLICT DO NOTHING RETURNING`.
    */
   recordStripeWebhookEvent(eventId: string, type: string): Promise<boolean>;
+
+  // ACH debit authorization (Nacha mandate) evidence
+  createAchAuthorization(data: InsertAchAuthorization): Promise<AchAuthorization>;
+  getLatestAchAuthorization(userId: string): Promise<AchAuthorization | undefined>;
 
   // Password reset token methods
   createPasswordResetToken(data: InsertPasswordResetToken): Promise<PasswordResetToken>;
@@ -1467,6 +1475,7 @@ export class MemStorage implements IStorage {
   async getRecentTransfers(_opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]> { return []; }
   async getRecentStripeWebhookEvents(_limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>> { return []; }
   async getTransferByStripePaymentIntentId(_id: string): Promise<Transfer | undefined> { return undefined; }
+  async getTransferByStripeChargeId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
   async createStripeAccount(_data: any): Promise<StripeAccount> { throw new Error('MemStorage does not support Stripe accounts'); }
   async getStripeAccountById(_id: string): Promise<StripeAccount | undefined> { return undefined; }
@@ -1474,6 +1483,8 @@ export class MemStorage implements IStorage {
   async getStripePaymentMethodId(_id: string): Promise<string | undefined> { return undefined; }
   async hasStripeWebhookEvent(_eventId: string): Promise<boolean> { return false; }
   async recordStripeWebhookEvent(_eventId: string, _type: string): Promise<boolean> { return true; }
+  async createAchAuthorization(_data: InsertAchAuthorization): Promise<AchAuthorization> { throw new Error('MemStorage does not support ACH authorizations'); }
+  async getLatestAchAuthorization(_userId: string): Promise<AchAuthorization | undefined> { return undefined; }
 
   async createPasswordResetToken(_data: InsertPasswordResetToken): Promise<PasswordResetToken> {
     throw new Error('MemStorage does not support password reset tokens');
@@ -2073,6 +2084,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getTransferByStripeChargeId(chargeId: string): Promise<Transfer | undefined> {
+    const [result] = await db.select().from(transfers).where(eq(transfers.stripeChargeId, chargeId));
+    return result;
+  }
+
   // ----- Stripe ACH (BETA, flagged) -----
   async createStripeAccount(
     data: Omit<InsertStripeAccount, 'stripePaymentMethodEnc'> & { paymentMethodIdPlaintext: string },
@@ -2117,6 +2133,22 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoNothing({ target: stripeWebhookEvents.eventId })
       .returning({ eventId: stripeWebhookEvents.eventId });
     return inserted.length > 0;
+  }
+
+  // ----- ACH authorization (Nacha mandate) evidence -----
+  async createAchAuthorization(data: InsertAchAuthorization): Promise<AchAuthorization> {
+    const [result] = await db.insert(achAuthorizations).values(data).returning();
+    return result;
+  }
+
+  async getLatestAchAuthorization(userId: string): Promise<AchAuthorization | undefined> {
+    const [result] = await db
+      .select()
+      .from(achAuthorizations)
+      .where(eq(achAuthorizations.userId, userId))
+      .orderBy(desc(achAuthorizations.createdAt))
+      .limit(1);
+    return result;
   }
 }
 
