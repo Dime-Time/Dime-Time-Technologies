@@ -1,0 +1,78 @@
+I am building Dime Time LLC, a fintech app using Stripe.
+
+Current Stripe status:
+- Live Stripe account exists
+- Live API keys are issued
+- Financial Connections is available
+- Treasury is visible in the dashboard
+- ACH Direct Debit is now ENABLED in Stripe Payment Methods
+- Stripe dashboard says payments can be accepted
+- Payout review may still be finishing, but ACH Direct Debit is enabled
+
+Goal:
+Make Dime Time live for ACH bank-debit payments.
+
+I need you to inspect my Replit project and tell me exactly what is missing or needs to be changed.
+
+Required Stripe flow:
+1. Customer signs up/logs in.
+2. Customer links their bank account using Stripe Financial Connections.
+3. App creates or retrieves a Stripe Customer.
+4. App creates a SetupIntent or PaymentIntent using payment method type:
+   us_bank_account
+5. Bank account is saved as a Stripe payment method.
+6. App can initiate ACH debits from the customer’s linked bank.
+7. App listens for Stripe webhooks because ACH is delayed-notification.
+8. App updates payment status only after Stripe confirms the payment.
+
+Please check for these required backend pieces:
+- STRIPE_SECRET_KEY environment variable
+- STRIPE_WEBHOOK_SECRET environment variable
+- Correct use of live keys, not test keys
+- Endpoint to create Stripe Customer
+- Endpoint to create Financial Connections Session, if needed
+- Endpoint to create SetupIntent for us_bank_account
+- Endpoint to create PaymentIntent for ACH debit
+- Webhook endpoint for Stripe events
+- Raw body parsing for webhook signature verification
+- Handling of these webhook events:
+  - payment_intent.processing
+  - payment_intent.succeeded
+  - payment_intent.payment_failed
+  - setup_intent.succeeded
+  - payment_method.attached
+  - charge.dispute.created
+  - charge.refunded
+- Database fields for:
+  - stripe_customer_id
+  - stripe_payment_method_id
+  - bank_last4
+  - bank_name
+  - payment_status
+  - transaction_id
+  - created_at
+  - updated_at
+
+Please also check frontend pieces:
+- Bank-link button or payment setup screen
+- Stripe.js initialized with publishable key
+- Customer can connect bank account
+- Customer sees clear authorization language for ACH debit
+- App does not mark ACH payment as complete immediately
+- App shows pending/processing status until webhook confirms success
+
+Important:
+ACH Direct Debit is enabled in my Stripe Dashboard. Do not tell me to request ACH access unless the code/API proves it is missing.
+
+Please give me:
+1. A checklist of what my Replit project already has.
+2. A checklist of what is missing.
+3. Exact files that need to be edited.
+4. Exact code changes needed.
+5. Exact environment variables I must add in Replit Secrets.
+6. Exact Stripe webhook URL I should configure.
+7. Exact Stripe events I should subscribe to.
+8. Any security problems before going live.
+9. A final go-live checklist for Dime Time.
+
+Do not make vague suggestions. Inspect the code and give me concrete next steps.
