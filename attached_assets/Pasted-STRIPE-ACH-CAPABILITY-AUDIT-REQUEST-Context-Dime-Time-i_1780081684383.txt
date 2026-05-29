@@ -1,0 +1,136 @@
+STRIPE ACH CAPABILITY AUDIT REQUEST
+
+Context:
+Dime Time is a fintech app that needs ACH bank-debit payments.
+
+Current Stripe dashboard status:
+
+* Business information submitted
+* Account review completed
+* "We're reviewing your information"
+* "You can start accepting payments right away. Payouts to your bank account will be available when our review is complete."
+* Treasury menu visible
+* API keys issued
+* Business bank account connected
+* No visible restrictions
+* No visible action items
+
+The dashboard screenshots are not enough to determine whether ACH is actually approved.
+
+## GOAL
+
+Determine exactly which Stripe capabilities are ACTIVE, PENDING, or INACTIVE.
+
+Please create a temporary admin-only diagnostic endpoint/page.
+
+Use:
+
+stripe.accounts.retrieve()
+
+Display:
+
+## ACCOUNT STATUS
+
+* account id
+* charges_enabled
+* payouts_enabled
+* details_submitted
+
+## CAPABILITIES
+
+Display status for:
+
+* card_payments
+* transfers
+* treasury
+* financial_connections
+* us_bank_account_ach_payments
+
+For each capability show:
+
+ACTIVE
+PENDING
+INACTIVE
+
+## REQUIREMENTS
+
+Display:
+
+requirements.currently_due
+requirements.eventually_due
+requirements.pending_verification
+requirements.disabled_reason
+
+future_requirements.currently_due
+
+## INTERPRETATION
+
+Please clearly explain:
+
+If:
+capabilities.us_bank_account_ach_payments = active
+
+Then:
+ACH debit is approved.
+
+If:
+capabilities.us_bank_account_ach_payments = pending
+
+Then:
+Stripe review is still in progress.
+
+If:
+capabilities.us_bank_account_ach_payments = inactive
+
+Then:
+ACH is not currently enabled.
+
+Also explain:
+
+charges_enabled = true
+→ account can process payments.
+
+payouts_enabled = true
+→ Stripe can transfer funds to our business bank account.
+
+requirements.currently_due populated
+→ action required.
+
+requirements.pending_verification populated
+→ Stripe is still reviewing submitted information.
+
+requirements.disabled_reason populated
+→ capability restriction exists.
+
+## SPECIFIC BUSINESS QUESTION
+
+Dime Time needs:
+
+Customer links bank account
+→ Stripe Financial Connections
+
+Customer authorizes payment
+→ ACH bank debit
+
+Dime Time receives funds
+
+Please determine whether the following are ACTIVE, PENDING, or INACTIVE:
+
+* financial_connections
+* us_bank_account_ach_payments
+* treasury
+* transfers
+
+and provide a simple conclusion:
+
+1. ACH ready
+2. ACH pending Stripe review
+3. Additional information required
+4. Treasury pending but ACH available
+
+## SECURITY
+
+* Admin-only access
+* No public access
+* Do not expose Stripe secrets
+* Temporary diagnostic tool only

@@ -308,29 +308,83 @@ function Verdict({ d }: { d: StripeDiagnostics }) {
   const fc = (d.capabilities["financial_connections"] ?? "inactive").toLowerCase();
   const treasury = (d.capabilities["treasury"] ?? "inactive").toLowerCase();
 
-  let headline: string;
+  // Exactly four canonical conclusions — every branch resolves to one of them:
+  //   1. ACH ready
+  //   2. ACH pending Stripe review
+  //   3. Additional information required
+  //   4. Treasury pending but ACH available
+  // Precedence: an outstanding action (#3) wins, then ACH-active outcomes
+  // (#4 / #1), then anything still in review or not yet enabled maps to #2.
+  let conclusion: string;
+  let detail: string;
   let tone: string;
-  if (d.requirements.disabledReason) {
-    headline = `Account restricted: ${d.requirements.disabledReason}. Resolve the requirements below.`;
+
+  const actionRequired =
+    Boolean(d.requirements.disabledReason) || d.requirements.currentlyDue.length > 0;
+
+  if (actionRequired) {
+    conclusion = "3 — Additional information required";
+    detail = d.requirements.disabledReason
+      ? `Stripe set disabled_reason="${d.requirements.disabledReason}", which is a capability restriction. Resolve the items in the Requirements section before ACH will activate.`
+      : "requirements.currently_due is populated — Stripe needs more information from you before capabilities activate. See the Requirements section below.";
     tone = "border-red-200 bg-red-50 text-red-800";
-  } else if (d.requirements.currentlyDue.length > 0) {
-    headline = "Missing required information — Stripe needs the fields listed under \"currently due\" before capabilities activate.";
-    tone = "border-red-200 bg-red-50 text-red-800";
-  } else if (ach === "active" && fc === "active") {
-    headline = "Fully approved for ACH — Financial Connections + ACH debit are both active. You can run the internal test walkthrough.";
+  } else if (ach === "active" && treasury === "pending") {
+    conclusion = "4 — Treasury pending but ACH available";
+    detail = "us_bank_account_ach_payments is ACTIVE so ACH debit is approved. Treasury is still PENDING review, but Treasury is a separate product not required for basic ACH debit.";
     tone = "border-green-200 bg-green-50 text-green-800";
-  } else if (fc !== "active" && ach === "active") {
-    headline = "ACH debit is active but Financial Connections is not — bank linking via FC may not work yet. Waiting on Financial Connections approval.";
-    tone = "border-amber-200 bg-amber-50 text-amber-900";
-  } else if (treasury === "pending") {
-    headline = "Core payments look active; Treasury is still pending review (only needed for stored balances, not for basic ACH debit).";
-    tone = "border-amber-200 bg-amber-50 text-amber-900";
+  } else if (ach === "active") {
+    conclusion = "1 — ACH ready";
+    detail = "us_bank_account_ach_payments is ACTIVE — ACH debit is approved.";
+    tone = "border-green-200 bg-green-50 text-green-800";
   } else {
-    headline = "ACH capabilities are not active yet — likely still in review. See per-capability status and requirements below.";
+    // ACH pending OR inactive, with no outstanding requirement → still under
+    // review / not yet enabled. Both collapse to canonical #2.
+    conclusion = "2 — ACH pending Stripe review";
+    detail =
+      ach === "pending"
+        ? "us_bank_account_ach_payments is PENDING — Stripe's review is still in progress. No action is currently required."
+        : "us_bank_account_ach_payments is INACTIVE with no outstanding requirements — the capability is not enabled yet, typically because Stripe's review is not complete. No action is currently required.";
     tone = "border-amber-200 bg-amber-50 text-amber-900";
   }
 
-  return <div className={`text-sm rounded-md border px-3 py-2 ${tone}`} data-testid="admin-stripe-verdict">{headline}</div>;
+  if (ach === "active" && fc !== "active") {
+    detail += ` Note: financial_connections is ${fc.toUpperCase()} — bank linking via Financial Connections may not work until it is ACTIVE.`;
+  }
+
+  return (
+    <div className={`text-sm rounded-md border px-3 py-2 ${tone}`} data-testid="admin-stripe-verdict">
+      <div className="font-semibold mb-0.5">Conclusion: {conclusion}</div>
+      <div>{detail}</div>
+    </div>
+  );
+}
+
+function InterpretationLegend() {
+  const rows: Array<[string, string]> = [
+    ["capability = ACTIVE", "Capability is approved and usable."],
+    ["capability = PENDING", "Stripe review is still in progress for that capability."],
+    ["capability = INACTIVE", "Capability is not currently enabled."],
+    ["charges_enabled = true", "Account can process payments."],
+    ["payouts_enabled = true", "Stripe can transfer funds to your business bank account."],
+    ["requirements.currently_due populated", "Action required — Stripe needs information now."],
+    ["requirements.pending_verification populated", "Stripe is still reviewing information you submitted."],
+    ["requirements.disabled_reason populated", "A capability restriction exists."],
+  ];
+  return (
+    <Card>
+      <CardHeader className="pb-2"><CardTitle className="text-sm">How to read this</CardTitle></CardHeader>
+      <CardContent>
+        <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5">
+          {rows.map(([k, v]) => (
+            <div key={k} className="text-xs">
+              <dt className="font-mono text-slate-700">{k}</dt>
+              <dd className="text-slate-500">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
+  );
 }
 
 function ReqList({ label, items }: { label: string; items: string[] }) {
@@ -394,6 +448,7 @@ function StripeDiagnosticsTab() {
       {d && (
         <>
           <Verdict d={d} />
+          <InterpretationLegend />
 
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Account Status</CardTitle></CardHeader>
