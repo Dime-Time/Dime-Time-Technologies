@@ -1,0 +1,128 @@
+REPLIT STATUS REVIEW REQUEST — APP STORE + LIVE LAUNCH READINESS
+
+I want an honest assessment of how close Dime Time is to:
+
+1. Submitting to the Apple App Store for review
+2. Going live with real ACH bank-debit transactions
+3. Accepting real users
+
+Current status:
+
+========================================
+STRIPE / FINTECH INFRASTRUCTURE
+========================================
+
+Completed:
+
+✅ Live Stripe account exists
+✅ Live API keys issued
+✅ ACH Direct Debit enabled
+✅ Financial Connections enabled
+✅ Treasury visible
+✅ Customer creation works
+✅ Bank linking works
+✅ ACH debit PaymentIntent flow works
+✅ Idempotency protection implemented
+✅ Webhook verification implemented
+✅ Event deduplication implemented
+✅ Ledger updates from webhooks
+✅ ACH authorization capture implemented
+✅ Real IP/User-Agent capture implemented
+✅ ACH consent storage implemented
+✅ Refund/dispute webhook support implemented
+✅ Production secret validation implemented
+✅ Real-money kill switch implemented
+✅ Fail-closed ACH behavior implemented
+
+Outstanding:
+
+⬜ Production secrets deployment
+⬜ Stripe webhook configured in production
+⬜ End-to-end ACH simulation test
+⬜ Internal live ACH test ($1–$5)
+⬜ Production monitoring validation
+⬜ Launch limits and risk controls
+
+========================================
+APP STORE READINESS QUESTIONS
+========================================
+
+Please inspect the codebase and tell me:
+
+1. Is the iOS app technically ready for App Store submission?
+
+2. What blockers remain before App Store review?
+
+Examples:
+- Missing privacy disclosures
+- Missing terms/privacy links
+- Missing account deletion flow
+- Missing Apple Sign-In requirements
+- Missing screenshots/assets
+- Missing App Tracking Transparency
+- Missing permissions descriptions
+- Missing production API configuration
+- Missing legal/compliance pages
+
+3. Does the app comply with Apple's requirements for:
+- Financial apps
+- Money movement
+- User accounts
+- ACH authorization
+- Data collection disclosures
+
+4. What App Store rejection risks do you see?
+
+========================================
+LIVE LAUNCH READINESS QUESTIONS
+========================================
+
+Please inspect and score:
+
+Backend readiness:
+0-100
+
+Mobile app readiness:
+0-100
+
+Stripe ACH readiness:
+0-100
+
+Operational readiness:
+0-100
+
+Overall launch readiness:
+0-100
+
+========================================
+RELEASE PLAN
+========================================
+
+Based on the current codebase, estimate:
+
+A) Days until App Store submission
+
+B) Days until App Store approval
+
+C) Days until ACH soft launch
+
+D) Days until public launch
+
+========================================
+OUTPUT FORMAT
+========================================
+
+Please provide:
+
+1. Current readiness score
+2. Critical blockers
+3. Important but non-blocking issues
+4. App Store blockers
+5. ACH launch blockers
+6. Exact files that still need work
+7. Recommended launch sequence
+8. Estimated timeline
+9. "Would you submit today?" (Yes/No)
+10. "Would you enable real ACH transfers today?" (Yes/No)
+
+Be brutally honest and base your answer on the actual codebase, not assumptions.
