@@ -26,12 +26,15 @@ export function isStripeAchEnabled(): boolean {
 }
 
 /**
- * Lazily load the Stripe SDK. Returns null when the flag is off, the secret
- * is unset, or the dynamic import fails (logged once, never re-thrown so an
- * SDK install issue can't crash the server boot).
+ * Build a Stripe client from `STRIPE_SECRET_KEY` alone. Internal — used by
+ * both the flag-gated `getStripe()` and the key-only diagnostics path. The
+ * resulting client is cached so we never construct more than one SDK
+ * instance regardless of which entry point first loads it. Returns null
+ * when the secret is unset or the dynamic import fails (logged once, never
+ * re-thrown so an SDK install issue can't crash the server boot).
  */
-export async function getStripe(): Promise<StripeInstance | null> {
-  if (!isStripeAchEnabled()) return null;
+async function loadStripeClient(): Promise<StripeInstance | null> {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
   if (cachedClient) return cachedClient;
   if (cachedClientPromise) return cachedClientPromise;
 
@@ -64,6 +67,74 @@ export async function getStripe(): Promise<StripeInstance | null> {
   })();
 
   return cachedClientPromise;
+}
+
+/**
+ * Lazily load the Stripe SDK for ACH money-movement. Returns null when the
+ * flag is off or the secret is unset — keeps the SDK out of the import graph
+ * in the default (flag OFF) production posture.
+ */
+export async function getStripe(): Promise<StripeInstance | null> {
+  if (!isStripeAchEnabled()) return null;
+  return loadStripeClient();
+}
+
+export interface StripeCapabilityReport {
+  accountId: string;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+  capabilities: Record<string, string>;
+  requirements: {
+    currentlyDue: string[];
+    eventuallyDue: string[];
+    pastDue: string[];
+    pendingVerification: string[];
+    disabledReason: string | null;
+  };
+  futureRequirements: {
+    currentlyDue: string[];
+    eventuallyDue: string[];
+  };
+}
+
+/**
+ * Read-only Stripe account capability snapshot for the admin diagnostics
+ * page. Intentionally NOT gated by `ENABLE_STRIPE_ACH` — the whole point is
+ * to inspect which capabilities are active BEFORE flipping the flag. Only
+ * requires `STRIPE_SECRET_KEY`. Returns null when the key is unset.
+ *
+ * Returns ONLY booleans/enums/string arrays already public in the Stripe
+ * dashboard — no secrets, no tokens, no PII.
+ */
+export async function retrieveAccountDiagnostics(): Promise<StripeCapabilityReport | null> {
+  const stripe = await loadStripeClient();
+  if (!stripe) return null;
+
+  // No-arg retrieve hits GET /v1/account (the account behind the secret key).
+  // The typed overloads require an id, so call through `any`.
+  const acct: any = await (stripe.accounts as any).retrieve();
+  const req = acct.requirements ?? {};
+  const fut = acct.future_requirements ?? {};
+
+  return {
+    accountId: acct.id,
+    chargesEnabled: Boolean(acct.charges_enabled),
+    payoutsEnabled: Boolean(acct.payouts_enabled),
+    detailsSubmitted: Boolean(acct.details_submitted),
+    capabilities: (acct.capabilities ?? {}) as Record<string, string>,
+    requirements: {
+      currentlyDue: req.currently_due ?? [],
+      eventuallyDue: req.eventually_due ?? [],
+      pastDue: req.past_due ?? [],
+      pendingVerification: req.pending_verification ?? [],
+      disabledReason: req.disabled_reason ?? null,
+    },
+    futureRequirements: {
+      currentlyDue: fut.currently_due ?? [],
+      eventuallyDue: fut.eventually_due ?? [],
+    },
+  };
 }
 
 export interface CreateFcSessionResult {

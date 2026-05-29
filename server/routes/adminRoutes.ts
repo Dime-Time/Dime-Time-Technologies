@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { requireAdmin } from "../lib/admin";
+import { retrieveAccountDiagnostics } from "../services/stripeService";
 
 /**
  * Internal read-only operator surface. Gated by `ADMIN_USER_IDS` env (Replit Secret).
@@ -51,6 +52,29 @@ export function registerAdminRoutes(app: Express): void {
     } catch (error) {
       console.error("[admin] /api/admin/webhooks/stripe error", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Read-only Stripe account capability snapshot. NOT gated by
+  // ENABLE_STRIPE_ACH — the purpose is to see what Stripe has approved
+  // BEFORE flipping the flag. Returns 503 with a clear message when
+  // STRIPE_SECRET_KEY is unset. Only returns data already visible in the
+  // Stripe dashboard (booleans / enums / requirement field names).
+  app.get("/api/admin/stripe/diagnostics", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const report = await retrieveAccountDiagnostics();
+      if (!report) {
+        return res.status(503).json({
+          message: "STRIPE_SECRET_KEY is not configured in this environment. Add it as a Replit Secret and restart the workflow.",
+        });
+      }
+      res.json(report);
+    } catch (error: any) {
+      console.error("[admin] /api/admin/stripe/diagnostics error", error?.message ?? error);
+      res.status(502).json({
+        message: "Stripe API call failed.",
+        detail: typeof error?.message === "string" ? error.message : "Unknown error",
+      });
     }
   });
 }
