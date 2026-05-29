@@ -306,3 +306,9 @@ id = "Gh62etL_PAPuuxxqnBlKN"
 uri = "file://screenshots/04-signup.jpg"
 type = "image"
 title = "4. Account Signup (dime-time.com/signup)"
+
+[[outputs]]
+id = "ZZABjRyOADo1LuMG6DHWb"
+uri = "file://client/src/assets/dime-time-app-icon.png"
+type = "image"
+title = "Dime Time — Official App Icon / Logo"
