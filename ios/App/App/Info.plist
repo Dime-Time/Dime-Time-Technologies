@@ -19,7 +19,7 @@
         <key>CFBundleShortVersionString</key>
         <string>1.0.3</string>
         <key>CFBundleVersion</key>
-        <string>202</string>
+        <string>203</string>
         <key>LSRequiresIPhoneOS</key>
         <true/>
         <key>UILaunchStoryboardName</key>
@@ -46,22 +46,13 @@
         <key>UIViewControllerBasedStatusBarAppearance</key>
         <true/>
         
-        <!-- Privacy Permission Descriptions -->
-        <key>NSCameraUsageDescription</key>
-        <string>Dime Time uses the camera to scan QR codes for quick access and authentication features.</string>
-        
-        <key>NSPhotoLibraryUsageDescription</key>
-        <string>Dime Time accesses your photo library to upload receipts, statements, and other financial documents for expense tracking.</string>
-        
-        <key>NSLocationWhenInUseUsageDescription</key>
-        <string>Dime Time uses location to find nearby ATMs and bank branches, and to enhance transaction categorization.</string>
-        
-        <key>NSFaceIDUsageDescription</key>
-        <string>Dime Time uses Face ID for secure authentication and to protect your financial data.</string>
-        
-        <key>NSContactsUsageDescription</key>
-        <string>Dime Time accesses contacts to help you send money to friends and family more easily.</string>
-        
+        <!-- No permission usage descriptions are declared on purpose: the app
+             ships no Camera, Photo Library, Location, Contacts, or Face ID
+             native features (biometric unlock is not yet implemented). Apple
+             rejects usage strings for capabilities the app does not use. Add
+             the matching NS*UsageDescription key back here only when one of
+             those features actually ships. -->
+
         <!-- App Transport Security - Secure TLS 1.2+ only -->
         <key>NSAppTransportSecurity</key>
         <dict>

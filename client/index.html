@@ -27,13 +27,28 @@
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#918EF4" />
     
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DSY7SSH1VG"></script>
+    <!-- Google Analytics — WEB ONLY.
+         Disabled inside the native Capacitor app: Apple treats analytics
+         loaded inside the app's WebView as tracking. Capacitor injects
+         window.Capacitor at document-start on native (before this inline
+         script runs), so the guard skips GA there. On the public website
+         window.Capacitor is undefined at this point, so GA loads normally. -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-DSY7SSH1VG');
+      (function () {
+        var isNative = !!(window.Capacitor
+          && typeof window.Capacitor.isNativePlatform === 'function'
+          && window.Capacitor.isNativePlatform());
+        if (isNative) return;
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){ dataLayer.push(arguments); }
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', 'G-DSY7SSH1VG');
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-DSY7SSH1VG';
+        document.head.appendChild(s);
+      })();
     </script>
     
     <!-- Structured Data (JSON-LD) for SEO -->

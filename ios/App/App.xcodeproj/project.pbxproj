@@ -14,6 +14,7 @@
                 504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
                 504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
                 50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+                DA1E713E0000000000000002 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DA1E713E0000000000000001 /* PrivacyInfo.xcprivacy */; };
                 A084ECDBA7D38E1E42DFC39D /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */; };
 /* End PBXBuildFile section */
 
@@ -26,6 +27,7 @@
                 504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
                 504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
                 504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+                DA1E713E0000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
                 50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
                 AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
                 AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
@@ -79,6 +81,7 @@
                                 504EC30E1FED79650016851F /* Assets.xcassets */,
                                 504EC3101FED79650016851F /* LaunchScreen.storyboard */,
                                 504EC3131FED79650016851F /* Info.plist */,
+                                DA1E713E0000000000000001 /* PrivacyInfo.xcprivacy */,
                                 2FAD9762203C412B000D30F8 /* config.xml */,
                                 50B271D01FEDC1A000F3C39B /* public */,
                         );
@@ -102,7 +105,6 @@
                         buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
                         buildPhases = (
                                 6634F4EFEBD30273BCE97C65 /* [CP] Check Pods Manifest.lock */,
-                                A1B2C3D4E5F6789012345678 /* Force App Version */,
                                 504EC3001FED79650016851F /* Sources */,
                                 504EC3011FED79650016851F /* Frameworks */,
                                 504EC3021FED79650016851F /* Resources */,
@@ -163,6 +165,7 @@
                                 504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
                                 50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
                                 504EC30D1FED79650016851F /* Main.storyboard in Resources */,
+                                DA1E713E0000000000000002 /* PrivacyInfo.xcprivacy in Resources */,
                                 2FAD9763203C412B000D30F8 /* config.xml in Resources */,
                         );
                         runOnlyForDeploymentPostprocessing = 0;
@@ -187,21 +190,6 @@
                         shellPath = /bin/sh;
                         shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
                         showEnvVarsInLog = 0;
-                };
-                A1B2C3D4E5F6789012345678 /* Force App Version */ = {
-                        isa = PBXShellScriptBuildPhase;
-                        buildActionMask = 2147483647;
-                        files = (
-                        );
-                        inputPaths = (
-                        );
-                        name = "Force App Version";
-                        outputPaths = (
-                        );
-                        runOnlyForDeploymentPostprocessing = 0;
-                        shellPath = /bin/sh;
-                        shellScript = "echo \"Forcing app version to 1.0.1 build 35\"\necho \"Updating Info.plist directly...\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString 1.0.1\" \"$BUILT_PRODUCTS_DIR/$INFOPLIST_PATH\" 2>/dev/null || echo \"PlistBuddy version update failed\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion 35\" \"$BUILT_PRODUCTS_DIR/$INFOPLIST_PATH\" 2>/dev/null || echo \"PlistBuddy build update failed\"\necho \"Direct Info.plist update complete\"\nexit 0";
-                        showEnvVarsInLog = 1;
                 };
                 9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */ = {
                         isa = PBXShellScriptBuildPhase;
@@ -362,7 +350,7 @@
                         buildSettings = {
                                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                                 CODE_SIGN_STYLE = Automatic;
-                                CURRENT_PROJECT_VERSION = 202;
+                                CURRENT_PROJECT_VERSION = 203;
                                 DEVELOPMENT_TEAM = 8WZHH537SU;
                                 INFOPLIST_FILE = App/Info.plist;
                                 IPHONEOS_DEPLOYMENT_TARGET = 14.0;
@@ -383,7 +371,7 @@
                         buildSettings = {
                                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                                 CODE_SIGN_STYLE = Automatic;
-                                CURRENT_PROJECT_VERSION = 202;
+                                CURRENT_PROJECT_VERSION = 203;
                                 DEVELOPMENT_TEAM = 8WZHH537SU;
                                 INFOPLIST_FILE = App/Info.plist;
                                 IPHONEOS_DEPLOYMENT_TARGET = 14.0;

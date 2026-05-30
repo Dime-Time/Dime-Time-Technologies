@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 // Define the gtag function globally
 declare global {
   interface Window {
@@ -23,6 +25,9 @@ let gaInitialized = false;
 
 // Initialize Google Analytics with consent mode
 export const initGA = () => {
+  // Never load analytics inside the native Capacitor app — Apple treats
+  // in-app analytics as user tracking. GA runs only on the public website.
+  if (Capacitor.isNativePlatform()) return;
   if (gaInitialized || typeof window === 'undefined' || !isAnalyticsEnabled()) return;
   
   // Set default consent state (denied until user consents)

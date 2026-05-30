@@ -4,8 +4,279 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
+// shared/sentryRedact.ts
+var SECRET_KEY_RX = /token|password|secret|api[_-]?key|authorization|cookie|plaid[_-]?access[_-]?token|access[_-]?token|refresh[_-]?token/i;
+var SECRET_QUERY_PARAM_RX = /([?&])(token|password|secret|access[_-]?token|refresh[_-]?token|api[_-]?key)=([^&\s"'#]+)/gi;
+var SENSITIVE_HEADER_RX = /^(authorization|cookie|set-cookie)$/i;
+var SENSITIVE_PATH_RX = /\/(verify-email|reset-password)/i;
+function stripUrlQueryAndFragment(url) {
+  if (url == null) return url;
+  if (typeof url !== "string") return url;
+  const qIdx = url.indexOf("?");
+  const hIdx = url.indexOf("#");
+  let end = url.length;
+  if (qIdx >= 0) end = Math.min(end, qIdx);
+  if (hIdx >= 0) end = Math.min(end, hIdx);
+  return url.slice(0, end);
+}
+function scrubSecretQueryParams(s) {
+  if (typeof s !== "string") return s;
+  return s.replace(SECRET_QUERY_PARAM_RX, "$1$2=[Filtered]");
+}
+function looksLikeUrl(s) {
+  return /^https?:\/\//i.test(s);
+}
+function redactObjectDeep(input, depth = 0) {
+  if (input == null || depth > 8) return input;
+  if (Array.isArray(input)) {
+    return input.map((v) => redactObjectDeep(v, depth + 1));
+  }
+  if (typeof input === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(input)) {
+      if (SECRET_KEY_RX.test(k)) {
+        out[k] = "[Filtered]";
+        continue;
+      }
+      if (typeof v === "string") {
+        out[k] = looksLikeUrl(v) ? stripUrlQueryAndFragment(scrubSecretQueryParams(v)) : scrubSecretQueryParams(v);
+      } else {
+        out[k] = redactObjectDeep(v, depth + 1);
+      }
+    }
+    return out;
+  }
+  if (typeof input === "string") {
+    return looksLikeUrl(input) ? stripUrlQueryAndFragment(scrubSecretQueryParams(input)) : scrubSecretQueryParams(input);
+  }
+  return input;
+}
+function redactSentryEvent(event) {
+  if (!event) return event;
+  if (event.request) {
+    if (typeof event.request.url === "string") {
+      event.request.url = stripUrlQueryAndFragment(event.request.url);
+    }
+    if ("query_string" in event.request) {
+      event.request.query_string = "[Filtered]";
+    }
+    if (event.request.headers && typeof event.request.headers === "object") {
+      for (const k of Object.keys(event.request.headers)) {
+        if (SENSITIVE_HEADER_RX.test(k)) {
+          event.request.headers[k] = "[Filtered]";
+        }
+      }
+    }
+    if (event.request.data !== void 0) {
+      event.request.data = redactObjectDeep(event.request.data);
+    }
+    if (event.request.cookies !== void 0) {
+      event.request.cookies = "[Filtered]";
+    }
+  }
+  if (Array.isArray(event.breadcrumbs)) {
+    for (const b of event.breadcrumbs) {
+      if (!b || typeof b !== "object") continue;
+      if (b.data && typeof b.data === "object") {
+        if (typeof b.data.url === "string") {
+          b.data.url = stripUrlQueryAndFragment(b.data.url);
+        }
+        if (typeof b.data.to === "string") {
+          b.data.to = stripUrlQueryAndFragment(b.data.to);
+        }
+        if (typeof b.data.from === "string") {
+          b.data.from = stripUrlQueryAndFragment(b.data.from);
+        }
+        b.data = redactObjectDeep(b.data);
+      }
+      if (typeof b.message === "string") {
+        b.message = scrubSecretQueryParams(b.message);
+      }
+    }
+  }
+  if (event.extra) event.extra = redactObjectDeep(event.extra);
+  if (event.contexts) event.contexts = redactObjectDeep(event.contexts);
+  if (event.tags) event.tags = redactObjectDeep(event.tags);
+  if (event.user && typeof event.user === "object") {
+    if ("ip_address" in event.user) {
+      if (typeof event.user.ip_address === "string") {
+        event.user.ip_address = scrubSecretQueryParams(event.user.ip_address);
+      }
+    }
+  }
+  if (typeof event.message === "string") {
+    event.message = scrubSecretQueryParams(event.message);
+  }
+  if (event.exception?.values && Array.isArray(event.exception.values)) {
+    for (const ex of event.exception.values) {
+      if (typeof ex?.value === "string") {
+        ex.value = scrubSecretQueryParams(ex.value);
+      }
+    }
+  }
+  const url = typeof event.request?.url === "string" ? event.request.url : void 0;
+  if (url && SENSITIVE_PATH_RX.test(url)) {
+    if (url.includes("?")) {
+      event.request.url = stripUrlQueryAndFragment(url);
+    }
+  }
+  return event;
+}
+
+// server/lib/sentry.ts
+var sentryModule = null;
+var initialized = false;
+async function initSentry() {
+  if (initialized) return;
+  const dsn = process.env.SENTRY_DSN;
+  if (!dsn) return;
+  const Sentry = await import("@sentry/node");
+  Sentry.init({
+    dsn,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    release: process.env.SENTRY_RELEASE || process.env.npm_package_version || void 0,
+    tracesSampleRate: 0,
+    profilesSampleRate: 0,
+    sendDefaultPii: false,
+    beforeSend(event) {
+      return redactSentryEvent(event);
+    },
+    beforeBreadcrumb(breadcrumb) {
+      if (!breadcrumb) return breadcrumb;
+      if (breadcrumb.data && typeof breadcrumb.data === "object") {
+        for (const k of ["url", "to", "from"]) {
+          const v = breadcrumb.data[k];
+          if (typeof v === "string") {
+            breadcrumb.data[k] = stripIfUrl(v);
+          }
+        }
+      }
+      return breadcrumb;
+    }
+  });
+  sentryModule = Sentry;
+  initialized = true;
+}
+function stripIfUrl(s) {
+  if (!/^https?:\/\//i.test(s)) return s;
+  const qIdx = s.indexOf("?");
+  const hIdx = s.indexOf("#");
+  let end = s.length;
+  if (qIdx >= 0) end = Math.min(end, qIdx);
+  if (hIdx >= 0) end = Math.min(end, hIdx);
+  return s.slice(0, end);
+}
+function setCorrelationTag(correlationId) {
+  if (!initialized || !sentryModule || !correlationId) return;
+  try {
+    sentryModule.getIsolationScope().setTag("correlationId", correlationId);
+  } catch {
+  }
+}
+function setupExpressErrorHandler(app2) {
+  if (!initialized || !sentryModule) return;
+  try {
+    sentryModule.setupExpressErrorHandler(app2);
+  } catch {
+  }
+}
+
+// shared/flags.ts
+var FLAG_DEFINITIONS = {
+  ENABLE_STRIPE_ACH: {
+    defaultValue: false,
+    description: "Gate Stripe Financial Connections + ACH debit code paths. OFF means the Stripe SDK is not initialized and Stripe routes are not mounted."
+  },
+  ENABLE_REAL_TRANSFERS: {
+    defaultValue: false,
+    description: "Allow money-movement endpoints to actually move money. OFF keeps the app in sandbox/no-op mode \u2014 transfers are recorded but never settled."
+  },
+  ENABLE_CRYPTO: {
+    defaultValue: true,
+    description: "Enable the crypto / Bitcoin round-up surfaces. ON preserves today's behavior. Flip OFF to hide all crypto UI without removing code."
+  },
+  ENABLE_BETA_BANNER: {
+    defaultValue: false,
+    description: "Render an in-app beta banner reminding users that Dime Time is in TestFlight. Flip ON during the beta window and OFF for the public launch build."
+  }
+};
+var FLAG_NAMES = Object.keys(FLAG_DEFINITIONS);
+function parseBool(raw) {
+  if (raw === void 0 || raw === null) return null;
+  const v = raw.trim().toLowerCase();
+  if (v === "") return null;
+  if (v === "1" || v === "true" || v === "yes" || v === "on") return true;
+  if (v === "0" || v === "false" || v === "no" || v === "off") return false;
+  return null;
+}
+function resolveServerFlags(env) {
+  const out = {};
+  for (const name of FLAG_NAMES) {
+    const parsed = parseBool(env[name]);
+    out[name] = parsed === null ? FLAG_DEFINITIONS[name].defaultValue : parsed;
+  }
+  return out;
+}
+var DEFAULT_FLAGS = resolveServerFlags({});
+
+// server/lib/flags.ts
+var cached = null;
+function getFlags() {
+  if (cached) return cached;
+  cached = resolveServerFlags(process.env);
+  return cached;
+}
+function isFlagEnabled(name) {
+  return getFlags()[name];
+}
+
+// server/lib/validateEnv.ts
+function validateProductionSecrets() {
+  const isProd = process.env.NODE_ENV === "production";
+  if (!isProd) {
+    console.log(
+      JSON.stringify({
+        service: "EnvValidation",
+        event: "skipped_non_production",
+        nodeEnv: process.env.NODE_ENV ?? null
+      })
+    );
+    return;
+  }
+  const missing = [];
+  if (!process.env.PLAID_TOKEN_ENCRYPTION_KEY) {
+    missing.push("PLAID_TOKEN_ENCRYPTION_KEY");
+  }
+  const stripeAchEnabled = isFlagEnabled("ENABLE_STRIPE_ACH");
+  if (stripeAchEnabled) {
+    for (const key of [
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "VITE_STRIPE_PUBLISHABLE_KEY"
+    ]) {
+      if (!process.env[key]) missing.push(key);
+    }
+  }
+  if (missing.length > 0) {
+    for (const key of missing) {
+      console.error(`FATAL: ${key} missing`);
+    }
+    throw new Error(
+      `Production startup aborted \u2014 missing required secrets: ${missing.join(", ")}`
+    );
+  }
+  console.log(
+    JSON.stringify({
+      service: "EnvValidation",
+      event: "ok",
+      stripeAchEnabled,
+      realTransfersEnabled: isFlagEnabled("ENABLE_REAL_TRANSFERS")
+    })
+  );
+}
+
 // server/index.ts
-import express2 from "express";
+import express3 from "express";
 import cors from "cors";
 
 // server/routes.ts
@@ -14,6 +285,7 @@ import { createServer } from "http";
 // shared/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
+  achAuthorizations: () => achAuthorizations,
   bankAccounts: () => bankAccounts,
   businessAccount: () => businessAccount,
   contactSubmissions: () => contactSubmissions,
@@ -24,7 +296,9 @@ __export(schema_exports, {
   dttRewards: () => dttRewards,
   dttStaking: () => dttStaking,
   dttTokenInfo: () => dttTokenInfo,
+  emailVerificationTokens: () => emailVerificationTokens,
   idempotencyKeys: () => idempotencyKeys,
+  insertAchAuthorizationSchema: () => insertAchAuthorizationSchema,
   insertBankAccountSchema: () => insertBankAccountSchema,
   insertBusinessAccountSchema: () => insertBusinessAccountSchema,
   insertContactSubmissionSchema: () => insertContactSubmissionSchema,
@@ -35,13 +309,16 @@ __export(schema_exports, {
   insertDttRewardsSchema: () => insertDttRewardsSchema,
   insertDttStakingSchema: () => insertDttStakingSchema,
   insertDttTokenInfoSchema: () => insertDttTokenInfoSchema,
+  insertEmailVerificationTokenSchema: () => insertEmailVerificationTokenSchema,
   insertIdempotencyKeySchema: () => insertIdempotencyKeySchema,
   insertInterestEarningsSchema: () => insertInterestEarningsSchema,
   insertNotificationSchema: () => insertNotificationSchema,
   insertNotificationSettingsSchema: () => insertNotificationSettingsSchema,
+  insertPasswordResetTokenSchema: () => insertPasswordResetTokenSchema,
   insertPaymentSchema: () => insertPaymentSchema,
   insertRoundUpCollectionSchema: () => insertRoundUpCollectionSchema,
   insertRoundUpSettingsSchema: () => insertRoundUpSettingsSchema,
+  insertStripeAccountSchema: () => insertStripeAccountSchema,
   insertSweepAccountSchema: () => insertSweepAccountSchema,
   insertSweepDepositSchema: () => insertSweepDepositSchema,
   insertTransactionSchema: () => insertTransactionSchema,
@@ -53,10 +330,13 @@ __export(schema_exports, {
   interestEarnings: () => interestEarnings,
   notificationSettings: () => notificationSettings,
   notifications: () => notifications,
+  passwordResetTokens: () => passwordResetTokens,
   payments: () => payments,
   roundUpCollections: () => roundUpCollections,
   roundUpSettings: () => roundUpSettings,
   sessions: () => sessions,
+  stripeAccounts: () => stripeAccounts,
+  stripeWebhookEvents: () => stripeWebhookEvents,
   sweepAccounts: () => sweepAccounts,
   sweepDeposits: () => sweepDeposits,
   transactions: () => transactions,
@@ -67,7 +347,7 @@ __export(schema_exports, {
   weeklyDistributions: () => weeklyDistributions
 });
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 var sessions = pgTable(
   "sessions",
@@ -86,6 +366,7 @@ var users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  emailVerifiedAt: timestamp("email_verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });
@@ -260,14 +541,20 @@ var interestEarnings = pgTable("interest_earnings", {
 var transfers = pgTable("transfers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
+  // 'roundup_collection' | 'debt_payment' | 'stripe_ach_debit'
   type: text("type").notNull(),
-  // 'roundup_collection' | 'debt_payment'
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("created"),
-  // created | authorized | pending | posted | settled | failed | returned | cancelled
+  // created | authorized | pending | processing | posted | settled | failed | returned | cancelled | requires_action
+  // Plaid / Mercury provider IDs
   plaidTransferId: text("plaid_transfer_id"),
   plaidAuthorizationId: text("plaid_authorization_id"),
   mercuryTransferId: text("mercury_transfer_id"),
+  // Stripe ACH provider IDs (provider-agnostic ledger — Stripe writes here too)
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeChargeId: text("stripe_charge_id"),
+  provider: text("provider"),
+  // 'plaid' | 'mercury' | 'stripe' — set when a provider is selected
   debtId: varchar("debt_id"),
   correlationId: varchar("correlation_id").notNull(),
   idempotencyKey: text("idempotency_key"),
@@ -278,20 +565,73 @@ var transfers = pgTable("transfers", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
+var stripeAccounts = pgTable("stripe_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  // Stripe Customer ID (created lazily on first Financial Connections session)
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  // Stripe Financial Connections account id (fca_...)
+  stripeFcAccountId: text("stripe_fc_account_id").notNull().unique(),
+  // Stripe PaymentMethod id (ba_... / pm_...) created from the FC account.
+  // Encrypted at rest via encryptionService (same AES-256-GCM key as Plaid tokens).
+  stripePaymentMethodEnc: text("stripe_payment_method_enc"),
+  institutionName: text("institution_name"),
+  last4: text("last4"),
+  status: text("status").notNull().default("linked"),
+  // linked | unlinked | failed
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+var insertStripeAccountSchema = createInsertSchema(stripeAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+var stripeWebhookEvents = pgTable("stripe_webhook_events", {
+  eventId: text("event_id").primaryKey(),
+  type: text("type").notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull()
+});
+var achAuthorizations = pgTable("ach_authorizations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  version: text("version").notNull(),
+  text: text("text").notNull(),
+  ipAddress: text("ip_address").notNull(),
+  userAgent: text("user_agent").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userIdx: index("ach_auth_user_idx").on(table.userId)
+}));
+var insertAchAuthorizationSchema = createInsertSchema(achAuthorizations).omit({
+  id: true,
+  createdAt: true
+});
 var insertTransferSchema = createInsertSchema(transfers).omit({
   id: true,
   createdAt: true,
   updatedAt: true
 });
-var idempotencyKeys = pgTable("idempotency_keys", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  idempotencyKey: varchar("idempotency_key").notNull(),
-  userId: varchar("user_id").notNull(),
-  endpoint: varchar("endpoint").notNull(),
-  responseStatus: integer("response_status").notNull(),
-  responseBody: text("response_body").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
+var idempotencyKeys = pgTable(
+  "idempotency_keys",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    idempotencyKey: varchar("idempotency_key").notNull(),
+    userId: varchar("user_id").notNull(),
+    endpoint: varchar("endpoint").notNull(),
+    responseStatus: integer("response_status").notNull(),
+    responseBody: text("response_body").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => [
+    uniqueIndex("idempotency_keys_key_user_endpoint_uniq").on(
+      table.idempotencyKey,
+      table.userId,
+      table.endpoint
+    )
+  ]
+);
 var insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -527,16 +867,55 @@ var contactSubmissions = pgTable("contact_submissions", {
   message: text("message").notNull(),
   status: text("status").default("new").notNull(),
   // 'new', 'read', 'responded'
+  source: text("source").default("marketing").notNull(),
+  // 'marketing' | 'in_app'
+  userId: varchar("user_id"),
+  // set server-side for in-app submissions
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 var insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit({
   id: true,
   createdAt: true,
-  status: true
+  status: true,
+  source: true,
+  userId: true
 });
 var insertIdempotencyKeySchema = createInsertSchema(idempotencyKeys).omit({
   id: true,
   createdAt: true
+});
+var passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => [
+  index("idx_password_reset_user").on(table.userId),
+  index("idx_password_reset_expires").on(table.expiresAt)
+]);
+var insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true
+});
+var emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  email: varchar("email").notNull(),
+  tokenHash: varchar("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => [
+  index("idx_email_verification_user").on(table.userId),
+  index("idx_email_verification_expires").on(table.expiresAt)
+]);
+var insertEmailVerificationTokenSchema = createInsertSchema(emailVerificationTokens).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true
 });
 
 // server/services/encryptionService.ts
@@ -914,7 +1293,50 @@ var DatabaseStorage = class {
   }
   async createIdempotencyKey(data) {
     await db.execute(
-      sql2`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body) VALUES (gen_random_uuid(), ${data.idempotencyKey}, ${data.userId}, ${data.endpoint}, ${data.responseStatus}, ${data.responseBody})`
+      sql2`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body)
+          VALUES (gen_random_uuid(), ${data.idempotencyKey}, ${data.userId}, ${data.endpoint}, ${data.responseStatus}, ${data.responseBody})
+          ON CONFLICT (idempotency_key, user_id, endpoint) DO NOTHING`
+    );
+  }
+  /**
+   * Atomic claim — single INSERT...ON CONFLICT DO NOTHING RETURNING
+   * decides the race. Only one concurrent caller gets `claimed: true`.
+   */
+  async reserveIdempotencyKey(key, userId, endpoint) {
+    const inserted = await db.execute(
+      sql2`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body)
+          VALUES (gen_random_uuid(), ${key}, ${userId}, ${endpoint}, 0, '')
+          ON CONFLICT (idempotency_key, user_id, endpoint) DO NOTHING
+          RETURNING id`
+    );
+    const insertedRows = inserted?.rows ?? inserted ?? [];
+    if (insertedRows.length > 0) return { claimed: true };
+    const existing = await db.execute(
+      sql2`SELECT response_status, response_body FROM idempotency_keys
+          WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}
+          LIMIT 1`
+    );
+    const rows = existing?.rows ?? existing ?? [];
+    const row = rows[0];
+    if (!row) return { claimed: true };
+    const status = Number(row.response_status ?? row.responseStatus ?? 0);
+    if (status === 0) return { claimed: false, inFlight: true };
+    return {
+      claimed: false,
+      cached: { status, body: String(row.response_body ?? row.responseBody ?? "") }
+    };
+  }
+  async finalizeIdempotencyKey(key, userId, endpoint, status, body) {
+    await db.execute(
+      sql2`UPDATE idempotency_keys SET response_status = ${status}, response_body = ${body}
+          WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}`
+    );
+  }
+  async releaseIdempotencyKey(key, userId, endpoint) {
+    await db.execute(
+      sql2`DELETE FROM idempotency_keys
+          WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}
+          AND response_status = 0`
     );
   }
   // Transfer ledger methods
@@ -942,6 +1364,128 @@ var DatabaseStorage = class {
   }
   async getTransfersByUserId(userId) {
     return await db.select().from(transfers).where(eq(transfers.userId, userId)).orderBy(desc(transfers.createdAt));
+  }
+  async getRecentTransfers(opts) {
+    const limit = Math.max(1, Math.min(500, opts.limit));
+    const conds = [];
+    if (opts.provider) conds.push(eq(transfers.provider, opts.provider));
+    if (opts.status) conds.push(eq(transfers.status, opts.status));
+    const base = db.select().from(transfers);
+    const filtered = conds.length > 0 ? base.where(and(...conds)) : base;
+    return await filtered.orderBy(desc(transfers.createdAt)).limit(limit);
+  }
+  async getRecentStripeWebhookEvents(limit) {
+    const capped = Math.max(1, Math.min(500, limit));
+    return await db.select({ eventId: stripeWebhookEvents.eventId, type: stripeWebhookEvents.type, receivedAt: stripeWebhookEvents.receivedAt }).from(stripeWebhookEvents).orderBy(desc(stripeWebhookEvents.receivedAt)).limit(capped);
+  }
+  // Password reset token methods
+  async createPasswordResetToken(data) {
+    const [result] = await db.insert(passwordResetTokens).values(data).returning();
+    return result;
+  }
+  /**
+   * Atomically consume a password reset token. Returns the row only if it
+   * was unused AND not expired AT THE MOMENT of the update — eliminates the
+   * SELECT-then-UPDATE race where two callers could both pass the
+   * "not used yet" check. The conditional UPDATE ... RETURNING is the
+   * single source of truth.
+   */
+  async consumePasswordResetToken(tokenHash) {
+    const now = /* @__PURE__ */ new Date();
+    const [result] = await db.update(passwordResetTokens).set({ usedAt: now }).where(and(
+      eq(passwordResetTokens.tokenHash, tokenHash),
+      sql2`${passwordResetTokens.usedAt} IS NULL`,
+      sql2`${passwordResetTokens.expiresAt} > ${now}`
+    )).returning();
+    return result;
+  }
+  async invalidatePasswordResetTokensForUser(userId) {
+    await db.update(passwordResetTokens).set({ usedAt: /* @__PURE__ */ new Date() }).where(and(eq(passwordResetTokens.userId, userId), sql2`${passwordResetTokens.usedAt} IS NULL`));
+  }
+  /**
+   * Wipe every active session for a user after a sensitive event
+   * (password reset). Covers both:
+   *   - express-session rows in `sessions` (sid PK, sess jsonb)
+   *   - app-level user_sessions rows (used by native auth tokens)
+   */
+  async invalidateAllUserSessions(userId) {
+    await db.execute(sql2`DELETE FROM sessions WHERE sess->>'userId' = ${userId}`);
+    await db.delete(userSessions).where(eq(userSessions.userId, userId));
+  }
+  // Email verification token methods
+  async createEmailVerificationToken(data) {
+    const [result] = await db.insert(emailVerificationTokens).values(data).returning();
+    return result;
+  }
+  /**
+   * Atomically consume an email verification token. Same single-update
+   * pattern as password reset: returns the row only if it was unused AND
+   * not expired AT THE MOMENT of the update.
+   */
+  async consumeEmailVerificationToken(tokenHash) {
+    const now = /* @__PURE__ */ new Date();
+    const [result] = await db.update(emailVerificationTokens).set({ usedAt: now }).where(and(
+      eq(emailVerificationTokens.tokenHash, tokenHash),
+      sql2`${emailVerificationTokens.usedAt} IS NULL`,
+      sql2`${emailVerificationTokens.expiresAt} > ${now}`
+    )).returning();
+    return result;
+  }
+  async invalidateEmailVerificationTokensForUser(userId) {
+    await db.update(emailVerificationTokens).set({ usedAt: /* @__PURE__ */ new Date() }).where(and(
+      eq(emailVerificationTokens.userId, userId),
+      sql2`${emailVerificationTokens.usedAt} IS NULL`
+    ));
+  }
+  async markUserEmailVerified(userId, when = /* @__PURE__ */ new Date()) {
+    await db.update(users).set({ emailVerifiedAt: when }).where(eq(users.id, userId));
+  }
+  async getTransferByStripePaymentIntentId(paymentIntentId) {
+    const [result] = await db.select().from(transfers).where(eq(transfers.stripePaymentIntentId, paymentIntentId));
+    return result;
+  }
+  async getTransferByStripeChargeId(chargeId) {
+    const [result] = await db.select().from(transfers).where(eq(transfers.stripeChargeId, chargeId));
+    return result;
+  }
+  // ----- Stripe ACH (BETA, flagged) -----
+  async createStripeAccount(data) {
+    const { paymentMethodIdPlaintext, ...rest } = data;
+    const encrypted = encryptToken(paymentMethodIdPlaintext);
+    const [result] = await db.insert(stripeAccounts).values({
+      ...rest,
+      stripePaymentMethodEnc: encrypted
+    }).returning();
+    return result;
+  }
+  async getStripeAccountById(id) {
+    const [result] = await db.select().from(stripeAccounts).where(eq(stripeAccounts.id, id));
+    return result;
+  }
+  async getStripeAccountsByUserId(userId) {
+    return await db.select().from(stripeAccounts).where(eq(stripeAccounts.userId, userId)).orderBy(desc(stripeAccounts.createdAt));
+  }
+  async getStripePaymentMethodId(stripeAccountId) {
+    const [row] = await db.select().from(stripeAccounts).where(eq(stripeAccounts.id, stripeAccountId));
+    if (!row?.stripePaymentMethodEnc) return void 0;
+    return decryptToken(row.stripePaymentMethodEnc);
+  }
+  async hasStripeWebhookEvent(eventId) {
+    const [row] = await db.select().from(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
+    return Boolean(row);
+  }
+  async recordStripeWebhookEvent(eventId, type) {
+    const inserted = await db.insert(stripeWebhookEvents).values({ eventId, type }).onConflictDoNothing({ target: stripeWebhookEvents.eventId }).returning({ eventId: stripeWebhookEvents.eventId });
+    return inserted.length > 0;
+  }
+  // ----- ACH authorization (Nacha mandate) evidence -----
+  async createAchAuthorization(data) {
+    const [result] = await db.insert(achAuthorizations).values(data).returning();
+    return result;
+  }
+  async getLatestAchAuthorization(userId) {
+    const [result] = await db.select().from(achAuthorizations).where(eq(achAuthorizations.userId, userId)).orderBy(desc(achAuthorizations.createdAt)).limit(1);
+    return result;
   }
 };
 var storage = new DatabaseStorage();
@@ -1069,8 +1613,8 @@ var dimeTokenService = new DimeTokenService();
 // server/routes.ts
 import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
 import bcrypt from "bcrypt";
-import rateLimit from "express-rate-limit";
-import { z as z4 } from "zod";
+import rateLimit2 from "express-rate-limit";
+import { z as z5 } from "zod";
 
 // server/services/plaidService.ts
 import {
@@ -1099,6 +1643,7 @@ function maskToken(token) {
   return `${token.slice(0, 8)}...[masked]`;
 }
 function log(correlationId, event, data) {
+  setCorrelationTag(correlationId);
   const entry = {
     ts: (/* @__PURE__ */ new Date()).toISOString(),
     service: "PlaidService",
@@ -2422,6 +2967,7 @@ import { randomUUID as randomUUID2 } from "crypto";
 import axios3 from "axios";
 var MERCURY_API_BASE = "https://api.mercury.com/api/v1";
 function log2(correlationId, event, data) {
+  setCorrelationTag(correlationId);
   const entry = {
     ts: (/* @__PURE__ */ new Date()).toISOString(),
     service: "MercuryService",
@@ -2580,6 +3126,7 @@ var payDebtSchema = z3.object({
   descriptor: z3.string().max(60).optional()
 });
 function transferLog(correlationId, event, data) {
+  setCorrelationTag(correlationId);
   console.log(JSON.stringify({
     ts: (/* @__PURE__ */ new Date()).toISOString(),
     service: "MercuryRoutes",
@@ -2590,11 +3137,11 @@ function transferLog(correlationId, event, data) {
 }
 async function checkIdempotency(idempotencyKey, userId, endpoint, correlationId, res) {
   if (!idempotencyKey) return false;
-  const cached = await storage.getIdempotencyKey(idempotencyKey, userId, endpoint);
-  if (cached) {
+  const cached3 = await storage.getIdempotencyKey(idempotencyKey, userId, endpoint);
+  if (cached3) {
     transferLog(correlationId, "idempotency_hit", { endpoint, idempotencyKey });
-    const body = JSON.parse(cached.responseBody);
-    res.status(cached.responseStatus).json({ ...body, _idempotencyReplay: true });
+    const body = JSON.parse(cached3.responseBody);
+    res.status(cached3.responseStatus).json({ ...body, _idempotencyReplay: true });
     return true;
   }
   return false;
@@ -3033,6 +3580,732 @@ function registerWebhookRoutes(app2) {
       });
     }
   });
+}
+
+// server/routes/stripeRoutes.ts
+import express from "express";
+import rateLimit from "express-rate-limit";
+import { randomUUID as randomUUID3 } from "crypto";
+import { z as z4 } from "zod";
+
+// shared/achAuthorization.ts
+var ACH_AUTHORIZATION_VERSION = "2026-05-29.v1";
+var ACH_AUTHORIZATION_TEXT = "By selecting \u201CI Authorize\u201D, you authorize Dime Time to electronically debit your linked bank account via the ACH network for the payment amounts and on the schedule you approve in the app, and, if necessary, to electronically credit your account to correct any erroneous debit. This authorization will remain in effect until you revoke it. You may revoke this authorization at any time by removing the linked account in the app or by contacting us at tim@dime-time.com. You agree that ACH transactions you authorize comply with applicable U.S. law. Dime Time is a financial technology platform and is not a bank; banking services and payment infrastructure are provided through regulated financial partners.";
+
+// server/services/stripeService.ts
+var cachedClient = null;
+var cachedClientPromise = null;
+function isStripeAchEnabled() {
+  return isFlagEnabled("ENABLE_STRIPE_ACH") && Boolean(process.env.STRIPE_SECRET_KEY);
+}
+async function loadStripeClient() {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  if (cachedClient) return cachedClient;
+  if (cachedClientPromise) return cachedClientPromise;
+  cachedClientPromise = (async () => {
+    try {
+      const mod = await import("stripe");
+      const Stripe = mod.default;
+      cachedClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
+        // Pin a recent API version. Bumping requires a code review since
+        // Stripe occasionally renames PaymentMethod / FC fields.
+        apiVersion: "2024-06-20",
+        typescript: true,
+        appInfo: {
+          name: "Dime Time",
+          url: "https://dime-time.com"
+        },
+        maxNetworkRetries: 2
+      });
+      return cachedClient;
+    } catch (err) {
+      console.error(JSON.stringify({
+        service: "StripeService",
+        event: "stripe_sdk_load_failed",
+        severity: "ERROR",
+        error: err instanceof Error ? err.message : String(err)
+      }));
+      cachedClientPromise = null;
+      return null;
+    }
+  })();
+  return cachedClientPromise;
+}
+async function getStripe() {
+  if (!isStripeAchEnabled()) return null;
+  return loadStripeClient();
+}
+async function retrieveAccountDiagnostics() {
+  const stripe = await loadStripeClient();
+  if (!stripe) return null;
+  const acct = await stripe.accounts.retrieve();
+  const req = acct.requirements ?? {};
+  const fut = acct.future_requirements ?? {};
+  return {
+    accountId: acct.id,
+    chargesEnabled: Boolean(acct.charges_enabled),
+    payoutsEnabled: Boolean(acct.payouts_enabled),
+    detailsSubmitted: Boolean(acct.details_submitted),
+    capabilities: acct.capabilities ?? {},
+    requirements: {
+      currentlyDue: req.currently_due ?? [],
+      eventuallyDue: req.eventually_due ?? [],
+      pastDue: req.past_due ?? [],
+      pendingVerification: req.pending_verification ?? [],
+      disabledReason: req.disabled_reason ?? null
+    },
+    futureRequirements: {
+      currentlyDue: fut.currently_due ?? [],
+      eventuallyDue: fut.eventually_due ?? []
+    }
+  };
+}
+async function createFinancialConnectionsSession(args) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  let customerId = args.existingCustomerId;
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: args.userEmail ?? void 0,
+      metadata: { dimeTimeUserId: args.userId }
+    });
+    customerId = customer.id;
+  }
+  const session2 = await stripe.financialConnections.sessions.create({
+    account_holder: { type: "customer", customer: customerId },
+    permissions: ["payment_method", "balances"],
+    filters: { countries: ["US"] }
+  });
+  return {
+    clientSecret: session2.client_secret,
+    sessionId: session2.id,
+    customerId
+  };
+}
+async function attachFcAccountAsPaymentMethod(args) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  const account = await stripe.financialConnections.accounts.retrieve(args.fcAccountId);
+  const pm = await stripe.paymentMethods.create({
+    type: "us_bank_account",
+    us_bank_account: { financial_connections_account: args.fcAccountId }
+  });
+  await stripe.paymentMethods.attach(pm.id, { customer: args.customerId });
+  return {
+    paymentMethodId: pm.id,
+    last4: account?.last4 || pm.us_bank_account?.last4 || null,
+    institutionName: account?.institution_name || null
+  };
+}
+async function createAchDebit(args) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  if (!args.mandateIpAddress || !args.mandateUserAgent) {
+    throw new Error("ACH mandate requires a real customer IP and user agent");
+  }
+  const intent = await stripe.paymentIntents.create(
+    {
+      amount: args.amountCents,
+      currency: "usd",
+      customer: args.customerId,
+      payment_method: args.paymentMethodId,
+      payment_method_types: ["us_bank_account"],
+      confirm: true,
+      mandate_data: {
+        customer_acceptance: {
+          type: "online",
+          online: {
+            ip_address: args.mandateIpAddress,
+            user_agent: args.mandateUserAgent
+          }
+        }
+      },
+      statement_descriptor_suffix: (args.descriptor || "DIME TIME").slice(0, 22),
+      metadata: args.metadata
+    },
+    { idempotencyKey: args.idempotencyKey }
+  );
+  return {
+    id: intent.id,
+    status: intent.status,
+    chargeId: intent.latest_charge || null
+  };
+}
+async function verifyStripeWebhook(rawBody, signature) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET is not set");
+  if (!signature) throw new Error("Missing stripe-signature header");
+  return stripe.webhooks.constructEvent(rawBody, signature, secret);
+}
+
+// server/routes/stripeRoutes.ts
+var MAX_DEBT_PAYMENT_DOLLARS2 = 500;
+var exchangeSchema = z4.object({
+  fcAccountId: z4.string().min(3),
+  customerId: z4.string().min(3)
+});
+var debitSchema = z4.object({
+  stripeAccountId: z4.string().min(1),
+  amount: z4.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS2),
+  debtId: z4.string().min(1).optional(),
+  descriptor: z4.string().max(22).optional()
+});
+function clientIp(req) {
+  const fwd = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
+  return req.ip || fwd || req.socket?.remoteAddress || "unknown";
+}
+function stripeLog(correlationId, event, data) {
+  setCorrelationTag(correlationId);
+  console.log(JSON.stringify({
+    ts: (/* @__PURE__ */ new Date()).toISOString(),
+    service: "StripeRoutes",
+    correlationId,
+    event,
+    ...data
+  }));
+}
+async function reserveIdempotency(key, userId, endpoint, correlationId, res) {
+  const result = await storage.reserveIdempotencyKey(key, userId, endpoint);
+  if (result.claimed) return false;
+  if (result.inFlight) {
+    stripeLog(correlationId, "idempotency_in_flight", { endpoint, idempotencyKey: key, severity: "WARN" });
+    res.status(409).json({
+      message: "A request with this Idempotency-Key is already being processed. Retry shortly.",
+      correlationId
+    });
+    return true;
+  }
+  const cached3 = result.cached;
+  stripeLog(correlationId, "idempotency_hit", { endpoint, idempotencyKey: key });
+  let parsed = {};
+  try {
+    parsed = cached3.body ? JSON.parse(cached3.body) : {};
+  } catch {
+    parsed = { raw: cached3.body };
+  }
+  res.status(cached3.status).json({ ...parsed, _idempotencyReplay: true });
+  return true;
+}
+async function finalizeIdempotency(key, userId, endpoint, status, body) {
+  await storage.finalizeIdempotencyKey(key, userId, endpoint, status, JSON.stringify(body));
+}
+var fcSessionLimiter = rateLimit({
+  windowMs: 60 * 1e3,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const uid = getUserIdFromRequest(req);
+    return uid ? `u:${uid}` : `ip:${req.ip}`;
+  },
+  message: { message: "Too many Stripe Connect attempts. Try again in a minute." }
+});
+function registerStripeRoutes(app2) {
+  app2.get("/api/stripe/status", async (req, res) => {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const accounts = await storage.getStripeAccountsByUserId(userId);
+    return res.json({
+      configured: isStripeAchEnabled(),
+      accounts: accounts.map((a) => ({
+        id: a.id,
+        institutionName: a.institutionName,
+        last4: a.last4,
+        status: a.status,
+        isActive: a.isActive,
+        createdAt: a.createdAt
+      }))
+    });
+  });
+  app2.post("/api/stripe/financial-connections/session", fcSessionLimiter, async (req, res) => {
+    const correlationId = randomUUID3();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!isStripeAchEnabled()) {
+        return res.status(503).json({ message: "Stripe ACH is not enabled" });
+      }
+      const user = await storage.getUser(userId);
+      const existing = await storage.getStripeAccountsByUserId(userId);
+      const existingCustomerId = existing[0]?.stripeCustomerId ?? null;
+      stripeLog(correlationId, "fc_session_start", { userId, hasCustomer: !!existingCustomerId });
+      const session2 = await createFinancialConnectionsSession({
+        userEmail: user?.email ?? null,
+        userId,
+        existingCustomerId
+      });
+      stripeLog(correlationId, "fc_session_created", { sessionId: session2.sessionId });
+      return res.json({
+        clientSecret: session2.clientSecret,
+        sessionId: session2.sessionId,
+        customerId: session2.customerId,
+        correlationId
+      });
+    } catch (err) {
+      stripeLog(correlationId, "fc_session_failed", {
+        severity: "ERROR",
+        error: err?.message
+      });
+      return res.status(502).json({
+        message: "Failed to start Stripe Financial Connections session",
+        correlationId
+      });
+    }
+  });
+  app2.post("/api/stripe/financial-connections/exchange", async (req, res) => {
+    const correlationId = randomUUID3();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!isStripeAchEnabled()) {
+        return res.status(503).json({ message: "Stripe ACH is not enabled" });
+      }
+      const { fcAccountId, customerId } = exchangeSchema.parse(req.body);
+      stripeLog(correlationId, "fc_exchange_start", { userId, fcAccountId });
+      const { paymentMethodId, last4, institutionName } = await attachFcAccountAsPaymentMethod({
+        fcAccountId,
+        customerId
+      });
+      const saved = await storage.createStripeAccount({
+        userId,
+        stripeCustomerId: customerId,
+        stripeFcAccountId: fcAccountId,
+        paymentMethodIdPlaintext: paymentMethodId,
+        institutionName,
+        last4
+      });
+      stripeLog(correlationId, "fc_exchange_success", {
+        stripeAccountId: saved.id,
+        institutionName
+      });
+      return res.status(201).json({
+        success: true,
+        stripeAccountId: saved.id,
+        institutionName,
+        last4,
+        correlationId
+      });
+    } catch (err) {
+      if (err instanceof z4.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      stripeLog(correlationId, "fc_exchange_failed", {
+        severity: "ERROR",
+        error: err?.message
+      });
+      return res.status(502).json({
+        message: "Failed to link Stripe bank account",
+        correlationId
+      });
+    }
+  });
+  app2.post("/api/stripe/ach/authorize", async (req, res) => {
+    const correlationId = randomUUID3();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!isStripeAchEnabled()) {
+        return res.status(503).json({ message: "Stripe ACH is not enabled" });
+      }
+      const ipAddress = clientIp(req);
+      const userAgent = req.headers["user-agent"]?.slice(0, 1024) || "unknown";
+      const auth = await storage.createAchAuthorization({
+        userId,
+        version: ACH_AUTHORIZATION_VERSION,
+        text: ACH_AUTHORIZATION_TEXT,
+        ipAddress,
+        userAgent
+      });
+      stripeLog(correlationId, "ach_authorization_recorded", {
+        userId,
+        authorizationId: auth.id,
+        version: auth.version
+      });
+      return res.status(201).json({
+        success: true,
+        authorizationId: auth.id,
+        version: auth.version,
+        authorizedAt: auth.createdAt,
+        correlationId
+      });
+    } catch (err) {
+      stripeLog(correlationId, "ach_authorization_failed", {
+        severity: "ERROR",
+        error: err?.message
+      });
+      return res.status(500).json({ message: "Failed to record ACH authorization", correlationId });
+    }
+  });
+  app2.post("/api/stripe/ach/debit", async (req, res) => {
+    const correlationId = randomUUID3();
+    const idempotencyKey = req.headers["idempotency-key"];
+    const endpoint = "/api/stripe/ach/debit";
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!isStripeAchEnabled()) {
+        return res.status(503).json({ message: "Stripe ACH is not enabled" });
+      }
+      if (!idempotencyKey) {
+        return res.status(400).json({
+          message: "Idempotency-Key header is required for money-movement endpoints"
+        });
+      }
+      if (await reserveIdempotency(idempotencyKey, userId, endpoint, correlationId, res)) return;
+      let validatedInput;
+      try {
+        validatedInput = debitSchema.parse(req.body);
+      } catch (e) {
+        await storage.releaseIdempotencyKey(idempotencyKey, userId, endpoint);
+        throw e;
+      }
+      const { stripeAccountId, amount, debtId, descriptor } = validatedInput;
+      const stripeAccount = await storage.getStripeAccountById(stripeAccountId);
+      if (!stripeAccount || stripeAccount.userId !== userId) {
+        const body = { message: "Stripe account not found" };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 404, body);
+        return res.status(404).json(body);
+      }
+      const paymentMethodId = await storage.getStripePaymentMethodId(stripeAccountId);
+      if (!paymentMethodId) {
+        const body = {
+          message: "Stripe account is missing payment method credentials. Please re-link."
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
+        return res.status(422).json(body);
+      }
+      const realTransfers = isFlagEnabled("ENABLE_REAL_TRANSFERS");
+      let mandate;
+      if (realTransfers) {
+        const latest = await storage.getLatestAchAuthorization(userId);
+        if (!latest) {
+          const body = {
+            message: "ACH authorization required before debiting. Please authorize ACH in the app."
+          };
+          await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
+          return res.status(422).json(body);
+        }
+        mandate = { ipAddress: latest.ipAddress, userAgent: latest.userAgent };
+      }
+      const ledger = await storage.createTransfer({
+        userId,
+        type: debtId ? "debt_payment" : "stripe_ach_debit",
+        amount: amount.toFixed(2),
+        status: realTransfers ? "created" : "simulated",
+        provider: "stripe",
+        debtId: debtId || null,
+        correlationId,
+        idempotencyKey,
+        rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, simulated: !realTransfers })
+      });
+      if (!realTransfers) {
+        console.log("[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false");
+        stripeLog(correlationId, "ach_debit_simulated", {
+          severity: "WARN",
+          ledgerId: ledger.id,
+          stripeAccountId,
+          amount,
+          message: "[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false"
+        });
+        const body = {
+          success: true,
+          simulated: true,
+          ledgerId: ledger.id,
+          status: "simulated",
+          correlationId
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 201, body);
+        return res.status(201).json(body);
+      }
+      stripeLog(correlationId, "ach_debit_start", {
+        ledgerId: ledger.id,
+        stripeAccountId,
+        amount
+      });
+      try {
+        const intent = await createAchDebit({
+          amountCents: Math.round(amount * 100),
+          customerId: stripeAccount.stripeCustomerId,
+          paymentMethodId,
+          idempotencyKey,
+          mandateIpAddress: mandate.ipAddress,
+          mandateUserAgent: mandate.userAgent,
+          descriptor,
+          metadata: {
+            dimeTimeUserId: userId,
+            dimeTimeLedgerId: ledger.id,
+            dimeTimeCorrelationId: correlationId,
+            ...debtId ? { dimeTimeDebtId: debtId } : {}
+          }
+        });
+        await storage.updateTransferStatus(ledger.id, intent.status, {
+          stripePaymentIntentId: intent.id,
+          stripeChargeId: intent.chargeId || void 0,
+          rawResponse: JSON.stringify(intent)
+        });
+        stripeLog(correlationId, "ach_debit_initiated", {
+          ledgerId: ledger.id,
+          paymentIntentId: intent.id,
+          stripeStatus: intent.status
+        });
+        const body = {
+          success: true,
+          ledgerId: ledger.id,
+          paymentIntentId: intent.id,
+          status: intent.status,
+          correlationId
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 201, body);
+        return res.status(201).json(body);
+      } catch (stripeErr) {
+        const errCode = stripeErr?.code || stripeErr?.type || "stripe_error";
+        await storage.updateTransferStatus(ledger.id, "failed", {
+          errorCode: errCode,
+          errorMessage: stripeErr?.message || "Stripe ACH debit failed",
+          rawResponse: JSON.stringify(stripeErr?.raw || {})
+        });
+        stripeLog(correlationId, "ach_debit_failed", {
+          severity: "ERROR",
+          ledgerId: ledger.id,
+          errCode
+        });
+        const failBody = {
+          message: "Stripe ACH debit could not be initiated",
+          code: errCode,
+          correlationId
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 502, failBody);
+        return res.status(502).json(failBody);
+      }
+    } catch (err) {
+      if (err instanceof z4.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      const cleanupUserId = getUserIdFromRequest(req);
+      if (idempotencyKey && cleanupUserId) {
+        try {
+          await storage.releaseIdempotencyKey(idempotencyKey, cleanupUserId, endpoint);
+        } catch (releaseErr) {
+          stripeLog(correlationId, "idempotency_release_failed", {
+            severity: "ERROR",
+            error: releaseErr?.message
+          });
+        }
+      }
+      stripeLog(correlationId, "ach_debit_unexpected_error", {
+        severity: "ERROR",
+        error: err?.message
+      });
+      return res.status(500).json({ message: "Internal error", correlationId });
+    }
+  });
+}
+function registerStripeWebhook(app2) {
+  app2.post(
+    "/webhooks/stripe",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      const correlationId = randomUUID3();
+      const signature = req.headers["stripe-signature"];
+      let event;
+      try {
+        event = await verifyStripeWebhook(req.body, signature);
+      } catch (err) {
+        stripeLog(correlationId, "webhook_signature_failed", {
+          severity: "WARN",
+          error: err?.message
+        });
+        return res.status(400).send(`Webhook signature verification failed: ${err?.message}`);
+      }
+      const claimed = await storage.recordStripeWebhookEvent(event.id, event.type);
+      if (!claimed) {
+        stripeLog(correlationId, "webhook_duplicate", { eventId: event.id, type: event.type });
+        return res.status(200).json({ received: true, duplicate: true });
+      }
+      stripeLog(correlationId, "webhook_received", { eventId: event.id, type: event.type });
+      try {
+        if (event.type === "payment_intent.succeeded" || event.type === "payment_intent.processing" || event.type === "payment_intent.payment_failed" || event.type === "payment_intent.canceled" || event.type === "payment_intent.requires_action") {
+          const pi = event.data.object;
+          const ledger = await storage.getTransferByStripePaymentIntentId(pi.id);
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              paymentIntentId: pi.id
+            });
+          } else {
+            const newStatus = event.type === "payment_intent.succeeded" ? "settled" : event.type === "payment_intent.payment_failed" ? "failed" : event.type === "payment_intent.canceled" ? "cancelled" : event.type === "payment_intent.requires_action" ? "requires_action" : "processing";
+            if (ledger.status !== newStatus) {
+              await storage.updateTransferStatus(ledger.id, newStatus, {
+                stripeChargeId: pi.latest_charge || void 0,
+                errorCode: pi.last_payment_error?.code,
+                errorMessage: pi.last_payment_error?.message,
+                rawResponse: JSON.stringify({ eventId: event.id, type: event.type, status: pi.status })
+              });
+              stripeLog(correlationId, "ledger_updated", {
+                ledgerId: ledger.id,
+                previousStatus: ledger.status,
+                newStatus
+              });
+            }
+          }
+        } else if (event.type === "charge.refunded") {
+          const charge = event.data.object;
+          let ledger = charge.payment_intent ? await storage.getTransferByStripePaymentIntentId(charge.payment_intent) : void 0;
+          if (!ledger && charge.id) {
+            ledger = await storage.getTransferByStripeChargeId(charge.id);
+          }
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: charge.id,
+              paymentIntentId: charge.payment_intent
+            });
+          } else if (ledger.status !== "refunded") {
+            await storage.updateTransferStatus(ledger.id, "refunded", {
+              stripeChargeId: charge.id,
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, amountRefunded: charge.amount_refunded })
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: "refunded"
+            });
+          }
+        } else if (event.type === "charge.dispute.created") {
+          const dispute = event.data.object;
+          const ledger = await storage.getTransferByStripeChargeId(dispute.charge);
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: dispute.charge,
+              disputeId: dispute.id
+            });
+          } else if (ledger.status !== "disputed") {
+            await storage.updateTransferStatus(ledger.id, "disputed", {
+              stripeChargeId: dispute.charge,
+              errorCode: dispute.reason,
+              errorMessage: `ACH dispute: ${dispute.reason}`,
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, disputeId: dispute.id, status: dispute.status })
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: "disputed"
+            });
+          }
+        } else if (event.type === "setup_intent.succeeded" || event.type === "payment_method.attached") {
+          stripeLog(correlationId, "webhook_noop_acknowledged", {
+            eventId: event.id,
+            type: event.type,
+            objectId: event.data.object?.id
+          });
+        } else {
+          stripeLog(correlationId, "webhook_unhandled", { eventId: event.id, type: event.type });
+        }
+        return res.status(200).json({ received: true });
+      } catch (err) {
+        stripeLog(correlationId, "webhook_processing_error", {
+          severity: "ERROR",
+          eventId: event.id,
+          error: err?.message
+        });
+        return res.status(200).json({ received: true, error: true });
+      }
+    }
+  );
+}
+
+// server/lib/admin.ts
+function parseAdminIds() {
+  const raw = process.env.ADMIN_USER_IDS ?? "";
+  return new Set(
+    raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
+  );
+}
+var cached2 = null;
+function adminIds() {
+  if (cached2 === null) cached2 = parseAdminIds();
+  return cached2;
+}
+function isAdminUserId(userId) {
+  if (!userId) return false;
+  return adminIds().has(userId);
+}
+function requireAdmin(req, res, next) {
+  const userId = getUserIdFromRequest(req);
+  if (!userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  if (!isAdminUserId(userId)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  req.adminUserId = userId;
+  next();
+}
+
+// server/routes/adminRoutes.ts
+function registerAdminRoutes(app2) {
+  app2.get("/api/admin/me", requireAdmin, (_req, res) => {
+    res.json({ isAdmin: true });
+  });
+  app2.get("/api/admin/transfers", requireAdmin, async (req, res) => {
+    try {
+      const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "100"), 10) || 100));
+      const provider = typeof req.query.provider === "string" && req.query.provider.length > 0 ? String(req.query.provider) : void 0;
+      const status = typeof req.query.status === "string" && req.query.status.length > 0 ? String(req.query.status) : void 0;
+      const rows = await storage.getRecentTransfers({ limit, provider, status });
+      res.json({
+        count: rows.length,
+        transfers: rows.map(stripRaw)
+      });
+    } catch (error) {
+      console.error("[admin] /api/admin/transfers error", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.get("/api/admin/transfers/:id", requireAdmin, async (req, res) => {
+    try {
+      const row = await storage.getTransfer(req.params.id);
+      if (!row) return res.status(404).json({ message: "Transfer not found" });
+      res.json(stripRaw(row));
+    } catch (error) {
+      console.error("[admin] /api/admin/transfers/:id error", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.get("/api/admin/webhooks/stripe", requireAdmin, async (req, res) => {
+    try {
+      const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "100"), 10) || 100));
+      const rows = await storage.getRecentStripeWebhookEvents(limit);
+      res.json({ count: rows.length, events: rows });
+    } catch (error) {
+      console.error("[admin] /api/admin/webhooks/stripe error", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.get("/api/admin/stripe/diagnostics", requireAdmin, async (_req, res) => {
+    try {
+      const report = await retrieveAccountDiagnostics();
+      if (!report) {
+        return res.status(503).json({
+          message: "STRIPE_SECRET_KEY is not configured in this environment. Add it as a Replit Secret and restart the workflow."
+        });
+      }
+      res.json(report);
+    } catch (error) {
+      console.error("[admin] /api/admin/stripe/diagnostics error", error?.message ?? error);
+      res.status(502).json({
+        message: "Stripe API call failed.",
+        detail: typeof error?.message === "string" ? error.message : "Unknown error"
+      });
+    }
+  });
+}
+function stripRaw(t) {
+  const { rawRequest, rawResponse, ...rest } = t;
+  return rest;
 }
 
 // server/routes/notificationRoutes.ts
@@ -4226,6 +5499,238 @@ var roundUpSplitService = new RoundUpSplitService();
 
 // server/routes.ts
 import multer from "multer";
+import { randomBytes as randomBytes2 } from "crypto";
+
+// server/services/emailService.ts
+import { Resend } from "resend";
+var RESEND_API_KEY = process.env.RESEND_API_KEY;
+var EMAIL_FROM = process.env.EMAIL_FROM || "Dime Time <onboarding@resend.dev>";
+var resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+async function sendEmail(params) {
+  if (!resend) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(JSON.stringify({
+        event: "email_misconfigured",
+        message: "RESEND_API_KEY is not set in production",
+        to_domain: params.to.split("@")[1] ?? "",
+        subject: params.subject
+      }));
+      return { ok: false, provider: "console", error: "Email provider not configured" };
+    }
+    console.log(JSON.stringify({
+      event: "email_dev_log",
+      to: params.to,
+      from: EMAIL_FROM,
+      note: "RESEND_API_KEY not set \u2014 email body suppressed. Set RESEND_API_KEY to send real emails."
+    }));
+    return { ok: true, provider: "console" };
+  }
+  try {
+    const { data, error } = await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      text: params.text
+    });
+    if (error) {
+      console.error(JSON.stringify({
+        event: "email_send_failed",
+        provider: "resend",
+        to: params.to,
+        subject: params.subject,
+        error: error.message
+      }));
+      return { ok: false, provider: "resend", error: error.message };
+    }
+    return { ok: true, provider: "resend", id: data?.id };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(JSON.stringify({
+      event: "email_send_exception",
+      provider: "resend",
+      to: params.to,
+      subject: params.subject,
+      error: message
+    }));
+    return { ok: false, provider: "resend", error: message };
+  }
+}
+async function sendPasswordResetEmail(params) {
+  const greeting = params.firstName ? `Hi ${params.firstName},` : "Hi,";
+  const text2 = [
+    greeting,
+    "",
+    "We received a request to reset the password for your Dime Time account.",
+    "",
+    `Reset your password using this link (expires in ${params.expiresInMinutes} minutes):`,
+    params.resetUrl,
+    "",
+    "If you didn't request this, you can safely ignore this email \u2014 your password won't change.",
+    "",
+    "\u2014 The Dime Time team",
+    "",
+    "Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners."
+  ].join("\n");
+  const html = `
+<!doctype html>
+<html>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f7fb; padding: 24px; color: #111;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
+      <tr><td>
+        <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">Reset your Dime Time password</h1>
+        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${greeting}</p>
+        <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5;">We received a request to reset the password for your Dime Time account.</p>
+        <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5;">Click the button below to choose a new password. This link expires in <strong>${params.expiresInMinutes} minutes</strong>.</p>
+        <p style="text-align: center; margin: 0 0 24px;">
+          <a href="${params.resetUrl}" style="display: inline-block; background: #918EF4; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: 600;">Reset password</a>
+        </p>
+        <p style="margin: 0 0 8px; font-size: 13px; color: #666; line-height: 1.5;">Or paste this link into your browser:</p>
+        <p style="margin: 0 0 24px; font-size: 13px; color: #918EF4; word-break: break-all;">${params.resetUrl}</p>
+        <p style="margin: 24px 0 0; font-size: 13px; color: #666; line-height: 1.5;">If you didn't request this, you can safely ignore this email \u2014 your password won't change.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="margin: 0; font-size: 11px; color: #888; line-height: 1.5;">Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners.</p>
+      </td></tr>
+    </table>
+  </body>
+</html>`.trim();
+  return sendEmail({
+    to: params.to,
+    subject: "Reset your Dime Time password",
+    html,
+    text: text2
+  });
+}
+async function sendVerificationEmail(params) {
+  const greeting = params.firstName ? `Hi ${params.firstName},` : "Hi,";
+  const hours = Math.round(params.expiresInMinutes / 60);
+  const expiryLabel = params.expiresInMinutes >= 120 ? `${hours} hours` : `${params.expiresInMinutes} minutes`;
+  const text2 = [
+    greeting,
+    "",
+    "Welcome to Dime Time. Please confirm this is your email address so we can keep your account secure and send you important notifications about your debt payoff progress.",
+    "",
+    `Verify your email using this link (expires in ${expiryLabel}):`,
+    params.verifyUrl,
+    "",
+    "If you didn't create a Dime Time account, you can safely ignore this email.",
+    "",
+    "\u2014 The Dime Time team",
+    "",
+    "Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners."
+  ].join("\n");
+  const html = `
+<!doctype html>
+<html>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f7fb; padding: 24px; color: #111;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
+      <tr><td>
+        <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">Confirm your email</h1>
+        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${greeting}</p>
+        <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5;">Welcome to Dime Time. Please confirm this is your email address so we can keep your account secure and send you important notifications about your debt payoff progress.</p>
+        <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5;">This link expires in <strong>${expiryLabel}</strong>.</p>
+        <p style="text-align: center; margin: 0 0 24px;">
+          <a href="${params.verifyUrl}" style="display: inline-block; background: #918EF4; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: 600;">Verify email</a>
+        </p>
+        <p style="margin: 0 0 8px; font-size: 13px; color: #666; line-height: 1.5;">Or paste this link into your browser:</p>
+        <p style="margin: 0 0 24px; font-size: 13px; color: #918EF4; word-break: break-all;">${params.verifyUrl}</p>
+        <p style="margin: 24px 0 0; font-size: 13px; color: #666; line-height: 1.5;">If you didn't create a Dime Time account, you can safely ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="margin: 0; font-size: 11px; color: #888; line-height: 1.5;">Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners.</p>
+      </td></tr>
+    </table>
+  </body>
+</html>`.trim();
+  return sendEmail({
+    to: params.to,
+    subject: "Confirm your Dime Time email address",
+    html,
+    text: text2
+  });
+}
+
+// shared/transactionStatus.ts
+function mapToTransactionStatus(raw) {
+  if (!raw) return "pending";
+  const s = raw.trim().toLowerCase();
+  if (s === "completed" || s === "complete" || s === "success" || s === "succeeded" || s === "settled" || s === "posted" || s === "delivered") {
+    return "completed";
+  }
+  if (s === "processing" || s === "authorized" || s === "in_progress" || s === "scheduled" || s === "collected" || s === "earning_interest" || s === "dispersed" || s === "sent") {
+    return "processing";
+  }
+  if (s === "failed" || s === "failure" || s === "error" || s === "returned" || s === "refunded" || s === "cancelled" || s === "canceled" || s === "declined") {
+    return "failed";
+  }
+  if (s === "requires_action" || s === "requires_authentication" || s === "requires_verification" || s === "requires_payment_method" || s === "requires_confirmation" || s === "requires_capture" || s === "requires_source" || s === "action_required" || s === "disputed") {
+    return "requires_action";
+  }
+  return "pending";
+}
+function withCanonicalStatus(row) {
+  return { ...row, status: mapToTransactionStatus(row.status) };
+}
+
+// server/routes.ts
+var PASSWORD_RESET_TOKEN_TTL_MINUTES = 60;
+var EMAIL_VERIFICATION_TTL_MINUTES = 60 * 24;
+function resolveAppBaseUrl(req) {
+  const configured = process.env.PUBLIC_APP_URL;
+  if (configured) return configured.replace(/\/+$/, "");
+  if (process.env.NODE_ENV === "production") return null;
+  const proto = req.headers["x-forwarded-proto"] || req.protocol;
+  const host = req.get("host");
+  return `${proto}://${host}`;
+}
+async function issueAndSendVerificationEmail(req, user) {
+  if (!user.email) return { ok: false, reason: "no_email" };
+  const baseUrl = resolveAppBaseUrl(req);
+  if (!baseUrl) {
+    console.error(JSON.stringify({
+      event: "email_verification_misconfigured",
+      message: "PUBLIC_APP_URL must be set in production",
+      userId: user.id
+    }));
+    return { ok: false, reason: "misconfigured" };
+  }
+  try {
+    await storage.invalidateEmailVerificationTokensForUser(user.id);
+  } catch (err) {
+    console.error("Failed to invalidate prior verification tokens", err instanceof Error ? err.message : "unknown");
+  }
+  const rawToken = randomBytes2(32).toString("base64url");
+  const tokenHash = createHash2("sha256").update(rawToken).digest("hex");
+  const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MINUTES * 60 * 1e3);
+  try {
+    await storage.createEmailVerificationToken({
+      userId: user.id,
+      email: user.email,
+      tokenHash,
+      expiresAt
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "unknown";
+    console.error("Failed to persist verification token", message);
+    return { ok: false, reason: "persist_failed", error: message };
+  }
+  const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}`;
+  const sendResult = await sendVerificationEmail({
+    to: user.email,
+    firstName: user.firstName,
+    verifyUrl,
+    expiresInMinutes: EMAIL_VERIFICATION_TTL_MINUTES
+  });
+  console.log(JSON.stringify({
+    event: "email_verification_sent",
+    userId: user.id,
+    provider: sendResult.provider,
+    ok: sendResult.ok
+  }));
+  if (!sendResult.ok) {
+    return { ok: false, reason: "send_failed", error: sendResult.error };
+  }
+  return { ok: true, provider: sendResult.provider };
+}
 var BCRYPT_COST = 12;
 function hashPasswordSha256(password) {
   return createHash2("sha256").update(password).digest("hex");
@@ -4258,6 +5763,53 @@ function getSessionSecret2() {
   }
   return secret;
 }
+async function verifyTurnstileToken(token, req) {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(JSON.stringify({
+        event: "turnstile_misconfigured",
+        message: "TURNSTILE_SECRET_KEY is not set in production"
+      }));
+      return false;
+    }
+    return true;
+  }
+  if (!token) return false;
+  try {
+    const form = new URLSearchParams();
+    form.append("secret", secret);
+    form.append("response", token);
+    const ip = req.headers["cf-connecting-ip"] || req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || "";
+    if (ip) form.append("remoteip", ip);
+    const resp = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      { method: "POST", body: form }
+    );
+    if (!resp.ok) {
+      console.error(JSON.stringify({
+        event: "turnstile_siteverify_http_error",
+        status: resp.status
+      }));
+      return false;
+    }
+    const data = await resp.json();
+    if (!data.success) {
+      console.warn(JSON.stringify({
+        event: "turnstile_verification_failed",
+        errorCodes: data["error-codes"] ?? []
+      }));
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(JSON.stringify({
+      event: "turnstile_siteverify_exception",
+      error: err instanceof Error ? err.message : String(err)
+    }));
+    return false;
+  }
+}
 function generateAuthToken(userId) {
   const timestamp2 = Date.now();
   const payload = `${userId}:${timestamp2}`;
@@ -4265,7 +5817,7 @@ function generateAuthToken(userId) {
   return Buffer.from(`${payload}:${signature}`).toString("base64");
 }
 async function registerRoutes(app2) {
-  const authLimiter = rateLimit({
+  const authLimiter = rateLimit2({
     windowMs: 15 * 60 * 1e3,
     max: 10,
     message: { message: "Too many attempts. Please try again in 15 minutes." },
@@ -4273,7 +5825,7 @@ async function registerRoutes(app2) {
     legacyHeaders: false,
     validate: { xForwardedForHeader: false }
   });
-  const contactLimiter = rateLimit({
+  const contactLimiter = rateLimit2({
     windowMs: 60 * 1e3,
     max: 5,
     message: { message: "Too many messages. Please try again in a minute." },
@@ -4323,6 +5875,11 @@ async function registerRoutes(app2) {
       }
       req.session.userId = user.id;
       const authToken = generateAuthToken(user.id);
+      void issueAndSendVerificationEmail(req, {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName
+      });
       req.session.save((err) => {
         if (err) {
           console.error("Session save error");
@@ -4376,6 +5933,153 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Login failed" });
     }
   });
+  app2.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
+    try {
+      const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      const user = await storage.getUserByEmail(email);
+      if (user) {
+        let baseUrl = process.env.PUBLIC_APP_URL;
+        if (!baseUrl) {
+          if (process.env.NODE_ENV === "production") {
+            console.error(JSON.stringify({
+              event: "password_reset_misconfigured",
+              message: "PUBLIC_APP_URL must be set in production"
+            }));
+            return res.json({
+              success: true,
+              message: "If an account exists for that email, a reset link has been sent."
+            });
+          }
+          const proto = req.headers["x-forwarded-proto"] || req.protocol;
+          const host = req.get("host");
+          baseUrl = `${proto}://${host}`;
+        }
+        const rawToken = randomBytes2(32).toString("base64url");
+        const tokenHash = createHash2("sha256").update(rawToken).digest("hex");
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 * 1e3);
+        await storage.createPasswordResetToken({
+          userId: user.id,
+          tokenHash,
+          expiresAt
+        });
+        const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
+        const sendResult = await sendPasswordResetEmail({
+          to: user.email,
+          firstName: user.firstName,
+          resetUrl,
+          expiresInMinutes: PASSWORD_RESET_TOKEN_TTL_MINUTES
+        });
+        console.log(JSON.stringify({
+          event: "password_reset_requested",
+          userId: user.id,
+          provider: sendResult.provider,
+          ok: sendResult.ok
+        }));
+      } else {
+        console.log(JSON.stringify({
+          event: "password_reset_requested_unknown_email"
+        }));
+      }
+      res.json({
+        success: true,
+        message: "If an account exists for that email, a reset link has been sent."
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to process request" });
+    }
+  });
+  app2.post("/api/auth/reset-password", authLimiter, async (req, res) => {
+    try {
+      const { token, password } = req.body ?? {};
+      if (typeof token !== "string" || typeof password !== "string") {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+      const tokenHash = createHash2("sha256").update(token).digest("hex");
+      const record = await storage.consumePasswordResetToken(tokenHash);
+      if (!record) {
+        return res.status(400).json({ message: "Invalid, expired, or already-used reset link" });
+      }
+      const newHash = await hashPasswordBcrypt(password);
+      await storage.updateUserPassword(record.userId, newHash, "bcrypt");
+      await storage.invalidatePasswordResetTokensForUser(record.userId);
+      await storage.invalidateAllUserSessions(record.userId);
+      console.log(JSON.stringify({
+        event: "password_reset_completed",
+        userId: record.userId
+      }));
+      res.json({ success: true, message: "Password updated. You can now sign in." });
+    } catch (error) {
+      console.error("Reset password error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to reset password" });
+    }
+  });
+  app2.post("/api/auth/send-verification", authLimiter, async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (user.emailVerifiedAt) {
+        return res.json({ success: true, alreadyVerified: true, message: "Email already verified" });
+      }
+      if (!user.email) {
+        return res.status(400).json({ message: "No email on file for this account" });
+      }
+      const result = await issueAndSendVerificationEmail(req, {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName
+      });
+      if (!result.ok) {
+        return res.status(503).json({
+          message: "We couldn't send the verification email right now. Please try again in a moment."
+        });
+      }
+      res.json({ success: true, message: "Verification email sent" });
+    } catch (error) {
+      console.error("Send verification error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to send verification email" });
+    }
+  });
+  app2.post("/api/auth/verify-email", authLimiter, async (req, res) => {
+    try {
+      const token = typeof req.body?.token === "string" ? req.body.token : "";
+      if (!token) {
+        return res.status(400).json({ message: "Verification token is required" });
+      }
+      const tokenHash = createHash2("sha256").update(token).digest("hex");
+      const record = await storage.consumeEmailVerificationToken(tokenHash);
+      if (!record) {
+        return res.status(400).json({ message: "Invalid, expired, or already-used verification link" });
+      }
+      const user = await storage.getUser(record.userId);
+      if (!user || user.email !== record.email) {
+        return res.status(400).json({ message: "This link is no longer valid for the current email on your account" });
+      }
+      if (!user.emailVerifiedAt) {
+        await storage.markUserEmailVerified(user.id);
+      }
+      console.log(JSON.stringify({
+        event: "email_verification_completed",
+        userId: user.id
+      }));
+      res.json({ success: true, message: "Email verified" });
+    } catch (error) {
+      console.error("Verify email error:", error instanceof Error ? error.message : "unknown");
+      res.status(500).json({ message: "Unable to verify email" });
+    }
+  });
   app2.get("/api/user", async (req, res) => {
     try {
       const userId = getUserIdFromRequest(req);
@@ -4386,7 +6090,7 @@ async function registerRoutes(app2) {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(stripSensitiveFields(user));
+      res.json({ ...stripSensitiveFields(user), _flags: getFlags(), _isAdmin: isAdminUserId(userId) });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -4420,11 +6124,39 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/contact", contactLimiter, async (req, res) => {
     try {
-      const validatedData = insertContactSubmissionSchema.parse(req.body);
-      const submission = await storage.createContactSubmission(validatedData);
+      const sessionUserId = getUserIdFromRequest(req);
+      const authedUser = sessionUserId ? await storage.getUser(sessionUserId) : null;
+      let toInsert;
+      if (authedUser) {
+        if (!authedUser.email) {
+          return res.status(400).json({ message: "Your account is missing an email address. Please add one before sending feedback." });
+        }
+        const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+        if (!message) {
+          return res.status(400).json({ message: "Message is required" });
+        }
+        const displayName = [authedUser.firstName, authedUser.lastName].filter(Boolean).join(" ").trim() || authedUser.email;
+        toInsert = {
+          name: displayName,
+          email: authedUser.email,
+          message,
+          source: "in_app",
+          userId: authedUser.id
+        };
+      } else {
+        const turnstileToken = typeof req.body?.turnstileToken === "string" ? req.body.turnstileToken : void 0;
+        const turnstileOk = await verifyTurnstileToken(turnstileToken, req);
+        if (!turnstileOk) {
+          return res.status(400).json({ message: "Captcha verification failed. Please try again." });
+        }
+        const { turnstileToken: _omit, source: _clientSource, userId: _clientUserId, ...payload } = req.body ?? {};
+        const validatedData = insertContactSubmissionSchema.parse(payload);
+        toInsert = { ...validatedData, source: "marketing" };
+      }
+      const submission = await storage.createContactSubmission(toInsert);
       res.json({ success: true, submission });
     } catch (error) {
-      if (error instanceof z4.ZodError) {
+      if (error instanceof z5.ZodError) {
         return res.status(400).json({ message: "Invalid form data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -4463,8 +6195,8 @@ async function registerRoutes(app2) {
       }
       const idempotencyKey = req.headers["idempotency-key"];
       if (idempotencyKey) {
-        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/transactions");
-        if (cached) return res.status(cached.status).json(cached.body);
+        const cached3 = await checkIdempotency2(idempotencyKey, userId, "/api/transactions");
+        if (cached3) return res.status(cached3.status).json(cached3.body);
       }
       const roundUpSettingsData = await storage.getRoundUpSettings(userId);
       const amount = parseFloat(req.body.amount);
@@ -4501,9 +6233,32 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(transaction);
     } catch (error) {
-      if (error instanceof z4.ZodError) {
+      if (error instanceof z5.ZodError) {
         return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
       }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.get("/api/transfers", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const transfers2 = await storage.getTransfersByUserId(userId);
+      const safe = transfers2.map((t) => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount,
+        status: t.status,
+        debtId: t.debtId,
+        errorCode: t.errorCode ?? null,
+        errorMessage: t.errorMessage ?? null,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt
+      }));
+      res.json(safe.map(withCanonicalStatus));
+    } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -4514,7 +6269,7 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const payments2 = await storage.getPaymentsByUserId(userId);
-      res.json(payments2);
+      res.json(payments2.map(withCanonicalStatus));
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -4527,8 +6282,8 @@ async function registerRoutes(app2) {
       }
       const idempotencyKey = req.headers["idempotency-key"];
       if (idempotencyKey) {
-        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/payments");
-        if (cached) return res.status(cached.status).json(cached.body);
+        const cached3 = await checkIdempotency2(idempotencyKey, userId, "/api/payments");
+        if (cached3) return res.status(cached3.status).json(cached3.body);
       }
       const validatedData = insertPaymentSchema.parse({
         ...req.body,
@@ -4552,7 +6307,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(payment);
     } catch (error) {
-      if (error instanceof z4.ZodError) {
+      if (error instanceof z5.ZodError) {
         return res.status(400).json({ message: "Invalid payment data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -4566,8 +6321,8 @@ async function registerRoutes(app2) {
       }
       const idempotencyKey = req.headers["idempotency-key"];
       if (idempotencyKey) {
-        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/accelerated-payment");
-        if (cached) return res.status(cached.status).json(cached.body);
+        const cached3 = await checkIdempotency2(idempotencyKey, userId, "/api/accelerated-payment");
+        if (cached3) return res.status(cached3.status).json(cached3.body);
       }
       const { debtId, amount } = req.body;
       if (!debtId || !amount) {
@@ -4733,7 +6488,7 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const purchases = await storage.getCryptoPurchasesByUserId(userId);
-      res.json(purchases);
+      res.json(purchases.map(withCanonicalStatus));
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -4746,8 +6501,8 @@ async function registerRoutes(app2) {
       }
       const idempotencyKey = req.headers["idempotency-key"];
       if (idempotencyKey) {
-        const cached = await checkIdempotency2(idempotencyKey, userId, "/api/crypto-purchases");
-        if (cached) return res.status(cached.status).json(cached.body);
+        const cached3 = await checkIdempotency2(idempotencyKey, userId, "/api/crypto-purchases");
+        if (cached3) return res.status(cached3.status).json(cached3.body);
       }
       const { amount, cryptoSymbol = "BTC" } = req.body;
       if (!amount || parseFloat(amount) <= 0) {
@@ -4814,7 +6569,7 @@ async function registerRoutes(app2) {
         res.status(201).json(demoResponse);
       }
     } catch (error) {
-      if (error instanceof z4.ZodError) {
+      if (error instanceof z5.ZodError) {
         return res.status(400).json({ message: "Invalid crypto purchase data", errors: error.errors });
       }
       console.error("Error creating crypto purchase:", error);
@@ -4828,7 +6583,7 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const purchases = await storage.getCryptoPurchasesByUserId(userId);
-      const completedPurchases = purchases.filter((p) => p.status === "completed");
+      const completedPurchases = purchases.map(withCanonicalStatus).filter((p) => p.status === "completed");
       const portfolio = completedPurchases.reduce((acc, purchase) => {
         const symbol = purchase.cryptoSymbol;
         if (!acc[symbol]) {
@@ -5339,13 +7094,23 @@ async function registerRoutes(app2) {
   registerAxosRoutes(app2);
   registerMercuryRoutes(app2);
   registerWebhookRoutes(app2);
+  if (isFlagEnabled("ENABLE_STRIPE_ACH")) {
+    registerStripeRoutes(app2);
+    registerStripeWebhook(app2);
+    console.log(JSON.stringify({
+      service: "Server",
+      event: "stripe_routes_mounted",
+      flag: "ENABLE_STRIPE_ACH"
+    }));
+  }
+  registerAdminRoutes(app2);
   app2.use(notificationRoutes);
   const httpServer = createServer(app2);
   return httpServer;
 }
 
 // server/vite.ts
-import express from "express";
+import express2 from "express";
 import fs from "fs";
 import path2 from "path";
 import { createServer as createViteServer, createLogger } from "vite";
@@ -5355,6 +7120,25 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+var SENTRY_DSN_FOR_CLIENT = process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN || "";
+var sentryUploadEnabled = process.env.NODE_ENV === "production" && !!process.env.SENTRY_AUTH_TOKEN && !!process.env.SENTRY_ORG && !!process.env.SENTRY_PROJECT;
+var sentryPlugins = sentryUploadEnabled ? [
+  await import("@sentry/vite-plugin").then(
+    ({ sentryVitePlugin }) => sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      release: { name: process.env.SENTRY_RELEASE },
+      // Delete the generated .map files after they're uploaded so the
+      // production server never has them on disk to serve. The static
+      // handler in server/index.ts also 404s `.map` requests as a second
+      // layer of defense.
+      sourcemaps: {
+        filesToDeleteAfterUpload: ["**/*.map"]
+      }
+    })
+  )
+] : [];
 var vite_config_default = defineConfig({
   plugins: [
     react(),
@@ -5363,15 +7147,29 @@ var vite_config_default = defineConfig({
       await import("@replit/vite-plugin-cartographer").then(
         (m) => m.cartographer()
       )
-    ] : []
+    ] : [],
+    ...sentryPlugins
   ],
+  define: {
+    "import.meta.env.VITE_SENTRY_DSN": JSON.stringify(SENTRY_DSN_FOR_CLIENT),
+    "import.meta.env.VITE_SENTRY_ENVIRONMENT": JSON.stringify(
+      process.env.SENTRY_ENVIRONMENT || process.env.VITE_SENTRY_ENVIRONMENT || ""
+    ),
+    "import.meta.env.VITE_SENTRY_RELEASE": JSON.stringify(
+      process.env.SENTRY_RELEASE || process.env.VITE_SENTRY_RELEASE || ""
+    )
+  },
   // The frontend lives in the /client directory
   root: path.resolve(import.meta.dirname, "client"),
   // ⭐ FIXED BUILD OUTPUT — works on Replit AND Codemagic
   build: {
     outDir: "../dist/public",
     // <-- relative path ALWAYS works
-    emptyOutDir: true
+    emptyOutDir: true,
+    // Source maps are only generated when the Sentry upload pipeline is
+    // active. The Sentry plugin deletes the .map files after upload, and
+    // server/index.ts denies .map requests in case anything slips through.
+    sourcemap: sentryUploadEnabled ? "hidden" : false
   },
   resolve: {
     alias: {
@@ -5449,7 +7247,7 @@ function serveStatic(app2) {
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-  app2.use(express.static(distPath));
+  app2.use(express2.static(distPath));
   app2.use("*", (_req, res) => {
     res.sendFile(path2.resolve(distPath, "index.html"));
   });
@@ -5570,7 +7368,13 @@ async function setupAuth(app2) {
 }
 
 // server/index.ts
-var app = express2();
+var app = express3();
+app.use((req, res, next) => {
+  if (req.path.endsWith(".map")) {
+    return res.status(404).end();
+  }
+  next();
+});
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
@@ -5614,7 +7418,7 @@ var corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use((req, res, next) => {
-  if (req.path.startsWith("/webhooks/")) {
+  if (req.path.startsWith("/webhooks/") && req.path !== "/webhooks/stripe") {
     let data = "";
     req.setEncoding("utf8");
     req.on("data", (chunk) => {
@@ -5633,8 +7437,16 @@ app.use((req, res, next) => {
     next();
   }
 });
-app.use(express2.json());
-app.use(express2.urlencoded({ extended: false }));
+var jsonParser = express3.json();
+var urlencodedParser = express3.urlencoded({ extended: false });
+app.use((req, res, next) => {
+  if (req.path === "/webhooks/stripe") return next();
+  return jsonParser(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.path === "/webhooks/stripe") return next();
+  return urlencodedParser(req, res, next);
+});
 app.use((req, res, next) => {
   const start = Date.now();
   const path3 = req.path;
@@ -5664,6 +7476,8 @@ app.use((req, res, next) => {
 });
 (async () => {
   try {
+    await initSentry();
+    validateProductionSecrets();
     console.log("Starting server...");
     console.log("NODE_ENV:", process.env.NODE_ENV);
     console.log("Express env:", app.get("env"));
@@ -5673,6 +7487,7 @@ app.use((req, res, next) => {
     console.log("Registering routes...");
     const server = await registerRoutes(app);
     console.log("Routes registered");
+    setupExpressErrorHandler(app);
     app.use((err, _req, res, _next) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
@@ -5693,7 +7508,7 @@ app.use((req, res, next) => {
       const indexHtmlPath = path3.default.resolve(distPath, "index.html");
       if (fs2.default.existsSync(indexHtmlPath)) {
         console.log("Found static files at:", distPath);
-        app.use(express2.static(distPath));
+        app.use(express3.static(distPath));
         app.use("*", (_req, res) => {
           res.sendFile(indexHtmlPath);
         });

@@ -1,0 +1,339 @@
+DIME TIME — APP STORE SUBMISSION REMEDIATION PLAN
+
+PROJECT
+
+* App: Dime Time
+* Platform: Capacitor + React
+* Bundle ID: com.dimetime.mobile
+* Version: 1.0.3
+* Current Build: 202
+
+OBJECTIVE
+
+Prepare the application for successful App Store submission by resolving all Apple privacy, tracking, and metadata issues while preserving Google Analytics functionality on the public website.
+
+========================================================
+IMPORTANT GOOGLE ANALYTICS CLARIFICATION
+
+Google Analytics is intentionally connected to the public Dime Time website.
+
+DO NOT remove Google Analytics from the website.
+
+DO NOT remove Google Analytics from browser-based users.
+
+Google Analytics should continue functioning normally when users visit:
+
+https://dime-time.com
+
+The issue is that Google Analytics currently loads inside the Capacitor iOS WebView.
+
+Apple may treat this as analytics/tracking collection occurring inside the native application.
+
+For App Store approval:
+
+* Keep Google Analytics enabled on the public website.
+* Disable Google Analytics when running inside the native Capacitor app.
+* Prevent GA scripts from loading in native iOS builds.
+* No ATT implementation is desired for Version 1.
+
+IMPLEMENTATION GOAL:
+
+if (Capacitor.isNativePlatform()) {
+// Do not initialize Google Analytics
+} else {
+// Initialize Google Analytics normally
+}
+
+Expected Result:
+
+WEB:
+✓ Google Analytics enabled
+
+IOS APP:
+✓ Google Analytics disabled
+
+========================================================
+BLOCKER #1 — ANALYTICS / TRACKING
+
+Current State:
+
+Google Analytics (G-DSY7SSH1VG) loads automatically from:
+
+* client/index.html
+* client/lib/analytics.ts
+
+Required Action:
+
+Review analytics initialization.
+
+Modify logic so analytics only loads for browser users.
+
+Files to inspect:
+
+* client/index.html
+* client/lib/analytics.ts
+
+Expected Result:
+
+✓ Website analytics remain operational.
+✓ Native iOS app does not load GA.
+✓ ATT prompt not required.
+
+========================================================
+BLOCKER #2 — PRIVACY MANIFEST
+
+Current State:
+
+Missing file:
+
+ios/App/App/PrivacyInfo.xcprivacy
+
+Required Action:
+
+Create:
+
+ios/App/App/PrivacyInfo.xcprivacy
+
+Requirements:
+
+* Declare collected analytics/usage information accurately.
+* Match App Store privacy disclosures.
+* Eliminate ITMS-91053 warnings.
+* Ensure Apple privacy requirements are satisfied.
+
+Deliverable:
+
+A valid PrivacyInfo.xcprivacy file committed to the repository.
+
+========================================================
+BLOCKER #3 — UNUSED PERMISSIONS
+
+Current State:
+
+Info.plist currently declares permissions that are not tied to shipping functionality.
+
+Review:
+
+* NSCameraUsageDescription
+* NSPhotoLibraryUsageDescription
+* NSLocationWhenInUseUsageDescription
+* NSContactsUsageDescription
+
+Required Action:
+
+Remove any permission keys and usage descriptions for features that are not currently implemented in production.
+
+Examples currently referenced:
+
+* Nearby ATMs
+* Bank branch location lookup
+* Contact-based money transfers
+
+These features do not currently exist in the shipping application.
+
+Expected Result:
+
+Info.plist only contains permissions required by actual functionality.
+
+========================================================
+INFO.PLIST REVIEW
+
+Review:
+
+ios/App/App/Info.plist
+
+Verify:
+
+✓ Bundle Identifier remains unchanged
+✓ Version remains 1.0.3
+✓ Export compliance remains intact
+✓ No unused permission declarations remain
+
+Keep:
+
+ITSAppUsesNonExemptEncryption = false
+
+========================================================
+BUILD NUMBER UPDATE
+
+After all fixes are completed:
+
+Update:
+
+CFBundleVersion
+
+FROM:
+202
+
+TO:
+203
+
+Also update:
+
+CURRENT_PROJECT_VERSION
+
+to:
+
+203
+
+Ensure both values remain synchronized.
+
+========================================================
+BUILD PROCESS
+
+After modifications:
+
+Run:
+
+npm run build
+
+Then:
+
+npx cap sync ios
+
+Verify:
+
+ios/App/App/public/
+
+contains the latest web bundle.
+
+========================================================
+TESTFLIGHT VALIDATION
+
+Generate a new iOS build using Codemagic.
+
+Upload Build 203 to TestFlight.
+
+Perform validation:
+
+AUTHENTICATION
+✓ Login
+✓ Logout
+✓ Registration
+✓ Password reset
+
+ACCOUNT MANAGEMENT
+✓ Account deletion
+✓ Settings page
+✓ Privacy page
+✓ Terms page
+
+APPLICATION
+✓ Dashboard loads
+✓ No runtime errors
+✓ No analytics initialization errors
+✓ No unexpected permission prompts
+
+========================================================
+APP STORE CONNECT TASKS
+
+Complete within App Store Connect:
+
+METADATA
+
+✓ App Name
+✓ Subtitle
+✓ Description
+✓ Keywords
+✓ Support URL
+✓ Marketing URL
+
+LEGAL
+
+Privacy Policy URL:
+https://dime-time.com/privacy
+
+Terms URL:
+https://dime-time.com/terms
+
+PRIVACY
+
+Complete App Privacy Nutrition Label.
+
+Disclosures must accurately reflect actual collected data.
+
+If analytics remains disabled inside the native app, disclosures should be reviewed accordingly.
+
+REVIEW INFORMATION
+
+Provide:
+
+* Reviewer test account
+* Reviewer password
+* Testing instructions
+* Any feature-flag explanation
+
+AGE RATING
+
+Complete questionnaire.
+
+EXPORT COMPLIANCE
+
+Confirm consistency with:
+
+ITSAppUsesNonExemptEncryption = false
+
+========================================================
+FINAL PRE-SUBMISSION CHECKLIST
+
+ANALYTICS
+
+[ ] Google Analytics remains active on website
+[ ] Google Analytics disabled in native iOS app
+[ ] No ATT implementation required
+
+PRIVACY
+
+[ ] PrivacyInfo.xcprivacy created
+[ ] Privacy manifest validated
+[ ] Privacy disclosures reviewed
+
+PERMISSIONS
+
+[ ] Camera permission removed if unused
+[ ] Photos permission removed if unused
+[ ] Location permission removed if unused
+[ ] Contacts permission removed if unused
+
+BUILD
+
+[ ] CFBundleVersion updated to 203
+[ ] CURRENT_PROJECT_VERSION updated to 203
+[ ] npm run build completed
+[ ] npx cap sync ios completed
+
+TESTING
+
+[ ] TestFlight build uploaded
+[ ] Internal testing completed
+[ ] Login verified
+[ ] Dashboard verified
+[ ] Account deletion verified
+
+APP STORE CONNECT
+
+[ ] Screenshots uploaded
+[ ] Metadata completed
+[ ] Privacy labels completed
+[ ] Demo reviewer credentials provided
+[ ] Export compliance completed
+
+========================================================
+FINAL GO / NO-GO
+
+Current Status:
+NO-GO
+
+Target Status:
+GO
+
+Estimated Work Remaining:
+1–2 days
+
+IMPORTANT BUSINESS NOTE
+
+ACH approval, Stripe activation, Plaid Transfer approval, and production money movement are NOT blockers for App Store submission.
+
+The application may be submitted while financial functionality remains feature-flagged OFF.
+
+Primary objective is obtaining App Store approval and public availability of the Dime Time mobile application.
