@@ -26,7 +26,6 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Save,
   Fingerprint,
   KeyRound,
   LogOut,
@@ -214,11 +213,6 @@ export default function Settings() {
     }
   };
 
-  const handleProfileUpdate = () => {
-    // In a real app, this would update the user profile
-    toast({ title: "Profile update feature coming soon" });
-  };
-
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-8">
@@ -235,7 +229,7 @@ export default function Settings() {
               Profile Settings
             </CardTitle>
             <CardDescription>
-              Update your personal information and account details
+              Your personal information and account details
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -245,7 +239,8 @@ export default function Settings() {
                 <Input
                   id="firstName"
                   value={profileData.firstName}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                  readOnly
+                  disabled
                 />
               </div>
               <div className="space-y-2">
@@ -253,7 +248,8 @@ export default function Settings() {
                 <Input
                   id="lastName"
                   value={profileData.lastName}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                  readOnly
+                  disabled
                 />
               </div>
             </div>
@@ -263,13 +259,10 @@ export default function Settings() {
                 id="email"
                 type="email"
                 value={profileData.email}
-                onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                readOnly
+                disabled
               />
             </div>
-            <Button onClick={handleProfileUpdate} className="flex items-center gap-2">
-              <Save className="h-4 w-4" />
-              Save Profile Changes
-            </Button>
           </CardContent>
         </Card>
 

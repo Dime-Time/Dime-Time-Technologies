@@ -283,7 +283,7 @@ export default function Legal() {
                   <h3 className="font-semibold text-gray-900 mb-3">12. Contact Information</h3>
                   <p className="mb-2">For privacy-related questions or to exercise your rights, contact us:</p>
                   <ul className="list-none space-y-1">
-                    <li><strong>Email:</strong> privacy@dimetime.com</li>
+                    <li><strong>Email:</strong> tim@dime-time.com</li>
                     <li><strong>Mailing Address:</strong> Dime Time LLC, Privacy Department</li>
                     <li><strong>Response Time:</strong> We will respond to privacy requests within 30 days</li>
                   </ul>
