@@ -16,6 +16,9 @@ workflows:
       # Environment group that must contain:
       #   APPLE_ID
       #   APP_SPECIFIC_PASSWORD
+      #   VITE_STRIPE_PUBLISHABLE_KEY  (pk_live_...) — baked into the client
+      #     bundle by `npm run build`; the shipped IPA needs it for Stripe ACH.
+      #     Value lives ONLY in this Codemagic group, never hardcoded here.
       #   (and any other iOS/App Store vars you use)
       groups:
         - ios_build_info
@@ -31,6 +34,20 @@ workflows:
           set -e
           echo "=== Installing npm dependencies and syncing Capacitor ==="
           npm ci || npm install
+
+          # Stripe publishable key must be present BEFORE `npm run build` — Vite
+          # bakes VITE_STRIPE_PUBLISHABLE_KEY into the client bundle that ships
+          # inside the IPA. Without it, the in-app "Connect bank" flow has no
+          # Stripe key. Add it (pk_live_...) to the `ios_build_info` env group.
+          if [ -z "$VITE_STRIPE_PUBLISHABLE_KEY" ]; then
+            echo "FATAL: VITE_STRIPE_PUBLISHABLE_KEY is not set. Add it to the ios_build_info Codemagic environment group before building."
+            exit 1
+          fi
+          case "$VITE_STRIPE_PUBLISHABLE_KEY" in
+            pk_live_*|pk_test_*) echo "VITE_STRIPE_PUBLISHABLE_KEY present and well-formed.";;
+            *) echo "FATAL: VITE_STRIPE_PUBLISHABLE_KEY does not look like a Stripe publishable key (expected pk_live_... or pk_test_...)."; exit 1;;
+          esac
+
           npm run build
           npx cap sync ios
 

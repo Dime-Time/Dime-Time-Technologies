@@ -1,1 +1,1 @@
-- [Stripe/Plaid prod secret scoping](stripe-prod-secrets-scoping.md) — live keys + ACH flags live in PRODUCTION env scope only, never global secrets, to keep live credentials out of the dev workspace.
+- [Stripe/Plaid prod secret scoping](stripe-prod-secrets-scoping.md) — sensitive keys MUST be global Secrets, never per-env vars (those write plaintext to git-tracked .replit); only flags + public pk_* go in production env scope.
