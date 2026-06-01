@@ -1,0 +1,214 @@
+DIME TIME — NEXT REPLIT TASKS AFTER STRIPE APPROVAL
+
+Stripe status:
+- Stripe account review shows COMPLETED.
+- ACH Direct Debit is ENABLED.
+- Financial Connections is available.
+- Live API keys exist.
+- No visible Stripe action items.
+- Stripe approval is no longer the main blocker.
+
+Goal:
+Move from approved Stripe account to safe App Store submission + controlled ACH soft launch.
+
+DO NOT enable real ACH transfers yet.
+Keep ENABLE_REAL_TRANSFERS=false until all tests pass.
+
+==================================================
+PHASE 1 — APP STORE PRIVACY FIXES
+==================================================
+
+Fix these first because they block App Store submission.
+
+Tasks:
+
+1. Create:
+   ios/App/App/PrivacyInfo.xcprivacy
+
+2. Fix Google Analytics issue:
+   Either:
+   A) Disable Google Analytics inside native Capacitor iOS WebView
+   OR
+   B) Gate Google Analytics behind App Tracking Transparency consent.
+
+Preferred for fastest App Store path:
+- Disable GA in native iOS for now.
+- Keep analytics only for web.
+
+Files likely involved:
+- client/index.html
+- client/lib/analytics.ts
+- ios/App/App/Info.plist
+
+3. Remove unused iOS permission strings from Info.plist:
+   - Camera
+   - Photo Library
+   - Location
+   - Contacts
+
+Only keep a permission if the app actually uses the native plugin and feature.
+
+4. Rebuild and sync:
+   npm run build
+   npx cap sync ios
+
+Output required:
+- List exact files changed
+- Confirm PrivacyInfo.xcprivacy exists
+- Confirm no unused permission strings remain
+- Confirm GA does not load automatically inside native iOS
+
+==================================================
+PHASE 2 — PRODUCTION CONFIGURATION
+==================================================
+
+Add/verify Replit Secrets:
+
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...
+PLAID_TOKEN_ENCRYPTION_KEY=<32-byte base64>
+ENABLE_STRIPE_ACH=true
+ENABLE_REAL_TRANSFERS=false
+
+Important:
+- ENABLE_REAL_TRANSFERS must stay false for now.
+- Restart server after secret changes.
+
+Output required:
+- Confirm app boots with production secrets
+- Confirm env validation passes
+- Confirm real transfers are still blocked
+
+==================================================
+PHASE 3 — STRIPE WEBHOOK CONFIGURATION
+==================================================
+
+Configure Stripe webhook endpoint:
+
+https://dime-time.com/webhooks/stripe
+
+Subscribe to:
+
+payment_intent.processing
+payment_intent.succeeded
+payment_intent.payment_failed
+charge.refunded
+charge.dispute.created
+setup_intent.succeeded
+payment_method.attached
+
+Output required:
+- Confirm webhook endpoint route exists
+- Confirm raw body parsing works
+- Confirm Stripe signature verification works
+- Confirm webhook secret matches Replit secret
+
+==================================================
+PHASE 4 — SIMULATION TEST
+==================================================
+
+With:
+ENABLE_STRIPE_ACH=true
+ENABLE_REAL_TRANSFERS=false
+
+Run a full simulated flow:
+
+1. User logs in
+2. User accepts ACH authorization
+3. User links bank through Financial Connections
+4. User attempts ACH debit
+5. App must NOT call Stripe PaymentIntent
+6. Ledger must create simulated transfer row
+7. UI must show pending/processing/simulated safely
+8. Duplicate Idempotency-Key must not duplicate transfer
+
+Output required:
+- Test account used
+- Ledger row result
+- Server logs proving no real Stripe debit happened
+- Any errors found
+
+==================================================
+PHASE 5 — INTERNAL LIVE ACH TEST
+==================================================
+
+Only after Phase 4 passes:
+
+Set:
+ENABLE_REAL_TRANSFERS=true
+
+Run ONE internal live ACH test only:
+
+Amount:
+$1.00 to $5.00
+
+Rules:
+- Use owner/internal bank account only
+- Do not allow public users yet
+- Monitor Stripe Dashboard
+- Monitor Replit logs
+- Monitor webhook events
+- Confirm ledger updates from webhook
+
+Expected result:
+- PaymentIntent created
+- ACH status starts as processing/pending
+- UI does not mark complete instantly
+- Webhook updates ledger
+- No duplicate debit
+
+After test:
+Either keep ENABLE_REAL_TRANSFERS=false again until launch,
+or restrict access to allowlist users only.
+
+Output required:
+- PaymentIntent ID
+- Webhook events received
+- Ledger status transitions
+- Any errors
+- Final go/no-go recommendation
+
+==================================================
+PHASE 6 — APP STORE BUILD
+==================================================
+
+After privacy fixes:
+
+1. npm run build
+2. npx cap sync ios
+3. Build via Codemagic
+4. Upload to TestFlight
+5. Confirm no Apple privacy warnings
+6. Submit for App Store review only after internal TestFlight works
+
+Output required:
+- Build number
+- Version number
+- TestFlight status
+- Any Apple warnings
+- App Store submission readiness score
+
+==================================================
+FINAL GO-LIVE RULES
+==================================================
+
+Do NOT publicly launch until:
+
+- App Store privacy fixes are complete
+- Production secrets are verified
+- Stripe webhook is configured
+- Simulation test passes
+- Internal $1-$5 ACH test passes
+- ENABLE_REAL_TRANSFERS behavior is confirmed
+- Support/monitoring plan exists
+- ACH limits are in place or launch is allowlist-only
+
+Please inspect the codebase and execute this plan in order.
+Return:
+1. What was completed
+2. Files changed
+3. Tests run
+4. Current blockers
+5. Whether we are ready to submit to App Store
+6. Whether we are ready to enable real ACH transfers
