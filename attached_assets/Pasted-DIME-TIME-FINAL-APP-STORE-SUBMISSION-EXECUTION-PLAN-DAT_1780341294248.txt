@@ -1,0 +1,381 @@
+DIME TIME — FINAL APP STORE SUBMISSION EXECUTION PLAN
+DATE: JUNE 2026
+OBJECTIVE: SUBMIT DIME TIME TO APPLE FOR REVIEW TODAY
+
+CONTEXT
+
+Dime Time is a fintech debt-reduction app built with:
+
+- Capacitor 7.4.x
+- React + TypeScript
+- Express.js
+- PostgreSQL + Drizzle
+- Stripe ACH Direct Debit
+- Stripe Financial Connections
+- Plaid
+- Coinbase integration
+- Replit production deployment
+- Codemagic iOS pipeline
+
+Production domain:
+https://dime-time.com
+
+Bundle ID:
+com.dimetime.mobile
+
+Current production deployment:
+HEALTHY
+
+Current ACH status:
+ENABLE_STRIPE_ACH=true
+ENABLE_REAL_TRANSFERS=false
+
+IMPORTANT:
+DO NOT ENABLE REAL TRANSFERS.
+DO NOT MODIFY ACH ARCHITECTURE.
+DO NOT CHANGE STRIPE KEYS.
+DO NOT SWITCH TO TEST MODE.
+
+We are now in APP STORE SUBMISSION MODE, not development mode.
+
+====================================================================
+CURRENT VERIFIED STATUS
+====================================================================
+
+Production Deployment
+✓ Public deployment healthy
+✓ Custom domain connected
+✓ Production database connected
+✓ Stripe webhook route deployed
+✓ Stripe secret rotated
+✓ Stripe webhook secret rotated
+✓ PLAID_TOKEN_ENCRYPTION_KEY regenerated
+✓ Replit secrets secured
+✓ No secrets committed to git
+
+Stripe
+✓ Stripe review completed
+✓ ACH Direct Debit enabled
+✓ Financial Connections available
+✓ Live API keys active
+✓ Webhook signature verification enabled
+✓ ACH authorization capture implemented
+✓ ACH dispute/refund webhooks implemented
+✓ ACH kill switch implemented
+✓ Real mandate IP/User-Agent capture implemented
+
+Database
+✓ Production schema current
+✓ ach_authorizations table exists
+✓ Authorization records persist correctly
+
+iOS
+✓ PrivacyInfo.xcprivacy exists
+✓ Google Analytics disabled in native app
+✓ ATT not required
+✓ No unused Camera permissions
+✓ No unused Photo Library permissions
+✓ No unused Location permissions
+✓ No unused Contacts permissions
+
+====================================================================
+MISSION
+====================================================================
+
+I want Dime Time submitted to Apple today.
+
+Please perform a complete pre-submission audit and complete every
+remaining operational task required for App Store submission.
+
+====================================================================
+PHASE 1 — FINAL CODE AUDIT
+====================================================================
+
+Inspect entire repository.
+
+Verify:
+
+1. No build-breaking TypeScript errors
+2. No missing imports
+3. No missing environment variables
+4. No missing iOS assets
+5. No broken Capacitor configuration
+6. No missing App Store metadata references
+7. No missing Stripe configuration
+8. No missing Plaid configuration
+9. No missing production secrets
+
+Output:
+
+PASS / FAIL
+
+for each category.
+
+====================================================================
+PHASE 2 — INFO.PLIST CLEANUP
+====================================================================
+
+Inspect:
+
+ios/App/App/Info.plist
+
+Verify:
+
+- Only one ITSAppUsesNonExemptEncryption key exists
+- Value is false
+- No duplicate keys
+- No deprecated keys
+- No invalid permission strings
+
+If duplicate encryption key still exists:
+
+Remove duplicate.
+
+Output exact diff.
+
+====================================================================
+PHASE 3 — PRIVACY COMPLIANCE VERIFICATION
+====================================================================
+
+Inspect:
+
+ios/App/App/PrivacyInfo.xcprivacy
+
+Verify:
+
+- File exists
+- Valid XML
+- No syntax issues
+- Required-reason APIs declared
+- Tracking disabled
+- Data collection declarations accurate
+
+Output:
+
+PASS / FAIL
+
+====================================================================
+PHASE 4 — STRIPE READINESS VERIFICATION
+====================================================================
+
+Verify production environment:
+
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+VITE_STRIPE_PUBLISHABLE_KEY
+PLAID_TOKEN_ENCRYPTION_KEY
+
+Verify:
+
+- Startup validation passes
+- Stripe initializes
+- Financial Connections initializes
+- ACH routes mounted
+- Webhook route mounted
+
+Verify:
+
+ENABLE_REAL_TRANSFERS=false
+
+Output:
+
+PASS / FAIL
+
+====================================================================
+PHASE 5 — CONTACT FORM READINESS
+====================================================================
+
+Verify Cloudflare Turnstile.
+
+Required:
+
+TURNSTILE_SECRET_KEY
+VITE_TURNSTILE_SITE_KEY
+
+If missing:
+
+Provide exact instructions for adding them.
+
+Determine:
+
+Can contact form function correctly in production?
+
+Output:
+
+PASS / FAIL
+
+====================================================================
+PHASE 6 — BUILD PREPARATION
+====================================================================
+
+Prepare release build.
+
+Verify:
+
+Version:
+1.0.3
+
+Build:
+203
+
+Verify:
+
+Codemagic environment contains:
+
+VITE_STRIPE_PUBLISHABLE_KEY
+
+Verify:
+
+Codemagic fail-fast check passes.
+
+Output:
+
+PASS / FAIL
+
+====================================================================
+PHASE 7 — APP STORE SCREENSHOTS
+====================================================================
+
+Review current application.
+
+Provide screenshot checklist.
+
+Required:
+
+iPhone 6.7"
+iPhone 6.5"
+
+Suggested screenshots:
+
+1. Welcome screen
+2. Sign up screen
+3. Dashboard
+4. Round-up settings
+5. Debt payment screen
+6. Linked bank account
+7. Transaction history
+8. Profile/settings
+
+Provide exact list.
+
+====================================================================
+PHASE 8 — APP STORE METADATA
+====================================================================
+
+Generate final production-ready:
+
+App Name:
+Dime Time
+
+Subtitle:
+Get out of debt, one dime at a time
+
+Keywords:
+(debt reduction, debt payoff, savings, budgeting, roundup, ACH,
+financial wellness, personal finance, money management)
+
+Promotional Text
+
+Description
+
+Support URL
+
+Marketing URL
+
+Privacy Policy URL
+
+Terms URL
+
+Review Notes
+
+Output final copy.
+
+====================================================================
+PHASE 9 — APP PRIVACY QUESTIONNAIRE
+====================================================================
+
+Based on actual implementation:
+
+Tell me exactly how to answer every App Store Connect privacy question.
+
+Include:
+
+Data collected
+Data linked to user
+Tracking
+Analytics
+Identifiers
+Diagnostics
+Financial information
+
+Output exact selections.
+
+====================================================================
+PHASE 10 — TESTFLIGHT SUBMISSION
+====================================================================
+
+Run final checklist.
+
+Verify:
+
+✓ Build succeeds
+✓ Capacitor sync succeeds
+✓ No privacy manifest warnings
+✓ No missing assets
+✓ No missing environment variables
+✓ No signing issues
+
+Output:
+
+READY FOR TESTFLIGHT
+or
+BLOCKED
+
+====================================================================
+PHASE 11 — APP STORE SUBMISSION DECISION
+====================================================================
+
+Provide final recommendation.
+
+Choose ONE:
+
+A) READY TO SUBMIT TO APPLE TODAY
+
+or
+
+B) NOT READY
+
+If NOT READY:
+
+List exact blockers.
+
+If READY:
+
+Provide:
+
+- Final readiness score
+- Remaining risks
+- Recommended submission time
+- Expected Apple review timeline
+
+====================================================================
+IMPORTANT
+====================================================================
+
+DO NOT:
+
+- Enable real transfers
+- Remove ACH functionality
+- Switch to Stripe test mode
+- Redesign payment flow
+
+FOCUS ONLY ON:
+
+- App Store readiness
+- Compliance
+- Build validation
+- Metadata
+- Screenshots
+- Submission
+
+I want the fastest path to submitting Dime Time for Apple review today.

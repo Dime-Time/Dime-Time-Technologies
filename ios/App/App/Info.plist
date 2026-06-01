@@ -73,7 +73,8 @@
         <key>LSApplicationCategoryType</key>
         <string>public.app-category.finance</string>
         
-        <!-- Required for App Store submission -->
+        <!-- Export Compliance: app uses only standard/exempt iOS encryption
+             (HTTPS, URLSession). Required for App Store submission. -->
         <key>ITSAppUsesNonExemptEncryption</key>
         <false/>
         
@@ -136,9 +137,5 @@
         <array>
             <string>applinks:dimetime.app</string>
         </array> -->
-        
-        <!-- Export Compliance: Uses only standard iOS encryption (HTTPS, URLSession) -->
-        <key>ITSAppUsesNonExemptEncryption</key>
-        <false/>
 </dict>
 </plist>
