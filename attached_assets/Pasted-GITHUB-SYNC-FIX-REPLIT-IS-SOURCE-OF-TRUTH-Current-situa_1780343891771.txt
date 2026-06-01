@@ -1,0 +1,165 @@
+GITHUB SYNC FIX — REPLIT IS SOURCE OF TRUTH
+
+Current situation:
+- Replit/local HEAD is 39 commits ahead of GitHub.
+- GitHub main is still at commit 7784bcd.
+- Local HEAD is newer.
+- Fetch confirms local is 0 behind / 39 ahead.
+- This is NOT a merge problem.
+- This is NOT branch protection.
+- This is a GitHub authentication/token problem.
+
+Goal:
+Safely push Replit's latest 39 commits to GitHub main so Codemagic can build the correct App Store submission code.
+
+DO NOT:
+- force push
+- reset
+- rebase
+- delete commits
+- overwrite GitHub history
+- start Codemagic build before GitHub is synced
+
+==================================================
+STEP 1 — CONFIRM CURRENT STATE
+==================================================
+
+Please run these commands in Shell and show me the output:
+
+git status
+
+git branch --show-current
+
+git fetch origin main --prune
+
+git rev-list --left-right --count origin/main...HEAD
+
+git log -1 --oneline HEAD
+
+git log -1 --oneline origin/main
+
+git merge-base --is-ancestor origin/main HEAD && echo "FAST_FORWARD_OK" || echo "NOT_FAST_FORWARD"
+
+Expected:
+- branch = main
+- rev-list = 0 39 or similar
+- FAST_FORWARD_OK
+
+==================================================
+STEP 2 — FIX GITHUB AUTH
+==================================================
+
+The last push failed with:
+
+"Invalid username or token. Password authentication is not supported."
+
+So Replit's stored GitHub credential is expired or invalid.
+
+First recommended fix:
+
+1. Replit Account Settings
+2. Connected Services / Git Providers
+3. Disconnect GitHub
+4. Reconnect GitHub
+5. Make sure Replit has access to:
+   Dime-Time/Dime-Time-Mobile
+
+If GitHub asks for organization access:
+- Grant Replit access to the Dime-Time organization.
+
+==================================================
+STEP 3 — TRY SAFE PUSH AGAIN
+==================================================
+
+After reconnecting GitHub, run:
+
+git fetch origin main --prune
+
+git push origin HEAD:main
+
+If successful, continue to Step 5.
+
+==================================================
+STEP 4 — PAT BACKUP IF REPLIT AUTH STILL FAILS
+==================================================
+
+If push still fails with invalid username/token:
+
+Use GitHub Personal Access Token fallback.
+
+On GitHub:
+1. Profile photo
+2. Settings
+3. Developer settings
+4. Personal access tokens
+5. Tokens classic
+6. Generate new token
+7. Scope: repo
+8. Copy token once
+
+Then in Replit Shell run:
+
+git credential reject <<EOF
+protocol=https
+host=github.com
+EOF
+
+git push origin HEAD:main
+
+When prompted:
+Username = GitHub username
+Password = paste GitHub Personal Access Token
+
+Do NOT paste the token into chat.
+Do NOT commit the token.
+Do NOT save it in code.
+
+==================================================
+STEP 5 — VERIFY GITHUB MATCHES REPLIT
+==================================================
+
+After successful push, run:
+
+git fetch origin main --prune
+
+echo "LOCAL HEAD:"
+git rev-parse HEAD
+
+echo "REMOTE origin/main:"
+git rev-parse origin/main
+
+echo "AHEAD/BEHIND:"
+git rev-list --left-right --count origin/main...HEAD
+
+Success criteria:
+- LOCAL HEAD hash equals REMOTE origin/main hash
+- ahead/behind output is:
+  0 0
+
+==================================================
+STEP 6 — ONLY AFTER SUCCESS
+==================================================
+
+Once GitHub matches Replit:
+
+1. Open GitHub and confirm latest commit is no longer 7784bcd.
+2. Confirm GitHub shows the latest local commit.
+3. Then open Codemagic.
+4. Start new iOS build for Dime Time.
+5. Confirm Codemagic builds from latest GitHub commit.
+6. Do not submit to Apple until the new build is uploaded to TestFlight.
+
+==================================================
+IMPORTANT
+==================================================
+
+Current blocker:
+GitHub authentication only.
+
+Not blockers:
+- Stripe approval
+- ACH code
+- Replit deployment
+- Apple privacy manifest
+
+Do not make unrelated code changes until GitHub is synced.
