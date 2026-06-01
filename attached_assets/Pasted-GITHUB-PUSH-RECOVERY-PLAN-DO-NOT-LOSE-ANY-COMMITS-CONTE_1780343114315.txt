@@ -1,0 +1,148 @@
+GITHUB PUSH RECOVERY PLAN — DO NOT LOSE ANY COMMITS
+
+CONTEXT
+
+Replit is the source of truth.
+Local main is approximately 39 commits ahead of GitHub.
+Push is failing with:
+
+PUSH_REJECTED
+"The push was rejected by the remote. This is usually because the remote has commits that aren't in the local repository."
+
+We have already determined:
+
+- Local main contains all known GitHub history.
+- No force push should be used.
+- No commits should be deleted.
+- Codemagic builds from GitHub, so GitHub must receive the latest code.
+
+OBJECTIVE
+
+Determine whether this is:
+
+A) stale Replit↔GitHub authentication / stale remote state
+
+or
+
+B) GitHub branch protection preventing direct pushes
+
+and then safely get all local commits onto GitHub.
+
+==================================================
+STEP 1 — GATHER FACTS
+==================================================
+
+Run and provide output:
+
+git status
+
+git branch --show-current
+
+git remote -v
+
+git fetch origin main --prune
+
+git rev-list --left-right --count origin/main...HEAD
+
+git log -1 --oneline HEAD
+
+git log -1 --oneline origin/main
+
+git merge-base --is-ancestor origin/main HEAD && echo "FAST_FORWARD_OK" || echo "NOT_FAST_FORWARD"
+
+Output everything.
+
+==================================================
+STEP 2 — DETERMINE PUSH PATH
+==================================================
+
+If merge-base confirms:
+
+FAST_FORWARD_OK
+
+then attempt:
+
+git push origin HEAD:main
+
+Capture exact output.
+
+==================================================
+STEP 3 — IF PUSH STILL FAILS
+==================================================
+
+Do NOT force push.
+
+Instead:
+
+1. Determine whether GitHub branch protection exists.
+2. Determine whether Replit GitHub auth is stale.
+3. Explain which one is causing rejection.
+
+Provide evidence.
+
+==================================================
+STEP 4 — SAFE FALLBACK
+==================================================
+
+If direct push is blocked:
+
+Create branch:
+
+app-store-submit-build-203
+
+Commands:
+
+git checkout -b app-store-submit-build-203
+
+git push origin app-store-submit-build-203
+
+Then provide:
+
+- GitHub branch URL
+- PR URL
+- Instructions for merging into main
+
+Do NOT merge automatically.
+
+==================================================
+STEP 5 — VERIFY SUCCESS
+==================================================
+
+After push or PR:
+
+Run:
+
+git fetch origin main --prune
+
+git rev-parse HEAD
+
+git rev-parse origin/main
+
+git rev-list --left-right --count origin/main...HEAD
+
+Confirm whether:
+
+origin/main == local main
+
+If not:
+
+Explain why.
+
+==================================================
+IMPORTANT
+==================================================
+
+DO NOT:
+
+- force push
+- reset hard
+- rebase away commits
+- overwrite GitHub history
+- delete any commits
+
+Preserve:
+
+- all 39 local commits
+- all GitHub commits
+
+Provide command output and diagnosis before making any destructive change.
