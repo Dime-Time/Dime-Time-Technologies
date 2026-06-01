@@ -47,6 +47,8 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 [userenv.shared]
 
 [userenv.development]
+
+[userenv.production]
 ENABLE_STRIPE_ACH = "true"
 ENABLE_REAL_TRANSFERS = "false"
 
