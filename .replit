@@ -51,6 +51,7 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 [userenv.production]
 ENABLE_STRIPE_ACH = "true"
 ENABLE_REAL_TRANSFERS = "false"
+VITE_STRIPE_PUBLISHABLE_KEY = "pk_live_51Tb9PzPZOgMsSXBjPyXmJCWrXTnVySYlcbjkqo4yMfdlqfwcc7UPXmeIy6BRMLqASWV9UwjHoP0RV6CG1GqPvYNb00FbpzuMae"
 
 [postMerge]
 path = "scripts/post-merge.sh"
