@@ -1,2 +1,3 @@
 - [Stripe/Plaid prod secret scoping](stripe-prod-secrets-scoping.md) — sensitive keys MUST be global Secrets, never per-env vars (those write plaintext to git-tracked .replit); only flags + public pk_* go in production env scope.
 - [App Store demo account](appstore-demo-account.md) — give Apple the founder's prod account (clean sample debts, no bank link); prod DB is read-only to agent tools; screenshots must come from a real iPhone.
+- [App Store screenshot prep](appstore-screenshots.md) — SE 1170×2532 → cover-resize to 1290×2796 (6.7"); never fake numbers into images; kill TestFlight banner by opening app from home screen or covering top ~162px.

@@ -360,3 +360,51 @@ id = "fMnDZfBSgadWBGChZPfKp"
 uri = "file://attached_assets/appstore-screenshots/8-total-saved.png"
 type = "image"
 title = "8 — Total Saved"
+
+[[outputs]]
+id = "rXq8h9Tu7B4yCRSEcW_Gk"
+uri = "file://attached_assets/appstore-screenshots/1-dashboard.png"
+type = "image"
+title = "1 — Dashboard"
+
+[[outputs]]
+id = "-ugIhj52-oegnTVZ_o07k"
+uri = "file://attached_assets/appstore-screenshots/2-debt-management.png"
+type = "image"
+title = "2 — Debt Management"
+
+[[outputs]]
+id = "B7o_xL2kJDRHPVlQzagfv"
+uri = "file://attached_assets/appstore-screenshots/3-progress-chart.png"
+type = "image"
+title = "3 — Progress Chart"
+
+[[outputs]]
+id = "0YFfIBMVSfN2EEgl_IBwE"
+uri = "file://attached_assets/appstore-screenshots/4-insights.png"
+type = "image"
+title = "4 — Financial Insights"
+
+[[outputs]]
+id = "YZ6kCtL0e_0zLhqm9W0dP"
+uri = "file://attached_assets/appstore-screenshots/5-optimization-tips.png"
+type = "image"
+title = "5 — Optimization Tips"
+
+[[outputs]]
+id = "dNtC_A0C3p3aTWVG6XKpK"
+uri = "file://attached_assets/appstore-screenshots/6-debt-freedom-tip.png"
+type = "image"
+title = "6 — Debt Freedom Tip"
+
+[[outputs]]
+id = "ElFrBBOjkyXECIg3Om5P5"
+uri = "file://attached_assets/appstore-screenshots/7-total-saved.png"
+type = "image"
+title = "7 — Total Saved"
+
+[[outputs]]
+id = "mq7jWBKtdtycD0nYwuwaR"
+uri = "file://attached_assets/appstore-screenshots/8-login.png"
+type = "image"
+title = "8 — Login"

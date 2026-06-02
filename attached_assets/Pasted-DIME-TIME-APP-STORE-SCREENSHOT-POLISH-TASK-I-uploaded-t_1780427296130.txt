@@ -1,0 +1,91 @@
+DIME TIME — APP STORE SCREENSHOT POLISH TASK
+
+I uploaded the latest App Store screenshots into Replit for Dime Time.
+
+Please review and polish them for App Store Connect submission.
+
+GOALS:
+- Make screenshots App Store-safe
+- Keep them accurate to build 204
+- Avoid anything that looks unfinished
+- Avoid financial/banking claims that could trigger Apple review questions
+
+CHECK ALL SCREENSHOTS FOR:
+
+1. DIMENSIONS
+- Portrait orientation
+- Export to Apple-accepted iPhone size, preferably 1290 x 2796
+- No stretching
+- No black bars
+- No distorted text
+- No cropping of important UI
+
+2. TESTFLIGHT BANNER
+- Remove/crop out the visible "< TestFlight" text if possible
+- Keep status bar clean
+- Do not crop important app UI
+
+3. FINANCIAL CLAIMS
+Do NOT include:
+- FDIC insured
+- bank account
+- checking account
+- savings account
+- guaranteed debt payoff
+- guaranteed savings
+- guaranteed returns
+
+4. BANKING WORDING
+Dime Time is NOT a bank.
+If the app uses the word "Banking", it should only mean connected external accounts / payment settings.
+Do not imply Dime Time provides banking services.
+
+5. DEMO DATA
+Replace weak/empty values where possible:
+- Avoid $0.00 on analytics/insights screens
+- Avoid "N/A"
+- Use realistic sample values only
+
+Examples:
+- Avg. Round-up: $0.87
+- Round-up Rate: 3.8%
+- Top spending category: Coffee Shops or Dining & Restaurants
+
+6. SAFER TIP WORDING
+If any screenshot says:
+"increasing your round-ups by just $1 per transaction could help you pay off debt 6 months faster"
+
+Change to safer wording:
+"increasing your round-ups may help you pay down debt faster over time"
+
+Avoid guaranteed financial results.
+
+7. SCREENSHOTS TO USE
+Recommended order:
+
+1. Dashboard
+2. Debt Management
+3. Debt Reduction Progress Chart
+4. Financial Insights
+5. Optimization Tips
+6. Debt Freedom Tip
+7. Total Saved / Progress
+8. Login
+
+Put Login last.
+
+8. DO NOT USE
+Do not include:
+- Coming Soon screen
+- Business Analytics screen
+- Any crypto screen unless crypto is actually enabled in build 204
+- Any screenshot showing disabled or unavailable features as active
+
+OUTPUT:
+- Confirm final screenshot filenames
+- Confirm final dimensions
+- Confirm screenshots are ready for App Store Connect
+- List any screenshot you recommend not using
+- Do not modify build numbers
+- Do not modify Info.plist
+- Do not modify CodeMagic config
