@@ -1,0 +1,120 @@
+DIME TIME — APP STORE SUBMISSION STATUS
+
+Date: June 2, 2026
+
+APP
+
+* Name: Dime Time Mobile
+* Bundle ID: com.dimetime.mobile
+* Version: 1.0.3
+* Build: 204
+* Status: Ready to Submit
+
+BUILD STATUS
+
+PASS
+
+✓ Add Debt feature implemented
+✓ GitHub synchronized
+✓ Main branch updated (911 commits)
+✓ Build number increased from 203 → 204
+✓ Info.plist and project.pbxproj synchronized
+✓ CodeMagic build successful
+✓ Uploaded to App Store Connect
+✓ Build 204 available for selection
+
+KNOWN APP STORE CONNECT RECORDS
+
+ACTIVE:
+
+* Dime Time Mobile
+
+IGNORE:
+
+* Dime Time Technologies (old rejected record)
+
+REVIEW ACCOUNT
+
+Email:
+[tim@dime-time.com](mailto:tim@dime-time.com)
+
+Environment:
+
+* Sample debt data populated
+* No real bank account linked
+* Safe review account
+
+REMAINING APP STORE TASKS
+
+HIGH PRIORITY
+
+1. Select Build 204
+2. Upload iPhone screenshots
+3. Complete App Description
+4. Complete Keywords
+5. Verify Support URL
+6. Verify Marketing URL
+7. Complete App Privacy questionnaire
+8. Verify Age Rating
+9. Verify Category
+10. Verify Pricing (Free)
+11. Complete Export Compliance question
+12. Verify Review Notes and Sign-In Information
+
+SCREENSHOT PLAN
+
+Current Device:
+
+* iPhone SE
+
+Goal:
+
+* Produce App Store screenshots for the required large-screen iPhone size.
+
+Recommended Screenshots:
+
+1. Dashboard
+2. Debt Management
+3. Transactions
+4. Login
+5. Signup
+
+Optional:
+6. Crypto (only if available in build 204)
+
+Do NOT use:
+
+* Coming Soon screen
+* Business Analytics screen
+
+SCREENSHOT REVIEW CHECKLIST
+
+✓ Portrait orientation
+✓ Real app functionality shown
+✓ Populated sample data
+✓ Consistent Dime Time branding
+✓ No placeholder text
+✓ No competitor logos
+✓ No Android references
+✓ No banking claims
+✓ No FDIC claims
+✓ No guaranteed financial results
+
+APP REVIEW RISK ASSESSMENT
+
+LOW
+
+Current build appears suitable for App Review.
+
+Main remaining risk is metadata completeness (screenshots, privacy answers, and store listing information).
+
+LAUNCH BLOCKERS AFTER APPROVAL
+
+Not required for App Review:
+
+* Cloudflare Turnstile production keys
+* Stripe Treasury approval
+* ENABLE_STRIPE_ACH activation
+* Real ACH transfers
+
+These can be completed after Apple approval and before public launch.
