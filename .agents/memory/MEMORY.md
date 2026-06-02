@@ -1,1 +1,2 @@
 - [Stripe/Plaid prod secret scoping](stripe-prod-secrets-scoping.md) — sensitive keys MUST be global Secrets, never per-env vars (those write plaintext to git-tracked .replit); only flags + public pk_* go in production env scope.
+- [App Store demo account](appstore-demo-account.md) — give Apple `tim@dime-time.com` (has clean sample debts, no bank link); no debt-creation path exists so fresh accounts can't be seeded, and prod DB is read-only to agent tools.
