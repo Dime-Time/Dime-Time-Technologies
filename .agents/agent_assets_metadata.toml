@@ -348,3 +348,15 @@ id = "zGQtZ0dAZaIff2T_zK_8L"
 uri = "file://attached_assets/appstore-screenshots/6-tips.png"
 type = "image"
 title = "6 — Optimization Tips"
+
+[[outputs]]
+id = "YzWbt_6_R4NZcAgOLfDIe"
+uri = "file://attached_assets/appstore-screenshots/7-debt-freedom-tip.png"
+type = "image"
+title = "7 — Debt Freedom Tip"
+
+[[outputs]]
+id = "fMnDZfBSgadWBGChZPfKp"
+uri = "file://attached_assets/appstore-screenshots/8-total-saved.png"
+type = "image"
+title = "8 — Total Saved"
