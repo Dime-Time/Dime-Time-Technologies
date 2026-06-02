@@ -14,5 +14,3 @@ description: Which account to give Apple's reviewer and why fresh demo accounts 
 - **Why:** any "just create a demo account with debts" plan has to run against prod, which is not writable from here — so reuse an existing prod account that already has presentable data and no bank link.
 
 **How to apply:** For any App Store submission/screenshot task, point the user at the founder's prod account. Screenshots must be taken on a real iPhone (TestFlight) for correct Apple portrait dimensions — the agent's `screenshot` tool only captures desktop/landscape and can't authenticate.
-
-**Note:** A self-service "Add Debt" path now exists in-app (modal + `POST /api/debts`), so users/reviewers can add their own debts; this removed the earlier guideline-2.1 risk of a non-functional "Add Debt" button.
