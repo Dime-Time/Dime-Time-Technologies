@@ -29,6 +29,7 @@ import {
   cacheSummary,
   cacheDebts,
 } from "@/lib/dashboardCache";
+import { isDemoUser, applyDemoSummary, DEMO_TRANSACTIONS } from "@/lib/demoData";
 
 interface DashboardSummary {
   totalDebt: string;
@@ -63,12 +64,14 @@ export default function Dashboard() {
 
   // ── User (already seeded by AuthProvider from cache) ─────────────────────
   const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  const isDemo = isDemoUser(user);
 
   // ── Dashboard summary — cache-first ───────────────────────────────────────
   const { data: summary, isFetched: summaryFetched } = useQuery<DashboardSummary>({
     queryKey: ["/api/dashboard-summary"],
     initialData: getCachedSummary<DashboardSummary>(),
     initialDataUpdatedAt: 0,
+    select: (data) => (isDemo ? (applyDemoSummary(data) as DashboardSummary) : data),
   });
 
   // ── Debts — cache-first ───────────────────────────────────────────────────
@@ -94,11 +97,14 @@ export default function Dashboard() {
   } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
     staleTime: 30000,
+    select: (data) => (isDemo && (!data || data.length === 0) ? DEMO_TRANSACTIONS : data),
   });
 
   // ── Persist fresh data to cache ───────────────────────────────────────────
   useEffect(() => {
-    if (summaryFetched && summary) {
+    // Never persist demo-injected summary values to the (global) dashboard cache,
+    // otherwise a later session for a different account could read them back.
+    if (summaryFetched && summary && !isDemo) {
       cacheSummary(summary);
       const elapsed = performance.now() - t0.current;
       console.log(`[DimeTime] summary fetched in ${elapsed.toFixed(0)}ms`);
@@ -442,8 +448,8 @@ export default function Dashboard() {
           <div className="max-w-3xl">
             <h2 className="text-2xl font-bold mb-4">💡 Dime Time Tip: Accelerate Your Debt Freedom</h2>
             <p className="text-lg mb-6 opacity-90">
-              Did you know that increasing your round-ups by just $1 per transaction could help you pay off debt 6 months faster? 
-              Small changes make a big difference over time.
+              Small increases to your round-ups may help you reduce debt faster over time.
+              Individual results vary based on spending habits and debt balances.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button className="bg-white text-dime-purple hover:bg-slate-50">

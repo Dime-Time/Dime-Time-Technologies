@@ -9,11 +9,15 @@ import { formatCurrency, formatDate, formatTime } from "@/lib/calculations";
 import { Coffee, Car, ShoppingBag, DollarSign, Plus, Receipt } from "lucide-react";
 import { useLocation } from "wouter";
 import type { Transaction } from "@shared/schema";
+import { isDemoUser, DEMO_TRANSACTIONS } from "@/lib/demoData";
 
 export default function Transactions() {
   const [, setLocation] = useLocation();
+  const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  const isDemo = isDemoUser(user);
   const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+    select: (data) => (isDemo && (!data || data.length === 0) ? DEMO_TRANSACTIONS : data),
   });
 
   const getCategoryIcon = (category: string) => {

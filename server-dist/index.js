@@ -6174,6 +6174,44 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+  app2.post("/api/debts", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const currentBalance = req.body.currentBalance;
+      const accountNumber = req.body.accountNumber && String(req.body.accountNumber).trim() !== "" ? String(req.body.accountNumber).trim() : "\u2014";
+      const validatedData = insertDebtSchema.refine((d) => Number.isInteger(d.dueDate) && d.dueDate >= 1 && d.dueDate <= 31, {
+        message: "Due date must be a day between 1 and 31",
+        path: ["dueDate"]
+      }).refine((d) => parseFloat(d.currentBalance) > 0, {
+        message: "Current balance must be greater than 0",
+        path: ["currentBalance"]
+      }).refine((d) => parseFloat(d.interestRate) >= 0, {
+        message: "Interest rate must be 0 or greater",
+        path: ["interestRate"]
+      }).refine((d) => parseFloat(d.minimumPayment) >= 0, {
+        message: "Minimum payment must be 0 or greater",
+        path: ["minimumPayment"]
+      }).parse({
+        ...req.body,
+        userId,
+        accountNumber,
+        // Server hard-sets original === current so payoff progress always
+        // starts at 0%. Any client-supplied originalBalance is ignored.
+        originalBalance: currentBalance,
+        isActive: true
+      });
+      const debt = await storage.createDebt(validatedData);
+      res.status(201).json(debt);
+    } catch (error) {
+      if (error instanceof z5.ZodError) {
+        return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
   app2.get("/api/transactions", async (req, res) => {
     try {
       const userId = getUserIdFromRequest(req);

@@ -19,6 +19,7 @@ import {
   describeTransferError,
   type TransactionStatus,
 } from "@shared/transactionStatus";
+import { isDemoUser, applyDemoSummary, DEMO_TRANSACTIONS } from "@/lib/demoData";
 
 interface TransferRow {
   id: string;
@@ -42,8 +43,12 @@ interface DashboardSummary {
 }
 
 export default function Insights() {
+  const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  const isDemo = isDemoUser(user);
+
   const { data: transactions = [] } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+    select: (data) => (isDemo && (!data || data.length === 0) ? DEMO_TRANSACTIONS : data),
   });
 
   const { data: debts = [] } = useQuery<Debt[]>({
@@ -60,6 +65,7 @@ export default function Insights() {
 
   const { data: summary } = useQuery<DashboardSummary>({
     queryKey: ["/api/dashboard-summary"],
+    select: (data) => (isDemo ? (applyDemoSummary(data) as DashboardSummary) : data),
   });
 
   // Calculate spending by category
@@ -405,7 +411,7 @@ export default function Insights() {
               <div className="text-sm">
                 <p className="font-medium text-slate-900 mb-1">📊 Track Your Habits</p>
                 <p className="text-slate-600">
-                  Your top spending category is {topCategories[0]?.[0] || 'N/A'}. Consider budgeting here.
+                  Your top spending category is {topCategories[0]?.[0] || 'not available yet'}. Consider budgeting here.
                 </p>
               </div>
             </div>
