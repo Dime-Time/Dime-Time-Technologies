@@ -312,3 +312,39 @@ id = "ZZABjRyOADo1LuMG6DHWb"
 uri = "file://client/src/assets/dime-time-app-icon.png"
 type = "image"
 title = "Dime Time — Official App Icon / Logo"
+
+[[outputs]]
+id = "BfFs9IIzBBJ2L4JKVnqNN"
+uri = "file://attached_assets/appstore-screenshots/1-login.png"
+type = "image"
+title = "1 — Login"
+
+[[outputs]]
+id = "tOxjE592cHR3or0ySpC35"
+uri = "file://attached_assets/appstore-screenshots/2-dashboard.png"
+type = "image"
+title = "2 — Dashboard"
+
+[[outputs]]
+id = "IwCE1bbge4_5g3cxcJ52h"
+uri = "file://attached_assets/appstore-screenshots/3-debt-management.png"
+type = "image"
+title = "3 — Debt Management"
+
+[[outputs]]
+id = "wAaz_9uQsXyOmPFAf-PRZ"
+uri = "file://attached_assets/appstore-screenshots/4-progress-chart.png"
+type = "image"
+title = "4 — Progress Chart"
+
+[[outputs]]
+id = "2tYK2UAHpaFNHQ87wbHFf"
+uri = "file://attached_assets/appstore-screenshots/5-insights.png"
+type = "image"
+title = "5 — Financial Insights"
+
+[[outputs]]
+id = "zGQtZ0dAZaIff2T_zK_8L"
+uri = "file://attached_assets/appstore-screenshots/6-tips.png"
+type = "image"
+title = "6 — Optimization Tips"
