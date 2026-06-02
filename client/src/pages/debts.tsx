@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PaymentModal } from "@/components/payment-modal";
+import { AddDebtModal } from "@/components/AddDebtModal";
 import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
 import { CreditCard, TrendingDown, Calendar, Plus, DollarSign } from "lucide-react";
@@ -14,6 +15,7 @@ import type { Debt, Payment } from "@shared/schema";
 
 export default function Debts() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showAddDebtModal, setShowAddDebtModal] = useState(false);
 
   const { data: debts = [], isLoading } = useQuery<Debt[]>({
     queryKey: ["/api/debts"],
@@ -44,13 +46,22 @@ export default function Debts() {
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Debt Management</h1>
           <p className="text-slate-600">Track and manage your debt payoff journey</p>
         </div>
-        <Button 
-          className="bg-dime-purple hover:bg-dime-purple/90"
-          onClick={() => setShowPaymentModal(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Make Payment
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowAddDebtModal(true)}
+            data-testid="button-add-debt"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Debt
+          </Button>
+          <Button
+            className="bg-dime-purple hover:bg-dime-purple/90"
+            onClick={() => setShowPaymentModal(true)}
+          >
+            Make Payment
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -137,7 +148,7 @@ export default function Debts() {
                 title="No debts yet"
                 description="Add your first debt to start tracking your payoff progress."
                 ctaLabel="Add Debt Account"
-                onCtaClick={() => { /* hook into add-debt flow when wired */ }}
+                onCtaClick={() => setShowAddDebtModal(true)}
                 testIdPrefix="empty-debts-page"
               />
             </CardContent>
@@ -286,6 +297,11 @@ export default function Debts() {
         onOpenChange={setShowPaymentModal}
         debts={debts}
         roundUpBalance={0} // This would come from summary data in a real app
+      />
+
+      <AddDebtModal
+        open={showAddDebtModal}
+        onOpenChange={setShowAddDebtModal}
       />
     </main>
   );
