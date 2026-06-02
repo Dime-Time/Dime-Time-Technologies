@@ -1,0 +1,88 @@
+DIME TIME — FINAL APP STORE SCREENSHOT FIXES
+
+Please update the App Store screenshots/demo data before final submission.
+
+GOAL:
+Make the screenshots look polished, populated, and App Store-safe while accurately reflecting build 204.
+
+FIX THESE ITEMS:
+
+1. REPLACE $0.00 VALUES
+
+Current screenshots show too many $0.00 values, which makes the app look unfinished.
+
+Use realistic sample/demo values instead:
+
+- Saved this month: $27.43
+- Round-Up Balance: $42.18
+- Avg. Round-up: $0.87
+- Round-up Rate: 3.8%
+- Total Saved: $512.34
+- Round-ups collected: $42.18
+
+Keep Total Debt at $25,000.00 or similar sample value.
+
+2. REPLACE "N/A"
+
+Current text:
+"Your top spending category is N/A."
+
+Change to:
+"Your top spending category is Dining & Restaurants."
+
+or:
+"Your top spending category is Coffee Shops."
+
+3. SOFTEN FINANCIAL CLAIM LANGUAGE
+
+Current text:
+"increasing your round-ups by just $1 per transaction could help you pay off debt 6 months faster"
+
+Replace with safer wording:
+"Small increases to your round-ups may help you reduce debt faster over time. Individual results vary based on spending habits and debt balances."
+
+Avoid guaranteed financial outcomes.
+
+4. CRYPTO TAB CHECK
+
+The bottom navigation shows "Crypto."
+
+If crypto is NOT fully available in build 204:
+- Hide the Crypto tab from screenshots if possible, OR
+- Do not use screenshots that emphasize crypto.
+
+If crypto is intentionally included in build 204, leave it.
+
+5. FINAL SCREENSHOT ORDER
+
+Export final screenshots in this order:
+
+1. Dashboard
+2. Debt Management
+3. Debt Reduction Progress
+4. Financial Insights
+5. Optimization Tips
+6. Debt Freedom Tip
+7. Total Saved / Progress
+8. Login
+
+6. EXPORT REQUIREMENTS
+
+Export all screenshots as:
+- PNG
+- Portrait
+- 1290 x 2796 if possible
+- No TestFlight banner
+- No black bars
+- No stretched text
+- No cropped important UI
+
+DO NOT MODIFY:
+- Build numbers
+- Info.plist
+- CodeMagic config
+- Bundle ID
+- App icon
+
+OUTPUT:
+Confirm final screenshot filenames, dimensions, and whether they are ready for App Store Connect.
