@@ -1,0 +1,238 @@
+DIME TIME — APP STORE SCREENSHOT AUDIT & FINAL RECOMMENDATIONS
+
+CONTEXT
+App: Dime Time
+Category: Personal Finance / Debt Reduction
+Platform: iPhone (iOS)
+Branding: Purple theme, alarm-clock-with-dollar-sign logo
+Positioning: Dime Time is NOT a bank and must not imply banking, FDIC insurance, or guaranteed financial outcomes.
+
+SCREENSHOT REVIEW RESULTS
+
+1. DIMENSIONS & ORIENTATION
+
+STATUS: PASS
+
+All screenshots reviewed appear to be:
+- Portrait orientation
+- iPhone layout
+- Not visibly stretched
+- Not visibly distorted
+
+ACTION:
+Verify exported files match App Store Connect accepted screenshot sizes before upload.
+
+Examples:
+- 1290 x 2796
+- 1320 x 2868
+- 1284 x 2778
+
+No UI scaling issues detected.
+
+--------------------------------------------------
+
+2. CONTENT POLICY REVIEW
+
+STATUS: PASS
+
+No screenshots contain:
+- "Beta"
+- "Test"
+- "Demo"
+- Lorem ipsum text
+- Android references
+- Google references
+- Competitor names
+- Third-party logos
+
+ACTION:
+Remove the "Coming Soon!" screenshot from the App Store listing.
+
+Reason:
+Apple prefers screenshots that demonstrate actual functionality rather than future features.
+
+--------------------------------------------------
+
+3. FINANCIAL CLAIM REVIEW
+
+STATUS: PASS
+
+No screenshots appear to claim:
+- FDIC insurance
+- Banking services
+- Checking accounts
+- Savings accounts
+- Guaranteed returns
+- Guaranteed debt elimination
+- Guaranteed investment gains
+
+IMPORTANT REVIEW:
+
+Crypto screen currently contains wording similar to:
+
+"Coinbase integration is active – real crypto purchases enabled"
+
+If crypto investing is NOT actually available in build 203:
+
+CHANGE THIS LANGUAGE.
+
+Recommended alternatives:
+
+- "Optional cryptocurrency investing"
+- "Crypto round-ups available when enabled"
+- "Crypto features available when activated"
+
+Do not imply live functionality if unavailable in the review build.
+
+--------------------------------------------------
+
+4. FEATURE COMPLETENESS REVIEW
+
+LOGIN SCREEN
+STATUS: PASS
+
+Looks complete and functional.
+
+DASHBOARD
+STATUS: PASS
+
+Shows:
+- Round-up balance
+- Debt balances
+- Progress tracking
+
+Strong screenshot.
+
+DEBT MANAGEMENT
+STATUS: PASS
+
+Shows:
+- Total debt
+- Progress
+- Payment tracking
+
+Strong screenshot.
+
+TRANSACTIONS
+STATUS: PASS
+
+Shows:
+- Real transaction examples
+- Round-up examples
+
+Strong screenshot.
+
+SIGNUP
+STATUS: PASS
+
+Looks complete and functional.
+
+CRYPTO
+STATUS: CONDITIONAL PASS
+
+Only use if crypto functionality exists in build 203.
+
+BUSINESS ANALYTICS SCREEN
+STATUS: REMOVE
+
+Reason:
+Business forecasting is not a core consumer feature of Dime Time.
+
+May confuse users and dilute the value proposition.
+
+--------------------------------------------------
+
+5. BRANDING REVIEW
+
+STATUS: PASS
+
+Branding is consistent across all screenshots:
+
+- Purple theme
+- Dime Time logo
+- Dime Time name
+- Consistent typography
+- Professional appearance
+
+No changes required.
+
+--------------------------------------------------
+
+6. RECOMMENDED APP STORE SCREENSHOT ORDER
+
+PRIMARY ORDER
+
+1. Dashboard
+2. Debt Management
+3. Transactions
+4. Login
+5. Signup
+
+OPTIONAL
+
+6. Crypto (only if available in build 203)
+
+REMOVE
+
+- Coming Soon screen
+- Business Analytics screen
+
+--------------------------------------------------
+
+7. APP REVIEW RISKS TO CHECK
+
+VERIFY REVIEW ACCOUNT
+
+- Login works
+- Password works
+- Account never expires
+- No email verification required
+- No OTP required
+
+VERIFY SCREENSHOT ACCURACY
+
+Screenshots must reflect the actual review build.
+
+If ACH is disabled:
+- Do not imply live ACH transfers.
+
+If crypto is disabled:
+- Do not imply active crypto investing.
+
+If any feature is hidden:
+- Do not showcase it in screenshots.
+
+VERIFY DATA QUALITY
+
+Use populated sample data.
+
+Avoid:
+- Empty dashboards
+- Empty debt lists
+- Empty transaction lists
+- $0 balances where possible
+
+--------------------------------------------------
+
+FINAL VERDICT
+
+APP STORE SCREENSHOTS RECOMMENDED FOR SUBMISSION:
+
+✓ Dashboard
+✓ Debt Management
+✓ Transactions
+✓ Login
+✓ Signup
+
+OPTIONAL:
+✓ Crypto (only if available in build 203)
+
+REMOVE:
+✗ Coming Soon screen
+✗ Business Analytics screen
+
+OVERALL STATUS:
+
+PASS
+
+Current screenshot set appears professional, consistent, and unlikely to trigger App Store rejection, provided screenshots accurately reflect build 203 functionality and no disabled features are presented as active.
