@@ -186,3 +186,95 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - $CM_EXPORT_DIR/**
+
+  android_release:
+    name: Dime Time – Android AAB Build (Google Play)
+    max_build_duration: 120
+    instance_type: linux_x2
+
+    environment:
+      java: 17
+
+      # Environment group that must contain:
+      #   ANDROID_KEYSTORE_BASE64  — base64 of your release.keystore file
+      #     (generate once: keytool -genkey -v -keystore release.keystore \
+      #       -alias dimetime -keyalg RSA -keysize 2048 -validity 10000
+      #      then: base64 -w0 release.keystore  → paste the output as this var)
+      #     ⚠️  KEEP THE ORIGINAL release.keystore FOREVER + BACK IT UP.
+      #         Lose it and you can never update the app on Google Play.
+      #   KEYSTORE_PASSWORD        — the keystore password you chose
+      #   KEY_ALIAS                — the key alias (e.g. "dimetime")
+      #   KEY_PASSWORD             — the key password you chose
+      #   VITE_STRIPE_PUBLISHABLE_KEY (pk_live_...) — baked into the client
+      #     bundle by `npm run build`; the shipped AAB needs it for Stripe ACH.
+      #     Value lives ONLY in this Codemagic group, never hardcoded here.
+      groups:
+        - android_build_info
+
+    scripts:
+      - name: Install dependencies and sync Capacitor
+        script: |
+          set -e
+          echo "=== Installing npm dependencies and syncing Capacitor ==="
+          npm ci || npm install
+
+          # Stripe publishable key must be present BEFORE `npm run build` — Vite
+          # bakes VITE_STRIPE_PUBLISHABLE_KEY into the client bundle that ships
+          # inside the AAB. Without it, the in-app "Connect bank" flow has no
+          # Stripe key. Add it (pk_live_...) to the `android_build_info` env group.
+          if [ -z "$VITE_STRIPE_PUBLISHABLE_KEY" ]; then
+            echo "FATAL: VITE_STRIPE_PUBLISHABLE_KEY is not set. Add it to the android_build_info Codemagic environment group before building."
+            exit 1
+          fi
+          case "$VITE_STRIPE_PUBLISHABLE_KEY" in
+            pk_live_*|pk_test_*) echo "VITE_STRIPE_PUBLISHABLE_KEY present and well-formed.";;
+            *) echo "FATAL: VITE_STRIPE_PUBLISHABLE_KEY does not look like a Stripe publishable key (expected pk_live_... or pk_test_...)."; exit 1;;
+          esac
+
+          npm run build
+          npx cap sync android
+
+      - name: Build signed Android App Bundle (AAB)
+        script: |
+          set -e
+
+          # All four signing values must be present — android/app/build.gradle
+          # fails the build if any are missing (security requirement).
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "FATAL: Missing one or more Android signing vars (ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD)."
+            echo "       Add them to the android_build_info Codemagic environment group."
+            exit 1
+          fi
+
+          # Decode the keystore to a file and point build.gradle at it.
+          # KEYSTORE_FILE/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD are read by
+          # the release signingConfig in android/app/build.gradle.
+          export KEYSTORE_FILE="$CM_BUILD_DIR/release.keystore"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_FILE"
+
+          echo "=== Building signed release AAB ==="
+          cd android
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Verify the built AAB exists
+        script: |
+          set -e
+          AAB_PATH="android/app/build/outputs/bundle/release/app-release.aab"
+          if [ ! -f "$AAB_PATH" ]; then
+            echo "FATAL: AAB not found at $AAB_PATH"
+            find android/app/build/outputs -type f || true
+            exit 1
+          fi
+          echo "=== AAB built successfully ==="
+          ls -lh "$AAB_PATH"
+          echo "Download this .aab from the Codemagic artifacts and upload it in the Google Play Console (Production or Internal testing)."
+
+    # NOTE: The FIRST upload to Google Play must be done MANUALLY through the
+    # Play Console — automated publishing can't create a brand-new app listing.
+    # Download the .aab artifact below and upload it by hand the first time.
+    # After the app exists in Play, we can add a `publishing: google_play:` block
+    # here (needs a Google service-account JSON) to automate future uploads.
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
