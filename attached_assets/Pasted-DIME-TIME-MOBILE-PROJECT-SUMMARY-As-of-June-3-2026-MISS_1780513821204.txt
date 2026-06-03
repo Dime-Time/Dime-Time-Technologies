@@ -1,0 +1,310 @@
+DIME TIME MOBILE — PROJECT SUMMARY
+As of June 3, 2026
+
+MISSION
+Dime Time helps consumers get out of debt one dime at a time by automatically rounding up everyday purchases and applying those savings toward debt reduction. The platform is designed to combine behavioral finance, automation, debt tracking, and optional future investing tools into a simple mobile experience.
+
+MAJOR MILESTONE
+✅ First App Store Submission Completed
+Date Submitted: June 3, 2026
+Version: 1.0.3
+Build: 205
+Status: Waiting for Review
+
+PLATFORMS BUILT
+
+1. Mobile Application
+- Native iOS app using Capacitor
+- TestFlight distribution
+- App Store submission completed
+- Responsive mobile UI
+- Authentication system
+- Debt management dashboard
+- Round-up tracking
+- Financial insights engine
+- Transaction history
+- User settings
+- Account deletion compliance
+
+2. Web Platform
+- Marketing website
+- Signup/login flows
+- Privacy Policy
+- Terms of Service
+- Contact system
+- FAQ system
+- Responsive design
+- SEO-ready architecture
+
+BACKEND INFRASTRUCTURE
+
+Technology Stack
+- React
+- TypeScript
+- Vite
+- Capacitor
+- Express.js
+- PostgreSQL
+- Drizzle ORM
+- Node.js
+
+DATABASE SYSTEMS
+
+Implemented Tables Include:
+- Users
+- Sessions
+- Transfers
+- Contact Submissions
+- Email Verification Tokens
+- Password Reset Tokens
+- ACH Authorizations
+- Stripe Customer Records
+- Financial Connection Records
+
+CORE FEATURES
+
+Authentication
+- Email registration
+- Login system
+- Password reset
+- Email verification
+- Session management
+
+Debt Management
+- Debt account tracking
+- Progress calculations
+- Debt payoff projections
+- Debt analytics
+- Monthly reduction tracking
+
+Round-Ups
+- Round-up accumulation
+- Round-up balance tracking
+- Transfer scheduling
+- Savings calculations
+
+Insights Engine
+- Financial metrics
+- Progress dashboards
+- Debt payoff forecasting
+- Optimization recommendations
+
+Security
+- TLS encryption
+- Password hashing
+- Session security
+- API protection
+- Rate limiting
+- Webhook verification
+
+APPLE COMPLIANCE
+
+Completed:
+✅ Privacy Policy
+✅ Terms of Service
+✅ App Privacy Disclosures
+✅ 13-inch iPad Screenshots
+✅ App Review Credentials
+✅ Account Deletion Functionality
+✅ App Store Metadata
+✅ Pricing Configuration
+✅ Category Configuration
+
+ACCOUNT DELETION COMPLIANCE
+
+Built to satisfy Apple Guideline 5.1.1(v)
+
+Workflow:
+Settings
+→ Delete Account
+→ Type confirmation phrase
+→ Full account deletion
+→ Session invalidation
+→ Automatic logout
+
+FINANCIAL INFRASTRUCTURE
+
+Stripe Integrations
+- Stripe Payments
+- ACH Direct Debit
+- Financial Connections
+- Customer Management
+- Payment Methods
+- Webhooks
+- Treasury visibility
+
+ACH FEATURES IMPLEMENTED
+
+- Bank account linking
+- ACH authorization capture
+- ACH mandate storage
+- ACH audit trail
+- Idempotent transfers
+- Webhook reconciliation
+- Transfer ledger
+- Kill-switch protection
+
+CURRENT ACH STATUS
+
+Implemented in code:
+✅ Yes
+
+Production Enabled:
+⚠ Controlled by feature flag
+
+Protection:
+ENABLE_REAL_TRANSFERS flag prevents unintended live transfers.
+
+API INTEGRATIONS
+
+Stripe
+- Customer API
+- PaymentIntent API
+- Financial Connections API
+- ACH Debit API
+- Webhooks
+
+Resend
+- Transactional email delivery
+- Password reset emails
+- Verification emails
+
+Apple
+- TestFlight
+- App Store Connect
+- App Review pipeline
+
+SECURITY FEATURES
+
+- TLS 1.2+
+- AES-256-GCM encryption
+- bcrypt password hashing
+- Webhook signature verification
+- Rate limiting
+- Token expiration
+- Single-use reset tokens
+- Session invalidation
+- Audit logging
+
+UI/UX DESIGN
+
+Brand:
+Dime Time
+
+Primary Color:
+Lavender / Purple Theme
+
+Primary Brand Color:
+#918EF4
+
+Design System:
+- Modern fintech UI
+- Card-based layouts
+- Mobile-first architecture
+- Consistent iconography
+- Accessibility considerations
+- Responsive layouts
+
+APP STORE REVIEW EXPERIENCE
+
+Special reviewer experience created:
+
+Reviewer Account:
+tim@dime-time.com
+
+Includes:
+- 589 sample transactions
+- $512.34 round-up savings
+- 3.8% round-up rate
+- Historical debt reduction data
+- Full transaction history
+- Populated analytics dashboards
+
+Purpose:
+Ensure Apple reviewers see a fully functioning, professional experience rather than empty accounts.
+
+ESTIMATED DEVELOPMENT EFFORT
+
+Conservative Estimate
+
+Architecture & Planning
+100–200 hours
+
+Frontend Development
+400–700 hours
+
+Backend Development
+400–700 hours
+
+Database Design
+100–150 hours
+
+Authentication Systems
+80–120 hours
+
+Stripe / ACH Integration
+150–300 hours
+
+Security Hardening
+100–200 hours
+
+Testing & QA
+150–250 hours
+
+App Store Submission Work
+50–100 hours
+
+Compliance & Legal Integration
+50–100 hours
+
+Total Estimated Effort:
+1,580–2,820+ hours
+
+PROFESSIONAL DEVELOPMENT VALUE
+
+Junior Agency Rate ($75/hr):
+$118,500 – $211,500
+
+Mid-Level Agency Rate ($125/hr):
+$197,500 – $352,500
+
+Senior Fintech Agency Rate ($175/hr):
+$276,500 – $493,500
+
+Enterprise Fintech Consultancy ($250/hr):
+$395,000 – $705,000
+
+ESTIMATED CODEBASE SIZE
+
+Web Application:
+~15,000–25,000+ lines
+
+Backend Services:
+~8,000–15,000+ lines
+
+Database & Schema:
+~1,000–3,000+ lines
+
+Configuration & Build Systems:
+~1,000–2,000+ lines
+
+Total Project:
+~25,000–45,000+ lines of code
+
+CURRENT STATUS
+
+✅ Website Built
+✅ Backend Built
+✅ Database Built
+✅ Security Implemented
+✅ Stripe Integrated
+✅ ACH Framework Implemented
+✅ Apple Compliance Completed
+✅ TestFlight Completed
+✅ App Submitted to Apple
+
+Current Phase:
+APP STORE REVIEW
+
+Next Milestone:
+APPROVED ON APP STORE
