@@ -1,0 +1,276 @@
+DIME TIME — CRYPTO ROUND-UP FEES & EXCHANGE INTEGRATION REVIEW
+
+QUESTION:
+How should Dime Time handle cryptocurrency round-ups without transaction fees consuming a significant portion of the user's investment? What are the integration considerations for Coinbase, Kraken, and Crypto.com?
+
+--------------------------------------------------
+CORE PROBLEM
+--------------------------------------------------
+
+If Dime Time executes a cryptocurrency purchase every time a user generates a round-up, transaction costs become inefficient.
+
+Example:
+
+Coffee Purchase:
+$4.58 → Round-up = $0.42
+
+Gas Purchase:
+$39.12 → Round-up = $0.88
+
+Lunch Purchase:
+$14.39 → Round-up = $0.61
+
+If each round-up triggers an immediate BTC purchase:
+
+$0.42 Buy
+$0.88 Buy
+$0.61 Buy
+
+Exchange fees and spreads may consume a meaningful percentage of each purchase.
+
+This creates poor economics and a poor user experience.
+
+--------------------------------------------------
+RECOMMENDED DIME TIME MODEL
+--------------------------------------------------
+
+Do NOT execute crypto purchases on every transaction.
+
+Instead:
+
+1. Capture round-ups internally.
+2. Store them in the Dime Time ledger.
+3. Accumulate round-ups over time.
+4. Execute a larger crypto purchase periodically.
+
+Possible triggers:
+
+• Daily
+• Weekly
+• User-selected schedule
+• Threshold-based ($5, $10, $25, etc.)
+
+Example:
+
+User generates:
+
+$0.42
+$0.61
+$0.88
+$0.73
+
+Total = $2.64
+
+Rather than four separate crypto purchases:
+
+Execute one purchase for $2.64
+
+Or wait until:
+
+$10 accumulated
+$25 accumulated
+$50 accumulated
+
+before executing the trade.
+
+--------------------------------------------------
+COINBASE INTEGRATION
+--------------------------------------------------
+
+Coinbase Advanced Trade API supports:
+
+• Market orders
+• Limit orders
+• Portfolio management
+• Account balances
+• Order history
+
+Estimated retail fees:
+
+Maker:
+~0.40%
+
+Taker:
+~0.60%
+
+Pros:
+
+• Strong U.S. compliance
+• Well-documented API
+• Familiar consumer brand
+• Existing Coinbase relationship already planned for Dime Time
+
+Cons:
+
+• Generally highest fees of the three exchanges
+
+--------------------------------------------------
+KRAKEN INTEGRATION
+--------------------------------------------------
+
+Kraken API supports:
+
+• Spot trading
+• Market orders
+• Limit orders
+• Portfolio management
+• WebSocket market feeds
+
+Estimated retail fees:
+
+Maker:
+~0.25%
+
+Taker:
+~0.40%
+
+Pros:
+
+• Lower fees
+• Excellent API reputation
+• Crypto-focused company
+• Strong security history
+
+Cons:
+
+• Less mainstream consumer recognition than Coinbase
+
+--------------------------------------------------
+CRYPTO.COM INTEGRATION
+--------------------------------------------------
+
+Crypto.com Exchange API supports:
+
+• Spot trading
+• Order management
+• Account management
+• WebSocket feeds
+
+Estimated retail fees:
+
+Maker:
+~0.25%
+
+Taker:
+~0.50%
+
+Pros:
+
+• Competitive fees
+• Large retail user base
+• Good international presence
+
+Cons:
+
+• API ecosystem less commonly used by fintech startups than Coinbase or Kraken
+
+--------------------------------------------------
+RECOMMENDED ARCHITECTURE
+--------------------------------------------------
+
+Phase 1:
+
+Plaid Transaction Feed
+        ↓
+Round-Up Calculation Engine
+        ↓
+Dime Time Ledger
+        ↓
+Weekly Aggregation
+        ↓
+Exchange Purchase
+        ↓
+User Portfolio Allocation
+
+Example:
+
+User Round-Ups:
+
+Monday:    $1.12
+Tuesday:   $0.83
+Wednesday: $1.41
+Thursday:  $0.97
+Friday:    $1.67
+
+Total = $6.00
+
+One BTC purchase executed for $6.00
+
+instead of five separate purchases.
+
+--------------------------------------------------
+MULTI-EXCHANGE FUTURE
+--------------------------------------------------
+
+Potential settings screen:
+
+Crypto Destination:
+
+○ Coinbase
+○ Kraken
+○ Crypto.com
+
+User chooses preferred exchange.
+
+Dime Time executes purchases through the selected API.
+
+This becomes a competitive differentiator because most round-up apps only support a single exchange.
+
+--------------------------------------------------
+RECOMMENDED MONETIZATION
+--------------------------------------------------
+
+Keep existing Dime Time subscription model:
+
+Tier 1: $2.99
+Tier 2: $3.99
+Tier 3: $4.99
+
+Avoid transaction fees.
+
+Revenue source:
+
+Subscription income
+
+Not:
+
+Per-trade commissions
+
+Benefits:
+
+• Simpler compliance
+• Easier user understanding
+• Better economics for small investors
+• Cleaner customer experience
+
+--------------------------------------------------
+LONG-TERM SCALING OPPORTUNITY
+--------------------------------------------------
+
+Future enterprise architecture could allow:
+
+Thousands of users
+        ↓
+Aggregate crypto purchases
+        ↓
+Single large exchange order
+        ↓
+Internal allocation across users
+
+Benefits:
+
+• Lower effective trading costs
+• Better execution prices
+• Institutional-level efficiency
+
+For initial launch:
+
+Plaid
+        ↓
+Round-Up Ledger
+        ↓
+Weekly Batch Purchase
+        ↓
+Coinbase / Kraken / Crypto.com API
+
+This is likely the simplest and most scalable version of the Dime Time crypto round-up system.
