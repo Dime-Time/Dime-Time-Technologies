@@ -1,0 +1,370 @@
+DIME TIME — LONG-TERM PRODUCT, CRYPTO, TOKEN, AND INTERNATIONAL EXPANSION ROADMAP
+
+OVERVIEW
+
+Dime Time's long-term vision should not be limited to being a debt-payoff application.
+
+The larger opportunity is to become a financial allocation platform that automatically directs small amounts of money toward a user's financial goals.
+
+The core philosophy remains:
+
+"Take small amounts of money automatically and move them toward a better financial future."
+
+Debt reduction is the initial use case.
+
+Over time, Dime Time can evolve into a broader financial ecosystem.
+
+---
+
+## PHASE 1 — U.S. LAUNCH
+
+Current Focus:
+
+• Apple App Store approval
+• Google Play approval
+• Initial user acquisition
+• Product validation
+• Customer feedback
+• Revenue generation
+
+Features:
+
+• Debt tracking
+• Round-ups
+• Debt payoff acceleration
+• Financial insights
+• User accounts
+• ACH infrastructure
+• Stripe Financial Connections
+
+Goal:
+
+Prove that users want Dime Time and that the product creates measurable financial value.
+
+---
+
+## PHASE 2 — PRODUCT MARKET FIT
+
+Target:
+
+100–1,000 users
+
+Focus:
+
+• User engagement
+• Retention
+• Customer feedback
+• Product improvements
+
+Key Question:
+
+Do users continue using Dime Time after onboarding?
+
+Success Metric:
+
+Users actively using round-ups and debt tracking over extended periods.
+
+---
+
+## PHASE 3 — REVENUE GENERATION
+
+Target:
+
+1,000–10,000 users
+
+Focus:
+
+• Subscription revenue
+• Premium features
+• Sustainable operating model
+
+Goal:
+
+Ensure Dime Time becomes financially self-sustaining.
+
+This stage is critical because companies often fail from lack of funding rather than lack of product quality.
+
+---
+
+## PHASE 4 — CRYPTO INTEGRATIONS
+
+Potential Partners:
+
+• Coinbase
+• Kraken
+• Robinhood Crypto
+
+Potential Future User Options:
+
+100% Debt
+
+50% Debt / 50% Bitcoin
+
+25% Debt / 25% Savings / 50% Bitcoin
+
+Custom Allocation
+
+Example:
+
+A user makes a purchase.
+
+Round-up amount = $0.83
+
+Allocation:
+
+$0.42 → Debt
+
+$0.21 → Savings
+
+$0.20 → Bitcoin
+
+This expands Dime Time from debt reduction into broader wealth building.
+
+---
+
+## PHASE 5 — FINANCIAL ALLOCATION ENGINE
+
+This may become Dime Time's most valuable asset.
+
+Instead of being:
+
+"A debt app"
+
+Dime Time becomes:
+
+"A financial allocation platform."
+
+Potential Destinations:
+
+• Credit cards
+• Student loans
+• Auto loans
+• Mortgages
+• Savings accounts
+• Emergency funds
+• Brokerage accounts
+• Bitcoin
+• Retirement accounts
+
+The allocation engine becomes the platform's competitive advantage.
+
+This concept aligns closely with Dime Time's patent filing:
+
+"Dynamic Dual-Split and Multi-Destination Round-Up Microallocation System"
+
+---
+
+## PHASE 6 — SCALE
+
+Target:
+
+100,000+ users
+
+Focus:
+
+• Automation
+• Marketing
+• Strategic partnerships
+• Revenue growth
+• National brand recognition
+
+At this stage Dime Time transitions from startup to established fintech company.
+
+---
+
+## PHASE 7 — INTERNATIONAL EXPANSION
+
+IMPORTANT:
+
+International expansion should occur AFTER proving success in the United States.
+
+Why?
+
+Fintech does not scale internationally as easily as social media.
+
+Each country introduces:
+
+• Banking regulations
+• Privacy regulations
+• Tax requirements
+• Money movement laws
+• Identity verification requirements
+
+The product concept is universal.
+
+The infrastructure is not.
+
+---
+
+## FIRST INTERNATIONAL TARGETS
+
+1. Canada
+
+Reasons:
+
+• Similar financial system
+• Similar consumer debt issues
+• English-speaking
+• Geographic proximity
+
+2. United Kingdom
+
+Reasons:
+
+• Strong fintech adoption
+• Open Banking ecosystem
+• Familiar consumer behavior
+
+3. Australia
+
+Reasons:
+
+• High smartphone adoption
+• Strong fintech market
+• Similar financial culture
+
+4. New Zealand
+
+Reasons:
+
+• Similar market characteristics
+• Easier expansion path after Australia
+
+---
+
+## INTERNATIONAL INFRASTRUCTURE
+
+United States:
+
+• ACH
+
+Canada:
+
+• EFT
+
+United Kingdom:
+
+• Open Banking
+• Faster Payments
+
+European Union:
+
+• SEPA
+
+Australia:
+
+• BECS
+
+Dime Time would likely maintain a common application experience while adapting payment rails and banking integrations for each market.
+
+---
+
+## PHASE 8 — GLOBAL PLATFORM
+
+Potential Future Structure:
+
+Dime Time USA
+
+* ACH
+
+Dime Time Canada
+
+* EFT
+
+Dime Time UK
+
+* Open Banking
+
+Dime Time Europe
+
+* SEPA
+
+Dime Time Australia
+
+* BECS
+
+All connected through the same financial allocation philosophy.
+
+---
+
+## PHASE 9 — DIME TIME TOKEN (DTT)
+
+This should occur ONLY AFTER:
+
+• Successful launch
+• Product-market fit
+• Revenue generation
+• Significant user adoption
+
+Do NOT prioritize token creation before proving market demand.
+
+---
+
+## WHY NOT LAUNCH A TOKEN EARLY?
+
+Launching a token before user adoption creates risk:
+
+• Regulatory complexity
+• Legal costs
+• Compliance burden
+• Distraction from core product growth
+
+The strongest token ecosystems emerge AFTER a successful product exists.
+
+---
+
+## DTT LONG-TERM VISION
+
+Blockchain:
+
+Solana
+
+Potential Utility:
+
+• Reduced platform fees
+• Premium feature access
+• Referral rewards
+• Loyalty rewards
+• Governance voting
+• Community participation
+• Ecosystem incentives
+
+Potential Future Example:
+
+User pays off debt milestones.
+
+Receives DTT rewards.
+
+Users stake DTT.
+
+Users vote on future platform features.
+
+DTT becomes a utility layer supporting the Dime Time ecosystem.
+
+---
+
+## ULTIMATE VISION
+
+Dime Time is not merely a debt payoff app.
+
+Dime Time becomes:
+
+A financial operating system that automatically allocates money toward a user's future.
+
+Debt.
+
+Savings.
+
+Investments.
+
+Bitcoin.
+
+Retirement.
+
+Future goals.
+
+The long-term objective is to help people improve their financial lives through small, consistent actions performed automatically over time.
+
+The same philosophy that helps users eliminate debt can eventually help users build wealth.
+
+That is the larger opportunity behind Dime Time.
