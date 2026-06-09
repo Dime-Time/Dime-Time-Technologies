@@ -1,0 +1,79 @@
+DIME TIME — APPLE REJECTION / DUPLICATE APP ISSUE / RESPONSE PLAN
+
+CURRENT APPLE STATUS
+Apple rejected Dime Time Mobile under:
+
+Guideline 4.3(a) - Design - Spam
+
+Apple’s issue description:
+“We noticed the app shares a similar binary, metadata, and/or concept as other apps you already submitted to the App Store, with only minor differences.”
+
+LIKELY ROOT CAUSE
+There are two Dime Time app records in App Store Connect:
+
+1. Dime Time Technologies
+   Bundle ID: com.dimetime.app
+   SKU: Dime-Time-2025
+   Apple ID: 6752791917
+   Status: old rejected / removed submission
+
+2. Dime Time Mobile
+   Bundle ID: com.dimetime.mobile
+   SKU: Dime-Time-Mobile-2025
+   Apple ID: 6755106723
+   Status: rejected under Guideline 4.3(a)
+
+Both records use the same/similar branding, icon, finance category, concept, and underlying Dime Time product identity.
+
+This likely caused Apple to believe Dime Time Mobile was a duplicate, repackaged, or similar app to Dime Time Technologies.
+
+IMPORTANT CONTEXT
+Dime Time Technologies was an old development/prototype app record.
+It was never released to customers.
+It is not intended for distribution.
+Dime Time Mobile is the sole production app intended for public release.
+
+STEPS ALREADY TAKEN
+
+* Opened Dime Time Technologies in App Store Connect.
+* Checked App Review.
+* The old Dime Time Technologies submission now shows Status: Removed.
+* Tried Remove App from App Information.
+* Apple now says: “This app is unable to be removed right now. This app cannot be removed.”
+* The previous message about active review items is gone, so the app is no longer actively in review.
+* Apple may not allow permanent deletion because the app has historical submissions attached.
+
+RECOMMENDED NEXT STEPS
+
+1. Do not create another Apple app record.
+2. Do not create another bundle ID.
+3. Do not submit a new build yet unless Apple requests one.
+4. Leave Dime Time Technologies inactive/removed.
+5. Reply to Apple App Review for Dime Time Mobile explaining that Dime Time Technologies was a legacy development record and Dime Time Mobile is the only production app.
+6. Request reconsideration under Guideline 4.3(a).
+
+COPY/PASTE RESPONSE TO APPLE REVIEW
+
+Hello App Review Team,
+
+Thank you for your review.
+
+We believe the Guideline 4.3(a) concern may be related to an older development app record in our developer account named “Dime Time Technologies” with bundle identifier com.dimetime.app.
+
+That app was created during an earlier development stage of the Dime Time project. It was never released to customers, is not intended for distribution, and the associated submission has been removed.
+
+Dime Time Mobile, with bundle identifier com.dimetime.mobile, is the sole production application for Dime Time LLC and is the only app we intend to distribute on the App Store.
+
+Dime Time Mobile is an original fintech application designed to help users reduce debt through debt tracking, purchase round-ups, financial insights, repayment progress monitoring, and related financial wellness tools.
+
+The application is not a template, clone, white-label app, duplicate submission, or repackaged third-party product.
+
+We respectfully request reconsideration under Guideline 4.3(a), as the older Dime Time Technologies record was an abandoned development submission and Dime Time Mobile is the sole consumer-facing production application for Dime Time LLC.
+
+Please let us know if any additional information would be helpful.
+
+Thank you for your time and consideration.
+
+Tim Carlisle
+Founder
+Dime Time LLC
