@@ -2,5 +2,5 @@
 - [App Store demo account](appstore-demo-account.md) — give Apple the founder's prod account (clean sample debts, no bank link); prod DB is read-only to agent tools; screenshots must come from a real iPhone.
 - [Demo data for review account](demo-review-account.md) — empty review account is populated via a client-side sample dataset gated to the review email; real data always wins, never cache transformed demo values.
 - [App Store screenshot prep](appstore-screenshots.md) — SE 1170×2532 → cover-resize to 1290×2796 (6.7"); never fake numbers into images; kill TestFlight banner by opening app from home screen or covering top ~162px.
-- [App Store rejection vectors](appstore-rejection-history.md) — Apple has cited 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; key gotcha: BetaModeBanner is NOT flag-gated so "Beta Mode" still shows → live 2.2 risk.
+- [App Store status & rejection vectors](appstore-rejection-history.md) — APPROVED & LIVE 2026-06-29 (App ID 6755106723); "no changes while waiting" is over. Historical rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; gotcha: BetaModeBanner NOT flag-gated → 2.2 risk on future submits.
 - [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; the mismatch is INTENTIONAL+permanent, never reconcile it.
