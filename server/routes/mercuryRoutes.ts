@@ -90,7 +90,17 @@ export function registerMercuryRoutes(app: Express) {
         formattedBalance: `$${balance.availableBalance.toFixed(2)}`,
       });
     } catch (error: any) {
-      console.error("Mercury status error:", error?.response?.data || error.message);
+      const detail = error?.response?.data ?? error?.message;
+      const errorCode = error?.response?.data?.errorCode;
+      console.error("Mercury status error:", detail);
+      if (errorCode === "noTokenInDBButMaybeMalformed") {
+        return res.status(503).json({
+          status: "mercury_auth_failed",
+          configured: false,
+          connected: false,
+          message: "Mercury banking service is temporarily unavailable",
+        });
+      }
       res.status(500).json({ message: "Failed to check Mercury service status" });
     }
   });

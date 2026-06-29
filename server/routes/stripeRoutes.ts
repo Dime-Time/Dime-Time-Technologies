@@ -15,7 +15,7 @@
 
 import type { Express, Request, Response } from "express";
 import express from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { storage } from "../storage";
@@ -122,7 +122,7 @@ const fcSessionLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const uid = getUserIdFromRequest(req);
-    return uid ? `u:${uid}` : `ip:${req.ip}`;
+    return uid ? `u:${uid}` : `ip:${ipKeyGenerator(req.ip ?? "")}`;
   },
   message: { message: "Too many Stripe Connect attempts. Try again in a minute." },
 });
