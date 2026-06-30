@@ -22,10 +22,11 @@ These are intentional guardrails. They stay on until you decide to raise them.
 
 ## PHASE 1 — One-time setup (before any money can move)
 
-### Step 1 🤝 Put the new safety fields into the LIVE database
-The live database needs a few new fields plus one new audit table (added in development but not yet in production). If you publish without this, the live app will error.
-- This is safe and additive (no data is deleted).
-- **Ask me to do this** — I'll sync the schema to production for you. (Command behind the scenes: `npm run db:push` against the production database.)
+### Step 1 ⚙️ The new safety fields go into the LIVE database **automatically when you Publish**
+The live database needs a few new fields plus one new audit table (already added in development). Here's the important part: **you don't do anything for this step, and neither do I.** When you Publish (Step 6), Replit automatically compares the development database to production, shows you a confirmation of the new fields, and adds them for you.
+- It's safe and additive — **no existing data is deleted.**
+- Nobody runs a database command. Replit does **not** allow pushing schema directly to the live database from here (that's by design — it prevents mistakes), so this is handled entirely by the Publish flow.
+- ✅ Already verified: the development schema has all the required fields and the new audit table, so the Publish diff will carry them over cleanly.
 
 ### Step 2 👤 Set the LIVE secrets
 In Replit → **Secrets** (the padlock), set these as account-wide Secrets (never paste them into chat or any file):
@@ -66,9 +67,10 @@ Publish so production runs the new code + flags. **Ask me and I'll start the pub
 ### Step 7 👤 Link your REAL bank account
 In the app, go through the bank-connection flow with your **real** bank and **accept the ACH authorization (mandate)** when prompted. The backend records your consent — a real charge is refused without it.
 
-### Step 8 👤 Approve yourself for real transfers
-Open `https://dime-time.com/admin` in a browser and sign in (you're now an admin from Step 2). Approve your own account for real transfers.
-- *Today this is an API action, not a button.* 🤝 **Ask me to add a one-click "Approve user" toggle to your admin page** — it's a web-page change (no App Store build), and it makes this step painless. Otherwise I'll give you the exact one-line command.
+### Step 8 👤 Approve yourself for real transfers (now one click)
+Open `https://dime-time.com/admin` in a browser and sign in (you're an admin from Step 2). Click the **Real Money** tab → under **Your account**, press **"Approve for real money."** That's the whole step.
+- ✅ This one-click toggle is now built into your admin page (no App Store build was needed — it's a web page).
+- The same tab lets you approve other testers later (paste their user ID and press Look up) and **revoke anyone instantly** — the "Revoke" button takes effect on their very next attempt.
 
 ### Step 9 👤 Send exactly $1
 In the app, pick one of your debts and pay **$1** with your linked bank.

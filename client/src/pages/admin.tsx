@@ -1,11 +1,23 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ChevronDown, ChevronRight, RefreshCw } from "lucide-react";
 
 type AdminTransfer = {
@@ -35,13 +47,26 @@ type AdminWebhookEvent = {
   receivedAt: string;
 };
 
-async function adminFetch(path: string): Promise<Response> {
+async function adminFetch(
+  path: string,
+  init?: { method?: string; body?: unknown },
+): Promise<Response> {
   const { getApiUrl } = await import("@/lib/queryClient");
   const { getAuthToken } = await import("@/lib/authToken");
   const headers: Record<string, string> = {};
   const token = await getAuthToken().catch(() => null);
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  return fetch(getApiUrl(path), { credentials: "include", headers });
+  let body: string | undefined;
+  if (init?.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(init.body);
+  }
+  return fetch(getApiUrl(path), {
+    method: init?.method ?? "GET",
+    credentials: "include",
+    headers,
+    body,
+  });
 }
 
 function fmt(d: string | Date | null | undefined): string {
@@ -264,6 +289,201 @@ function WebhooksTab() {
   );
 }
 
+type RealTransferStatus = {
+  userId: string;
+  realTransfersEnabled: boolean;
+  realTransfersEnabledAt: string | null;
+  realTransfersEnabledBy: string | null;
+  realTransfersNotes: string | null;
+};
+
+function UserRealMoneyControl({
+  userId,
+  title,
+  subtitle,
+}: {
+  userId: string;
+  title: string;
+  subtitle?: string;
+}) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const statusKey = ["/api/admin/users", userId, "real-transfers"] as const;
+
+  const statusQuery = useQuery<RealTransferStatus>({
+    queryKey: statusKey,
+    queryFn: async () => {
+      const res = await adminFetch(`/api/admin/users/${encodeURIComponent(userId)}/real-transfers`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: userId.length > 0,
+  });
+
+  const toggle = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const res = await adminFetch(`/api/admin/users/${encodeURIComponent(userId)}/real-transfers`, {
+        method: "POST",
+        body: { enabled, notes: enabled ? "Approved via admin UI" : "Revoked via admin UI" },
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || `HTTP ${res.status}`);
+      }
+      return (await res.json()) as RealTransferStatus;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(statusKey, data);
+      toast({
+        title: data.realTransfersEnabled ? "Approved for real money" : "Real-money access revoked",
+        description: data.realTransfersEnabled
+          ? "This user can now make real ACH transfers — still capped by the safety limits."
+          : "This user can no longer make real ACH transfers.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Could not update",
+        description: String(err?.message ?? err),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const enabled = statusQuery.data?.realTransfersEnabled ?? false;
+
+  return (
+    <div className="space-y-2" data-testid={`admin-realmoney-${userId}`}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="font-medium truncate">{title}</div>
+          {subtitle && <div className="font-mono text-xs text-slate-500 break-all">{subtitle}</div>}
+        </div>
+        {statusQuery.isLoading ? (
+          <span className="text-xs text-slate-500">checking…</span>
+        ) : statusQuery.isError ? (
+          <span className="text-xs text-red-600">status unavailable</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className={
+              enabled
+                ? "bg-green-100 text-green-800 border-green-200"
+                : "bg-slate-100 text-slate-700 border-slate-200"
+            }
+          >
+            {enabled ? "real money ON" : "real money off"}
+          </Badge>
+        )}
+      </div>
+
+      {statusQuery.data && (statusQuery.data.realTransfersEnabledAt || statusQuery.data.realTransfersNotes) && (
+        <div className="text-xs text-slate-500 space-y-0.5">
+          {statusQuery.data.realTransfersEnabledAt && <div>since {fmt(statusQuery.data.realTransfersEnabledAt)}</div>}
+          {statusQuery.data.realTransfersEnabledBy && (
+            <div className="break-all">by {statusQuery.data.realTransfersEnabledBy}</div>
+          )}
+          {statusQuery.data.realTransfersNotes && <div>note: {statusQuery.data.realTransfersNotes}</div>}
+        </div>
+      )}
+
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            size="sm"
+            variant={enabled ? "destructive" : "default"}
+            disabled={toggle.isPending || statusQuery.isLoading || statusQuery.isError}
+            data-testid={`admin-realmoney-toggle-${userId}`}
+          >
+            {toggle.isPending ? "Saving…" : enabled ? "Revoke real-money access" : "Approve for real money"}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {enabled ? "Revoke real-money access?" : "Approve for real money?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {enabled
+                ? `This immediately stops ${title} from making real ACH transfers — it takes effect on their very next attempt.`
+                : `This lets ${title} move REAL money via ACH (real funds leave a real bank account). It stays capped by the safety limits: first transfer ≤ $1, ≤ $5/day, 1 per day. You can revoke instantly at any time.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid={`admin-realmoney-cancel-${userId}`}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => toggle.mutate(!enabled)}
+              className={enabled ? undefined : "bg-amber-600 hover:bg-amber-700 focus:ring-amber-600"}
+              data-testid={`admin-realmoney-confirm-${userId}`}
+            >
+              {enabled ? "Yes, revoke" : "Yes, approve real money"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function RealMoneyTab({ selfUserId, selfEmail }: { selfUserId: string; selfEmail: string | null }) {
+  const [lookupId, setLookupId] = useState("");
+  const [activeLookupId, setActiveLookupId] = useState("");
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-slate-700 border rounded-md bg-amber-50 border-amber-200 p-3">
+        Approving a user lets them make <strong>real</strong> ACH transfers — but only inside the built-in safety
+        limits (first transfer ≤ $1, ≤ $5/day, 1 transfer/day, no duplicate pending). You can revoke instantly at any
+        time. Real money also still requires the master switch (<code>ENABLE_REAL_TRANSFERS</code>) to be on.
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Your account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <UserRealMoneyControl userId={selfUserId} title={selfEmail ?? "You"} subtitle={selfUserId} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Approve another user</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label className="block text-xs text-slate-600 mb-1">User ID</label>
+              <Input
+                value={lookupId}
+                onChange={(e) => setLookupId(e.target.value.trim())}
+                placeholder="paste a user id"
+                data-testid="admin-realmoney-lookup-input"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setActiveLookupId(lookupId)}
+              disabled={!lookupId}
+              data-testid="admin-realmoney-lookup-btn"
+            >
+              Look up
+            </Button>
+          </div>
+          {activeLookupId && activeLookupId === selfUserId && (
+            <div className="text-xs text-slate-500">That's your own account — use the card above.</div>
+          )}
+          {activeLookupId && activeLookupId !== selfUserId && (
+            <div className="border rounded-md p-3 bg-white">
+              <UserRealMoneyControl userId={activeLookupId} title={activeLookupId} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
 
@@ -300,12 +520,16 @@ export default function AdminPage() {
         <TabsList>
           <TabsTrigger value="transfers" data-testid="admin-tab-transfers">Transfers</TabsTrigger>
           <TabsTrigger value="webhooks" data-testid="admin-tab-webhooks">Stripe Webhooks</TabsTrigger>
+          <TabsTrigger value="realmoney" data-testid="admin-tab-realmoney">Real Money</TabsTrigger>
         </TabsList>
         <TabsContent value="transfers" className="mt-3">
           <TransfersTab />
         </TabsContent>
         <TabsContent value="webhooks" className="mt-3">
           <WebhooksTab />
+        </TabsContent>
+        <TabsContent value="realmoney" className="mt-3">
+          <RealMoneyTab selfUserId={user.id} selfEmail={user.email} />
         </TabsContent>
       </Tabs>
     </div>

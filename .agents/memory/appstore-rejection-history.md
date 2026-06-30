@@ -4,7 +4,7 @@ description: Dime Time iOS is now APPROVED & LIVE; plus the Apple rejection reas
 ---
 
 # STATUS: APPROVED & LIVE (as of 2026-06-29)
-"Dime Time Mobile" is published on the US App Store: App ID `6755106723`, developer "Tim Carlisle", Finance category, Free, 16+, iPhone+iPad, ~8.9 MB, subtitle "Smart debt reduction assistant". Privacy policy links to dime-time.com/privacy. Approval happened despite a ~50% pre-submission risk estimate — the holding pattern ("no code changes while waiting on Apple") is OVER. Posture shifts from "waiting on Apple" to "live → user acquisition + funding". The rejection vectors below are HISTORICAL (kept for future update cycles); the beta-banner gotcha still applies to any future submission.
+"Dime Time Mobile" is published on the US App Store: App ID `6755106723`, under the founder's Apple developer account, Finance category, Free, 16+, iPhone+iPad, ~8.9 MB, subtitle "Smart debt reduction assistant". Privacy policy links to dime-time.com/privacy. Approval happened despite a ~50% pre-submission risk estimate — the holding pattern ("no code changes while waiting on Apple") is OVER. Posture shifts from "waiting on Apple" to "live → user acquisition + funding". The rejection vectors below are HISTORICAL (kept for future update cycles); the beta-banner gotcha still applies to any future submission.
 
 # Apple App Store rejection vectors (Dime Time iOS)
 

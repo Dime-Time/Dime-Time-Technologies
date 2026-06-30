@@ -207,7 +207,8 @@ Gated by `ADMIN_USER_IDS` (Replit Secret, comma-separated user UUIDs). Empty/uns
   - `GET /api/admin/transfers/:id` — one transfer with full operational fields (no raw payloads).
   - `GET /api/admin/webhooks/stripe?limit=` — recent Stripe webhook events (eventId, type, receivedAt).
 - `/api/user` piggybacks `_isAdmin: boolean` alongside `_flags` so the client knows whether to show the admin surface (no extra round trip).
-- Frontend: `/admin` route → `client/src/pages/admin.tsx` (Transfers + Stripe Webhooks tabs). Non-admin users see a "not authorized" card; backend stays the source of truth regardless of client state.
+- Frontend: `/admin` route → `client/src/pages/admin.tsx` (Transfers + Stripe Webhooks + Real Money tabs). Non-admin users see a "not authorized" card; backend stays the source of truth regardless of client state.
+  - **Real Money tab**: one-click approve/revoke of a user's `realTransfersEnabled` allowlist flag via `GET`/`POST /api/admin/users/:id/real-transfers`. A "Your account" card targets the logged-in admin's own `user.id` (self-approval for the $1 go-live test); an "Approve another user" card takes a pasted user id. Every enable/revoke goes through an `AlertDialog` confirmation. This is purely a UI over the existing audited endpoints — the backend gate/limits remain the source of truth.
 
 ## Investor / Patent Materials
 - `attached_assets/patent-application/` — USPTO provisional draft (.pdf + .docx) and 7 black-and-white figures
