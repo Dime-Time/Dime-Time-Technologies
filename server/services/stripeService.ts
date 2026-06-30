@@ -21,8 +21,108 @@ type StripeInstance = InstanceType<StripeNs["default"]>;
 let cachedClient: StripeInstance | null = null;
 let cachedClientPromise: Promise<StripeInstance | null> | null = null;
 
+function isProductionEnv(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
+export type StripeMode = "live" | "test";
+
+export interface StripeSecretResolution {
+  secretKey: string | null;
+  mode: StripeMode | null;
+  reason?: string;
+}
+
+/**
+ * Resolve which Stripe secret key to use for the CURRENT environment, with a
+ * hard mode guarantee:
+ *   - production -> `STRIPE_SECRET_KEY`, which MUST be a live key (`sk_live_…`).
+ *   - non-prod   -> `STRIPE_SECRET_KEY_TEST`, which MUST be a test key
+ *     (`sk_test_…`).
+ *
+ * Any prefix mismatch returns a null key + reason so callers fail closed. This
+ * makes it impossible to (a) use a live key in development, or (b) use a test
+ * key in production — even though `STRIPE_SECRET_KEY` is a global secret that is
+ * also present in the dev environment.
+ */
+export function resolveStripeSecretKey(): StripeSecretResolution {
+  if (isProductionEnv()) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      return { secretKey: null, mode: null, reason: "STRIPE_SECRET_KEY (live) is not set in production" };
+    }
+    if (!key.startsWith("sk_live_")) {
+      return { secretKey: null, mode: null, reason: "Production requires a LIVE Stripe secret key (sk_live_…)" };
+    }
+    return { secretKey: key, mode: "live" };
+  }
+
+  const testKey = process.env.STRIPE_SECRET_KEY_TEST;
+  if (!testKey) {
+    return { secretKey: null, mode: null, reason: "STRIPE_SECRET_KEY_TEST (test) is not set in development" };
+  }
+  if (!testKey.startsWith("sk_test_")) {
+    return { secretKey: null, mode: null, reason: "Development requires a TEST Stripe secret key (sk_test_…)" };
+  }
+  return { secretKey: testKey, mode: "test" };
+}
+
+/**
+ * Resolve the webhook signing secret for the current environment. Production
+ * verifies against the LIVE endpoint's secret (`STRIPE_WEBHOOK_SECRET`);
+ * non-prod verifies against the TEST endpoint's secret
+ * (`STRIPE_WEBHOOK_SECRET_TEST`). Never cross modes.
+ */
+export function resolveStripeWebhookSecret(): string | null {
+  return (isProductionEnv()
+    ? process.env.STRIPE_WEBHOOK_SECRET
+    : process.env.STRIPE_WEBHOOK_SECRET_TEST) || null;
+}
+
 export function isStripeAchEnabled(): boolean {
-  return isFlagEnabled("ENABLE_STRIPE_ACH") && Boolean(process.env.STRIPE_SECRET_KEY);
+  return isFlagEnabled("ENABLE_STRIPE_ACH") && resolveStripeSecretKey().secretKey !== null;
+}
+
+/**
+ * Boot-time guard. When `ENABLE_STRIPE_ACH` is ON, refuse to proceed if the
+ * environment's Stripe secret key has the WRONG mode (a test key in production,
+ * or a live key where a test key is required) — that is a dangerous
+ * misconfiguration, so we throw to fail the boot loudly. A simply MISSING key
+ * is a safe, fail-closed state: we log and let the caller skip mounting the
+ * Stripe routes. No-op when the flag is OFF.
+ */
+export function assertStripeKeyModeSafeOnBoot(): void {
+  if (!isFlagEnabled("ENABLE_STRIPE_ACH")) return;
+
+  const prod = isProductionEnv();
+  const resolution = resolveStripeSecretKey();
+
+  if (resolution.secretKey && resolution.mode) {
+    console.log(JSON.stringify({
+      service: "StripeService",
+      event: "stripe_mode_resolved",
+      severity: "INFO",
+      env: prod ? "production" : "development",
+      mode: resolution.mode,
+    }));
+    return;
+  }
+
+  const envKeyRaw = prod ? process.env.STRIPE_SECRET_KEY : process.env.STRIPE_SECRET_KEY_TEST;
+  console.error(JSON.stringify({
+    service: "StripeService",
+    event: "stripe_mode_misconfigured",
+    severity: "ERROR",
+    env: prod ? "production" : "development",
+    reason: resolution.reason,
+    keyPresentButWrongMode: Boolean(envKeyRaw),
+  }));
+
+  if (envKeyRaw) {
+    throw new Error(
+      `Stripe ACH enabled but the ${prod ? "production" : "development"} Stripe secret key has the wrong mode. ${resolution.reason}`,
+    );
+  }
 }
 
 /**
@@ -34,7 +134,8 @@ export function isStripeAchEnabled(): boolean {
  * server boot).
  */
 async function loadStripeClient(): Promise<StripeInstance | null> {
-  if (!process.env.STRIPE_SECRET_KEY) return null;
+  const { secretKey } = resolveStripeSecretKey();
+  if (!secretKey) return null;
   if (cachedClient) return cachedClient;
   if (cachedClientPromise) return cachedClientPromise;
 
@@ -42,7 +143,7 @@ async function loadStripeClient(): Promise<StripeInstance | null> {
     try {
       const mod = (await import("stripe")) as StripeNs;
       const Stripe = mod.default;
-      cachedClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+      cachedClient = new Stripe(secretKey, {
         // Pin a recent API version. Bumping requires a code review since
         // Stripe occasionally renames PaymentMethod / FC fields.
         apiVersion: "2024-06-20" as any,
@@ -218,8 +319,8 @@ export async function createAchDebit(args: {
 export async function verifyStripeWebhook(rawBody: Buffer | string, signature: string | undefined) {
   const stripe = await getStripe();
   if (!stripe) throw new Error("Stripe is not configured");
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET is not set");
+  const secret = resolveStripeWebhookSecret();
+  if (!secret) throw new Error("Stripe webhook secret is not set");
   if (!signature) throw new Error("Missing stripe-signature header");
   return stripe.webhooks.constructEvent(rawBody, signature, secret);
 }

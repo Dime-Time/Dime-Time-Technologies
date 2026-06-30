@@ -11,6 +11,7 @@ import { CreditCard, TrendingDown, Calendar, Plus, DollarSign } from "lucide-rea
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { StripeAchPayButton } from "@/components/StripeAchPayButton";
 import type { Debt, Payment } from "@shared/schema";
 
 export default function Debts() {
@@ -216,7 +217,7 @@ export default function Debts() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 mb-6">
+                  <div className="flex flex-wrap gap-3 mb-6">
                     <Button 
                       className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
                       onClick={() => setShowPaymentModal(true)}
@@ -226,6 +227,7 @@ export default function Debts() {
                     <Button variant="outline" className="flex-1">
                       View History
                     </Button>
+                    <StripeAchPayButton debt={debt} />
                   </div>
 
                   {/* Recent Payments — last 3 with canonical status badge */}

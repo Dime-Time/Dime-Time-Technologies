@@ -28,3 +28,30 @@ Replit Secrets — never in .replit or codemagic.yaml") — follow it.
 
 **Validation:** `server/lib/validateEnv.ts` enforces these only when `NODE_ENV=production`
 and `process.exit(1)`s on any missing one while `ENABLE_STRIPE_ACH` is on.
+
+## Env-aware test vs live key separation (the dev workspace must NOT touch the live account)
+
+**Rule:** The server resolves Stripe credentials by `NODE_ENV`. **Production** uses the live
+pair (`STRIPE_SECRET_KEY` = `sk_live_…`, `STRIPE_WEBHOOK_SECRET`). **Non-production** (the dev
+workspace) uses a **separate test pair** that must be created as their own global Secrets:
+`STRIPE_SECRET_KEY_TEST` = `sk_test_…` and `STRIPE_WEBHOOK_SECRET_TEST`. The publishable key is
+public, so dev gets a **development-scoped** env var `VITE_STRIPE_PUBLISHABLE_KEY` = `pk_test_…`
+(prod keeps its production-scoped `pk_live_…`). Never store a `pk_test` publishable key as a
+global secret — it would shadow the prod `pk_live` env var in production builds.
+
+**Why:** Secrets are global, so the live `STRIPE_SECRET_KEY` is also present in the dev
+container. Without env-aware resolution a dev build could transact on the LIVE Stripe account.
+The resolver therefore **ignores** the live `STRIPE_SECRET_KEY` entirely when not in production
+and reads only `STRIPE_SECRET_KEY_TEST`; a boot assertion **throws** if the resolved key has the
+wrong mode (live-where-test-expected or vice-versa), while a *missing* key just fails closed
+(routes mount but return 503). Both layers exist so a misconfiguration cannot silently move
+money on the wrong account.
+
+**How to apply (run Stripe ACH in dev safely):**
+1. Set global Secrets `STRIPE_SECRET_KEY_TEST` (`sk_test_…`) and `STRIPE_WEBHOOK_SECRET_TEST`.
+2. Set **development**-scoped env vars: `ENABLE_STRIPE_ACH=true`, `ENABLE_REAL_TRANSFERS=false`,
+   `VITE_STRIPE_PUBLISHABLE_KEY=pk_test_…`. Restart the workflow (flags resolve once at boot).
+3. With `ENABLE_REAL_TRANSFERS=false` the debit route records a `status:"simulated"` transfers
+   ledger row and **never** calls Stripe / creates a PaymentIntent — the whole UI→ledger flow is
+   exercised with zero money movement. Verify via `/admin/transfers`.
+4. NEVER flip `ENABLE_REAL_TRANSFERS` on without staged testing + the founder's explicit go.

@@ -110,12 +110,14 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown
+  data?: unknown,
+  extraHeaders?: Record<string, string>
 ): Promise<Response> {
   const fullUrl = getApiUrl(url);
   const authHeaders = await getAuthHeaders();
   const headers: Record<string, string> = {
     ...authHeaders,
+    ...(extraHeaders ?? {}),
   };
 
   if (data !== undefined) {

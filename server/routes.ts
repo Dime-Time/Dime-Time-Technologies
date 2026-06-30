@@ -24,6 +24,7 @@ import { registerAxosRoutes } from "./routes/axosRoutes";
 import { registerMercuryRoutes } from "./routes/mercuryRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
 import { registerStripeRoutes, registerStripeWebhook } from "./routes/stripeRoutes";
+import { assertStripeKeyModeSafeOnBoot } from "./services/stripeService";
 import { registerAdminRoutes } from "./routes/adminRoutes";
 import { isAdminUserId } from "./lib/admin";
 import { isFlagEnabled } from "./lib/flags";
@@ -1928,6 +1929,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // the same flag) and none of these endpoints are mounted — the surface
   // simply doesn't exist for unauthenticated probes.
   if (isFlagEnabled("ENABLE_STRIPE_ACH")) {
+    // Fail the boot loudly if this environment's Stripe key has the wrong mode
+    // (a live key in dev / a test key in prod). A simply-missing key leaves
+    // Stripe fail-closed (routes mounted but `isStripeAchEnabled()` is false).
+    assertStripeKeyModeSafeOnBoot();
     registerStripeRoutes(app);
     registerStripeWebhook(app);
     console.log(JSON.stringify({
