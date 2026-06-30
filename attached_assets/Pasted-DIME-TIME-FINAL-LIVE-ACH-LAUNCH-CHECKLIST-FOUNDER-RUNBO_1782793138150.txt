@@ -1,0 +1,194 @@
+DIME TIME — FINAL LIVE ACH LAUNCH CHECKLIST (FOUNDER RUNBOOK)
+
+OBJECTIVE
+Safely enable real ACH transfers for ONE controlled $1 live test using ONLY the founder account. Do not change any existing safety controls.
+
+======================================================================
+STEP 1 — VERIFY STRIPE LIVE ACCOUNT
+======================================================================
+
+□ Confirm Stripe account is in LIVE mode (not "Viewing test data").
+□ Confirm ACH Direct Debit is enabled.
+□ Confirm Financial Connections is enabled.
+□ Confirm no outstanding Stripe verification requirements exist.
+
+======================================================================
+STEP 2 — CONFIGURE PRODUCTION SECRETS
+======================================================================
+
+Verify the following environment variables exist in the PRODUCTION deployment
+environment (not only the development workspace):
+
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...
+ADMIN_USER_IDS=<founder_user_id>
+
+Verify there are NO test keys remaining:
+
+- sk_test_*
+- pk_test_*
+- whsec from test mode
+
+======================================================================
+STEP 3 — ENABLE FEATURE FLAGS
+======================================================================
+
+Set:
+
+ENABLE_STRIPE_ACH=true
+ENABLE_REAL_TRANSFERS=true
+
+Verify these values are loaded by the deployed server after publish.
+
+======================================================================
+STEP 4 — STRIPE WEBHOOK
+======================================================================
+
+Verify production webhook exists:
+
+https://YOUR_DOMAIN/webhooks/stripe
+
+Confirm webhook signature verification is active.
+
+Confirm all required events are enabled.
+
+Typical events include:
+
+payment_intent.processing
+payment_intent.succeeded
+payment_intent.payment_failed
+
+If the application depends on additional events,
+verify those are also subscribed.
+
+======================================================================
+STEP 5 — DEPLOY
+======================================================================
+
+Publish the production deployment.
+
+After deployment verify:
+
+✓ Backend starts successfully
+✓ No environment variable errors
+✓ No Stripe initialization errors
+✓ No database migration failures
+✓ Admin page loads
+✓ Normal user pages load
+
+======================================================================
+STEP 6 — ADMIN SAFETY CHECK
+======================================================================
+
+Before approving anyone:
+
+Verify:
+
+• Founder account appears in ADMIN_USER_IDS
+• Founder account is currently NOT approved
+• Zero public users are approved
+• Allowlist count is exactly 0
+
+Then:
+
+Approve ONLY the founder account.
+
+Immediately verify:
+
+✓ Audit log entry created
+✓ Founder marked approved
+✓ Daily limits active
+✓ First-transfer limit = $1
+✓ Max transfers/day = 1
+✓ Duplicate protection enabled
+
+======================================================================
+STEP 7 — LIVE BANK CONNECTION
+======================================================================
+
+Using ONLY the founder account:
+
+Link one real bank account using Stripe Financial Connections.
+
+Verify:
+
+✓ Bank linked successfully
+✓ Payment method stored
+✓ Encrypted bank token saved
+✓ No errors returned
+
+======================================================================
+STEP 8 — RUN CONTROLLED $1 TEST
+======================================================================
+
+Submit ONE $1 ACH debit.
+
+Expected flow:
+
+Application
+↓
+
+Stripe PaymentIntent created
+↓
+
+Webhook received
+↓
+
+Ledger updated
+↓
+
+Transfer shown as Processing
+↓
+
+Stripe later reports Succeeded
+
+======================================================================
+STEP 9 — VERIFY SUCCESS
+======================================================================
+
+Confirm ALL of the following:
+
+✓ One PaymentIntent exists in Stripe Live Dashboard
+✓ Amount = $1.00
+✓ Correct customer
+✓ Correct bank account
+✓ Webhook delivered successfully
+✓ Signature verified
+✓ Ledger contains one transfer
+✓ Audit log contains approval + transfer
+✓ No duplicate PaymentIntents
+✓ No duplicate ledger entries
+
+======================================================================
+STEP 10 — IF ANYTHING FAILS
+======================================================================
+
+Immediately disable:
+
+ENABLE_REAL_TRANSFERS=false
+
+Republish.
+
+Do NOT retry until root cause is identified.
+
+======================================================================
+POST-TEST
+======================================================================
+
+If the $1 transfer succeeds end-to-end:
+
+• Review Stripe Dashboard
+• Review webhook logs
+• Review audit logs
+• Review database ledger
+• Confirm bank debit appears correctly
+• Confirm no duplicate charges
+
+If everything is verified:
+
+Keep the founder as the ONLY approved user.
+
+Do NOT approve public users until multiple successful controlled tests have been completed and all monitoring, logging, rollback procedures, and operational support processes have been validated.
+
+END OF CHECKLIST
