@@ -408,3 +408,9 @@ id = "mq7jWBKtdtycD0nYwuwaR"
 uri = "file://attached_assets/appstore-screenshots/8-login.png"
 type = "image"
 title = "8 — Login"
+
+[[outputs]]
+id = "HtqeKysJrJxf4xu-1fYPn"
+uri = "file://GO_LIVE_RUNBOOK.md"
+type = "text"
+title = "Dime Time — Go-Live Runbook ($1 Test)"
