@@ -109,6 +109,7 @@ Flag env vars (all read with tolerant parsing — `1` / `true` / `yes` / `on` / 
 | `ENABLE_REAL_TRANSFERS` | OFF | Allow money-movement endpoints to actually move money. OFF keeps the app in sandbox/no-op mode — transfers are recorded but never settled. |
 | `ENABLE_CRYPTO` | **ON** | Enable the crypto / Bitcoin round-up surfaces. ON preserves current behavior. |
 | `ENABLE_BETA_BANNER` | OFF | Render the in-app beta banner across every authed screen. Flip ON for the TestFlight beta window, OFF for the public launch build. |
+| `ENABLE_AUTO_ROUNDUP_SWEEPS` | OFF | Gate automatic weekly round-up sweep dispersals (`sweepService.processWeeklyDispersals` → JP Morgan debt payments). OFF makes the dispersal a logged no-op even if a scheduler or admin trigger fires — the public can never have funds auto-dispersed by default. |
 
 To add a new flag: append to `FLAG_DEFINITIONS` in `shared/flags.ts` and add a row above. Server and client pick it up automatically — no other plumbing needed.
 
@@ -140,6 +141,34 @@ Stripe Financial Connections + ACH debit support lives behind the `ENABLE_STRIPE
 **Encryption parity with Plaid:** `stripe_accounts.stripe_payment_method_enc` reuses `encryptToken`/`decryptToken` from `server/services/encryptionService.ts`, so `PLAID_TOKEN_ENCRYPTION_KEY` is the single canonical secret for ALL at-rest provider credentials. The same rotation runbook applies — when rotating, the Stripe PM ids re-encrypt as part of the same migration (see "Plaid Token Encryption Key Rotation").
 
 **Sentry / correlationId:** every route's `stripeLog(correlationId, ...)` calls `setCorrelationTag(correlationId)` so any captured exception during a Stripe request carries the same id as the structured log line and the ledger row.
+
+## Real-Money ACH Rollout Gate (defense-in-depth on top of `ENABLE_REAL_TRANSFERS`)
+
+`ENABLE_REAL_TRANSFERS` is the master switch, but flipping it ON is **not** sufficient to move money for the public. A second, per-user gate sits in front of every real ACH debit so that even with the master switch ON, only explicitly allowlisted users — under conservative dollar/count limits, with a full audit trail and instant revoke — can ever trigger a real charge. The public can never be auto-enrolled.
+
+**Per-user allowlist (`users` table):** `realTransfersEnabled` (bool, default `false`), `realTransfersEnabledAt`, `realTransfersEnabledBy` (admin user id), `realTransfersNotes`. Default-false means a brand-new user is never allowlisted.
+
+**The gate — `storage.reserveRealStripeAchDebit()`** (`server/storage.ts`): runs inside a single DB transaction holding a per-user advisory lock, and re-reads live state (allowlist flag, active/linked `stripe_accounts` row, debt ownership, in-flight transfers) *inside* the lock so a concurrent request or a just-revoked allowlist can't race past it. It enforces, in order:
+
+- **Allowlist** — `realTransfersEnabled` must be true → else `{ ok:false, reason:"not_allowlisted", httpStatus:403 }`. **The route never calls Stripe on a block.**
+- **First transfer ≤ $1** — a user's very first real transfer (no prior consumed transfer) is capped at `REAL_FIRST_TRANSFER_MAX_DOLLARS=1` → else `over_first_transfer_limit`, 422.
+- **Daily total ≤ $5** — `REAL_DAILY_TOTAL_MAX_DOLLARS=5` across the UTC day → else `over_daily_total`, 422.
+- **Daily count ≤ 1** — `REAL_DAILY_COUNT_MAX=1` consumed transfer per UTC day → else `over_daily_count`, 429.
+- **Duplicate-pending guard** — an existing non-terminal transfer for the same debt → `duplicate_pending`, 409.
+
+Only if every check passes does it write the `real_transfer_audit_logs` row **and** the `transfers` ledger row (`status="created"`) atomically and return `{ ok:true, ledger, auditId, isFirst }`. Limit math counts only consumed statuses (`created`/`authorized`/`pending`/`processing`/`posted`/`settled`/`requires_action`); `simulated`/`failed`/`refunded`/`disputed` are excluded. Every decision — approve **and** block — writes a `real_transfer_audit_logs` row, so the money trail is complete regardless of outcome.
+
+**Simulation vs real split in `POST /api/stripe/ach/debit`:** when the resolved Stripe key mode is `test` (or real transfers are off) the route takes the **simulation path** — no allowlist check, writes a `transfers` row with `status="simulated"`, and never calls Stripe for settlement. The **real path** (live key mode) requires a valid mandate, then routes the request through `reserveRealStripeAchDebit`; on a block it finalizes with `gate.httpStatus` and **Stripe is never called**; on approval it uses `gate.ledger` + Stripe and writes outcome audit logs.
+
+**Emergency disable (admin):**
+
+- `POST /api/admin/users/:id/real-transfers` — `requireAdmin`, body `{ enabled: boolean, notes?: string (≤500) }`. Flips the allowlist and stamps `realTransfersEnabledBy`/`At`. Because the gate re-reads the flag live inside the lock, a revoke takes effect on the very next debit attempt — no restart, no cache.
+- `GET /api/admin/users/:id/real-transfers` — current allowlist status for a user.
+- `GET /api/admin/real-transfer-audit` — recent real-transfer audit decisions across all users.
+
+**Auto round-up sweeps are blocked by default:** `sweepService.processWeeklyDispersals` is gated behind `ENABLE_AUTO_ROUNDUP_SWEEPS` (default OFF) and returns a logged no-op when off, so even if a scheduler or admin trigger fires, the public can never have funds auto-dispersed. `sweepRoutes` (currently unmounted dead code, hardened defensively) had its `demo-user-1` fallback removed and now requires auth + `requireAdmin`.
+
+**Verifying the gate (DEV ONLY, no Stripe, no money):** the gate logic is provable in isolation by calling `reserveRealStripeAchDebit` directly against the dev DB with a throwaway allowlisted user (allowlist→403, first-$1→422, approve, duplicate→409, daily-count→429, instant revoke, audit trail, delete-cascade). This never flips the prod flag and never calls Stripe. **Do NOT run a live $1 charge from the agent** — the first real-money test is a founder-run step in the live rollout runbook.
 
 ## Error Tracking (Sentry)
 

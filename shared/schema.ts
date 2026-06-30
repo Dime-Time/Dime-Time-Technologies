@@ -24,6 +24,15 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   emailVerifiedAt: timestamp("email_verified_at"),
+  // Real-money ACH rollout allowlist (operator-controlled, instantly revocable).
+  // The hot-path gate for live transfers — a user must be explicitly enabled
+  // here before any real Stripe ACH debit can be created, even when the
+  // ENABLE_REAL_TRANSFERS master switch is ON. Toggled only via the admin
+  // surface; never settable through user-facing inserts.
+  realTransfersEnabled: boolean("real_transfers_enabled").default(false).notNull(),
+  realTransfersEnabledAt: timestamp("real_transfers_enabled_at"),
+  realTransfersEnabledBy: varchar("real_transfers_enabled_by"),
+  realTransfersNotes: text("real_transfers_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -258,6 +267,45 @@ export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
   receivedAt: timestamp("received_at").defaultNow().notNull(),
 });
 
+// Real-money decision audit trail. One row per real-transfer GATE decision
+// (approve/block), per real-debit outcome (initiated/failed), and per
+// allowlist change. This is a durable money-audit record — structured logs
+// alone are insufficient. NEVER stores a plaintext payment-method id; the
+// encrypted PM lives in `stripe_accounts` and is resolvable via
+// `stripeAccountId`.
+export const realTransferAuditLogs = pgTable("real_transfer_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  // Set when an admin action produced this row (allowlist toggle); null for
+  // automated per-debit gate decisions.
+  adminUserId: varchar("admin_user_id"),
+  action: text("action").notNull(), // 'ach_debit_decision' | 'ach_debit_outcome' | 'allowlist_changed'
+  result: text("result").notNull(), // 'approved' | 'blocked' | 'initiated' | 'failed' | 'enabled' | 'disabled'
+  reason: text("reason"), // machine code, e.g. 'not_allowlisted', 'over_first_transfer_limit'
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  debtId: varchar("debt_id"),
+  stripeAccountId: varchar("stripe_account_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  transferId: varchar("transfer_id"),
+  stripeMode: text("stripe_mode"), // 'live' | 'test'
+  environment: text("environment"), // 'production' | 'development'
+  allowlistEnabled: boolean("allowlist_enabled"),
+  idempotencyKey: text("idempotency_key"),
+  correlationId: varchar("correlation_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_rtal_user").on(table.userId),
+  index("idx_rtal_created").on(table.createdAt),
+]);
+
+export const insertRealTransferAuditLogSchema = createInsertSchema(realTransferAuditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type RealTransferAuditLog = typeof realTransferAuditLogs.$inferSelect;
+export type InsertRealTransferAuditLog = z.infer<typeof insertRealTransferAuditLogSchema>;
+
 // ACH debit authorization (Nacha "online" mandate) evidence. One row per
 // time a user explicitly accepts the authorization text — captures the exact
 // wording version plus the real client IP / User-Agent at the moment of
@@ -324,6 +372,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  // Operator-only — never settable through user-facing signup/profile inserts.
+  realTransfersEnabled: true,
+  realTransfersEnabledAt: true,
+  realTransfersEnabledBy: true,
+  realTransfersNotes: true,
 });
 
 export const insertDebtSchema = createInsertSchema(debts).omit({

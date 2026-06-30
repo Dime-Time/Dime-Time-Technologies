@@ -21,7 +21,8 @@ export type FlagName =
   | "ENABLE_STRIPE_ACH"
   | "ENABLE_REAL_TRANSFERS"
   | "ENABLE_CRYPTO"
-  | "ENABLE_BETA_BANNER";
+  | "ENABLE_BETA_BANNER"
+  | "ENABLE_AUTO_ROUNDUP_SWEEPS";
 
 export interface FlagDefinition {
   /** Production default when the env var is unset or invalid. */
@@ -54,6 +55,13 @@ export const FLAG_DEFINITIONS: Record<FlagName, FlagDefinition> = {
     description:
       "Render an in-app beta banner reminding users that Dime Time is in TestFlight. " +
       "Flip ON during the beta window and OFF for the public launch build.",
+  },
+  ENABLE_AUTO_ROUNDUP_SWEEPS: {
+    defaultValue: false,
+    description:
+      "Allow automatic round-up sweep dispersals (JP Morgan weekly debt payments) to run. " +
+      "OFF (default) hard-blocks all automatic money-moving sweeps so they can never fire " +
+      "before an operator explicitly enables them.",
   },
 };
 

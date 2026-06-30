@@ -1,0 +1,82 @@
+URGENT PRODUCTION SAFETY CHANGE FOR DIME TIME
+
+The app is live on the App Store, so we need to support real ACH transfers safely. Do NOT simply enable real transfers for every user.
+
+Implement a controlled real-money rollout gate.
+
+Requirements:
+
+1. Keep ENABLE_REAL_TRANSFERS as the master kill switch.
+   - If ENABLE_REAL_TRANSFERS=false, no real Stripe live-mode ACH debit may occur.
+   - If ENABLE_REAL_TRANSFERS=true, real debits are still only allowed for approved/allowlisted users.
+
+2. Add a server-side real-transfer allowlist.
+   Preferred:
+   - Add column users.realTransfersEnabled boolean default false
+   OR create a table real_transfer_allowlist(userId, enabled, enabledAt, enabledBy, notes).
+
+3. In POST /api/stripe/ach/debit, before creating any real Stripe PaymentIntent, enforce ALL checks server-side:
+   - authenticated user exists;
+   - ENABLE_STRIPE_ACH=true;
+   - ENABLE_REAL_TRANSFERS=true;
+   - user.realTransfersEnabled=true or user exists in allowlist;
+   - selected Stripe bank account belongs to the logged-in user;
+   - Stripe bank account/payment method is active and linked;
+   - debtId belongs to the logged-in user;
+   - amount is positive and within a conservative production limit;
+   - user has ACH authorization/mandate on file;
+   - idempotency key is required;
+   - no duplicate pending transfer exists for the same user/debt/idempotency key.
+
+4. Add conservative launch limits:
+   - max first real transfer amount: $1.00
+   - max daily ACH debit total per user: $5.00
+   - max number of real debits per user per day: 1
+   - block automatic round-up sweeps until manually enabled later.
+
+5. Add audit logging for every real-money decision:
+   - userId
+   - debtId
+   - amount
+   - paymentMethodId
+   - environment/mode
+   - allowlist status
+   - idempotency key
+   - transferId
+   - Stripe PaymentIntent ID
+   - timestamp
+   - result
+
+6. Add a Stripe LIVE webhook secret separately from test:
+   - STRIPE_WEBHOOK_SECRET_LIVE
+   - keep STRIPE_WEBHOOK_SECRET_TEST separate
+   - webhook handler must select the correct secret by Stripe mode/environment.
+
+7. Verify webhook reconciliation:
+   - payment_intent.processing
+   - payment_intent.succeeded
+   - payment_intent.payment_failed
+   - charge.failed / ACH return-related failure if applicable
+   - duplicate webhook delivery dedupe
+
+8. Add an emergency admin/ops function:
+   - instantly disable ENABLE_REAL_TRANSFERS or user.realTransfersEnabled
+   - no queued/pending automatic debits should continue after disablement.
+
+9. After implementation, run:
+   - simulation test
+   - Stripe TEST-mode ACH test
+   - LIVE-mode allowlisted $0.50 or $1.00 debit test only for founder account
+
+10. At the end, report:
+   - files changed
+   - database migration added
+   - exact safety gates implemented
+   - tests run
+   - whether ENABLE_REAL_TRANSFERS remains false or true
+   - whether real transfers are limited to allowlisted users only
+   - confirmation that public users cannot trigger real ACH unless explicitly enabled.
+
+Important:
+Do not enable broad public real-money movement. The correct production launch state is:
+ENABLE_REAL_TRANSFERS=true only if allowlist enforcement is active, conservative limits are active, webhook reconciliation is verified, and only approved users can initiate live ACH.

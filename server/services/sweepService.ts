@@ -5,6 +5,7 @@
 
 import { storage } from "../storage";
 import { createJPMorganService } from "./jpMorganService";
+import { isFlagEnabled } from "../lib/flags";
 import type { InsertSweepDeposit, InsertWeeklyDispersal } from "@shared/schema";
 
 export class SweepService {
@@ -90,6 +91,16 @@ export class SweepService {
    * Process weekly dispersals (every Friday)
    */
   async processWeeklyDispersals(): Promise<void> {
+    // MONEY-MOVEMENT GUARD. Automated weekly dispersals move real funds to
+    // debts. They are OFF unless ENABLE_AUTO_ROUNDUP_SWEEPS is explicitly on,
+    // so the public can never have funds auto-dispersed by default — even if a
+    // scheduler or admin trigger fires.
+    if (!isFlagEnabled("ENABLE_AUTO_ROUNDUP_SWEEPS")) {
+      console.warn(
+        "[Sweep] processWeeklyDispersals skipped — ENABLE_AUTO_ROUNDUP_SWEEPS is OFF (no money moved)",
+      );
+      return;
+    }
     try {
       const sweepAccounts = await storage.getAllActiveSweepAccounts();
       

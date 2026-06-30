@@ -1,19 +1,21 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { sweepService } from "../services/sweepService";
-import { z } from "zod";
+import { getUserIdFromRequest } from "../middleware/authHelper";
+import { requireAdmin } from "../lib/admin";
 
 export function registerSweepRoutes(app: Express) {
   // Get user's sweep account summary
   app.get("/api/sweep/summary", async (req, res) => {
     try {
-      const userId = "demo-user-1"; // In real app, get from authenticated session
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
       const summary = await sweepService.getUserSweepSummary(userId);
-      
+
       if (!summary) {
         return res.status(404).json({ message: "No sweep account found" });
       }
-      
+
       res.json(summary);
     } catch (error) {
       console.error("Error fetching sweep summary:", error);
@@ -24,8 +26,9 @@ export function registerSweepRoutes(app: Express) {
   // Create new sweep account for user
   app.post("/api/sweep/account", async (req, res) => {
     try {
-      const userId = "demo-user-1"; // In real app, get from authenticated session
-      
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
       // Create JP Morgan sweep account
       const jpMorganService = await import("../services/jpMorganService").then(m => m.createJPMorganService());
       const accountDetails = await jpMorganService.createSweepAccount(userId, {
@@ -55,9 +58,10 @@ export function registerSweepRoutes(app: Express) {
   // Get sweep deposits history
   app.get("/api/sweep/deposits", async (req, res) => {
     try {
-      const userId = "demo-user-1"; // In real app, get from authenticated session
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
       const sweepAccount = await storage.getUserSweepAccount(userId);
-      
+
       if (!sweepAccount) {
         return res.status(404).json({ message: "No sweep account found" });
       }
@@ -73,7 +77,8 @@ export function registerSweepRoutes(app: Express) {
   // Get weekly dispersals history
   app.get("/api/sweep/dispersals", async (req, res) => {
     try {
-      const userId = "demo-user-1"; // In real app, get from authenticated session
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
       const dispersals = await storage.getWeeklyDispersalsByUser(userId);
       res.json(dispersals);
     } catch (error) {
@@ -82,8 +87,10 @@ export function registerSweepRoutes(app: Express) {
     }
   });
 
-  // Manual trigger for weekly dispersal (admin/testing only)
-  app.post("/api/sweep/disperse", async (req, res) => {
+  // Manual trigger for weekly dispersal (admin only). Real money movement is
+  // additionally gated behind ENABLE_AUTO_ROUNDUP_SWEEPS inside the service, so
+  // this is a no-op unless that flag is explicitly enabled.
+  app.post("/api/sweep/disperse", requireAdmin, async (req, res) => {
     try {
       await sweepService.processWeeklyDispersals();
       res.json({ message: "Weekly dispersals processed successfully" });
@@ -93,8 +100,8 @@ export function registerSweepRoutes(app: Express) {
     }
   });
 
-  // Manual trigger for daily interest calculation (admin/testing only)
-  app.post("/api/sweep/calculate-interest", async (req, res) => {
+  // Manual trigger for daily interest calculation (admin only)
+  app.post("/api/sweep/calculate-interest", requireAdmin, async (req, res) => {
     try {
       await sweepService.calculateDailyInterest();
       res.json({ message: "Daily interest calculated successfully" });

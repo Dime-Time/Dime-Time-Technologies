@@ -44,6 +44,9 @@ import {
   type AchAuthorization,
   type InsertAchAuthorization,
   achAuthorizations,
+  type RealTransferAuditLog,
+  type InsertRealTransferAuditLog,
+  realTransferAuditLogs,
   users, 
   debts, 
   transactions, 
@@ -70,7 +73,18 @@ import {
 import { encryptToken, decryptToken } from "./services/encryptionService";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, gte } from "drizzle-orm";
+
+/**
+ * Result of the real-money ACH rollout gate. `ok:true` means a `created`
+ * transfers row was written (committed) and the caller may proceed to Stripe.
+ * `ok:false` means the attempt was blocked by a gate check; an audit row was
+ * still written, and `httpStatus`/`message` are the deterministic response to
+ * cache against the idempotency key.
+ */
+export type RealAchGateResult =
+  | { ok: true; ledger: Transfer; auditId: string; isFirst: boolean }
+  | { ok: false; httpStatus: number; reason: string; message: string; auditId: string | null };
 
 export interface IStorage {
   // User methods
@@ -176,6 +190,21 @@ export interface IStorage {
   getTransfersByUserId(userId: string): Promise<Transfer[]>;
   getTransferByStripePaymentIntentId(paymentIntentId: string): Promise<Transfer | undefined>;
   getTransferByStripeChargeId(chargeId: string): Promise<Transfer | undefined>;
+  // Real-money ACH rollout gate + allowlist + audit
+  reserveRealStripeAchDebit(args: {
+    userId: string;
+    stripeAccountId: string;
+    amount: number;
+    debtId?: string | null;
+    idempotencyKey: string;
+    correlationId: string;
+    stripeMode: string | null;
+    environment: string;
+    limits: { firstTransferMaxDollars: number; dailyTotalMaxDollars: number; dailyCountMax: number };
+  }): Promise<RealAchGateResult>;
+  setUserRealTransfersEnabled(userId: string, enabled: boolean, adminUserId: string, notes?: string): Promise<User | undefined>;
+  createRealTransferAuditLog(data: InsertRealTransferAuditLog): Promise<RealTransferAuditLog>;
+  getRecentRealTransferAuditLogs(opts: { limit: number; userId?: string }): Promise<RealTransferAuditLog[]>;
   // Admin (read-only operator surface — gated by requireAdmin middleware)
   getRecentTransfers(opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]>;
   getRecentStripeWebhookEvents(limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>>;
@@ -273,6 +302,11 @@ export class MemStorage implements IStorage {
       firstName: "Neo",
       lastName: "User",
       profileImageUrl: null,
+      emailVerifiedAt: null,
+      realTransfersEnabled: false,
+      realTransfersEnabledAt: null,
+      realTransfersEnabledBy: null,
+      realTransfersNotes: null,
       createdAt: new Date("2024-01-01"),
       updatedAt: new Date("2024-01-01"),
     };
@@ -918,6 +952,11 @@ export class MemStorage implements IStorage {
       firstName: insertUser.firstName ?? null,
       lastName: insertUser.lastName ?? null,
       profileImageUrl: insertUser.profileImageUrl ?? null,
+      emailVerifiedAt: null,
+      realTransfersEnabled: false,
+      realTransfersEnabledAt: null,
+      realTransfersEnabledBy: null,
+      realTransfersNotes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -949,6 +988,11 @@ export class MemStorage implements IStorage {
         firstName: userData.firstName ?? null,
         lastName: userData.lastName ?? null,
         profileImageUrl: userData.profileImageUrl ?? null,
+        emailVerifiedAt: null,
+        realTransfersEnabled: false,
+        realTransfersEnabledAt: null,
+        realTransfersEnabledBy: null,
+        realTransfersNotes: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1485,6 +1529,10 @@ export class MemStorage implements IStorage {
   async recordStripeWebhookEvent(_eventId: string, _type: string): Promise<boolean> { return true; }
   async createAchAuthorization(_data: InsertAchAuthorization): Promise<AchAuthorization> { throw new Error('MemStorage does not support ACH authorizations'); }
   async getLatestAchAuthorization(_userId: string): Promise<AchAuthorization | undefined> { return undefined; }
+  async reserveRealStripeAchDebit(_args: any): Promise<RealAchGateResult> { throw new Error('MemStorage does not support real ACH gate'); }
+  async setUserRealTransfersEnabled(_userId: string, _enabled: boolean, _adminUserId: string, _notes?: string): Promise<User | undefined> { return undefined; }
+  async createRealTransferAuditLog(_data: InsertRealTransferAuditLog): Promise<RealTransferAuditLog> { throw new Error('MemStorage does not support audit logs'); }
+  async getRecentRealTransferAuditLogs(_opts: { limit: number; userId?: string }): Promise<RealTransferAuditLog[]> { return []; }
 
   async createPasswordResetToken(_data: InsertPasswordResetToken): Promise<PasswordResetToken> {
     throw new Error('MemStorage does not support password reset tokens');
@@ -1857,6 +1905,7 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
       await tx.delete(debts).where(eq(debts.userId, userId));
       await tx.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
+      await tx.delete(realTransferAuditLogs).where(eq(realTransferAuditLogs.userId, userId));
       await tx.delete(transfers).where(eq(transfers.userId, userId));
       await tx.delete(stripeAccounts).where(eq(stripeAccounts.userId, userId));
       await tx.delete(achAuthorizations).where(eq(achAuthorizations.userId, userId));
@@ -2158,6 +2207,228 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(achAuthorizations.createdAt))
       .limit(1);
     return result;
+  }
+
+  // ----- Real-money ACH rollout gate (allowlist + conservative limits) -----
+  //
+  // Race-safe: takes a per-user advisory lock for the duration of the
+  // transaction so two concurrent debit attempts (different idempotency keys)
+  // can never both pass the daily count/sum checks. Re-reads allowlist,
+  // account, debt, and prior-transfer state INSIDE the lock, writes an audit
+  // row for EVERY decision, and only inserts a `created` transfers row when all
+  // checks pass — committing before the caller ever talks to Stripe.
+  async reserveRealStripeAchDebit(args: {
+    userId: string;
+    stripeAccountId: string;
+    amount: number;
+    debtId?: string | null;
+    idempotencyKey: string;
+    correlationId: string;
+    stripeMode: string | null;
+    environment: string;
+    limits: { firstTransferMaxDollars: number; dailyTotalMaxDollars: number; dailyCountMax: number };
+  }): Promise<RealAchGateResult> {
+    const {
+      userId, stripeAccountId, amount, debtId, idempotencyKey,
+      correlationId, stripeMode, environment, limits,
+    } = args;
+
+    return await db.transaction(async (tx) => {
+      // Serialize all real-debit decisions for this user for the duration of
+      // the transaction. Released automatically on commit/rollback.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+
+      // Capacity-consuming statuses: a transfer in any of these states has
+      // (or may still) move money, so it counts toward limits. Explicitly
+      // EXCLUDES failed/returned/cancelled/refunded/disputed/simulated.
+      const consumedStatuses = [
+        "created", "authorized", "pending", "processing",
+        "posted", "settled", "requires_action",
+      ];
+      // Still-open (not yet terminal) statuses for the duplicate-pending guard.
+      const pendingStatuses = [
+        "created", "authorized", "pending", "processing",
+        "posted", "requires_action",
+      ];
+
+      let allowlistEnabled = false;
+
+      const writeAudit = async (
+        result: "approved" | "blocked",
+        reason: string | null,
+        extra?: { transferId?: string | null },
+      ): Promise<string> => {
+        const [row] = await tx.insert(realTransferAuditLogs).values({
+          userId,
+          adminUserId: null,
+          action: "ach_debit_decision",
+          result,
+          reason,
+          amount: amount.toFixed(2),
+          debtId: debtId ?? null,
+          stripeAccountId,
+          stripePaymentIntentId: null,
+          transferId: extra?.transferId ?? null,
+          stripeMode: stripeMode ?? null,
+          environment,
+          allowlistEnabled,
+          idempotencyKey,
+          correlationId,
+        }).returning({ id: realTransferAuditLogs.id });
+        return row.id;
+      };
+
+      const block = async (
+        httpStatus: number, reason: string, message: string,
+      ): Promise<RealAchGateResult> => {
+        const auditId = await writeAudit("blocked", reason);
+        return { ok: false, httpStatus, reason, message, auditId };
+      };
+
+      // 1. User exists + is on the allowlist (the instantly-revocable lever).
+      const [user] = await tx.select().from(users).where(eq(users.id, userId));
+      if (!user) return block(404, "user_not_found", "User not found");
+      allowlistEnabled = user.realTransfersEnabled === true;
+      if (!allowlistEnabled) {
+        return block(403, "not_allowlisted", "Real transfers are not enabled for this account.");
+      }
+
+      // 2. Stripe account belongs to the user, is active and linked.
+      const [account] = await tx.select().from(stripeAccounts).where(eq(stripeAccounts.id, stripeAccountId));
+      if (!account || account.userId !== userId) {
+        return block(404, "account_not_found", "Stripe account not found");
+      }
+      if (!account.isActive || account.status !== "linked") {
+        return block(422, "account_not_active", "The selected bank account is not active. Please re-link it.");
+      }
+
+      // 3. Debt (when present) belongs to the user and is active.
+      if (debtId) {
+        const [debt] = await tx.select().from(debts).where(eq(debts.id, debtId));
+        if (!debt || debt.userId !== userId) {
+          return block(404, "debt_not_found", "Debt not found");
+        }
+        if (!debt.isActive) {
+          return block(422, "debt_inactive", "That debt is no longer active.");
+        }
+      }
+
+      // 4. Duplicate-pending guard. Debt payment: block another open Stripe
+      // debit for the SAME debt. No-debt ACH pull: block any open Stripe ACH
+      // debit for the user. Prevents accidental double pulls while still
+      // allowing a fresh-key retry once the prior one is terminal.
+      const dupConds = [
+        eq(transfers.userId, userId),
+        eq(transfers.provider, "stripe"),
+        inArray(transfers.status, pendingStatuses),
+      ];
+      if (debtId) dupConds.push(eq(transfers.debtId, debtId));
+      const dup = await tx.select({ id: transfers.id }).from(transfers).where(and(...dupConds)).limit(1);
+      if (dup.length > 0) {
+        return block(409, "duplicate_pending", "A transfer for this is already in progress. Please wait for it to finish.");
+      }
+
+      // 5. Conservative launch limits, computed inside the lock.
+      const prior = await tx.select({ id: transfers.id }).from(transfers).where(and(
+        eq(transfers.userId, userId),
+        eq(transfers.provider, "stripe"),
+        inArray(transfers.status, consumedStatuses),
+      ));
+      const isFirst = prior.length === 0;
+      if (isFirst && amount > limits.firstTransferMaxDollars) {
+        return block(422, "over_first_transfer_limit",
+          `Your first real transfer is limited to $${limits.firstTransferMaxDollars.toFixed(2)}.`);
+      }
+
+      // Daily window is explicitly UTC (documented) so the limit is stable
+      // regardless of server locale.
+      const now = new Date();
+      const todayStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const todays = await tx.select({ amount: transfers.amount }).from(transfers).where(and(
+        eq(transfers.userId, userId),
+        eq(transfers.provider, "stripe"),
+        inArray(transfers.status, consumedStatuses),
+        gte(transfers.createdAt, todayStartUtc),
+      ));
+      if (todays.length >= limits.dailyCountMax) {
+        return block(429, "over_daily_count",
+          `You've reached the daily limit of ${limits.dailyCountMax} transfer(s). Please try again tomorrow.`);
+      }
+      const todaysSum = todays.reduce((s, r) => s + parseFloat(r.amount), 0);
+      if (todaysSum + amount > limits.dailyTotalMaxDollars) {
+        return block(422, "over_daily_total",
+          `This would exceed the daily transfer limit of $${limits.dailyTotalMaxDollars.toFixed(2)}.`);
+      }
+
+      // 6. All checks passed — create the ledger row + approval audit, then
+      // commit. The caller talks to Stripe only after this commit.
+      const ledgerId = randomUUID();
+      const [ledger] = await tx.insert(transfers).values({
+        id: ledgerId,
+        userId,
+        type: debtId ? "debt_payment" : "stripe_ach_debit",
+        amount: amount.toFixed(2),
+        status: "created",
+        provider: "stripe",
+        debtId: debtId || null,
+        correlationId,
+        idempotencyKey,
+        rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, real: true }),
+        createdAt: now,
+        updatedAt: now,
+      }).returning();
+
+      const auditId = await writeAudit("approved", null, { transferId: ledger.id });
+      return { ok: true, ledger, auditId, isFirst };
+    });
+  }
+
+  async setUserRealTransfersEnabled(
+    userId: string,
+    enabled: boolean,
+    adminUserId: string,
+    notes?: string,
+  ): Promise<User | undefined> {
+    return await db.transaction(async (tx) => {
+      // Serialize allowlist flips with reserveRealStripeAchDebit (SAME lock key)
+      // so a revoke can never race past an in-flight reservation that already
+      // read realTransfersEnabled=true. Once this commits, the next reservation
+      // to acquire the lock observes the new value — revoke is effective on the
+      // very next debit attempt.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+      const [updated] = await tx.update(users).set({
+        realTransfersEnabled: enabled,
+        realTransfersEnabledAt: enabled ? new Date() : null,
+        realTransfersEnabledBy: enabled ? adminUserId : null,
+        realTransfersNotes: notes ?? null,
+        updatedAt: new Date(),
+      }).where(eq(users.id, userId)).returning();
+      if (!updated) return undefined;
+      await tx.insert(realTransferAuditLogs).values({
+        userId,
+        adminUserId,
+        action: "allowlist_changed",
+        result: enabled ? "enabled" : "disabled",
+        reason: notes ?? null,
+        allowlistEnabled: enabled,
+        environment: process.env.NODE_ENV === "production" ? "production" : "development",
+      });
+      return updated;
+    });
+  }
+
+  async createRealTransferAuditLog(data: InsertRealTransferAuditLog): Promise<RealTransferAuditLog> {
+    const [row] = await db.insert(realTransferAuditLogs).values(data).returning();
+    return row;
+  }
+
+  async getRecentRealTransferAuditLogs(opts: { limit: number; userId?: string }): Promise<RealTransferAuditLog[]> {
+    const limit = Math.max(1, Math.min(500, opts.limit));
+    const base = db.select().from(realTransferAuditLogs);
+    const filtered = opts.userId
+      ? base.where(eq(realTransferAuditLogs.userId, opts.userId))
+      : base;
+    return await filtered.orderBy(desc(realTransferAuditLogs.createdAt)).limit(limit);
   }
 }
 

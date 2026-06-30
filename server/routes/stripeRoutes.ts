@@ -28,10 +28,19 @@ import {
   createAchDebit,
   createFinancialConnectionsSession,
   isStripeAchEnabled,
+  resolveStripeSecretKey,
   verifyStripeWebhook,
 } from "../services/stripeService";
 
 const MAX_DEBT_PAYMENT_DOLLARS = 500;
+
+// Conservative real-money rollout limits. Enforced INSIDE the transactional
+// gate (storage.reserveRealStripeAchDebit) so they hold even under concurrent
+// retries. These cap blast radius even after ENABLE_REAL_TRANSFERS is flipped
+// on for an allowlisted user.
+const REAL_FIRST_TRANSFER_MAX_DOLLARS = 1.0;
+const REAL_DAILY_TOTAL_MAX_DOLLARS = 5.0;
+const REAL_DAILY_COUNT_MAX = 1;
 
 const exchangeSchema = z.object({
   fcAccountId: z.string().min(3),
@@ -345,43 +354,34 @@ export function registerStripeRoutes(app: Express): void {
       // `simulated` ledger row and return a simulated success so the rest of
       // the flow (UI, idempotency, ledger) can be exercised safely.
       const realTransfers = isFlagEnabled("ENABLE_REAL_TRANSFERS");
+      const stripeMode = resolveStripeSecretKey().mode;
 
-      // PRIORITY 2 — a REAL debit requires Nacha mandate evidence on file.
-      // Fail closed if the user never authorized ACH (no fabricated IP/UA).
-      // Skipped in simulation since no Stripe mandate is created.
-      let mandate: { ipAddress: string; userAgent: string } | undefined;
-      if (realTransfers) {
-        const latest = await storage.getLatestAchAuthorization(userId);
-        if (!latest) {
-          const body = {
-            message: "ACH authorization required before debiting. Please authorize ACH in the app.",
-          };
-          await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
-          return res.status(422).json(body);
-        }
-        mandate = { ipAddress: latest.ipAddress, userAgent: latest.userAgent };
-      }
-
-      const ledger = await storage.createTransfer({
-        userId,
-        type: debtId ? "debt_payment" : "stripe_ach_debit",
-        amount: amount.toFixed(2),
-        status: realTransfers ? "created" : "simulated",
-        provider: "stripe",
-        debtId: debtId || null,
-        correlationId,
-        idempotencyKey,
-        rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, simulated: !realTransfers }),
-      });
-
-      if (!realTransfers) {
-        console.log("[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false");
+      // ---- SIMULATION PATH (default / public) ----
+      // Simulate unless BOTH the master flag is ON *and* the resolved Stripe key
+      // is a LIVE key. A test/sandbox key (or no key at all) can never reach
+      // Stripe's real-money path — a live key is a required second factor for any
+      // real charge. No allowlist needed here — nothing moves.
+      if (!realTransfers || stripeMode !== "live") {
+        const ledger = await storage.createTransfer({
+          userId,
+          type: debtId ? "debt_payment" : "stripe_ach_debit",
+          amount: amount.toFixed(2),
+          status: "simulated",
+          provider: "stripe",
+          debtId: debtId || null,
+          correlationId,
+          idempotencyKey,
+          rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, simulated: true }),
+        });
+        console.log("[SIMULATION MODE] ACH transfer simulated (real transfers off or non-live Stripe key)");
         stripeLog(correlationId, "ach_debit_simulated", {
           severity: "WARN",
           ledgerId: ledger.id,
           stripeAccountId,
           amount,
-          message: "[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false",
+          realTransfers,
+          stripeMode,
+          message: "[SIMULATION MODE] ACH transfer simulated (real transfers off or non-live Stripe key)",
         });
         const body = {
           success: true,
@@ -394,10 +394,62 @@ export function registerStripeRoutes(app: Express): void {
         return res.status(201).json(body);
       }
 
+      // ---- REAL-MONEY PATH (allowlisted users only) ----
+      // PRIORITY 2 — a REAL debit requires Nacha mandate evidence on file.
+      // Fail closed if the user never authorized ACH (no fabricated IP/UA).
+      const latest = await storage.getLatestAchAuthorization(userId);
+      if (!latest) {
+        const body = {
+          message: "ACH authorization required before debiting. Please authorize ACH in the app.",
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
+        return res.status(422).json(body);
+      }
+      const mandate = { ipAddress: latest.ipAddress, userAgent: latest.userAgent };
+
+      const environment = process.env.NODE_ENV === "production" ? "production" : "development";
+
+      // PRIORITY 3 — the transactional rollout GATE. Re-reads the allowlist,
+      // account, debt, and prior-transfer state under a per-user advisory lock,
+      // enforces the conservative launch limits, writes an audit row for the
+      // decision, and only on success commits a `created` ledger row. A
+      // non-allowlisted user is rejected HERE — Stripe is never called.
+      const gate = await storage.reserveRealStripeAchDebit({
+        userId,
+        stripeAccountId,
+        amount,
+        debtId: debtId || null,
+        idempotencyKey,
+        correlationId,
+        stripeMode,
+        environment,
+        limits: {
+          firstTransferMaxDollars: REAL_FIRST_TRANSFER_MAX_DOLLARS,
+          dailyTotalMaxDollars: REAL_DAILY_TOTAL_MAX_DOLLARS,
+          dailyCountMax: REAL_DAILY_COUNT_MAX,
+        },
+      });
+
+      if (!gate.ok) {
+        stripeLog(correlationId, "ach_debit_blocked", {
+          severity: "WARN",
+          reason: gate.reason,
+          auditId: gate.auditId,
+          stripeAccountId,
+          amount,
+        });
+        const body = { message: gate.message, reason: gate.reason, correlationId };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, gate.httpStatus, body);
+        return res.status(gate.httpStatus).json(body);
+      }
+
+      const ledger = gate.ledger;
+
       stripeLog(correlationId, "ach_debit_start", {
         ledgerId: ledger.id,
         stripeAccountId,
         amount,
+        isFirstRealTransfer: gate.isFirst,
       });
 
       try {
@@ -406,8 +458,8 @@ export function registerStripeRoutes(app: Express): void {
           customerId: stripeAccount.stripeCustomerId,
           paymentMethodId,
           idempotencyKey,
-          mandateIpAddress: mandate!.ipAddress,
-          mandateUserAgent: mandate!.userAgent,
+          mandateIpAddress: mandate.ipAddress,
+          mandateUserAgent: mandate.userAgent,
           descriptor,
           metadata: {
             dimeTimeUserId: userId,
@@ -422,6 +474,28 @@ export function registerStripeRoutes(app: Express): void {
           stripeChargeId: intent.chargeId || undefined,
           rawResponse: JSON.stringify(intent),
         });
+
+        // Money-audit: the real debit was successfully handed to Stripe.
+        try {
+          await storage.createRealTransferAuditLog({
+            userId,
+            action: "ach_debit_outcome",
+            result: "initiated",
+            reason: intent.status,
+            amount: amount.toFixed(2),
+            debtId: debtId || null,
+            stripeAccountId,
+            stripePaymentIntentId: intent.id,
+            transferId: ledger.id,
+            stripeMode,
+            environment,
+            allowlistEnabled: true,
+            idempotencyKey,
+            correlationId,
+          });
+        } catch (auditErr: any) {
+          stripeLog(correlationId, "audit_write_failed", { severity: "ERROR", error: auditErr?.message });
+        }
 
         stripeLog(correlationId, "ach_debit_initiated", {
           ledgerId: ledger.id,
@@ -445,6 +519,25 @@ export function registerStripeRoutes(app: Express): void {
           errorMessage: stripeErr?.message || "Stripe ACH debit failed",
           rawResponse: JSON.stringify(stripeErr?.raw || {}),
         });
+        try {
+          await storage.createRealTransferAuditLog({
+            userId,
+            action: "ach_debit_outcome",
+            result: "failed",
+            reason: errCode,
+            amount: amount.toFixed(2),
+            debtId: debtId || null,
+            stripeAccountId,
+            transferId: ledger.id,
+            stripeMode,
+            environment,
+            allowlistEnabled: true,
+            idempotencyKey,
+            correlationId,
+          });
+        } catch (auditErr: any) {
+          stripeLog(correlationId, "audit_write_failed", { severity: "ERROR", error: auditErr?.message });
+        }
         stripeLog(correlationId, "ach_debit_failed", {
           severity: "ERROR",
           ledgerId: ledger.id,
@@ -593,6 +686,36 @@ export function registerStripeWebhook(app: Express): void {
               ledgerId: ledger.id,
               previousStatus: ledger.status,
               newStatus: "refunded",
+            });
+          }
+        } else if (event.type === "charge.failed") {
+          // ACH debit failed, or a late ACH return after the charge was
+          // created. Map to terminal `failed` so the user sees funds were NOT
+          // collected and retained.
+          const charge = event.data.object;
+          let ledger = charge.payment_intent
+            ? await storage.getTransferByStripePaymentIntentId(charge.payment_intent as string)
+            : undefined;
+          if (!ledger && charge.id) {
+            ledger = await storage.getTransferByStripeChargeId(charge.id as string);
+          }
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: charge.id,
+              paymentIntentId: charge.payment_intent,
+            });
+          } else if (ledger.status !== "failed") {
+            await storage.updateTransferStatus(ledger.id, "failed", {
+              stripeChargeId: charge.id as string,
+              errorCode: charge.failure_code || "charge_failed",
+              errorMessage: charge.failure_message || "ACH charge failed",
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, failureCode: charge.failure_code }),
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: "failed",
             });
           }
         } else if (event.type === "charge.dispute.created") {

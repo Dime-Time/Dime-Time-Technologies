@@ -74,9 +74,12 @@ export function resolveStripeSecretKey(): StripeSecretResolution {
  * (`STRIPE_WEBHOOK_SECRET_TEST`). Never cross modes.
  */
 export function resolveStripeWebhookSecret(): string | null {
-  return (isProductionEnv()
-    ? process.env.STRIPE_WEBHOOK_SECRET
-    : process.env.STRIPE_WEBHOOK_SECRET_TEST) || null;
+  if (isProductionEnv()) {
+    // Prefer the dedicated LIVE endpoint secret; fall back to the legacy
+    // STRIPE_WEBHOOK_SECRET so existing production config keeps verifying.
+    return process.env.STRIPE_WEBHOOK_SECRET_LIVE || process.env.STRIPE_WEBHOOK_SECRET || null;
+  }
+  return process.env.STRIPE_WEBHOOK_SECRET_TEST || null;
 }
 
 export function isStripeAchEnabled(): boolean {
