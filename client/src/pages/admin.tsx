@@ -35,25 +35,6 @@ type AdminWebhookEvent = {
   receivedAt: string;
 };
 
-type StripeDiagnostics = {
-  accountId: string;
-  chargesEnabled: boolean;
-  payoutsEnabled: boolean;
-  detailsSubmitted: boolean;
-  capabilities: Record<string, string>;
-  requirements: {
-    currentlyDue: string[];
-    eventuallyDue: string[];
-    pastDue: string[];
-    pendingVerification: string[];
-    disabledReason: string | null;
-  };
-  futureRequirements: {
-    currentlyDue: string[];
-    eventuallyDue: string[];
-  };
-};
-
 async function adminFetch(path: string): Promise<Response> {
   const { getApiUrl } = await import("@/lib/queryClient");
   const { getAuthToken } = await import("@/lib/authToken");
@@ -283,219 +264,6 @@ function WebhooksTab() {
   );
 }
 
-function CapabilityStatus({ status }: { status: string | undefined }) {
-  const s = (status ?? "inactive").toLowerCase();
-  const label = s === "active" ? "ACTIVE" : s === "pending" ? "PENDING" : "INACTIVE";
-  const tone =
-    s === "active"
-      ? "bg-green-100 text-green-800 border-green-200"
-      : s === "pending"
-      ? "bg-amber-100 text-amber-900 border-amber-200"
-      : "bg-slate-100 text-slate-700 border-slate-200";
-  return <Badge variant="outline" className={tone}>{label}</Badge>;
-}
-
-const TRACKED_CAPABILITIES = [
-  "card_payments",
-  "transfers",
-  "treasury",
-  "financial_connections",
-  "us_bank_account_ach_payments",
-];
-
-function Verdict({ d }: { d: StripeDiagnostics }) {
-  const ach = (d.capabilities["us_bank_account_ach_payments"] ?? "inactive").toLowerCase();
-  const fc = (d.capabilities["financial_connections"] ?? "inactive").toLowerCase();
-  const treasury = (d.capabilities["treasury"] ?? "inactive").toLowerCase();
-
-  // Exactly four canonical conclusions — every branch resolves to one of them:
-  //   1. ACH ready
-  //   2. ACH pending Stripe review
-  //   3. Additional information required
-  //   4. Treasury pending but ACH available
-  // Precedence: an outstanding action (#3) wins, then ACH-active outcomes
-  // (#4 / #1), then anything still in review or not yet enabled maps to #2.
-  let conclusion: string;
-  let detail: string;
-  let tone: string;
-
-  const actionRequired =
-    Boolean(d.requirements.disabledReason) || d.requirements.currentlyDue.length > 0;
-
-  if (actionRequired) {
-    conclusion = "3 — Additional information required";
-    detail = d.requirements.disabledReason
-      ? `Stripe set disabled_reason="${d.requirements.disabledReason}", which is a capability restriction. Resolve the items in the Requirements section before ACH will activate.`
-      : "requirements.currently_due is populated — Stripe needs more information from you before capabilities activate. See the Requirements section below.";
-    tone = "border-red-200 bg-red-50 text-red-800";
-  } else if (ach === "active" && treasury === "pending") {
-    conclusion = "4 — Treasury pending but ACH available";
-    detail = "us_bank_account_ach_payments is ACTIVE so ACH debit is approved. Treasury is still PENDING review, but Treasury is a separate product not required for basic ACH debit.";
-    tone = "border-green-200 bg-green-50 text-green-800";
-  } else if (ach === "active") {
-    conclusion = "1 — ACH ready";
-    detail = "us_bank_account_ach_payments is ACTIVE — ACH debit is approved.";
-    tone = "border-green-200 bg-green-50 text-green-800";
-  } else {
-    // ACH pending OR inactive, with no outstanding requirement → still under
-    // review / not yet enabled. Both collapse to canonical #2.
-    conclusion = "2 — ACH pending Stripe review";
-    detail =
-      ach === "pending"
-        ? "us_bank_account_ach_payments is PENDING — Stripe's review is still in progress. No action is currently required."
-        : "us_bank_account_ach_payments is INACTIVE with no outstanding requirements — the capability is not enabled yet, typically because Stripe's review is not complete. No action is currently required.";
-    tone = "border-amber-200 bg-amber-50 text-amber-900";
-  }
-
-  if (ach === "active" && fc !== "active") {
-    detail += ` Note: financial_connections is ${fc.toUpperCase()} — bank linking via Financial Connections may not work until it is ACTIVE.`;
-  }
-
-  return (
-    <div className={`text-sm rounded-md border px-3 py-2 ${tone}`} data-testid="admin-stripe-verdict">
-      <div className="font-semibold mb-0.5">Conclusion: {conclusion}</div>
-      <div>{detail}</div>
-    </div>
-  );
-}
-
-function InterpretationLegend() {
-  const rows: Array<[string, string]> = [
-    ["capability = ACTIVE", "Capability is approved and usable."],
-    ["capability = PENDING", "Stripe review is still in progress for that capability."],
-    ["capability = INACTIVE", "Capability is not currently enabled."],
-    ["charges_enabled = true", "Account can process payments."],
-    ["payouts_enabled = true", "Stripe can transfer funds to your business bank account."],
-    ["requirements.currently_due populated", "Action required — Stripe needs information now."],
-    ["requirements.pending_verification populated", "Stripe is still reviewing information you submitted."],
-    ["requirements.disabled_reason populated", "A capability restriction exists."],
-  ];
-  return (
-    <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-sm">How to read this</CardTitle></CardHeader>
-      <CardContent>
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5">
-          {rows.map(([k, v]) => (
-            <div key={k} className="text-xs">
-              <dt className="font-mono text-slate-700">{k}</dt>
-              <dd className="text-slate-500">{v}</dd>
-            </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ReqList({ label, items }: { label: string; items: string[] }) {
-  return (
-    <div>
-      <div className="text-xs font-medium text-slate-600 mb-1">{label} <span className="text-slate-400">({items.length})</span></div>
-      {items.length === 0 ? (
-        <div className="text-xs text-slate-400">none</div>
-      ) : (
-        <ul className="text-xs font-mono text-slate-700 list-disc pl-4 space-y-0.5">
-          {items.map((i) => <li key={i}>{i}</li>)}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function StripeDiagnosticsTab() {
-  const query = useQuery<StripeDiagnostics>({
-    queryKey: ["/api/admin/stripe/diagnostics"],
-    queryFn: async () => {
-      const res = await adminFetch("/api/admin/stripe/diagnostics");
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.message || `HTTP ${res.status}`);
-      }
-      return res.json();
-    },
-    retry: false,
-  });
-
-  const d = query.data;
-  const capRows = d
-    ? Array.from(new Set([...TRACKED_CAPABILITIES, ...Object.keys(d.capabilities)]))
-    : TRACKED_CAPABILITIES;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => query.refetch()}
-          disabled={query.isFetching}
-          data-testid="admin-refresh-diagnostics"
-        >
-          <RefreshCw className={`w-4 h-4 mr-1 ${query.isFetching ? "animate-spin" : ""}`} />
-          Refresh from Stripe
-        </Button>
-        <span className="text-xs text-slate-500 ml-auto">Live read from Stripe · no secrets exposed</span>
-      </div>
-
-      {query.isLoading && <div className="text-sm text-slate-500">Querying Stripe…</div>}
-
-      {query.isError && (
-        <div className="text-sm text-red-700 border border-red-200 bg-red-50 rounded p-3" data-testid="admin-diagnostics-error">
-          {(query.error as Error)?.message || "Failed to load Stripe diagnostics."}
-        </div>
-      )}
-
-      {d && (
-        <>
-          <Verdict d={d} />
-          <InterpretationLegend />
-
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Account Status</CardTitle></CardHeader>
-            <CardContent className="text-xs font-mono grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-6">
-              <Field label="account id" value={d.accountId} />
-              <Field label="charges_enabled" value={String(d.chargesEnabled)} />
-              <Field label="payouts_enabled" value={String(d.payoutsEnabled)} />
-              <Field label="details_submitted" value={String(d.detailsSubmitted)} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Capabilities</CardTitle></CardHeader>
-            <CardContent>
-              <div className="divide-y">
-                {capRows.map((name) => (
-                  <div key={name} className="flex items-center gap-3 py-1.5" data-testid={`admin-capability-${name}`}>
-                    <span className="font-mono text-xs flex-1">{name}</span>
-                    <CapabilityStatus status={d.capabilities[name]} />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Requirements</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {d.requirements.disabledReason && (
-                <div className="md:col-span-2 text-xs text-red-700">
-                  <span className="font-medium">disabled_reason:</span> <span className="font-mono">{d.requirements.disabledReason}</span>
-                </div>
-              )}
-              <ReqList label="currently due" items={d.requirements.currentlyDue} />
-              <ReqList label="eventually due" items={d.requirements.eventuallyDue} />
-              <ReqList label="past due" items={d.requirements.pastDue} />
-              <ReqList label="pending verification" items={d.requirements.pendingVerification} />
-              <ReqList label="future · currently due" items={d.futureRequirements.currentlyDue} />
-              <ReqList label="future · eventually due" items={d.futureRequirements.eventuallyDue} />
-            </CardContent>
-          </Card>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
 
@@ -532,16 +300,12 @@ export default function AdminPage() {
         <TabsList>
           <TabsTrigger value="transfers" data-testid="admin-tab-transfers">Transfers</TabsTrigger>
           <TabsTrigger value="webhooks" data-testid="admin-tab-webhooks">Stripe Webhooks</TabsTrigger>
-          <TabsTrigger value="diagnostics" data-testid="admin-tab-diagnostics">Stripe Diagnostics</TabsTrigger>
         </TabsList>
         <TabsContent value="transfers" className="mt-3">
           <TransfersTab />
         </TabsContent>
         <TabsContent value="webhooks" className="mt-3">
           <WebhooksTab />
-        </TabsContent>
-        <TabsContent value="diagnostics" className="mt-3">
-          <StripeDiagnosticsTab />
         </TabsContent>
       </Tabs>
     </div>
