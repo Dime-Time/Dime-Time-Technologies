@@ -47,6 +47,9 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 [userenv.shared]
 
 [userenv.development]
+VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51Tb9PzPZOgMsSXBjAoH02yCOIMODtxjgLraSajbcrDDbzcwqs3Ee9suyiwRjmDbqofcYX6p9Xj2gX5ImaIoKkXnr00283eQFwa"
+ENABLE_STRIPE_ACH = "true"
+ENABLE_REAL_TRANSFERS = "false"
 
 [userenv.production]
 ENABLE_STRIPE_ACH = "true"

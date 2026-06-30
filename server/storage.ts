@@ -1833,26 +1833,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUserAccount(userId: string): Promise<void> {
-    await db.delete(weeklyDispersals).where(eq(weeklyDispersals.userId, userId));
-    await db.delete(sweepDeposits).where(eq(sweepDeposits.userId, userId));
-    await db.delete(sweepAccounts).where(eq(sweepAccounts.userId, userId));
-    await db.delete(distributionPayments).where(eq(distributionPayments.userId, userId));
-    await db.delete(roundUpCollections).where(eq(roundUpCollections.userId, userId));
-    await db.delete(userSessions).where(eq(userSessions.userId, userId));
-    await db.delete(notifications).where(eq(notifications.userId, userId));
-    await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
-    await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
-    await db.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
-    await db.delete(dttRewards).where(eq(dttRewards.userId, userId));
-    await db.delete(dttStaking).where(eq(dttStaking.userId, userId));
-    await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
-    await db.delete(payments).where(eq(payments.userId, userId));
-    await db.delete(transactions).where(eq(transactions.userId, userId));
-    await db.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
-    await db.delete(debts).where(eq(debts.userId, userId));
-    await db.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
-    await db.delete(transfers).where(eq(transfers.userId, userId));
-    await db.delete(users).where(eq(users.id, userId));
+    // Atomic: deleting a user must remove every row that FK-references the user
+    // in a single transaction, otherwise a mid-sequence failure leaves the
+    // account in a partial (orphaned) state. Children are deleted before the
+    // parent `users` row. When adding a new table with a `userId` FK to
+    // `users.id`, it MUST be added here or account deletion will 500.
+    await db.transaction(async (tx) => {
+      await tx.delete(weeklyDispersals).where(eq(weeklyDispersals.userId, userId));
+      await tx.delete(sweepDeposits).where(eq(sweepDeposits.userId, userId));
+      await tx.delete(sweepAccounts).where(eq(sweepAccounts.userId, userId));
+      await tx.delete(distributionPayments).where(eq(distributionPayments.userId, userId));
+      await tx.delete(roundUpCollections).where(eq(roundUpCollections.userId, userId));
+      await tx.delete(userSessions).where(eq(userSessions.userId, userId));
+      await tx.delete(notifications).where(eq(notifications.userId, userId));
+      await tx.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
+      await tx.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
+      await tx.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
+      await tx.delete(dttRewards).where(eq(dttRewards.userId, userId));
+      await tx.delete(dttStaking).where(eq(dttStaking.userId, userId));
+      await tx.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
+      await tx.delete(payments).where(eq(payments.userId, userId));
+      await tx.delete(transactions).where(eq(transactions.userId, userId));
+      await tx.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
+      await tx.delete(debts).where(eq(debts.userId, userId));
+      await tx.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
+      await tx.delete(transfers).where(eq(transfers.userId, userId));
+      await tx.delete(stripeAccounts).where(eq(stripeAccounts.userId, userId));
+      await tx.delete(achAuthorizations).where(eq(achAuthorizations.userId, userId));
+      await tx.delete(users).where(eq(users.id, userId));
+    });
   }
 
   async getIdempotencyKey(key: string, userId: string, endpoint: string): Promise<{ responseStatus: number; responseBody: string } | undefined> {
