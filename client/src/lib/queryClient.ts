@@ -144,6 +144,8 @@ export function getApiErrorMessage(
     }
     if (typeof e.message === "string" && e.message.trim()) {
       const stripped = e.message.replace(/^\d{3}:\s*/, "").trim();
+      // Looks like an HTML error page (proxy / CDN 5xx) — never user-facing.
+      if (stripped.startsWith("<")) return fallback;
       if (stripped.startsWith("{")) {
         try {
           const parsed = JSON.parse(stripped);
@@ -151,7 +153,8 @@ export function getApiErrorMessage(
             return parsed.message;
           }
         } catch {
-          // fall through to the stripped text
+          // malformed JSON body — don't show raw braces to the user
+          return fallback;
         }
       }
       if (stripped) return stripped;
