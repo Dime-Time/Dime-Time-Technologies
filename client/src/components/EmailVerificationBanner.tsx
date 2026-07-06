@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiErrorMessage } from "@/lib/queryClient";
 import { Mail, X } from "lucide-react";
 
 const DISMISSED_KEY = "dimetime.verifyEmail.dismissedAt";
@@ -38,10 +38,10 @@ export function EmailVerificationBanner() {
         description: `We sent a new link to ${user?.email ?? "your email"}. It expires in 24 hours.`,
       });
     },
-    onError: (err: Error) => {
+    onError: (err) => {
       toast({
         title: "Couldn't send email",
-        description: err.message || "Please try again in a moment.",
+        description: getApiErrorMessage(err, "Please try again in a moment."),
         variant: "destructive",
       });
     },

@@ -85,9 +85,23 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+/**
+ * Error thrown by apiRequest / getQueryFn for non-2xx responses.
+ *
+ * `message` keeps the historical "<status>: <raw body>" shape so existing
+ * detectors (e.g. isUnauthorizedError → /^401: .*Unauthorized/) keep working.
+ * `status` and `serverMessage` are added so UI code can render a clean,
+ * user-facing string via getApiErrorMessage() instead of the raw JSON blob.
+ */
+export interface ApiError extends Error {
+  status?: number;
+  serverMessage?: string;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    let serverMessage: string | undefined;
     // If the server returned a JSON error with a correlationId (transfer /
     // ACH paths do this — see server/routes/mercuryRoutes.ts), tag the
     // current Sentry scope so client-captured exceptions can be cross-
@@ -97,11 +111,53 @@ async function throwIfResNotOk(res: Response) {
       if (parsed && typeof parsed.correlationId === "string") {
         setCorrelationTag(parsed.correlationId);
       }
+      if (parsed && typeof parsed.message === "string") {
+        serverMessage = parsed.message;
+      }
     } catch {
       // non-JSON body — nothing to correlate, fall through
     }
-    throw new Error(`${res.status}: ${text}`);
+    // Keep the "<status>: <raw>" message for backward compatibility, but
+    // attach the parsed status + clean server message so callers can show a
+    // friendly toast (see getApiErrorMessage) instead of the raw JSON body.
+    const error = new Error(`${res.status}: ${text}`) as ApiError;
+    error.status = res.status;
+    if (serverMessage) error.serverMessage = serverMessage;
+    throw error;
   }
+}
+
+/**
+ * Extract a clean, user-facing message from an error thrown by apiRequest /
+ * getQueryFn. Prefers the server's JSON `message`, then strips a leading
+ * "<status>: " prefix (and unwraps a JSON body if one leaked through), so the
+ * UI never shows a raw "503: {\"message\":...}" blob to the user.
+ */
+export function getApiErrorMessage(
+  err: unknown,
+  fallback = "Something went wrong. Please try again.",
+): string {
+  if (err && typeof err === "object") {
+    const e = err as ApiError;
+    if (typeof e.serverMessage === "string" && e.serverMessage.trim()) {
+      return e.serverMessage;
+    }
+    if (typeof e.message === "string" && e.message.trim()) {
+      const stripped = e.message.replace(/^\d{3}:\s*/, "").trim();
+      if (stripped.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(stripped);
+          if (parsed && typeof parsed.message === "string" && parsed.message.trim()) {
+            return parsed.message;
+          }
+        } catch {
+          // fall through to the stripped text
+        }
+      }
+      if (stripped) return stripped;
+    }
+  }
+  return fallback;
 }
 
 /**

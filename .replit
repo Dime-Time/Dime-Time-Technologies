@@ -55,6 +55,7 @@ ENABLE_REAL_TRANSFERS = "false"
 ENABLE_STRIPE_ACH = "true"
 ENABLE_REAL_TRANSFERS = "false"
 VITE_STRIPE_PUBLISHABLE_KEY = "pk_live_51Tb9PzPZOgMsSXBjPyXmJCWrXTnVySYlcbjkqo4yMfdlqfwcc7UPXmeIy6BRMLqASWV9UwjHoP0RV6CG1GqPvYNb00FbpzuMae"
+PUBLIC_APP_URL = "https://dime-time.com"
 
 [postMerge]
 path = "scripts/post-merge.sh"
