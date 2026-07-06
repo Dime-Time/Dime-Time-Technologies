@@ -1,0 +1,305 @@
+DIME TIME — REAL MONEY ACH GO-LIVE IMPLEMENTATION REQUEST
+
+We are ready to prepare Dime Time for controlled live ACH money movement.
+
+IMPORTANT:
+Do NOT remove safety controls.
+Do NOT enable public real-money transfers.
+Do NOT auto-approve users.
+Do NOT run any live debit above $1.
+Do NOT expose Stripe/Plaid secrets in logs, frontend, commits, or responses.
+
+GOAL:
+Make the production ACH flow function end-to-end for a controlled $1 live test using Stripe ACH Direct Debit + Stripe Financial Connections.
+
+CURRENT STACK:
+- React / TypeScript frontend
+- Express / Node backend
+- PostgreSQL / Drizzle ORM
+- Stripe ACH Direct Debit
+- Stripe Financial Connections
+- Feature flags already exist:
+  - ENABLE_STRIPE_ACH
+  - ENABLE_REAL_TRANSFERS
+  - ENABLE_AUTO_ROUNDUP_SWEEPS
+- User allowlist/admin approval already exists or should be enforced
+
+REQUIRED PRODUCTION MONEY FLOW:
+
+1. ENVIRONMENT FLAGS
+Confirm all required env vars exist in production:
+- STRIPE_SECRET_KEY = live Stripe secret key
+- STRIPE_WEBHOOK_SECRET = live Stripe webhook signing secret
+- STRIPE_PUBLISHABLE_KEY = live publishable key
+- ENABLE_STRIPE_ACH = true
+- ENABLE_REAL_TRANSFERS = false by default
+- ENABLE_AUTO_ROUNDUP_SWEEPS = false
+- FIRST_TRANSFER_MAX_CENTS = 100
+- DAILY_TRANSFER_MAX_CENTS = 500
+- WEEKLY_TRANSFER_MAX_CENTS = 1000
+
+Important:
+ENABLE_REAL_TRANSFERS must remain false until final founder-approved test.
+ENABLE_AUTO_ROUNDUP_SWEEPS must remain false.
+
+2. STRIPE LIVE MODE VALIDATION
+Add a backend startup validation that confirms:
+- Stripe secret key starts with sk_live when NODE_ENV=production
+- Webhook secret starts with whsec_
+- Stripe publishable key starts with pk_live on frontend production build
+- App refuses real transfers if test keys are being used in production
+- App refuses real transfers if required webhook secret is missing
+
+3. USER ALLOWLIST GATE
+Before any real ACH debit:
+- Require authenticated user
+- Require user.isAdminApprovedForRealTransfers = true or equivalent allowlist column
+- Require ENABLE_STRIPE_ACH = true
+- Require ENABLE_REAL_TRANSFERS = true
+- Require transfer amount <= limits
+- Require first real transfer <= $1
+- Require stored verified bank payment method
+- Require mandate authorization evidence
+
+If any condition fails, return a safe error:
+"Real transfers are not enabled for this account."
+
+4. BANK LINKING / FINANCIAL CONNECTIONS
+Verify backend endpoint exists for creating a Stripe Financial Connections session or ACH setup flow.
+
+Required behavior:
+- Create/retrieve Stripe Customer for user
+- Start Financial Connections / bank account collection flow
+- Collect verified us_bank_account PaymentMethod
+- Attach PaymentMethod to Stripe Customer
+- Store only safe references:
+  - stripeCustomerId
+  - stripePaymentMethodId
+  - bank name
+  - last4
+  - account type if available
+  - verification status
+- Never store raw routing number or account number
+
+Stripe Financial Connections should be used for instant bank verification where possible. Stripe documentation confirms Financial Connections can verify bank accounts for ACH Direct Debit.
+
+5. MANDATE / ACH AUTHORIZATION
+Before confirming any ACH debit:
+- Capture mandate acceptance evidence:
+  - userId
+  - timestamp
+  - IP address
+  - user agent
+  - authorization text/version
+  - payment method id
+  - transfer amount
+- Store this in ach_authorizations or equivalent table
+- Ensure user sees and accepts ACH authorization language before debit
+
+6. CREATE LIVE ACH PAYMENTINTENT
+Implement/verify backend endpoint:
+
+POST /api/transfers/ach/create
+
+Required:
+- Server-side only
+- Authenticated user only
+- Allowlisted user only
+- Real transfer flags checked
+- Validate amount in cents
+- Enforce first-transfer cap of 100 cents
+- Enforce daily/weekly limits
+- Enforce idempotency key
+- Create internal transfer ledger row BEFORE Stripe call with status = "initiated"
+- Create Stripe PaymentIntent with:
+  - amount
+  - currency: "usd"
+  - customer
+  - payment_method: saved us_bank_account PaymentMethod
+  - payment_method_types: ["us_bank_account"]
+  - confirm: true
+  - mandate_data.customer_acceptance.type = "online"
+  - mandate_data.customer_acceptance.online.ip_address
+  - mandate_data.customer_acceptance.online.user_agent
+  - metadata:
+      userId
+      transferId
+      environment
+      purpose: "dime_time_ach_debit"
+- Use Stripe idempotency key:
+  dime-time-ach-{transferId}
+
+After Stripe response:
+- Save stripePaymentIntentId
+- Save latest Stripe status
+- If status is processing, mark internal transfer as "processing"
+- Do not mark as succeeded until webhook confirms success
+
+7. WEBHOOK HANDLING
+Verify live Stripe webhook endpoint:
+
+POST /api/stripe/webhook
+
+Must use raw body signature verification with STRIPE_WEBHOOK_SECRET.
+
+Handle these events:
+- payment_intent.processing
+- payment_intent.succeeded
+- payment_intent.payment_failed
+- payment_intent.canceled
+- charge.dispute.created
+- charge.dispute.closed
+
+Required webhook behavior:
+- Deduplicate events using stripe event id
+- Find internal transfer by metadata.transferId or paymentIntentId
+- Update internal transfer status:
+  - processing → processing
+  - succeeded → settled/succeeded
+  - payment_failed → failed
+  - canceled → canceled
+  - dispute → disputed
+- Store failure reason when available
+- Never create duplicate ledger credits/debits
+- Never rely on frontend success state for final settlement
+
+Stripe documentation states ACH can initially remain in processing and may take multiple business days before succeeded/failed. Webhooks must be the source of truth.
+
+8. LEDGER STATES
+Confirm ledger supports these statuses:
+- simulated
+- initiated
+- processing
+- succeeded
+- failed
+- canceled
+- disputed
+- refunded/reversed if applicable
+
+Rules:
+- User-facing app may show "Pending" while Stripe status is processing
+- Only show "Completed" after payment_intent.succeeded webhook
+- Failed payments must not count toward successful savings/debt payoff totals
+- Disputed/reversed payments must be clearly separated
+
+9. FRONTEND REQUIREMENTS
+Update frontend to:
+- Hide real transfer actions unless user is approved
+- Show clear "Pending ACH transfer" state
+- Show that ACH may take several business days
+- Prevent duplicate taps/submissions
+- Show safe failure message if transfer disabled
+- Never expose secret keys
+- Never decide transfer success based only on client response
+
+10. ADMIN / FOUNDER TEST MODE
+Add or verify admin ability to:
+- Approve one founder/test user for real transfers
+- See connected bank status
+- See transfer ledger
+- See Stripe PaymentIntent id
+- See webhook status
+- See transfer failure reason
+- Disable user from real transfers immediately
+
+11. SAFETY TESTS REQUIRED
+Add automated or manual verification tests for:
+
+A. ENABLE_REAL_TRANSFERS=false
+Expected: real ACH endpoint refuses transfer.
+
+B. User not allowlisted
+Expected: transfer refused.
+
+C. Amount > $1 for first transfer
+Expected: transfer refused.
+
+D. Missing mandate evidence
+Expected: transfer refused.
+
+E. Duplicate idempotency key
+Expected: no duplicate Stripe debit and no duplicate ledger row.
+
+F. Webhook replay
+Expected: duplicate Stripe event id ignored.
+
+G. payment_intent.succeeded webhook
+Expected: ledger updates exactly once.
+
+H. payment_intent.payment_failed webhook
+Expected: ledger marks failed and does not count as completed.
+
+12. FINAL $1 LIVE TEST RUNBOOK
+After code review and deployment:
+
+Step 1:
+Confirm production env:
+ENABLE_STRIPE_ACH=true
+ENABLE_REAL_TRANSFERS=false
+ENABLE_AUTO_ROUNDUP_SWEEPS=false
+
+Step 2:
+Approve founder test user only.
+
+Step 3:
+Connect real bank account through Stripe Financial Connections.
+
+Step 4:
+Confirm saved PaymentMethod is us_bank_account and verified.
+
+Step 5:
+Turn on:
+ENABLE_REAL_TRANSFERS=true
+
+Step 6:
+Initiate exactly $1 ACH debit.
+
+Step 7:
+Immediately turn ENABLE_REAL_TRANSFERS=false again after the test is initiated.
+
+Step 8:
+Confirm internal ledger status = processing.
+
+Step 9:
+Confirm Stripe PaymentIntent exists in live dashboard.
+
+Step 10:
+Wait for Stripe webhook result.
+
+Step 11:
+Confirm final state:
+- payment_intent.succeeded = ledger succeeded/settled
+OR
+- payment_intent.payment_failed = ledger failed
+
+Step 12:
+Document:
+- timestamp
+- user id
+- transfer id
+- Stripe PaymentIntent id
+- webhook event ids
+- final status
+- amount
+
+13. DO NOT ENABLE YET
+Do not enable:
+- public real transfers
+- auto round-up sweeps
+- recurring debits
+- debt payoff forwarding
+- referral credits involving money
+- Bitcoin/crypto movement
+- open beta access
+
+Only complete the controlled $1 founder ACH test.
+
+DELIVERABLES:
+Please inspect the current codebase and implement/verify the above production ACH flow. Provide a summary of:
+1. Files changed
+2. Env vars required
+3. Database migrations required
+4. Endpoints verified/created
+5. Safety checks added
+6. Test results
+7. Exact steps for founder to run the $1 live ACH test

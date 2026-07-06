@@ -56,6 +56,30 @@ export function validateProductionSecrets(): void {
     );
   }
 
+  // Prefix validation — a present-but-wrong-mode key is as dangerous as a
+  // missing one. The secret key's `sk_live_` mode is enforced separately by
+  // `assertStripeKeyModeSafeOnBoot`; here we harden the webhook signing secret
+  // and the publishable key so a test-mode value can never silently ship to
+  // production.
+  if (stripeAchEnabled) {
+    const invalid: string[] = [];
+    const webhookSecret =
+      process.env.STRIPE_WEBHOOK_SECRET_LIVE || process.env.STRIPE_WEBHOOK_SECRET;
+    if (webhookSecret && !webhookSecret.startsWith("whsec_")) {
+      invalid.push("STRIPE_WEBHOOK_SECRET must be a Stripe webhook signing secret (whsec_…)");
+    }
+    const publishableKey = process.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    if (publishableKey && !publishableKey.startsWith("pk_live_")) {
+      invalid.push("VITE_STRIPE_PUBLISHABLE_KEY must be a LIVE publishable key (pk_live_…)");
+    }
+    if (invalid.length > 0) {
+      for (const msg of invalid) console.error(`FATAL: ${msg}`);
+      throw new Error(
+        `Production startup aborted — invalid Stripe key configuration: ${invalid.join("; ")}`,
+      );
+    }
+  }
+
   console.log(
     JSON.stringify({
       service: "EnvValidation",

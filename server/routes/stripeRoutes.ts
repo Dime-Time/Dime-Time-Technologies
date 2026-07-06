@@ -742,6 +742,43 @@ export function registerStripeWebhook(app: Express): void {
               newStatus: "disputed",
             });
           }
+        } else if (event.type === "charge.dispute.closed") {
+          // Dispute resolved. Stripe closes a dispute as won / lost /
+          // warning_closed. Won => our charge stands and the funds are
+          // retained (revert the row to settled). Lost => the funds were
+          // pulled back to the customer, so the money is no longer ours
+          // (treat as refunded/reversed). Any other close state leaves the
+          // row flagged for operator follow-up.
+          const dispute = event.data.object;
+          const outcome = dispute.status as string | undefined;
+          const resolvedStatus =
+            outcome === "won" ? "settled" : outcome === "lost" ? "refunded" : null;
+          const ledger = await storage.getTransferByStripeChargeId(dispute.charge as string);
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: dispute.charge,
+              disputeId: dispute.id,
+            });
+          } else if (resolvedStatus && ledger.status !== resolvedStatus) {
+            await storage.updateTransferStatus(ledger.id, resolvedStatus, {
+              stripeChargeId: dispute.charge as string,
+              errorCode: dispute.reason,
+              errorMessage: `ACH dispute closed: ${outcome}`,
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, disputeId: dispute.id, status: dispute.status }),
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: resolvedStatus,
+            });
+          } else {
+            stripeLog(correlationId, "webhook_noop_acknowledged", {
+              eventId: event.id,
+              type: event.type,
+              disputeStatus: outcome,
+            });
+          }
         } else if (
           event.type === "setup_intent.succeeded" ||
           event.type === "payment_method.attached"
