@@ -1,0 +1,278 @@
+DIME TIME — RECOMMENDED GO-LIVE PLAN (FOUNDER DECISION)
+
+After reviewing the current production ACH implementation and our launch goals, this is the recommended sequence.
+
+===========================================================
+RECOMMENDED ORDER
+===========================================================
+
+1. Complete Option 1
+2. Run one controlled $1 founder-only live ACH test
+3. Complete the remaining Option 2 engineering work
+4. Begin private beta with a small allowlisted group
+5. Expand gradually after successful validation
+
+The goal is to prove that the entire production money movement pipeline works from beginning to end while exposing the absolute minimum amount of risk.
+
+===========================================================
+OPTION 1 (DO FIRST)
+===========================================================
+
+Please complete the following:
+
+• Configure the production admin secret.
+• Verify I can access the admin panel.
+• Verify I can approve ONLY my own account for real transfers.
+• Publish the waiting production build (which already includes the email notification fix).
+• Confirm production environment variables are correct.
+• Confirm ENABLE_REAL_TRANSFERS remains FALSE after deployment.
+• Confirm ENABLE_STRIPE_ACH remains configured correctly.
+• Confirm ENABLE_AUTO_ROUNDUP_SWEEPS remains FALSE.
+• Verify no public user can initiate a real transfer.
+
+Nothing about this deployment should enable public money movement.
+
+===========================================================
+AFTER DEPLOYMENT
+===========================================================
+
+Once the production build is live:
+
+Verify:
+
+✓ Admin panel works
+✓ Founder account can be approved
+✓ Other users remain blocked
+✓ Master transfer switch still OFF
+✓ No accidental production exposure
+
+===========================================================
+FOUNDER $1 LIVE TEST
+===========================================================
+
+When everything above is verified:
+
+1. Approve ONLY my founder account.
+2. Connect my own real bank account using Stripe Financial Connections.
+3. Verify PaymentMethod is:
+   - us_bank_account
+   - verified
+   - attached to my Stripe customer.
+
+4. Temporarily enable:
+
+ENABLE_REAL_TRANSFERS = TRUE
+
+5. Initiate exactly ONE $1 ACH debit.
+
+6. Immediately after the transfer has been successfully submitted,
+turn ENABLE_REAL_TRANSFERS back OFF if that remains our operational procedure.
+
+No other users should be approved.
+
+===========================================================
+VERIFY THE ENTIRE PAYMENT PIPELINE
+===========================================================
+
+For the $1 transfer verify every stage:
+
+Frontend
+
+✓ Transfer created
+✓ Pending status shown
+✓ Duplicate submission prevented
+
+Backend
+
+✓ Transfer request authenticated
+✓ Allowlist enforced
+✓ Limits enforced
+✓ Mandate verified
+✓ Ledger row created
+✓ Stripe PaymentIntent created
+✓ Metadata attached
+✓ Idempotency key generated
+
+Stripe
+
+✓ PaymentIntent exists
+✓ Processing status appears
+✓ Customer attached
+✓ us_bank_account PaymentMethod used
+
+Webhook
+
+✓ Signature verified
+✓ Event processed once
+✓ Duplicate protection works
+✓ Audit log written
+
+Database
+
+✓ Transfer row updated
+✓ Status changes:
+initiated
+→ processing
+→ succeeded (or failed)
+
+Audit
+
+✓ Timestamp
+✓ User ID
+✓ Transfer ID
+✓ Stripe PaymentIntent ID
+✓ Webhook Event IDs
+✓ Final settlement status
+
+===========================================================
+AFTER SUCCESSFUL TEST
+===========================================================
+
+If the $1 transfer completes successfully:
+
+Leave public access disabled.
+
+Do NOT remove:
+
+• Allowlist
+• Transfer limits
+• $1 first transfer limit
+• $5 daily limit
+• One transfer per day
+• Mandate requirement
+• Audit logging
+• Webhook verification
+
+These remain in place for the private beta.
+
+===========================================================
+OPTION 2 (COMPLETE BEFORE SCALING)
+===========================================================
+
+After the founder test succeeds, complete the remaining engineering work.
+
+1. Build automated regression tests covering every safety scenario.
+
+Required automated tests:
+
+A.
+Master switch OFF
+Expected:
+No real transfer possible.
+
+B.
+User not allowlisted
+Expected:
+Transfer rejected.
+
+C.
+Transfer exceeds first-transfer limit
+Expected:
+Rejected.
+
+D.
+Missing ACH mandate
+Expected:
+Rejected.
+
+E.
+Duplicate idempotency key
+Expected:
+Only one Stripe debit.
+Only one ledger entry.
+
+F.
+Webhook replay
+Expected:
+Duplicate event ignored.
+
+G.
+payment_intent.succeeded
+
+Expected:
+
+Ledger updated exactly once.
+
+H.
+payment_intent.payment_failed
+
+Expected:
+
+Transfer marked failed.
+No successful savings recorded.
+
+===========================================================
+OPTIONAL IMPROVEMENT
+===========================================================
+
+Evaluate replacing the current "master money switch requires republish" workflow with a secure server-side configuration.
+
+If implemented, it must include:
+
+• Authentication
+• Authorization
+• Audit logging
+• Fail-safe defaults
+• Immediate disable capability
+• No client-side bypass
+• No public endpoint exposure
+
+This should ONLY be implemented if it is at least as secure as the current approach.
+
+===========================================================
+PRIVATE BETA
+===========================================================
+
+Only after:
+
+✓ Founder test succeeds
+✓ Automated tests complete
+✓ Any discovered bugs fixed
+
+Then allow:
+
+10–20 trusted users.
+
+Continue enforcing:
+
+• Manual approvals
+• Small transfer limits
+• Close monitoring
+• Daily review of logs
+• Stripe dashboard verification
+• Webhook verification
+• Audit review
+
+===========================================================
+PUBLIC RELEASE
+===========================================================
+
+Public rollout should NOT occur until:
+
+✓ Founder live test successful
+✓ Automated safety tests passing
+✓ Production monitoring verified
+✓ Webhooks verified
+✓ ACH settlement verified
+✓ Error handling verified
+✓ Logging verified
+✓ Recovery procedures documented
+
+===========================================================
+DELIVERABLES REQUESTED
+===========================================================
+
+Please provide:
+
+1. Files changed
+2. Configuration changes
+3. Environment variables required
+4. Database migrations (if any)
+5. Test results
+6. Remaining risks
+7. Recommendation before opening to private beta
+8. Recommendation before public launch
+
+GOAL:
+
+Validate one successful $1 founder-only ACH transfer with maximum safety, then complete automated regression testing before allowing additional users onto the real-money platform.
