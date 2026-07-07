@@ -34,12 +34,43 @@ export interface ProviderConnectionResult {
   institutionName?: string;
 }
 
+/**
+ * Optional client-side Link flow. Providers that require the user to connect an
+ * institution via a client SDK (e.g. Plaid Link) expose this; server-only
+ * providers (e.g. sandbox) leave it undefined.
+ */
+export interface ProviderLinkFlow {
+  /** Create a provider Link token for the client SDK to open. */
+  createLinkToken(userId: string): Promise<string>;
+  /** Exchange the client's public token and persist the connection (encrypted). */
+  completeLink(
+    userId: string,
+    publicToken: string,
+    institutionName?: string,
+  ): Promise<ProviderConnectionResult>;
+}
+
 export interface LiabilityProvider {
   readonly name: string;
+  /** Present only for providers that need a client-side connect step. */
+  linkFlow?: ProviderLinkFlow;
   /** Establish/verify the user's connection to the provider. */
   initializeConnection(userId: string): Promise<ProviderConnectionResult>;
   /** Fetch the user's liabilities, already normalized. */
   fetchLiabilities(userId: string): Promise<NormalizedLiability[]>;
   /** Tear down the provider-side connection (best-effort). */
   disconnect(userId: string): Promise<void>;
+}
+
+/**
+ * Thrown by a provider when the user must (re)connect their institution before
+ * we can fetch liabilities. Routes map this to HTTP 409 { code: "link_required" }
+ * so the client can launch the Link flow instead of showing a generic error.
+ */
+export class LinkRequiredError extends Error {
+  readonly code = "link_required";
+  constructor(message = "A provider connection is required before importing debts.") {
+    super(message);
+    this.name = "LinkRequiredError";
+  }
 }

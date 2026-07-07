@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePlaidLink } from "react-plaid-link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,7 +13,14 @@ interface ImportDebtsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Phase = "consent" | "importing" | "complete" | "error";
+type Phase = "consent" | "linking" | "importing" | "complete" | "error";
+
+interface ImportStatus {
+  connected: boolean;
+  requiresLink: boolean;
+  provider: string;
+  institutionName?: string | null;
+}
 
 /**
  * apiRequest throws `Error("<status>: <rawBody>")`. Pull the server's JSON
@@ -37,54 +45,145 @@ interface ImportResult {
   institutionName?: string | null;
 }
 
+/**
+ * Opens Plaid Link as soon as the SDK is ready. Kept as a child so it can call
+ * `usePlaidLink` only once we actually have a link token (the hook needs the
+ * token up front, and the token arrives asynchronously).
+ */
+function PlaidLinkLauncher({
+  token,
+  onSuccess,
+  onExit,
+}: {
+  token: string;
+  onSuccess: (publicToken: string, metadata: any) => void;
+  onExit: () => void;
+}) {
+  const { open, ready } = usePlaidLink({
+    token,
+    onSuccess: (publicToken, metadata) => onSuccess(publicToken, metadata),
+    onExit: () => onExit(),
+  });
+
+  useEffect(() => {
+    if (ready) open();
+  }, [ready, open]);
+
+  return null;
+}
+
 export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) {
   const [phase, setPhase] = useState<Phase>("consent");
   const [consented, setConsented] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [linkToken, setLinkToken] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: status, isLoading: statusLoading } = useQuery<ImportStatus>({
+    queryKey: ["/api/debts/import/status"],
+    enabled: open,
+  });
 
   const reset = () => {
     setPhase("consent");
     setConsented(false);
     setResult(null);
     setErrorMessage("");
+    setLinkToken(null);
   };
 
   const handleOpenChange = (next: boolean) => {
-    // Don't allow closing mid-import.
+    // Block closing only during the actual import write. "linking" stays
+    // cancellable so a failed/slow Plaid Link script can never trap the user.
     if (!next && phase === "importing") return;
     if (!next) reset();
     onOpenChange(next);
   };
 
-  const runImport = async () => {
+  const finishSuccess = (data: any, fallbackInstitution?: string | null) => {
+    setResult({
+      imported: data.imported ?? 0,
+      updated: data.updated ?? 0,
+      institutionName: data.institutionName ?? fallbackInstitution ?? null,
+    });
+    setPhase("complete");
+    queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/debts/import/status"] });
+    toast({
+      title: "Debts imported",
+      description: `${data.imported ?? 0} added, ${data.updated ?? 0} updated.`,
+    });
+  };
+
+  // Direct import — provider needs no client connect step (sandbox), or the
+  // user already has an active connection.
+  const runImportDirect = async () => {
     setPhase("importing");
     try {
       const res = await apiRequest("POST", "/api/debts/import", { consent: true });
       const data = await res.json();
-      setResult({
-        imported: data.imported ?? 0,
-        updated: data.updated ?? 0,
-        institutionName: data.institutionName ?? null,
-      });
-      setPhase("complete");
-      queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
-      toast({
-        title: "Debts imported",
-        description: `${data.imported ?? 0} added, ${data.updated ?? 0} updated.`,
-      });
+      finishSuccess(data);
     } catch (err) {
       setErrorMessage(parseErrorMessage(err));
       setPhase("error");
     }
   };
 
+  // Start the Plaid Link connect flow, then import via the exchange endpoint.
+  const startLinkFlow = async () => {
+    setPhase("linking");
+    try {
+      const res = await apiRequest("POST", "/api/debts/import/link-token", {});
+      const data = await res.json();
+      if (!data.linkToken) throw new Error("No link token returned");
+      setLinkToken(data.linkToken); // PlaidLinkLauncher auto-opens when ready.
+    } catch (err) {
+      setErrorMessage(parseErrorMessage(err));
+      setPhase("error");
+    }
+  };
+
+  const handleStart = () => {
+    if (status?.requiresLink) {
+      startLinkFlow();
+    } else {
+      runImportDirect();
+    }
+  };
+
+  const onPlaidSuccess = async (publicToken: string, metadata: any) => {
+    setLinkToken(null);
+    setPhase("importing");
+    try {
+      const res = await apiRequest("POST", "/api/debts/import/exchange", {
+        publicToken,
+        institutionName: metadata?.institution?.name,
+        consent: true,
+      });
+      const data = await res.json();
+      finishSuccess(data, metadata?.institution?.name);
+    } catch (err) {
+      setErrorMessage(parseErrorMessage(err));
+      setPhase("error");
+    }
+  };
+
+  const onPlaidExit = () => {
+    // User backed out of Plaid Link — return to consent so they can retry.
+    setLinkToken(null);
+    setPhase("consent");
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md" data-testid="modal-import-debts">
+        {phase === "linking" && linkToken && (
+          <PlaidLinkLauncher token={linkToken} onSuccess={onPlaidSuccess} onExit={onPlaidExit} />
+        )}
+
         {phase === "consent" && (
           <>
             <DialogHeader>
@@ -133,14 +232,31 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
               <Button
                 type="button"
                 className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
-                disabled={!consented}
-                onClick={runImport}
+                disabled={!consented || statusLoading}
+                onClick={handleStart}
                 data-testid="button-import-start"
               >
-                Import Debts
+                {statusLoading ? "Loading…" : status?.requiresLink ? "Connect & Import" : "Import Debts"}
               </Button>
             </div>
           </>
+        )}
+
+        {phase === "linking" && (
+          <div className="py-8 flex flex-col items-center text-center gap-3" data-testid="state-import-linking">
+            <Loader2 className="w-10 h-10 text-dime-purple animate-spin" />
+            <p className="text-slate-900 font-medium">Opening secure connection…</p>
+            <p className="text-sm text-slate-500">Choose your bank in the window that appears.</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2 text-slate-500"
+              onClick={onPlaidExit}
+              data-testid="button-import-cancel-linking"
+            >
+              Cancel
+            </Button>
+          </div>
         )}
 
         {phase === "importing" && (
@@ -211,7 +327,7 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
               <Button
                 type="button"
                 className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
-                onClick={runImport}
+                onClick={handleStart}
                 data-testid="button-import-retry"
               >
                 Try Again

@@ -20,7 +20,7 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "../middleware/authHelper";
-import { getLiabilityProvider } from "../services/debtImport";
+import { getLiabilityProvider, LinkRequiredError } from "../services/debtImport";
 
 function debtImportLog(correlationId: string, event: string, data?: Record<string, unknown>): void {
   console.log(
@@ -35,6 +35,12 @@ function debtImportLog(correlationId: string, event: string, data?: Record<strin
 }
 
 const consentSchema = z.object({ consent: z.literal(true) });
+
+const exchangeSchema = z.object({
+  publicToken: z.string().min(1),
+  institutionName: z.string().max(200).optional(),
+  consent: z.literal(true),
+});
 
 /**
  * Per-user rate limiters for the debt-import surface. Keyed by the authenticated
@@ -115,6 +121,18 @@ async function runImport(
       },
     };
   } catch (err) {
+    if (err instanceof LinkRequiredError) {
+      // Expected control-flow signal, not a failure — let the client launch Link.
+      debtImportLog(correlationId, `debt_${action}_link_required`, { userId, provider: provider.name });
+      return {
+        status: 409,
+        body: {
+          code: "link_required",
+          message: "Connect your account to import your debts.",
+          correlationId,
+        },
+      };
+    }
     const message = errMessage(err);
     await storage.createDebtImportAuditLog({
       userId,
@@ -156,6 +174,83 @@ export function registerDebtImportRoutes(app: Express): void {
     res.status(status).json(body);
   });
 
+  // Create a provider Link token so the client SDK (e.g. Plaid Link) can open a
+  // connection. 409 for providers that don't need a connect step (e.g. sandbox).
+  app.post("/api/debts/import/link-token", importLimiter, async (req: Request, res: Response) => {
+    const correlationId = randomUUID();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const provider = getLiabilityProvider();
+    if (!provider.linkFlow) {
+      return res.status(409).json({
+        message: "This provider does not require a connection step.",
+        correlationId,
+      });
+    }
+    try {
+      const linkToken = await provider.linkFlow.createLinkToken(userId);
+      return res.json({ linkToken, correlationId });
+    } catch (err) {
+      debtImportLog(correlationId, "debt_link_token_error", {
+        userId,
+        provider: provider.name,
+        error: errMessage(err),
+      });
+      return res.status(502).json({
+        message: "We couldn't start the secure connection. Please try again.",
+        correlationId,
+      });
+    }
+  });
+
+  // Complete the Link flow: exchange the client's public token, persist the
+  // (encrypted) connection, then run the import. Requires explicit consent.
+  app.post("/api/debts/import/exchange", importLimiter, async (req: Request, res: Response) => {
+    const correlationId = randomUUID();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const parsed = exchangeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "A public token and explicit consent are required.",
+        correlationId,
+      });
+    }
+    const provider = getLiabilityProvider();
+    if (!provider.linkFlow) {
+      return res.status(409).json({
+        message: "This provider does not support a connection step.",
+        correlationId,
+      });
+    }
+    try {
+      await provider.linkFlow.completeLink(userId, parsed.data.publicToken, parsed.data.institutionName);
+    } catch (err) {
+      const message = errMessage(err);
+      await storage.createDebtImportAuditLog({
+        userId,
+        provider: provider.name,
+        action: "import",
+        status: "error",
+        importedCount: 0,
+        updatedCount: 0,
+        message,
+        correlationId,
+      });
+      debtImportLog(correlationId, "debt_link_exchange_error", { userId, provider: provider.name, error: message });
+      return res.status(502).json({
+        message: "We couldn't connect your account. Please try again.",
+        correlationId,
+      });
+    }
+    const { status, body } = await runImport(userId, "import", correlationId);
+    res.status(status).json(body);
+  });
+
   // Re-sync balances from the provider (upsert; skips user-edited fields).
   app.post("/api/debts/refresh", refreshLimiter, async (req: Request, res: Response) => {
     const correlationId = randomUUID();
@@ -183,8 +278,12 @@ export function registerDebtImportRoutes(app: Express): void {
     }
     const provider = getLiabilityProvider();
     const conn = await storage.getDebtProviderConnection(userId, provider.name);
+    const connected = !!conn && conn.status === "active";
     res.json({
-      connected: !!conn && conn.status === "active",
+      connected,
+      // True when the provider needs a client-side connect step and the user
+      // isn't connected yet — the client uses this to launch the Link flow.
+      requiresLink: !!provider.linkFlow && !connected,
       provider: provider.name,
       institutionName: conn?.institutionName ?? null,
       lastSyncAt: conn?.lastSyncAt ?? null,

@@ -301,6 +301,87 @@ class PlaidService {
     };
   }
 
+  /**
+   * Create a Link token scoped to the Liabilities product ONLY.
+   * This deliberately creates a SEPARATE Plaid item from the bank-connect flow
+   * (which uses Transactions + Auth) so importing debts never forces the user to
+   * re-consent their linked funding bank. Used by the automatic debt-import flow.
+   */
+  async createLiabilitiesLinkToken(userId: string): Promise<string> {
+    if (!this.isConfigured) {
+      throw new Error('Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.');
+    }
+    try {
+      const linkTokenRequest: any = {
+        user: { client_user_id: userId },
+        client_name: 'Dime Time',
+        products: [Products.Liabilities],
+        country_codes: [CountryCode.Us],
+        language: 'en',
+      };
+
+      const redirectUri = process.env.PLAID_REDIRECT_URI;
+      if (redirectUri && !redirectUri.includes('your-domain') && redirectUri.startsWith('https://')) {
+        linkTokenRequest.redirect_uri = redirectUri;
+      }
+
+      const response = await this.getClient().linkTokenCreate(linkTokenRequest);
+      return response.data.link_token;
+    } catch (error) {
+      console.error('Error creating liabilities link token:', this.redactPlaidError(error));
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch the raw Liabilities payload for a Plaid item (credit cards, student
+   * loans, mortgages) alongside the accounts they belong to. Callers normalize
+   * this into NormalizedLiability[] — the raw shape never leaks into the app.
+   */
+  async getLiabilities(accessToken: string) {
+    if (!this.isConfigured) {
+      throw new Error('Plaid service not configured');
+    }
+    try {
+      const response = await this.getClient().liabilitiesGet({ access_token: accessToken });
+      return {
+        accounts: response.data.accounts,
+        liabilities: response.data.liabilities,
+        item: response.data.item,
+      };
+    } catch (error) {
+      console.error('Error fetching liabilities:', this.redactPlaidError(error));
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a Plaid item (best-effort teardown when a user disconnects debt import).
+   */
+  async removeItem(accessToken: string): Promise<void> {
+    if (!this.isConfigured) {
+      throw new Error('Plaid service not configured');
+    }
+    await this.getClient().itemRemove({ access_token: accessToken });
+  }
+
+  /**
+   * Extract ONLY non-sensitive fields from a Plaid/axios error for logging.
+   * Plaid errors are axios errors whose `config` contains the request body
+   * (public_token / access_token) and the PLAID-SECRET header — never log those.
+   */
+  private redactPlaidError(error: any): Record<string, unknown> {
+    const data = error?.response?.data;
+    if (data && typeof data === 'object') {
+      return {
+        error_code: data.error_code,
+        error_type: data.error_type,
+        request_id: data.request_id,
+      };
+    }
+    return { message: error instanceof Error ? error.message : String(error) };
+  }
+
   isServiceConfigured(): boolean {
     return this.isConfigured;
   }
