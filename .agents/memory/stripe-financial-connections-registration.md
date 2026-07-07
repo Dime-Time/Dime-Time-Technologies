@@ -1,36 +1,44 @@
 ---
-name: Stripe Financial Connections registration
-description: Live-mode Stripe blocks Financial Connections until the account submits a registration; blocks the bank-connect (beta) flow.
+name: Stripe Financial Connections registration + permission scope
+description: FC bank-connect (beta) has TWO independent 502 failure modes — unregistered account, and code requesting permissions beyond the registered scope.
 ---
 
-# Stripe Financial Connections requires live-mode registration
+# Stripe Financial Connections: registration AND permission-scope must both line up
 
 The Stripe "Connect bank account (beta)" flow (`StripeConnectButton` →
-`POST /api/stripe/financial-connections/session` → `collectFinancialConnectionsAccounts`)
-depends on Stripe **Financial Connections**, which is **not** automatically enabled on a
-live Stripe account.
+`POST /api/stripe/financial-connections/session` → `createFinancialConnectionsSession`
+in `server/services/stripeService.ts` → `collectFinancialConnectionsAccounts`) depends on
+Stripe **Financial Connections**. It can 502 for TWO distinct reasons — fix them in order:
 
-**Symptom:** `POST /api/stripe/financial-connections/session` returns **502** and the
-structured log shows `event:"fc_session_failed"` with:
+## Stage 1 — account not registered (external, founder action)
+**Symptom:** 502, log `event:"fc_session_failed"` with
 > "You are not registered to use Financial Connections. Please submit your registration
 > at https://dashboard.stripe.com/financial-connections/application"
 
-**This is NOT a code bug.** The app correctly reached Stripe and surfaced Stripe's own
-rejection. Nothing to fix in `stripeRoutes.ts` / `stripeService.ts`.
+**Fix:** founder submits the FC registration in the **live** Stripe dashboard. Choose use
+case **"Accept bank payments"** and data type **"Tokenized account and routing number"**
+(= the `payment_method` scope). Skipping balances/ownership keeps review fast. Not a code bug.
 
-**Fix (founder action, not agent):** the founder must submit the Financial Connections
-registration/application in the **live** Stripe dashboard
-(https://dashboard.stripe.com/financial-connections/application). Approval may require
-Stripe review before the bank-connect flow succeeds.
+## Stage 2 — code requests a scope the account didn't activate (CODE bug)
+After Stage 1 clears, the session still 502s if the code requests permissions beyond what
+was registered.
+**Symptom:** 502, log `fc_session_failed` with
+> "You cannot request the ['balances'] permissions ... without first activating this
+> product ... only request payment_method to simply collect bank account details."
 
-**Why:** this surfaced during the real-money $1 ACH go-live test — self-approval + ACH
-authorization both succeeded, but bank-linking is hard-blocked until FC is registered.
+**Fix:** trim the `permissions` array in `createFinancialConnectionsSession` to exactly the
+registered scope. We request only `["payment_method"]`. Nothing downstream needs FC
+`balances`/`transactions`/`ownership` — `attachFcAccountAsPaymentMethod` only reads
+`last4`/`institution_name` (ships with `payment_method`), `createAchDebit` operates on the
+stored PaymentMethod, and the app's balance/transaction UI is Plaid-backed, separate from
+Stripe FC. **Rule: the requested FC permission scope must never exceed the account's
+activated FC scope.**
 
-**How to apply:** if the Stripe bank-connect (beta) flow 502s during any go-live/test,
-check for `fc_session_failed` in deployment logs before touching code — it is almost
-certainly the FC registration gap, an external account-onboarding step.
+## Deploy note
+Both fixes only take effect in production after a **re-publish** — dime-time.com is an
+autoscale deployment that snapshots code+secrets at publish time. Code edits in the
+workspace do NOT reach prod until the founder republishes.
 
-**Fallback path (only if FC approval stalls):** Stripe `us_bank_account` PaymentMethods
-can also be created via manual account+routing entry (micro-deposit / instant verify),
-which does NOT require Financial Connections — but that is a separate code path the app
-does not currently implement.
+**Fallback (only if FC approval stalls):** `us_bank_account` PaymentMethods can also be
+created via manual account+routing entry (micro-deposit / instant verify), which needs no
+FC — but that is a separate code path not currently implemented.

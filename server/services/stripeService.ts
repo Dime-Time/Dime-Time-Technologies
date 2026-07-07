@@ -213,7 +213,7 @@ export async function createFinancialConnectionsSession(args: {
 
   const session = await (stripe as any).financialConnections.sessions.create({
     account_holder: { type: "customer", customer: customerId },
-    permissions: ["payment_method", "balances"],
+    permissions: ["payment_method"],
     filters: { countries: ["US"] },
   });
 
