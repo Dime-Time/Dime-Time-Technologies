@@ -110,6 +110,7 @@ Flag env vars (all read with tolerant parsing — `1` / `true` / `yes` / `on` / 
 | `ENABLE_CRYPTO` | **ON** | Enable the crypto / Bitcoin round-up surfaces. ON preserves current behavior. |
 | `ENABLE_BETA_BANNER` | OFF | Render the in-app beta banner across every authed screen. Flip ON for the TestFlight beta window, OFF for the public launch build. |
 | `ENABLE_AUTO_ROUNDUP_SWEEPS` | OFF | Gate automatic weekly round-up sweep dispersals (`sweepService.processWeeklyDispersals` → JP Morgan debt payments). OFF makes the dispersal a logged no-op even if a scheduler or admin trigger fires — the public can never have funds auto-dispersed by default. |
+| `ENABLE_DEBT_IMPORT` | OFF | Gate the provider-agnostic automatic debt-import surface (`registerDebtImportRoutes` → `/api/debts/import`, `/refresh`, `DELETE /api/debts/provider`). OFF means the routes are never mounted (fail-closed) and the import UI is hidden. Ships with a sandbox provider; swap-ready to Plaid Liabilities / Method. Write routes are per-user rate-limited (import 10/15min, refresh & disconnect 20/15min) and every import/refresh/disconnect writes a token-free row to `debt_import_audit_logs`. |
 
 To add a new flag: append to `FLAG_DEFINITIONS` in `shared/flags.ts` and add a row above. Server and client pick it up automatically — no other plumbing needed.
 

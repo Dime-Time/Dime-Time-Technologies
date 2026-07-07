@@ -15,6 +15,7 @@
  */
 
 import type { Express, Request, Response } from "express";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { storage } from "../storage";
@@ -34,6 +35,31 @@ function debtImportLog(correlationId: string, event: string, data?: Record<strin
 }
 
 const consentSchema = z.object({ consent: z.literal(true) });
+
+/**
+ * Per-user rate limiters for the debt-import surface. Keyed by the authenticated
+ * user id (IP fallback, IPv6-safe) so one user can't exhaust another's budget.
+ * These guard against accidental repeated taps and — once a real liability
+ * provider is wired — runaway provider-API cost. Windows are 15 minutes.
+ */
+function perUserLimiter(max: number, action: string) {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max,
+    message: { message: `Too many ${action} attempts. Please try again in about 15 minutes.` },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
+    keyGenerator: (req: Request) => {
+      const uid = getUserIdFromRequest(req);
+      return uid ? `u:${uid}` : `ip:${ipKeyGenerator(req.ip ?? "")}`;
+    },
+  });
+}
+
+const importLimiter = perUserLimiter(10, "import");
+const refreshLimiter = perUserLimiter(20, "refresh");
+const disconnectLimiter = perUserLimiter(20, "disconnect");
 
 function errMessage(err: unknown): string {
   return (err instanceof Error ? err.message : String(err)).slice(0, 500);
@@ -113,7 +139,7 @@ async function runImport(
 
 export function registerDebtImportRoutes(app: Express): void {
   // Connect to the liability provider and import debts. Requires explicit consent.
-  app.post("/api/debts/import", async (req: Request, res: Response) => {
+  app.post("/api/debts/import", importLimiter, async (req: Request, res: Response) => {
     const correlationId = randomUUID();
     const userId = getUserIdFromRequest(req);
     if (!userId) {
@@ -131,7 +157,7 @@ export function registerDebtImportRoutes(app: Express): void {
   });
 
   // Re-sync balances from the provider (upsert; skips user-edited fields).
-  app.post("/api/debts/refresh", async (req: Request, res: Response) => {
+  app.post("/api/debts/refresh", refreshLimiter, async (req: Request, res: Response) => {
     const correlationId = randomUUID();
     const userId = getUserIdFromRequest(req);
     if (!userId) {
@@ -167,7 +193,7 @@ export function registerDebtImportRoutes(app: Express): void {
 
   // Disconnect the provider. Imported debts are KEPT (marked no longer synced);
   // the connection row is flipped to "disconnected".
-  app.delete("/api/debts/provider", async (req: Request, res: Response) => {
+  app.delete("/api/debts/provider", disconnectLimiter, async (req: Request, res: Response) => {
     const correlationId = randomUUID();
     const userId = getUserIdFromRequest(req);
     if (!userId) {

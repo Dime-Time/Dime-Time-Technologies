@@ -1,0 +1,138 @@
+DIME TIME — AUTOMATIC DEBT IMPORT POST-SHIP REVIEW
+
+Feature shipped: Automatic Debt Import, provider-agnostic, currently sandbox-only.
+
+Recommendation:
+Keep ENABLE_DEBT_IMPORT = false in production until Dime Time has an approved live liability-data provider such as Plaid Liabilities, Method Financial, MX, Finicity, or Spinwheel.
+
+This feature does NOT move money, but it still handles sensitive financial liability data, so it should remain gated until production provider access and compliance review are complete.
+
+===========================================================
+FINAL REVIEW REQUEST
+===========================================================
+
+Please verify the following before this feature is ever enabled for users:
+
+1. FEATURE FLAG BEHAVIOR
+
+Confirm ENABLE_DEBT_IMPORT=false means:
+
+- No frontend “Import Debts” entry point appears.
+- No backend import routes are registered.
+- No provider initialization occurs.
+- No scheduled refresh jobs run.
+- All debt-import functionality fails closed.
+
+2. PRODUCTION SECRETS
+
+Confirm:
+
+- No production liability-provider secrets are committed.
+- No provider access tokens appear in logs.
+- No provider secrets are exposed to frontend code.
+- Sandbox-only behavior is active unless explicitly configured otherwise.
+
+3. RATE LIMITING
+
+Add or verify rate limits for:
+
+- Import debts
+- Refresh debts
+- Disconnect provider
+
+This protects against abuse, accidental repeated calls, and future provider API cost issues.
+
+4. ERROR HANDLING
+
+Verify user-friendly handling for:
+
+- Provider timeout
+- Institution unsupported
+- Permission denied
+- Partial import
+- Provider outage
+- Duplicate debts
+- Refresh failure
+- Disconnect failure
+
+5. AUDIT LOGGING
+
+Confirm audit logs capture:
+
+- User ID
+- Provider
+- Correlation ID
+- Operation type
+- Timestamp
+- Outcome
+- High-level error reason
+
+Do not log sensitive debt details, provider tokens, raw API payloads, account numbers, or secrets.
+
+6. DATA INTEGRITY
+
+Confirm:
+
+- Re-importing creates no duplicate debts.
+- Refreshing updates synced fields only.
+- User-edited fields are not overwritten.
+- Disconnect keeps imported debts but stops future syncing.
+- Account deletion removes imported provider data and imported debts cleanly.
+
+7. FIELD-LEVEL MANUAL EDIT TRACKING
+
+Before adding the debt-editing screen, implement or document field-level edit tracking.
+
+Example:
+
+- aprEdited = true/false
+- minimumPaymentEdited = true/false
+- balanceEdited = true/false
+- nicknameEdited = true/false
+- dueDateEdited = true/false
+
+This allows future refreshes to update provider-synced fields without overwriting user-customized fields.
+
+8. PRODUCTION ACTIVATION READINESS
+
+Do not enable ENABLE_DEBT_IMPORT in production until:
+
+- A real liability-data provider is approved.
+- Provider production credentials are configured.
+- Privacy Policy covers liability-data collection.
+- User consent language is reviewed.
+- Import, refresh, disconnect, deletion, and audit logs are verified in production-like testing.
+
+===========================================================
+CURRENT PRODUCT PRIORITY
+===========================================================
+
+Automatic Debt Import is now built and ready behind a flag.
+
+The next highest-priority Dime Time milestone remains:
+
+Run one controlled founder-only $1 live ACH test.
+
+Recommended order:
+
+1. Keep ENABLE_DEBT_IMPORT=false.
+2. Complete founder-only $1 ACH live test.
+3. Verify Stripe PaymentIntent, webhook, ledger, limits, mandate, and audit trail.
+4. Complete any fixes from the ACH test.
+5. Begin tiny private beta with manual debt entry.
+6. Pursue live liability-data provider approval.
+7. Enable Automatic Debt Import only after production provider approval.
+
+===========================================================
+DELIVERABLES REQUESTED
+===========================================================
+
+Please provide a short report confirming:
+
+1. ENABLE_DEBT_IMPORT fail-closed behavior
+2. Any files changed
+3. Any new rate limits added
+4. Audit log verification
+5. Data deletion verification
+6. Remaining risks
+7. Whether this feature is safe to keep deployed but disabled in production
