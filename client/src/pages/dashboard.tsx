@@ -344,7 +344,12 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-slate-900">Active Debts</h3>
-                <Button variant="ghost" className="text-dime-purple hover:text-dime-purple/80 text-sm font-medium">
+                <Button
+                  variant="ghost"
+                  className="text-dime-purple hover:text-dime-purple/80 text-sm font-medium"
+                  onClick={() => setLocation("/debts")}
+                  data-testid="button-manage-debts"
+                >
                   Manage
                 </Button>
               </div>

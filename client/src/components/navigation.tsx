@@ -9,6 +9,7 @@ import {
   Bell,
   Settings,
   Landmark,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -19,6 +20,7 @@ export function Navigation() {
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
+    { href: "/debts", label: "Debts", icon: CreditCard },
     { href: "/banking", label: "Banking", icon: Landmark },
     { href: "/crypto", label: "Crypto", icon: Bitcoin },
     { href: "/insights", label: "Insights", icon: TrendingUp },
@@ -188,7 +190,7 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center py-3 px-4 min-h-[56px] transition-colors ${
+                className={`flex flex-col items-center py-3 px-2 min-h-[56px] transition-colors ${
                   active ? "text-white" : "text-white/70"
                 }`}
               >
