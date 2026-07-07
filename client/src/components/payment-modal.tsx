@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,20 @@ interface PaymentModalProps {
   onOpenChange: (open: boolean) => void;
   debts: Debt[];
   roundUpBalance: number;
+  initialDebtId?: string;
 }
 
-export function PaymentModal({ open, onOpenChange, debts, roundUpBalance }: PaymentModalProps) {
+export function PaymentModal({ open, onOpenChange, debts, roundUpBalance, initialDebtId }: PaymentModalProps) {
   const [selectedDebtId, setSelectedDebtId] = useState("");
   const [amount, setAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Pre-select the debt the user clicked "Make Payment" on (blank when opened
+  // from the top-level button).
+  useEffect(() => {
+    if (open) setSelectedDebtId(initialDebtId ?? "");
+  }, [open, initialDebtId]);
 
   const paymentMutation = useMutation({
     mutationFn: async (data: { debtId: string; amount: string; source: string }) => {

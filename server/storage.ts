@@ -1756,7 +1756,9 @@ export class DatabaseStorage implements IStorage {
 
   // Debt methods
   async getDebtsByUserId(userId: string): Promise<Debt[]> {
-    return await db.select().from(debts).where(eq(debts.userId, userId));
+    // Only active debts — soft-deleted debts (isActive=false) are hidden here
+    // but their rows (and any FK-linked payment history) are preserved.
+    return await db.select().from(debts).where(and(eq(debts.userId, userId), eq(debts.isActive, true)));
   }
 
   async getDebt(id: string): Promise<Debt | undefined> {

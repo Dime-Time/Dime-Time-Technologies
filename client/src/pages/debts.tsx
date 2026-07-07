@@ -1,27 +1,55 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { PaymentModal } from "@/components/payment-modal";
 import { AddDebtModal } from "@/components/AddDebtModal";
+import { EditDebtModal } from "@/components/EditDebtModal";
+import { DebtHistoryModal } from "@/components/DebtHistoryModal";
 import { ImportDebtsModal } from "@/components/ImportDebtsModal";
 import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
-import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download } from "lucide-react";
+import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download, Pencil, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { StripeAchPayButton } from "@/components/StripeAchPayButton";
 import { useFlag } from "@/hooks/useFlag";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Debt, Payment } from "@shared/schema";
+
+type DashboardSummary = {
+  totalDebt: string;
+  totalRoundUps: string;
+  thisMonthRoundUps: string;
+  thisMonthPayments: string;
+  progressPercentage: number;
+  debtFreeDate: string;
+  debtsCount: number;
+};
 
 export default function Debts() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [paymentDebtId, setPaymentDebtId] = useState<string | undefined>(undefined);
+  const [editDebt, setEditDebt] = useState<Debt | null>(null);
+  const [historyDebt, setHistoryDebt] = useState<Debt | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Debt | null>(null);
   const debtImportEnabled = useFlag("ENABLE_DEBT_IMPORT");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: debts = [], isLoading } = useQuery<Debt[]>({
     queryKey: ["/api/debts"],
@@ -30,6 +58,39 @@ export default function Debts() {
   const { data: payments = [] } = useQuery<Payment[]>({
     queryKey: ["/api/payments"],
   });
+
+  const { data: summary } = useQuery<DashboardSummary>({
+    queryKey: ["/api/dashboard-summary"],
+  });
+
+  const roundUpBalance = summary ? parseFloat(summary.totalRoundUps) : 0;
+
+  const deleteDebtMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/debts/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Debt Removed",
+        description: "The debt has been removed. Your payment history is preserved.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      toast({
+        title: "Couldn't Remove Debt",
+        description: "There was an error removing this debt. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const openPaymentModal = (debtId?: string) => {
+    setPaymentDebtId(debtId);
+    setShowPaymentModal(true);
+  };
 
   const totalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
   const totalOriginalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.originalBalance), 0);
@@ -73,7 +134,8 @@ export default function Debts() {
           </Button>
           <Button
             className="bg-dime-purple hover:bg-dime-purple/90"
-            onClick={() => setShowPaymentModal(true)}
+            onClick={() => openPaymentModal()}
+            data-testid="button-make-payment"
           >
             Make Payment
           </Button>
@@ -249,14 +311,39 @@ export default function Debts() {
                   <div className="flex flex-wrap gap-3 mb-6">
                     <Button 
                       className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
-                      onClick={() => setShowPaymentModal(true)}
+                      onClick={() => openPaymentModal(debt.id)}
+                      data-testid={`button-make-payment-${debt.id}`}
                     >
                       Make Payment
                     </Button>
-                    <Button variant="outline" className="flex-1">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setHistoryDebt(debt)}
+                      data-testid={`button-view-history-${debt.id}`}
+                    >
                       View History
                     </Button>
                     <StripeAchPayButton debt={debt} />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setEditDebt(debt)}
+                      aria-label="Edit debt"
+                      data-testid={`button-edit-debt-${debt.id}`}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setDeleteTarget(debt)}
+                      aria-label="Delete debt"
+                      className="text-red-600 hover:text-red-700"
+                      data-testid={`button-delete-debt-${debt.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
 
                   {/* Recent Payments — last 3 with canonical status badge */}
@@ -327,13 +414,57 @@ export default function Debts() {
         open={showPaymentModal}
         onOpenChange={setShowPaymentModal}
         debts={debts}
-        roundUpBalance={0} // This would come from summary data in a real app
+        roundUpBalance={roundUpBalance}
+        initialDebtId={paymentDebtId}
       />
 
       <AddDebtModal
         open={showAddDebtModal}
         onOpenChange={setShowAddDebtModal}
       />
+
+      <EditDebtModal
+        open={!!editDebt}
+        onOpenChange={(open) => !open && setEditDebt(null)}
+        debt={editDebt}
+      />
+
+      <DebtHistoryModal
+        open={!!historyDebt}
+        onOpenChange={(open) => !open && setHistoryDebt(null)}
+        debt={historyDebt}
+        payments={payments}
+      />
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove this debt?</DialogTitle>
+            <DialogDescription>
+              {deleteTarget
+                ? `"${deleteTarget.name}" will be removed from your list. Your payment history is kept, but the debt will no longer appear or count toward your totals.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteDebtMutation.isPending}
+              onClick={() => deleteTarget && deleteDebtMutation.mutate(deleteTarget.id)}
+              data-testid="button-confirm-delete"
+            >
+              {deleteDebtMutation.isPending ? "Removing..." : "Remove Debt"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {debtImportEnabled && (
         <ImportDebtsModal
