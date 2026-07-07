@@ -8,3 +8,4 @@
 - [App Store status & rejection vectors](appstore-rejection-history.md) — APPROVED & LIVE 2026-06-29 (App ID 6755106723); "no changes while waiting" is over. Historical rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; gotcha: BetaModeBanner NOT flag-gated → 2.2 risk on future submits.
 - [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; the mismatch is INTENTIONAL+permanent, never reconcile it.
 - [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
+- [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — bank-connect (beta) 502s with "not registered" until founder submits FC registration in live Stripe dashboard; external onboarding, not a code bug.
