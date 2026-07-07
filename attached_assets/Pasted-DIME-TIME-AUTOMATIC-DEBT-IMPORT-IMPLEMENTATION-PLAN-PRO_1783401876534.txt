@@ -1,0 +1,544 @@
+DIME TIME — AUTOMATIC DEBT IMPORT IMPLEMENTATION PLAN
+
+PROJECT GOAL
+
+Implement automatic debt import for Dime Time in a provider-agnostic way so the feature is production-ready and can be activated as soon as a liability-data provider (Plaid Liabilities, Method Financial, etc.) grants production access.
+
+This project should NOT depend on Plaid production approval before development begins.
+
+=========================================================
+CURRENT STATE
+=========================================================
+
+Current payment provider:
+
+• Stripe Financial Connections
+  - Used for ACH transfers
+  - Used for verified bank accounts
+  - Used for balances and ownership
+  - DOES NOT provide liability information
+
+Current Plaid implementation:
+
+• Link Token
+• Token Exchange
+• Accounts
+• Transactions
+• Auth
+
+Current limitations:
+
+• Sandbox only
+• No Liabilities product
+• No production approval
+• Cannot retrieve real consumer debts
+
+This means the blocker is provider approval—not engineering.
+
+=========================================================
+ARCHITECTURE GOAL
+=========================================================
+
+Build the entire debt-import feature now while keeping the data provider interchangeable.
+
+DO NOT hardcode Plaid throughout the application.
+
+Instead create a provider abstraction.
+
+Example:
+
+Debt Import Service
+
+↓
+
+Plaid Provider
+
+Method Provider
+
+MX Provider
+
+Finicity Provider
+
+Spinwheel Provider
+
+This allows us to swap providers later with minimal code changes.
+
+=========================================================
+PHASE 1
+Provider Abstraction
+=========================================================
+
+Create a common interface.
+
+Example methods:
+
+initializeConnection()
+
+fetchLiabilities()
+
+refreshLiabilities()
+
+disconnectProvider()
+
+normalizeLiability()
+
+The rest of the application should never know which provider supplied the data.
+
+=========================================================
+PHASE 2
+Database
+=========================================================
+
+Create or expand debt tables to support imported liabilities.
+
+Suggested fields:
+
+id
+
+userId
+
+provider
+
+providerAccountId
+
+providerLoanId
+
+institutionName
+
+creditorName
+
+accountNickname
+
+accountType
+
+loanType
+
+currentBalance
+
+originalBalance
+
+availableCredit
+
+creditLimit
+
+interestRateAPR
+
+minimumPayment
+
+dueDate
+
+paymentStatus
+
+currency
+
+lastUpdated
+
+lastImport
+
+isImported
+
+isManual
+
+isHidden
+
+createdAt
+
+updatedAt
+
+Keep imported and manually entered debts compatible.
+
+=========================================================
+PHASE 3
+Backend API
+=========================================================
+
+Create endpoints.
+
+Suggested:
+
+POST /api/debts/import
+
+POST /api/debts/refresh
+
+GET /api/debts/import/status
+
+GET /api/debts
+
+DELETE /api/debts/provider
+
+The API should return normalized debt objects regardless of provider.
+
+=========================================================
+PHASE 4
+Normalization Layer
+=========================================================
+
+Create one mapping function.
+
+Example normalized debt object:
+
+{
+
+provider
+
+creditorName
+
+accountType
+
+balance
+
+apr
+
+minimumPayment
+
+dueDate
+
+institution
+
+lastUpdated
+
+}
+
+The frontend should only consume normalized data.
+
+Never provider-specific fields.
+
+=========================================================
+PHASE 5
+Frontend
+=========================================================
+
+Build the entire user experience now.
+
+Pages:
+
+Import Debts
+
+Import Progress
+
+Import Complete
+
+Refresh Debts
+
+Import Failed
+
+Provider Permission Error
+
+Manual Entry Fallback
+
+Users should never know whether data came from sandbox or production.
+
+=========================================================
+PHASE 6
+Sandbox Provider
+=========================================================
+
+Implement sandbox using fake liabilities.
+
+The goal is exercising the entire workflow.
+
+Connection
+
+↓
+
+Import
+
+↓
+
+Normalize
+
+↓
+
+Save
+
+↓
+
+Display
+
+↓
+
+Refresh
+
+↓
+
+Edit
+
+↓
+
+Delete
+
+Everything should work exactly like production except the data source.
+
+=========================================================
+PHASE 7
+Manual Editing
+=========================================================
+
+Users must always be able to:
+
+Rename debt
+
+Adjust APR
+
+Adjust balance
+
+Adjust minimum payment
+
+Archive debt
+
+Delete imported debt
+
+Convert imported debt to manual
+
+If import later fails, users should not lose their data.
+
+=========================================================
+PHASE 8
+Refresh Logic
+=========================================================
+
+Implement:
+
+Manual Refresh
+
+Automatic Refresh
+
+Conflict Detection
+
+If provider values change:
+
+Balance
+
+APR
+
+Minimum payment
+
+Prompt user before overwriting manual edits.
+
+=========================================================
+PHASE 9
+Error Handling
+=========================================================
+
+Handle:
+
+Provider unavailable
+
+Institution unsupported
+
+Permission denied
+
+Provider timeout
+
+Partial imports
+
+Duplicate debts
+
+Disconnected account
+
+Refresh failure
+
+Display clear user-friendly messages.
+
+=========================================================
+PHASE 10
+Security
+=========================================================
+
+Do NOT store:
+
+Bank credentials
+
+Passwords
+
+Provider access secrets in frontend
+
+Raw OAuth credentials
+
+Only store:
+
+Provider IDs
+
+Tokens where appropriate
+
+Normalized liability data
+
+Encrypted identifiers
+
+Continue using existing encryption standards.
+
+=========================================================
+PHASE 11
+Future Providers
+=========================================================
+
+Prepare for these providers.
+
+Priority:
+
+1. Plaid Liabilities
+
+2. Method Financial
+
+3. MX
+
+4. Finicity (Mastercard)
+
+5. Spinwheel
+
+Adding a new provider should only require implementing the provider interface.
+
+The remainder of the application should remain unchanged.
+
+=========================================================
+PLAID PLAN
+=========================================================
+
+Continue development in Sandbox.
+
+Prepare production activation.
+
+When Plaid approves:
+
+Enable Liabilities product
+
+Switch environment to Production
+
+Import real liabilities
+
+Minimal code changes should be required.
+
+=========================================================
+IF PLAID DECLINES AGAIN
+=========================================================
+
+Do NOT redesign the feature.
+
+Instead implement:
+
+Method Financial Provider
+
+using the same interface.
+
+No frontend changes should be necessary.
+
+No database changes should be necessary.
+
+No business logic changes should be necessary.
+
+=========================================================
+STRIPE FINANCIAL CONNECTIONS
+=========================================================
+
+Continue using Stripe Financial Connections ONLY for:
+
+ACH
+
+Verified bank account
+
+Balances
+
+Ownership
+
+PaymentMethod creation
+
+Money movement
+
+Do NOT attempt to use Stripe FC for liability import because Stripe does not currently provide:
+
+Credit card balances
+
+Loan balances
+
+Student loans
+
+APR
+
+Minimum payments
+
+Debt account details
+
+Those require a specialized liability-data provider.
+
+=========================================================
+USER EXPERIENCE GOAL
+=========================================================
+
+Manual entry remains available.
+
+User taps:
+
+"Import My Debts"
+
+↓
+
+Connect Provider
+
+↓
+
+Import completes
+
+↓
+
+Credit cards appear
+
+Student loans appear
+
+Auto loans appear
+
+Balances imported
+
+APR imported
+
+Minimum payments imported
+
+User reviews
+
+User confirms
+
+Done
+
+=========================================================
+COMPLIANCE
+=========================================================
+
+Review implementation to ensure:
+
+Explicit user consent before importing liabilities.
+
+Privacy Policy accurately describes liability data collection and usage.
+
+Collect only the fields necessary for debt management.
+
+Encrypt liability data at rest and in transit.
+
+Apply least-privilege access controls.
+
+Maintain audit logs for imports and refreshes.
+
+Document data retention and deletion behavior.
+
+If future features involve credit decisions, underwriting, or sharing consumer financial information with third parties, flag those workflows for legal review because they may introduce additional regulatory obligations (including potential FCRA considerations).
+
+=========================================================
+DELIVERABLES
+=========================================================
+
+Please implement and provide:
+
+1. Provider abstraction layer
+2. Normalized debt model
+3. Database schema updates
+4. Backend API endpoints
+5. Frontend import flow
+6. Sandbox liability provider implementation
+7. Refresh/update logic
+8. Error handling
+9. Security review
+10. Architecture diagram
+11. File list changed
+12. Remaining work required to activate production once a liability-data provider approves Dime Time
+
+OBJECTIVE
+
+Build the complete automatic debt-import feature now in a provider-agnostic architecture so that activating real liability imports later requires only enabling an approved provider rather than redesigning the application.

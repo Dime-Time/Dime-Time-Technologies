@@ -50,6 +50,56 @@ export const debts = pgTable("debts", {
   isActive: boolean("is_active").default(true).notNull(),
   payeeAccountNumber: text("payee_account_number"), // Creditor's bank account number for ACH payment (set by admin)
   payeeRoutingNumber: text("payee_routing_number"), // Creditor's bank routing number for ACH payment (set by admin)
+  // --- Automatic debt import (provider-agnostic) ---
+  source: text("source").default('manual').notNull(), // 'manual' (user-entered) | 'imported'
+  provider: text("provider"), // 'sandbox' | 'plaid' | 'method' — null for manual debts
+  providerAccountId: text("provider_account_id"), // stable id from the provider; null for manual
+  institutionName: text("institution_name"),
+  accountType: text("account_type"), // 'credit_card' | 'student_loan' | 'auto_loan' | ...
+  creditLimit: decimal("credit_limit", { precision: 12, scale: 2 }),
+  availableCredit: decimal("available_credit", { precision: 12, scale: 2 }),
+  paymentStatus: text("payment_status"),
+  lastImportedAt: timestamp("last_imported_at"),
+  isHidden: boolean("is_hidden").default(false).notNull(),
+  // Fields the user manually overrode after import — refresh skips these so a
+  // re-import never clobbers the user's edits.
+  userEditedFields: text("user_edited_fields").array().default(sql`'{}'::text[]`).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  // Duplicate detection: one row per (user, provider, provider account).
+  // NULLs (manual debts) are distinct in Postgres, so manual debts are unaffected.
+  uniqueIndex("debts_provider_account_uq").on(table.userId, table.provider, table.providerAccountId),
+]);
+
+// A user's connection to a liability-data provider (one row per user+provider).
+// Holds the encrypted access token (same AES-256-GCM scheme as Plaid/Stripe)
+// plus the consent timestamp for compliance.
+export const debtProviderConnections = pgTable("debt_provider_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(),
+  providerItemId: text("provider_item_id"),
+  accessTokenEnc: text("access_token_enc"), // AES-256-GCM encrypted; never a raw token
+  institutionName: text("institution_name"),
+  status: text("status").default('active').notNull(), // 'active' | 'disconnected' | 'error'
+  consentAt: timestamp("consent_at"),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("debt_provider_conn_user_provider_uq").on(table.userId, table.provider),
+]);
+
+// Append-only audit trail for every import / refresh / disconnect (compliance).
+export const debtImportAuditLogs = pgTable("debt_import_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(),
+  action: text("action").notNull(), // 'import' | 'refresh' | 'disconnect'
+  status: text("status").notNull(), // 'success' | 'error'
+  importedCount: integer("imported_count").default(0).notNull(),
+  updatedCount: integer("updated_count").default(0).notNull(),
+  message: text("message"),
+  correlationId: text("correlation_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -382,7 +432,35 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertDebtSchema = createInsertSchema(debts).omit({
   id: true,
   createdAt: true,
+  // Provider/import-owned columns are set SERVER-SIDE ONLY. Omitting them from
+  // the public insert schema prevents mass-assignment (e.g. a user forging an
+  // "imported from Chase" debt via POST /api/debts).
+  source: true,
+  provider: true,
+  providerAccountId: true,
+  institutionName: true,
+  accountType: true,
+  creditLimit: true,
+  availableCredit: true,
+  paymentStatus: true,
+  lastImportedAt: true,
+  isHidden: true,
+  userEditedFields: true,
 });
+
+export const insertDebtProviderConnectionSchema = createInsertSchema(debtProviderConnections).omit({
+  id: true,
+  createdAt: true,
+});
+export type DebtProviderConnection = typeof debtProviderConnections.$inferSelect;
+export type InsertDebtProviderConnection = z.infer<typeof insertDebtProviderConnectionSchema>;
+
+export const insertDebtImportAuditLogSchema = createInsertSchema(debtImportAuditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type DebtImportAuditLog = typeof debtImportAuditLogs.$inferSelect;
+export type InsertDebtImportAuditLog = z.infer<typeof insertDebtImportAuditLogSchema>;
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,

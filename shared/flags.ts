@@ -22,7 +22,8 @@ export type FlagName =
   | "ENABLE_REAL_TRANSFERS"
   | "ENABLE_CRYPTO"
   | "ENABLE_BETA_BANNER"
-  | "ENABLE_AUTO_ROUNDUP_SWEEPS";
+  | "ENABLE_AUTO_ROUNDUP_SWEEPS"
+  | "ENABLE_DEBT_IMPORT";
 
 export interface FlagDefinition {
   /** Production default when the env var is unset or invalid. */
@@ -62,6 +63,14 @@ export const FLAG_DEFINITIONS: Record<FlagName, FlagDefinition> = {
       "Allow automatic round-up sweep dispersals (JP Morgan weekly debt payments) to run. " +
       "OFF (default) hard-blocks all automatic money-moving sweeps so they can never fire " +
       "before an operator explicitly enables them.",
+  },
+  ENABLE_DEBT_IMPORT: {
+    defaultValue: false,
+    description:
+      "Gate the automatic debt-import feature (connect a liability provider and pull in " +
+      "debts). OFF means the /api/debts/import routes are not mounted and the client " +
+      "Import Debts UI is hidden. Uses the sandbox provider until a real liability-data " +
+      "provider (Plaid Liabilities / Method) is approved.",
   },
 };
 

@@ -24,6 +24,7 @@ import { registerAxosRoutes } from "./routes/axosRoutes";
 import { registerMercuryRoutes } from "./routes/mercuryRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
 import { registerStripeRoutes, registerStripeWebhook } from "./routes/stripeRoutes";
+import { registerDebtImportRoutes } from "./routes/debtImportRoutes";
 import { assertStripeKeyModeSafeOnBoot } from "./services/stripeService";
 import { registerAdminRoutes } from "./routes/adminRoutes";
 import { isAdminUserId } from "./lib/admin";
@@ -1939,6 +1940,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       service: "Server",
       event: "stripe_routes_mounted",
       flag: "ENABLE_STRIPE_ACH",
+    }));
+  }
+
+  // Register automatic debt-import routes ONLY when the flag is ON. When OFF,
+  // none of these endpoints are mounted (404, not 401) — same fail-closed
+  // pattern as Stripe. The active provider is chosen by DEBT_IMPORT_PROVIDER
+  // (default "sandbox") until a real liability provider is approved.
+  if (isFlagEnabled("ENABLE_DEBT_IMPORT")) {
+    registerDebtImportRoutes(app);
+    console.log(JSON.stringify({
+      service: "Server",
+      event: "debt_import_routes_mounted",
+      flag: "ENABLE_DEBT_IMPORT",
+      provider: (process.env.DEBT_IMPORT_PROVIDER || "sandbox").trim().toLowerCase(),
     }));
   }
 

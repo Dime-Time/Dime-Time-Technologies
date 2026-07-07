@@ -68,8 +68,15 @@ import {
   sweepDeposits,
   weeklyDispersals,
   idempotencyKeys,
-  transfers
+  transfers,
+  debtProviderConnections,
+  debtImportAuditLogs,
+  type DebtProviderConnection,
+  type InsertDebtProviderConnection,
+  type InsertDebtImportAuditLog
 } from "@shared/schema";
+
+import type { NormalizedLiability } from "./services/debtImport/types";
 import { encryptToken, decryptToken } from "./services/encryptionService";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -98,6 +105,13 @@ export interface IStorage {
   getDebt(id: string): Promise<Debt | undefined>;
   createDebt(debt: InsertDebt): Promise<Debt>;
   updateDebt(id: string, updates: Partial<Debt>): Promise<Debt | undefined>;
+
+  // Debt import (provider-agnostic) methods
+  importDebtsFromProvider(userId: string, provider: string, liabilities: NormalizedLiability[]): Promise<{ imported: number; updated: number; debts: Debt[] }>;
+  getDebtProviderConnection(userId: string, provider: string): Promise<DebtProviderConnection | undefined>;
+  upsertDebtProviderConnection(data: InsertDebtProviderConnection): Promise<DebtProviderConnection>;
+  disconnectDebtProvider(userId: string, provider: string): Promise<void>;
+  createDebtImportAuditLog(entry: InsertDebtImportAuditLog): Promise<void>;
 
   // Transaction methods
   getTransactionsByUserId(userId: string, limit?: number): Promise<Transaction[]>;
@@ -259,6 +273,8 @@ export class MemStorage implements IStorage {
   private dttHoldingsMap: Map<string, DttHoldings>;
   private dttRewardsMap: Map<string, DttRewards>;
   private dttStakingMap: Map<string, DttStaking>;
+  private debtProviderConnectionsMap: Map<string, DebtProviderConnection>;
+  private debtImportAuditLogsArr: InsertDebtImportAuditLog[];
   private dttTokenInfoData: DttTokenInfo | undefined;
 
   constructor() {
@@ -275,6 +291,8 @@ export class MemStorage implements IStorage {
     this.dttHoldingsMap = new Map();
     this.dttRewardsMap = new Map();
     this.dttStakingMap = new Map();
+    this.debtProviderConnectionsMap = new Map();
+    this.debtImportAuditLogsArr = [];
     
     // Initialize DTT token info
     this.dttTokenInfoData = {
@@ -327,6 +345,17 @@ export class MemStorage implements IStorage {
         isActive: true,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
+        source: "manual",
+        provider: null,
+        providerAccountId: null,
+        institutionName: null,
+        accountType: null,
+        creditLimit: null,
+        availableCredit: null,
+        paymentStatus: null,
+        lastImportedAt: null,
+        isHidden: false,
+        userEditedFields: [],
         createdAt: new Date("2024-01-01"),
       },
       {
@@ -342,6 +371,17 @@ export class MemStorage implements IStorage {
         isActive: true,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
+        source: "manual",
+        provider: null,
+        providerAccountId: null,
+        institutionName: null,
+        accountType: null,
+        creditLimit: null,
+        availableCredit: null,
+        paymentStatus: null,
+        lastImportedAt: null,
+        isHidden: false,
+        userEditedFields: [],
         createdAt: new Date("2024-01-01"),
       },
       {
@@ -357,6 +397,17 @@ export class MemStorage implements IStorage {
         isActive: true,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
+        source: "manual",
+        provider: null,
+        providerAccountId: null,
+        institutionName: null,
+        accountType: null,
+        creditLimit: null,
+        availableCredit: null,
+        paymentStatus: null,
+        lastImportedAt: null,
+        isHidden: false,
+        userEditedFields: [],
         createdAt: new Date("2024-01-01"),
       },
     ];
@@ -1017,6 +1068,17 @@ export class MemStorage implements IStorage {
       isActive: insertDebt.isActive ?? true,
       payeeAccountNumber: insertDebt.payeeAccountNumber ?? null,
       payeeRoutingNumber: insertDebt.payeeRoutingNumber ?? null,
+      source: "manual",
+      provider: null,
+      providerAccountId: null,
+      institutionName: null,
+      accountType: null,
+      creditLimit: null,
+      availableCredit: null,
+      paymentStatus: null,
+      lastImportedAt: null,
+      isHidden: false,
+      userEditedFields: [],
       createdAt: new Date(),
     };
     this.debts.set(id, debt);
@@ -1030,6 +1092,111 @@ export class MemStorage implements IStorage {
     const updatedDebt = { ...debt, ...updates };
     this.debts.set(id, updatedDebt);
     return updatedDebt;
+  }
+
+  async importDebtsFromProvider(
+    userId: string,
+    provider: string,
+    liabilities: NormalizedLiability[],
+  ): Promise<{ imported: number; updated: number; debts: Debt[] }> {
+    let imported = 0;
+    let updated = 0;
+    const resultDebts: Debt[] = [];
+    for (const lib of liabilities) {
+      const existing = Array.from(this.debts.values()).find(
+        (d) => d.userId === userId && d.provider === provider && d.providerAccountId === lib.providerAccountId,
+      );
+      const balance = lib.currentBalance.toFixed(2);
+      const minPay = lib.minimumPayment.toFixed(2);
+      const apr = lib.interestRateApr.toFixed(2);
+      const creditLimit = lib.creditLimit != null ? lib.creditLimit.toFixed(2) : null;
+      const availableCredit = lib.availableCredit != null ? lib.availableCredit.toFixed(2) : null;
+      if (existing) {
+        const edited = existing.userEditedFields ?? [];
+        const next: Debt = { ...existing };
+        next.institutionName = lib.institutionName;
+        next.accountType = lib.accountType;
+        next.paymentStatus = lib.paymentStatus ?? null;
+        next.creditLimit = creditLimit;
+        next.availableCredit = availableCredit;
+        next.lastImportedAt = new Date();
+        if (!edited.includes("name")) next.name = lib.creditorName;
+        if (!edited.includes("currentBalance")) next.currentBalance = balance;
+        if (!edited.includes("minimumPayment")) next.minimumPayment = minPay;
+        if (!edited.includes("interestRate")) next.interestRate = apr;
+        if (!edited.includes("dueDate")) next.dueDate = lib.dueDate;
+        this.debts.set(existing.id, next);
+        resultDebts.push(next);
+        updated++;
+      } else {
+        const id = randomUUID();
+        const debt: Debt = {
+          id,
+          userId,
+          name: lib.creditorName,
+          accountNumber: lib.mask ? `••••${lib.mask}` : "—",
+          originalBalance: balance,
+          currentBalance: balance,
+          interestRate: apr,
+          minimumPayment: minPay,
+          dueDate: lib.dueDate,
+          isActive: true,
+          payeeAccountNumber: null,
+          payeeRoutingNumber: null,
+          source: "imported",
+          provider,
+          providerAccountId: lib.providerAccountId,
+          institutionName: lib.institutionName,
+          accountType: lib.accountType,
+          creditLimit,
+          availableCredit,
+          paymentStatus: lib.paymentStatus ?? null,
+          lastImportedAt: new Date(),
+          isHidden: false,
+          userEditedFields: [],
+          createdAt: new Date(),
+        };
+        this.debts.set(id, debt);
+        resultDebts.push(debt);
+        imported++;
+      }
+    }
+    return { imported, updated, debts: resultDebts };
+  }
+
+  async getDebtProviderConnection(userId: string, provider: string): Promise<DebtProviderConnection | undefined> {
+    return this.debtProviderConnectionsMap.get(`${userId}:${provider}`);
+  }
+
+  async upsertDebtProviderConnection(data: InsertDebtProviderConnection): Promise<DebtProviderConnection> {
+    const key = `${data.userId}:${data.provider}`;
+    const existing = this.debtProviderConnectionsMap.get(key);
+    const conn: DebtProviderConnection = {
+      id: existing?.id ?? randomUUID(),
+      userId: data.userId,
+      provider: data.provider,
+      providerItemId: data.providerItemId ?? existing?.providerItemId ?? null,
+      accessTokenEnc: data.accessTokenEnc ?? existing?.accessTokenEnc ?? null,
+      institutionName: data.institutionName ?? existing?.institutionName ?? null,
+      status: data.status ?? "active",
+      consentAt: data.consentAt ?? existing?.consentAt ?? null,
+      lastSyncAt: data.lastSyncAt ?? existing?.lastSyncAt ?? null,
+      createdAt: existing?.createdAt ?? new Date(),
+    };
+    this.debtProviderConnectionsMap.set(key, conn);
+    return conn;
+  }
+
+  async disconnectDebtProvider(userId: string, provider: string): Promise<void> {
+    const key = `${userId}:${provider}`;
+    const existing = this.debtProviderConnectionsMap.get(key);
+    if (existing) {
+      this.debtProviderConnectionsMap.set(key, { ...existing, status: "disconnected" });
+    }
+  }
+
+  async createDebtImportAuditLog(entry: InsertDebtImportAuditLog): Promise<void> {
+    this.debtImportAuditLogsArr.push(entry);
   }
 
   async getTransactionsByUserId(userId: string, limit?: number): Promise<Transaction[]> {
@@ -1608,6 +1775,123 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async importDebtsFromProvider(
+    userId: string,
+    provider: string,
+    liabilities: NormalizedLiability[],
+  ): Promise<{ imported: number; updated: number; debts: Debt[] }> {
+    let imported = 0;
+    let updated = 0;
+    const resultDebts: Debt[] = [];
+    for (const lib of liabilities) {
+      const [existing] = await db
+        .select()
+        .from(debts)
+        .where(
+          and(
+            eq(debts.userId, userId),
+            eq(debts.provider, provider),
+            eq(debts.providerAccountId, lib.providerAccountId),
+          ),
+        );
+      const balance = lib.currentBalance.toFixed(2);
+      const minPay = lib.minimumPayment.toFixed(2);
+      const apr = lib.interestRateApr.toFixed(2);
+      const creditLimit = lib.creditLimit != null ? lib.creditLimit.toFixed(2) : null;
+      const availableCredit = lib.availableCredit != null ? lib.availableCredit.toFixed(2) : null;
+      if (existing) {
+        const edited = existing.userEditedFields ?? [];
+        const set: Partial<typeof debts.$inferInsert> = {
+          institutionName: lib.institutionName,
+          accountType: lib.accountType,
+          paymentStatus: lib.paymentStatus ?? null,
+          creditLimit,
+          availableCredit,
+          lastImportedAt: new Date(),
+        };
+        if (!edited.includes("name")) set.name = lib.creditorName;
+        if (!edited.includes("currentBalance")) set.currentBalance = balance;
+        if (!edited.includes("minimumPayment")) set.minimumPayment = minPay;
+        if (!edited.includes("interestRate")) set.interestRate = apr;
+        if (!edited.includes("dueDate")) set.dueDate = lib.dueDate;
+        const [row] = await db.update(debts).set(set).where(eq(debts.id, existing.id)).returning();
+        resultDebts.push(row);
+        updated++;
+      } else {
+        const [row] = await db
+          .insert(debts)
+          .values({
+            id: randomUUID(),
+            userId,
+            name: lib.creditorName,
+            accountNumber: lib.mask ? `••••${lib.mask}` : "—",
+            originalBalance: balance,
+            currentBalance: balance,
+            interestRate: apr,
+            minimumPayment: minPay,
+            dueDate: lib.dueDate,
+            isActive: true,
+            source: "imported",
+            provider,
+            providerAccountId: lib.providerAccountId,
+            institutionName: lib.institutionName,
+            accountType: lib.accountType,
+            creditLimit,
+            availableCredit,
+            paymentStatus: lib.paymentStatus ?? null,
+            lastImportedAt: new Date(),
+          })
+          .returning();
+        resultDebts.push(row);
+        imported++;
+      }
+    }
+    return { imported, updated, debts: resultDebts };
+  }
+
+  async getDebtProviderConnection(userId: string, provider: string): Promise<DebtProviderConnection | undefined> {
+    const [conn] = await db
+      .select()
+      .from(debtProviderConnections)
+      .where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider)));
+    return conn;
+  }
+
+  async upsertDebtProviderConnection(data: InsertDebtProviderConnection): Promise<DebtProviderConnection> {
+    const existing = await this.getDebtProviderConnection(data.userId, data.provider);
+    if (existing) {
+      const [row] = await db
+        .update(debtProviderConnections)
+        .set({
+          providerItemId: data.providerItemId ?? existing.providerItemId,
+          accessTokenEnc: data.accessTokenEnc ?? existing.accessTokenEnc,
+          institutionName: data.institutionName ?? existing.institutionName,
+          status: data.status ?? "active",
+          consentAt: data.consentAt ?? existing.consentAt,
+          lastSyncAt: data.lastSyncAt ?? existing.lastSyncAt,
+        })
+        .where(eq(debtProviderConnections.id, existing.id))
+        .returning();
+      return row;
+    }
+    const [row] = await db
+      .insert(debtProviderConnections)
+      .values({ id: randomUUID(), ...data })
+      .returning();
+    return row;
+  }
+
+  async disconnectDebtProvider(userId: string, provider: string): Promise<void> {
+    await db
+      .update(debtProviderConnections)
+      .set({ status: "disconnected" })
+      .where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider)));
+  }
+
+  async createDebtImportAuditLog(entry: InsertDebtImportAuditLog): Promise<void> {
+    await db.insert(debtImportAuditLogs).values({ id: randomUUID(), ...entry });
+  }
+
   // Transaction methods
   async getTransactionsByUserId(userId: string, limit?: number): Promise<Transaction[]> {
     const query = db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.date));
@@ -1903,6 +2187,8 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(payments).where(eq(payments.userId, userId));
       await tx.delete(transactions).where(eq(transactions.userId, userId));
       await tx.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
+      await tx.delete(debtImportAuditLogs).where(eq(debtImportAuditLogs.userId, userId));
+      await tx.delete(debtProviderConnections).where(eq(debtProviderConnections.userId, userId));
       await tx.delete(debts).where(eq(debts.userId, userId));
       await tx.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
       await tx.delete(realTransferAuditLogs).where(eq(realTransferAuditLogs.userId, userId));

@@ -5,18 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PaymentModal } from "@/components/payment-modal";
 import { AddDebtModal } from "@/components/AddDebtModal";
+import { ImportDebtsModal } from "@/components/ImportDebtsModal";
 import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
-import { CreditCard, TrendingDown, Calendar, Plus, DollarSign } from "lucide-react";
+import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { StripeAchPayButton } from "@/components/StripeAchPayButton";
+import { useFlag } from "@/hooks/useFlag";
 import type { Debt, Payment } from "@shared/schema";
 
 export default function Debts() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const debtImportEnabled = useFlag("ENABLE_DEBT_IMPORT");
 
   const { data: debts = [], isLoading } = useQuery<Debt[]>({
     queryKey: ["/api/debts"],
@@ -48,6 +53,16 @@ export default function Debts() {
           <p className="text-slate-600">Track and manage your debt payoff journey</p>
         </div>
         <div className="flex gap-2">
+          {debtImportEnabled && (
+            <Button
+              variant="outline"
+              onClick={() => setShowImportModal(true)}
+              data-testid="button-import-debts"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Import Debts
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => setShowAddDebtModal(true)}
@@ -166,8 +181,22 @@ export default function Debts() {
                 <CardHeader className="bg-slate-50">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-xl text-slate-900">{debt.name}</CardTitle>
-                      <p className="text-slate-600 mt-1">{debt.accountNumber}</p>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-xl text-slate-900">{debt.name}</CardTitle>
+                        {debt.source === "imported" && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-dime-purple/10 text-dime-purple hover:bg-dime-purple/10"
+                            data-testid={`badge-imported-${debt.id}`}
+                          >
+                            Imported
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-slate-600 mt-1">
+                        {debt.accountNumber}
+                        {debt.institutionName ? ` · ${debt.institutionName}` : ""}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-red-600">{formatCurrency(debt.currentBalance)}</p>
@@ -305,6 +334,13 @@ export default function Debts() {
         open={showAddDebtModal}
         onOpenChange={setShowAddDebtModal}
       />
+
+      {debtImportEnabled && (
+        <ImportDebtsModal
+          open={showImportModal}
+          onOpenChange={setShowImportModal}
+        />
+      )}
     </main>
   );
 }
