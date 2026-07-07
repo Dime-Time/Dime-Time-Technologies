@@ -234,7 +234,16 @@ export default function LandingPage() {
               ))}
             </nav>
 
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center gap-2">
+              <Link href="/login">
+                <Button
+                  variant="ghost"
+                  className="text-slate-700 hover:text-dime-purple"
+                  data-testid="button-nav-login"
+                >
+                  Log In
+                </Button>
+              </Link>
               <Link href="/signup">
                 <Button className="bg-dime-purple text-white hover:bg-dime-purple/90">
                   Get Started
@@ -264,8 +273,21 @@ export default function LandingPage() {
                     {link.label}
                   </a>
                 ))}
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    className="w-full border-dime-purple/30 text-slate-700 hover:text-dime-purple"
+                    onClick={() => setMobileOpen(false)}
+                    data-testid="button-nav-login-mobile"
+                  >
+                    Log In
+                  </Button>
+                </Link>
                 <Link href="/signup">
-                  <Button className="w-full bg-dime-purple text-white hover:bg-dime-purple/90">
+                  <Button
+                    className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
+                    onClick={() => setMobileOpen(false)}
+                  >
                     Get Started
                   </Button>
                 </Link>
