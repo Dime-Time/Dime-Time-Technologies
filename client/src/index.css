@@ -266,6 +266,54 @@
   .dt-marketing button, .dt-marketing .button, .dt-marketing [role="button"] {
     text-shadow: none !important;
   }
+
+  /* ── Auth-page scope overrides ─────────────────────────────────────────
+     Login / signup / password / verify screens. Keeps the purple brand
+     background + white headings, but drops the neon text outline and makes
+     the characters the user TYPES dark-on-white so they are easy to read.
+     Mirrors the `.dt-marketing` opt-out without forcing a white page bg.
+     -------------------------------------------------------------------- */
+  .dt-auth,
+  .dt-auth * {
+    text-shadow: none !important;
+  }
+
+  /* Status icons (spinner / check / x on the verify screen) drop the outline
+     too, to match the now-clean headings. The brand logo keeps its own look. */
+  .dt-auth .lucide {
+    filter: none !important;
+  }
+
+  .dt-auth input,
+  .dt-auth textarea {
+    background-color: #ffffff !important;
+    color: rgb(15 23 42) !important;
+    text-shadow: none !important;
+  }
+
+  .dt-auth input::placeholder,
+  .dt-auth textarea::placeholder {
+    color: rgb(148 163 184) !important;
+  }
+
+  /* Keep browser-autofilled values dark-on-white too (matches the screenshot). */
+  .dt-auth input:-webkit-autofill,
+  .dt-auth input:-webkit-autofill:hover,
+  .dt-auth input:-webkit-autofill:focus {
+    -webkit-text-fill-color: rgb(15 23 42) !important;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+  }
+
+  /* Solid white primary CTA with deep-purple label for strong contrast. */
+  .dt-auth .auth-submit {
+    background-color: #ffffff !important;
+    color: #4f46e5 !important;
+    text-shadow: none !important;
+  }
+  .dt-auth .auth-submit:hover {
+    background-color: #eef2ff !important;
+  }
 }
 
 @layer utilities {

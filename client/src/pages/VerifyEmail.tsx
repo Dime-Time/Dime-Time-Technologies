@@ -70,8 +70,8 @@ export default function VerifyEmail() {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-[#a8a4f0] flex items-center justify-center px-4 safe-area-top safe-area-bottom">
-      <div className="w-full max-w-md bg-[#918EF4] rounded-3xl p-8 text-center">
+    <div className="dt-auth min-h-screen bg-gradient-to-b from-[#a8a4f0] to-[#918EF4] flex items-center justify-center px-6 py-12 safe-area-top safe-area-bottom">
+      <div className="w-full max-w-sm text-center">
         <div className="flex justify-center mb-4">
           <LogoWithText size={100} />
         </div>
@@ -92,7 +92,7 @@ export default function VerifyEmail() {
             <Button
               onClick={() => setLocation("/")}
               variant="ghost"
-              className="w-full text-white hover:bg-white/10 h-12"
+              className="auth-submit w-full h-12 rounded-xl font-semibold"
               data-testid="button-continue-to-app"
             >
               Continue to app

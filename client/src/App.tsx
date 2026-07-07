@@ -69,13 +69,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 }
 
 function AuthScreen({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
-      <main className="flex-1 flex items-center justify-center px-4">
-        {children}
-      </main>
-    </div>
-  );
+  return <div className="min-h-screen">{children}</div>;
 }
 
 function AppContent() {

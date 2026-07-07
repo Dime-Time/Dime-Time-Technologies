@@ -56,17 +56,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#a8a4f0] flex items-center justify-center px-4 safe-area-top safe-area-bottom">
-      <div className="w-full max-w-md bg-[#918EF4] rounded-3xl p-8">
-        <div className="flex justify-center mb-4">
+    <div className="dt-auth min-h-screen bg-gradient-to-b from-[#a8a4f0] to-[#918EF4] flex items-center justify-center px-6 py-12 safe-area-top safe-area-bottom">
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-6">
           <LogoWithText size={100} />
         </div>
-        
-        <h1 className="text-2xl font-bold text-white text-center mb-1">
+
+        <h1 className="text-3xl font-bold text-white text-center mb-1">
           Welcome Back
         </h1>
         <p className="text-white/80 text-center mb-8">
-          Login to your Dime Time account
+          Log in to your Dime Time account
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -78,7 +78,7 @@ export default function Login() {
             onChange={(e) => { setEmail(e.target.value); if (formError) setFormError(null); }}
             required
             data-testid="input-email"
-            className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+            className="border-transparent h-12 rounded-xl"
           />
           <Input
             type="password"
@@ -88,7 +88,7 @@ export default function Login() {
             onChange={(e) => { setPassword(e.target.value); if (formError) setFormError(null); }}
             required
             data-testid="input-password"
-            className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+            className="border-transparent h-12 rounded-xl"
           />
           {formError && (
             <p
@@ -102,11 +102,11 @@ export default function Login() {
           <Button
             type="submit"
             variant="ghost"
-            className="w-full text-white hover:bg-white/10 h-12 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="auth-submit w-full h-12 rounded-xl font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={loginMutation.isPending}
             data-testid="button-login"
           >
-            {loginMutation.isPending ? "Logging in…" : "Login"}
+            {loginMutation.isPending ? "Logging in…" : "Log In"}
           </Button>
 
           <div className="text-center">
@@ -122,7 +122,7 @@ export default function Login() {
 
         <p className="text-sm text-center mt-6 text-white/80">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-white hover:underline">
+          <Link href="/signup" className="text-white font-semibold hover:underline">
             Sign up
           </Link>
         </p>

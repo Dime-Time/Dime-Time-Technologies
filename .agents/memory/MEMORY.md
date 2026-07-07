@@ -10,3 +10,4 @@
 - [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
 - [Automatic debt import](debt-import-feature.md) — flag-gated; real Plaid Liabilities provider verified in SANDBOX; prod promotion is config-only (never flip); provider via DEBT_IMPORT_PROVIDER.
 - [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — bank-connect (beta) 502s with "not registered" until founder submits FC registration in live Stripe dashboard; external onboarding, not a code bug.
+- [Forced white-text theme](forced-white-text-theme.md) — index.css forces `* {color:white!important;text-shadow}` + remaps bg-white→lavender; readable inputs/real colors need a scoped opt-out (.dt-marketing / .dt-auth).

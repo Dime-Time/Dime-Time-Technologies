@@ -67,13 +67,13 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-[#a8a4f0] flex items-center justify-center px-4 safe-area-top safe-area-bottom">
-      <div className="w-full max-w-md bg-[#918EF4] rounded-3xl p-8">
-        <div className="flex justify-center mb-4">
+    <div className="dt-auth min-h-screen bg-gradient-to-b from-[#a8a4f0] to-[#918EF4] flex items-center justify-center px-6 py-12 safe-area-top safe-area-bottom">
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-6">
           <LogoWithText size={100} />
         </div>
 
-        <h1 className="text-2xl font-bold text-white text-center mb-1">
+        <h1 className="text-3xl font-bold text-white text-center mb-1">
           Create Account
         </h1>
         <p className="text-white/80 text-center mb-8">
@@ -90,7 +90,7 @@ export default function Signup() {
               onChange={(e) => { setFirstName(e.target.value); if (formError) setFormError(null); }}
               required
               data-testid="input-firstname"
-              className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+              className="border-transparent h-12 rounded-xl"
             />
             <Input
               type="text"
@@ -100,7 +100,7 @@ export default function Signup() {
               onChange={(e) => { setLastName(e.target.value); if (formError) setFormError(null); }}
               required
               data-testid="input-lastname"
-              className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+              className="border-transparent h-12 rounded-xl"
             />
           </div>
 
@@ -112,7 +112,7 @@ export default function Signup() {
             onChange={(e) => { setEmail(e.target.value); if (formError) setFormError(null); }}
             required
             data-testid="input-email"
-            className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+            className="border-transparent h-12 rounded-xl"
           />
 
           <div className="space-y-1">
@@ -125,7 +125,7 @@ export default function Signup() {
               required
               minLength={8}
               data-testid="input-password"
-              className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+              className="border-transparent h-12 rounded-xl"
             />
             <p className="text-xs text-white/70 px-1">
               At least 8 characters.
@@ -145,7 +145,7 @@ export default function Signup() {
           <Button
             type="submit"
             variant="ghost"
-            className="w-full text-white hover:bg-white/10 h-12 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="auth-submit w-full h-12 rounded-xl font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={isLoading}
             data-testid="button-signup"
           >
@@ -155,8 +155,8 @@ export default function Signup() {
 
         <p className="text-sm text-center mt-6 text-white/80">
           Already have an account?{" "}
-          <Link href="/login" className="text-white hover:underline">
-            Sign in
+          <Link href="/login" className="text-white font-semibold hover:underline">
+            Log In
           </Link>
         </p>
       </div>

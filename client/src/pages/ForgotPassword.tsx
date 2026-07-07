@@ -45,13 +45,13 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-[#a8a4f0] flex items-center justify-center px-4 safe-area-top safe-area-bottom">
-      <div className="w-full max-w-md bg-[#918EF4] rounded-3xl p-8">
-        <div className="flex justify-center mb-4">
+    <div className="dt-auth min-h-screen bg-gradient-to-b from-[#a8a4f0] to-[#918EF4] flex items-center justify-center px-6 py-12 safe-area-top safe-area-bottom">
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-6">
           <LogoWithText size={100} />
         </div>
 
-        <h1 className="text-2xl font-bold text-white text-center mb-1">
+        <h1 className="text-3xl font-bold text-white text-center mb-1">
           Forgot password?
         </h1>
         <p className="text-white/80 text-center mb-8 text-sm">
@@ -85,12 +85,12 @@ export default function ForgotPassword() {
               onChange={(e) => setEmail(e.target.value)}
               required
               data-testid="input-email"
-              className="bg-[#918EF4] border-white/40 text-white placeholder:text-white/60 h-12 rounded-xl"
+              className="border-transparent h-12 rounded-xl"
             />
             <Button
               type="submit"
               variant="ghost"
-              className="w-full text-white hover:bg-white/10 h-12"
+              className="auth-submit w-full h-12 rounded-xl font-semibold"
               disabled={mutation.isPending}
               data-testid="button-send-reset-link"
             >
