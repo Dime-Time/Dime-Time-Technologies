@@ -232,16 +232,23 @@ export async function createFinancialConnectionsSession(args: {
 export async function attachFcAccountAsPaymentMethod(args: {
   fcAccountId: string;
   customerId: string;
+  // Stripe REQUIRES billing_details[name] when creating a us_bank_account
+  // PaymentMethod. Omitting it makes paymentMethods.create fail with
+  // "Missing required param: billing_details[name]." The caller sources this
+  // from the app user (firstName + lastName, falling back to email).
+  holderName: string;
 }): Promise<{ paymentMethodId: string; last4: string | null; institutionName: string | null }> {
   const stripe = await getStripe();
   if (!stripe) throw new Error("Stripe is not configured");
 
   const account = await (stripe as any).financialConnections.accounts.retrieve(args.fcAccountId);
 
-  // Create a us_bank_account PaymentMethod from the FC account.
+  // Create a us_bank_account PaymentMethod from the FC account. billing_details.name
+  // is mandatory for us_bank_account payment methods.
   const pm = await stripe.paymentMethods.create({
     type: "us_bank_account" as any,
     us_bank_account: { financial_connections_account: args.fcAccountId } as any,
+    billing_details: { name: args.holderName } as any,
   } as any);
 
   await stripe.paymentMethods.attach(pm.id, { customer: args.customerId });

@@ -211,9 +211,16 @@ export function registerStripeRoutes(app: Express): void {
 
       stripeLog(correlationId, "fc_exchange_start", { userId, fcAccountId });
 
+      const user = await storage.getUser(userId);
+      const holderName =
+        [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+        user?.email ||
+        "Dime Time Customer";
+
       const { paymentMethodId, last4, institutionName } = await attachFcAccountAsPaymentMethod({
         fcAccountId,
         customerId,
+        holderName,
       });
 
       const saved = await storage.createStripeAccount({

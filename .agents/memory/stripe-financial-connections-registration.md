@@ -1,6 +1,6 @@
 ---
 name: Stripe Financial Connections registration + permission scope
-description: FC bank-connect (beta) has TWO independent 502 failure modes — unregistered account, and code requesting permissions beyond the registered scope.
+description: FC bank-connect (beta) has THREE independent 502 failure modes — unregistered account, session requesting an unactivated scope, and exchange omitting billing_details[name].
 ---
 
 # Stripe Financial Connections: registration AND permission-scope must both line up
@@ -34,8 +34,29 @@ stored PaymentMethod, and the app's balance/transaction UI is Plaid-backed, sepa
 Stripe FC. **Rule: the requested FC permission scope must never exceed the account's
 activated FC scope.**
 
+## Stage 3 — exchange omits billing_details[name] (CODE bug)
+After Stages 1 & 2 clear, the FC modal completes and the client posts each linked account to
+`POST /api/stripe/financial-connections/exchange` → `attachFcAccountAsPaymentMethod`. This
+502s on `stripe.paymentMethods.create` for a `us_bank_account`.
+**Symptom:** 502, log `event:"fc_exchange_failed"` with
+> "Missing required param: billing_details[name]."
+
+No `stripe_accounts` row is written, so the app shows "no accounts connected" even though the
+bank link succeeded on Stripe's side. **Fix:** Stripe REQUIRES `billing_details.name` when
+creating a `us_bank_account` PaymentMethod. Source it from the app user
+(firstName+lastName → email → placeholder) and pass `billing_details: { name }`. Stripe does
+NOT verify this name against the bank's holder record (ownership is proven by the bank login
+in the FC modal), so the app user's name is acceptable. **Before wider beta:** replace the
+literal placeholder fallback with a 422 "complete your profile" so real-money ACH mandate
+evidence always carries a real name.
+
+**UX gotcha (not a bug):** a successful link surfaces on the **Debts page** (each debt's
+"Pay with linked bank (beta)" button reads `/api/stripe/status`), NOT the Banking page — the
+Banking page only lists Plaid `bank_accounts`. Expect a false "no accounts connected" report
+if you point the founder at the Banking page after a successful Stripe link.
+
 ## Deploy note
-Both fixes only take effect in production after a **re-publish** — dime-time.com is an
+All fixes only take effect in production after a **re-publish** — dime-time.com is an
 autoscale deployment that snapshots code+secrets at publish time. Code edits in the
 workspace do NOT reach prod until the founder republishes.
 
