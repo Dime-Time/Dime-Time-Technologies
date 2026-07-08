@@ -34,6 +34,15 @@ assumed it was fixed — but other users (unverified domain) and/or the missing
 `PUBLIC_APP_URL` kept it broken. Verify the whole loop with a NON-owner email
 before declaring done.
 
+**Status as of 2026-07-08:** key + `PUBLIC_APP_URL` are live in prod (owner-inbox
+delivery verified end-to-end: send → inbox (spam folder) → link → verified). Domain
+is still UNVERIFIED in Resend (probe: 403 `validation_error` sending from
+noreply@dime-time.com), so non-owner recipients get a friendly 503 — founder must
+add Resend's DNS records, then set `EMAIL_FROM`, then republish. Shared-sender mail
+lands in spam; domain verification also fixes inbox placement. Probe delivery
+safely by sending to Resend's `delivered@resend.dev` sink (never a real address);
+note the API key is send-only restricted (GET /domains returns 401).
+
 **Client UX:** `getApiErrorMessage()` in `client/src/lib/queryClient.ts` unwraps
 the server's JSON `message` so toasts never show a raw `503: {json}` blob; the
 `throwIfResNotOk` error keeps its `"<status>: <body>"` message shape so
