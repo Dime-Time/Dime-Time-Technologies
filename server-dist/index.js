@@ -198,6 +198,14 @@ var FLAG_DEFINITIONS = {
   ENABLE_BETA_BANNER: {
     defaultValue: false,
     description: "Render an in-app beta banner reminding users that Dime Time is in TestFlight. Flip ON during the beta window and OFF for the public launch build."
+  },
+  ENABLE_AUTO_ROUNDUP_SWEEPS: {
+    defaultValue: false,
+    description: "Allow automatic round-up sweep dispersals (JP Morgan weekly debt payments) to run. OFF (default) hard-blocks all automatic money-moving sweeps so they can never fire before an operator explicitly enables them."
+  },
+  ENABLE_DEBT_IMPORT: {
+    defaultValue: false,
+    description: "Gate the automatic debt-import feature (connect a liability provider and pull in debts). OFF means the /api/debts/import routes are not mounted and the client Import Debts UI is hidden. Uses the sandbox provider until a real liability-data provider (Plaid Liabilities / Method) is approved."
   }
 };
 var FLAG_NAMES = Object.keys(FLAG_DEFINITIONS);
@@ -265,6 +273,23 @@ function validateProductionSecrets() {
       `Production startup aborted \u2014 missing required secrets: ${missing.join(", ")}`
     );
   }
+  if (stripeAchEnabled) {
+    const invalid = [];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_LIVE || process.env.STRIPE_WEBHOOK_SECRET;
+    if (webhookSecret && !webhookSecret.startsWith("whsec_")) {
+      invalid.push("STRIPE_WEBHOOK_SECRET must be a Stripe webhook signing secret (whsec_\u2026)");
+    }
+    const publishableKey = process.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    if (publishableKey && !publishableKey.startsWith("pk_live_")) {
+      invalid.push("VITE_STRIPE_PUBLISHABLE_KEY must be a LIVE publishable key (pk_live_\u2026)");
+    }
+    if (invalid.length > 0) {
+      for (const msg of invalid) console.error(`FATAL: ${msg}`);
+      throw new Error(
+        `Production startup aborted \u2014 invalid Stripe key configuration: ${invalid.join("; ")}`
+      );
+    }
+  }
   console.log(
     JSON.stringify({
       service: "EnvValidation",
@@ -290,6 +315,8 @@ __export(schema_exports, {
   businessAccount: () => businessAccount,
   contactSubmissions: () => contactSubmissions,
   cryptoPurchases: () => cryptoPurchases,
+  debtImportAuditLogs: () => debtImportAuditLogs,
+  debtProviderConnections: () => debtProviderConnections,
   debts: () => debts,
   distributionPayments: () => distributionPayments,
   dttHoldings: () => dttHoldings,
@@ -303,6 +330,8 @@ __export(schema_exports, {
   insertBusinessAccountSchema: () => insertBusinessAccountSchema,
   insertContactSubmissionSchema: () => insertContactSubmissionSchema,
   insertCryptoPurchaseSchema: () => insertCryptoPurchaseSchema,
+  insertDebtImportAuditLogSchema: () => insertDebtImportAuditLogSchema,
+  insertDebtProviderConnectionSchema: () => insertDebtProviderConnectionSchema,
   insertDebtSchema: () => insertDebtSchema,
   insertDistributionPaymentSchema: () => insertDistributionPaymentSchema,
   insertDttHoldingsSchema: () => insertDttHoldingsSchema,
@@ -316,6 +345,7 @@ __export(schema_exports, {
   insertNotificationSettingsSchema: () => insertNotificationSettingsSchema,
   insertPasswordResetTokenSchema: () => insertPasswordResetTokenSchema,
   insertPaymentSchema: () => insertPaymentSchema,
+  insertRealTransferAuditLogSchema: () => insertRealTransferAuditLogSchema,
   insertRoundUpCollectionSchema: () => insertRoundUpCollectionSchema,
   insertRoundUpSettingsSchema: () => insertRoundUpSettingsSchema,
   insertStripeAccountSchema: () => insertStripeAccountSchema,
@@ -332,6 +362,7 @@ __export(schema_exports, {
   notifications: () => notifications,
   passwordResetTokens: () => passwordResetTokens,
   payments: () => payments,
+  realTransferAuditLogs: () => realTransferAuditLogs,
   roundUpCollections: () => roundUpCollections,
   roundUpSettings: () => roundUpSettings,
   sessions: () => sessions,
@@ -367,6 +398,15 @@ var users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   emailVerifiedAt: timestamp("email_verified_at"),
+  // Real-money ACH rollout allowlist (operator-controlled, instantly revocable).
+  // The hot-path gate for live transfers — a user must be explicitly enabled
+  // here before any real Stripe ACH debit can be created, even when the
+  // ENABLE_REAL_TRANSFERS master switch is ON. Toggled only via the admin
+  // surface; never settable through user-facing inserts.
+  realTransfersEnabled: boolean("real_transfers_enabled").default(false).notNull(),
+  realTransfersEnabledAt: timestamp("real_transfers_enabled_at"),
+  realTransfersEnabledBy: varchar("real_transfers_enabled_by"),
+  realTransfersNotes: text("real_transfers_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });
@@ -386,6 +426,58 @@ var debts = pgTable("debts", {
   // Creditor's bank account number for ACH payment (set by admin)
   payeeRoutingNumber: text("payee_routing_number"),
   // Creditor's bank routing number for ACH payment (set by admin)
+  // --- Automatic debt import (provider-agnostic) ---
+  source: text("source").default("manual").notNull(),
+  // 'manual' (user-entered) | 'imported'
+  provider: text("provider"),
+  // 'sandbox' | 'plaid' | 'method' — null for manual debts
+  providerAccountId: text("provider_account_id"),
+  // stable id from the provider; null for manual
+  institutionName: text("institution_name"),
+  accountType: text("account_type"),
+  // 'credit_card' | 'student_loan' | 'auto_loan' | ...
+  creditLimit: decimal("credit_limit", { precision: 12, scale: 2 }),
+  availableCredit: decimal("available_credit", { precision: 12, scale: 2 }),
+  paymentStatus: text("payment_status"),
+  lastImportedAt: timestamp("last_imported_at"),
+  isHidden: boolean("is_hidden").default(false).notNull(),
+  // Fields the user manually overrode after import — refresh skips these so a
+  // re-import never clobbers the user's edits.
+  userEditedFields: text("user_edited_fields").array().default(sql`'{}'::text[]`).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => [
+  // Duplicate detection: one row per (user, provider, provider account).
+  // NULLs (manual debts) are distinct in Postgres, so manual debts are unaffected.
+  uniqueIndex("debts_provider_account_uq").on(table.userId, table.provider, table.providerAccountId)
+]);
+var debtProviderConnections = pgTable("debt_provider_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(),
+  providerItemId: text("provider_item_id"),
+  accessTokenEnc: text("access_token_enc"),
+  // AES-256-GCM encrypted; never a raw token
+  institutionName: text("institution_name"),
+  status: text("status").default("active").notNull(),
+  // 'active' | 'disconnected' | 'error'
+  consentAt: timestamp("consent_at"),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => [
+  uniqueIndex("debt_provider_conn_user_provider_uq").on(table.userId, table.provider)
+]);
+var debtImportAuditLogs = pgTable("debt_import_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(),
+  action: text("action").notNull(),
+  // 'import' | 'refresh' | 'disconnect'
+  status: text("status").notNull(),
+  // 'success' | 'error'
+  importedCount: integer("imported_count").default(0).notNull(),
+  updatedCount: integer("updated_count").default(0).notNull(),
+  message: text("message"),
+  correlationId: text("correlation_id"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 var transactions = pgTable("transactions", {
@@ -593,6 +685,39 @@ var stripeWebhookEvents = pgTable("stripe_webhook_events", {
   type: text("type").notNull(),
   receivedAt: timestamp("received_at").defaultNow().notNull()
 });
+var realTransferAuditLogs = pgTable("real_transfer_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  // Set when an admin action produced this row (allowlist toggle); null for
+  // automated per-debit gate decisions.
+  adminUserId: varchar("admin_user_id"),
+  action: text("action").notNull(),
+  // 'ach_debit_decision' | 'ach_debit_outcome' | 'allowlist_changed'
+  result: text("result").notNull(),
+  // 'approved' | 'blocked' | 'initiated' | 'failed' | 'enabled' | 'disabled'
+  reason: text("reason"),
+  // machine code, e.g. 'not_allowlisted', 'over_first_transfer_limit'
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  debtId: varchar("debt_id"),
+  stripeAccountId: varchar("stripe_account_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  transferId: varchar("transfer_id"),
+  stripeMode: text("stripe_mode"),
+  // 'live' | 'test'
+  environment: text("environment"),
+  // 'production' | 'development'
+  allowlistEnabled: boolean("allowlist_enabled"),
+  idempotencyKey: text("idempotency_key"),
+  correlationId: varchar("correlation_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => [
+  index("idx_rtal_user").on(table.userId),
+  index("idx_rtal_created").on(table.createdAt)
+]);
+var insertRealTransferAuditLogSchema = createInsertSchema(realTransferAuditLogs).omit({
+  id: true,
+  createdAt: true
+});
 var achAuthorizations = pgTable("ach_authorizations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -635,9 +760,36 @@ var idempotencyKeys = pgTable(
 var insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
+  // Operator-only — never settable through user-facing signup/profile inserts.
+  realTransfersEnabled: true,
+  realTransfersEnabledAt: true,
+  realTransfersEnabledBy: true,
+  realTransfersNotes: true
 });
 var insertDebtSchema = createInsertSchema(debts).omit({
+  id: true,
+  createdAt: true,
+  // Provider/import-owned columns are set SERVER-SIDE ONLY. Omitting them from
+  // the public insert schema prevents mass-assignment (e.g. a user forging an
+  // "imported from Chase" debt via POST /api/debts).
+  source: true,
+  provider: true,
+  providerAccountId: true,
+  institutionName: true,
+  accountType: true,
+  creditLimit: true,
+  availableCredit: true,
+  paymentStatus: true,
+  lastImportedAt: true,
+  isHidden: true,
+  userEditedFields: true
+});
+var insertDebtProviderConnectionSchema = createInsertSchema(debtProviderConnections).omit({
+  id: true,
+  createdAt: true
+});
+var insertDebtImportAuditLogSchema = createInsertSchema(debtImportAuditLogs).omit({
   id: true,
   createdAt: true
 });
@@ -959,7 +1111,7 @@ function decryptToken(stored) {
   const iv = combined.subarray(0, IV_LENGTH);
   const tag = combined.subarray(combined.length - TAG_LENGTH);
   const ciphertext = combined.subarray(IV_LENGTH, combined.length - TAG_LENGTH);
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
+  const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: TAG_LENGTH });
   decipher.setAuthTag(tag);
   const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
   return decrypted.toString("utf8");
@@ -982,7 +1134,7 @@ var pool = new Pool({ connectionString: process.env.DATABASE_URL });
 var db = drizzle({ client: pool, schema: schema_exports });
 
 // server/storage.ts
-import { eq, desc, and, sql as sql2 } from "drizzle-orm";
+import { eq, desc, and, sql as sql2, inArray, gte } from "drizzle-orm";
 var DatabaseStorage = class {
   // User methods
   async getUser(id) {
@@ -1015,7 +1167,7 @@ var DatabaseStorage = class {
   }
   // Debt methods
   async getDebtsByUserId(userId) {
-    return await db.select().from(debts).where(eq(debts.userId, userId));
+    return await db.select().from(debts).where(and(eq(debts.userId, userId), eq(debts.isActive, true)));
   }
   async getDebt(id) {
     const [debt] = await db.select().from(debts).where(eq(debts.id, id));
@@ -1029,6 +1181,95 @@ var DatabaseStorage = class {
   async updateDebt(id, updates) {
     const [result] = await db.update(debts).set(updates).where(eq(debts.id, id)).returning();
     return result;
+  }
+  async importDebtsFromProvider(userId, provider, liabilities) {
+    let imported = 0;
+    let updated = 0;
+    const resultDebts = [];
+    for (const lib of liabilities) {
+      const [existing] = await db.select().from(debts).where(
+        and(
+          eq(debts.userId, userId),
+          eq(debts.provider, provider),
+          eq(debts.providerAccountId, lib.providerAccountId)
+        )
+      );
+      const balance = lib.currentBalance.toFixed(2);
+      const minPay = lib.minimumPayment.toFixed(2);
+      const apr = lib.interestRateApr.toFixed(2);
+      const creditLimit = lib.creditLimit != null ? lib.creditLimit.toFixed(2) : null;
+      const availableCredit = lib.availableCredit != null ? lib.availableCredit.toFixed(2) : null;
+      if (existing) {
+        const edited = existing.userEditedFields ?? [];
+        const set = {
+          institutionName: lib.institutionName,
+          accountType: lib.accountType,
+          paymentStatus: lib.paymentStatus ?? null,
+          creditLimit,
+          availableCredit,
+          lastImportedAt: /* @__PURE__ */ new Date()
+        };
+        if (!edited.includes("name")) set.name = lib.creditorName;
+        if (!edited.includes("currentBalance")) set.currentBalance = balance;
+        if (!edited.includes("minimumPayment")) set.minimumPayment = minPay;
+        if (!edited.includes("interestRate")) set.interestRate = apr;
+        if (!edited.includes("dueDate")) set.dueDate = lib.dueDate;
+        const [row] = await db.update(debts).set(set).where(eq(debts.id, existing.id)).returning();
+        resultDebts.push(row);
+        updated++;
+      } else {
+        const [row] = await db.insert(debts).values({
+          id: randomUUID(),
+          userId,
+          name: lib.creditorName,
+          accountNumber: lib.mask ? `\u2022\u2022\u2022\u2022${lib.mask}` : "\u2014",
+          originalBalance: balance,
+          currentBalance: balance,
+          interestRate: apr,
+          minimumPayment: minPay,
+          dueDate: lib.dueDate,
+          isActive: true,
+          source: "imported",
+          provider,
+          providerAccountId: lib.providerAccountId,
+          institutionName: lib.institutionName,
+          accountType: lib.accountType,
+          creditLimit,
+          availableCredit,
+          paymentStatus: lib.paymentStatus ?? null,
+          lastImportedAt: /* @__PURE__ */ new Date()
+        }).returning();
+        resultDebts.push(row);
+        imported++;
+      }
+    }
+    return { imported, updated, debts: resultDebts };
+  }
+  async getDebtProviderConnection(userId, provider) {
+    const [conn] = await db.select().from(debtProviderConnections).where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider)));
+    return conn;
+  }
+  async upsertDebtProviderConnection(data) {
+    const existing = await this.getDebtProviderConnection(data.userId, data.provider);
+    if (existing) {
+      const [row2] = await db.update(debtProviderConnections).set({
+        providerItemId: data.providerItemId ?? existing.providerItemId,
+        accessTokenEnc: data.accessTokenEnc ?? existing.accessTokenEnc,
+        institutionName: data.institutionName ?? existing.institutionName,
+        status: data.status ?? "active",
+        consentAt: data.consentAt ?? existing.consentAt,
+        lastSyncAt: data.lastSyncAt ?? existing.lastSyncAt
+      }).where(eq(debtProviderConnections.id, existing.id)).returning();
+      return row2;
+    }
+    const [row] = await db.insert(debtProviderConnections).values({ id: randomUUID(), ...data }).returning();
+    return row;
+  }
+  async disconnectDebtProvider(userId, provider) {
+    await db.update(debtProviderConnections).set({ status: "disconnected" }).where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider)));
+  }
+  async createDebtImportAuditLog(entry) {
+    await db.insert(debtImportAuditLogs).values({ id: randomUUID(), ...entry });
   }
   // Transaction methods
   async getTransactionsByUserId(userId, limit) {
@@ -1057,7 +1298,9 @@ var DatabaseStorage = class {
   }
   async makeAcceleratedPayment(userId, debtId, amount) {
     const debt = await this.getDebt(debtId);
-    if (!debt) throw new Error("Debt not found");
+    if (!debt || debt.userId !== userId || debt.isActive === false) {
+      throw new Error("Debt not found or unauthorized");
+    }
     const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
     const payment = await this.createPayment({
       userId,
@@ -1222,6 +1465,10 @@ var DatabaseStorage = class {
     }
     return await query;
   }
+  async getNotificationById(id) {
+    const [result] = await db.select().from(notifications).where(eq(notifications.id, id));
+    return result;
+  }
   async updateNotificationStatus(id, status, sentAt, deliveredAt) {
     const updates = { status };
     if (sentAt) updates.sentAt = sentAt;
@@ -1260,26 +1507,33 @@ var DatabaseStorage = class {
     await db.update(users).set({ password: passwordHash, passwordAlgo: algo }).where(eq(users.id, userId));
   }
   async deleteUserAccount(userId) {
-    await db.delete(weeklyDispersals).where(eq(weeklyDispersals.userId, userId));
-    await db.delete(sweepDeposits).where(eq(sweepDeposits.userId, userId));
-    await db.delete(sweepAccounts).where(eq(sweepAccounts.userId, userId));
-    await db.delete(distributionPayments).where(eq(distributionPayments.userId, userId));
-    await db.delete(roundUpCollections).where(eq(roundUpCollections.userId, userId));
-    await db.delete(userSessions).where(eq(userSessions.userId, userId));
-    await db.delete(notifications).where(eq(notifications.userId, userId));
-    await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
-    await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
-    await db.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
-    await db.delete(dttRewards).where(eq(dttRewards.userId, userId));
-    await db.delete(dttStaking).where(eq(dttStaking.userId, userId));
-    await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
-    await db.delete(payments).where(eq(payments.userId, userId));
-    await db.delete(transactions).where(eq(transactions.userId, userId));
-    await db.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
-    await db.delete(debts).where(eq(debts.userId, userId));
-    await db.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
-    await db.delete(transfers).where(eq(transfers.userId, userId));
-    await db.delete(users).where(eq(users.id, userId));
+    await db.transaction(async (tx) => {
+      await tx.delete(weeklyDispersals).where(eq(weeklyDispersals.userId, userId));
+      await tx.delete(sweepDeposits).where(eq(sweepDeposits.userId, userId));
+      await tx.delete(sweepAccounts).where(eq(sweepAccounts.userId, userId));
+      await tx.delete(distributionPayments).where(eq(distributionPayments.userId, userId));
+      await tx.delete(roundUpCollections).where(eq(roundUpCollections.userId, userId));
+      await tx.delete(userSessions).where(eq(userSessions.userId, userId));
+      await tx.delete(notifications).where(eq(notifications.userId, userId));
+      await tx.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
+      await tx.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
+      await tx.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
+      await tx.delete(dttRewards).where(eq(dttRewards.userId, userId));
+      await tx.delete(dttStaking).where(eq(dttStaking.userId, userId));
+      await tx.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
+      await tx.delete(payments).where(eq(payments.userId, userId));
+      await tx.delete(transactions).where(eq(transactions.userId, userId));
+      await tx.delete(bankAccounts).where(eq(bankAccounts.userId, userId));
+      await tx.delete(debtImportAuditLogs).where(eq(debtImportAuditLogs.userId, userId));
+      await tx.delete(debtProviderConnections).where(eq(debtProviderConnections.userId, userId));
+      await tx.delete(debts).where(eq(debts.userId, userId));
+      await tx.delete(idempotencyKeys).where(eq(idempotencyKeys.userId, userId));
+      await tx.delete(realTransferAuditLogs).where(eq(realTransferAuditLogs.userId, userId));
+      await tx.delete(transfers).where(eq(transfers.userId, userId));
+      await tx.delete(stripeAccounts).where(eq(stripeAccounts.userId, userId));
+      await tx.delete(achAuthorizations).where(eq(achAuthorizations.userId, userId));
+      await tx.delete(users).where(eq(users.id, userId));
+    });
   }
   async getIdempotencyKey(key, userId, endpoint) {
     const result = await db.execute(
@@ -1487,6 +1741,190 @@ var DatabaseStorage = class {
     const [result] = await db.select().from(achAuthorizations).where(eq(achAuthorizations.userId, userId)).orderBy(desc(achAuthorizations.createdAt)).limit(1);
     return result;
   }
+  // ----- Real-money ACH rollout gate (allowlist + conservative limits) -----
+  //
+  // Race-safe: takes a per-user advisory lock for the duration of the
+  // transaction so two concurrent debit attempts (different idempotency keys)
+  // can never both pass the daily count/sum checks. Re-reads allowlist,
+  // account, debt, and prior-transfer state INSIDE the lock, writes an audit
+  // row for EVERY decision, and only inserts a `created` transfers row when all
+  // checks pass — committing before the caller ever talks to Stripe.
+  async reserveRealStripeAchDebit(args) {
+    const {
+      userId,
+      stripeAccountId,
+      amount,
+      debtId,
+      idempotencyKey,
+      correlationId,
+      stripeMode,
+      environment,
+      limits
+    } = args;
+    return await db.transaction(async (tx) => {
+      await tx.execute(sql2`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+      const consumedStatuses = [
+        "created",
+        "authorized",
+        "pending",
+        "processing",
+        "posted",
+        "settled",
+        "requires_action"
+      ];
+      const pendingStatuses = [
+        "created",
+        "authorized",
+        "pending",
+        "processing",
+        "posted",
+        "requires_action"
+      ];
+      let allowlistEnabled = false;
+      const writeAudit = async (result, reason, extra) => {
+        const [row] = await tx.insert(realTransferAuditLogs).values({
+          userId,
+          adminUserId: null,
+          action: "ach_debit_decision",
+          result,
+          reason,
+          amount: amount.toFixed(2),
+          debtId: debtId ?? null,
+          stripeAccountId,
+          stripePaymentIntentId: null,
+          transferId: extra?.transferId ?? null,
+          stripeMode: stripeMode ?? null,
+          environment,
+          allowlistEnabled,
+          idempotencyKey,
+          correlationId
+        }).returning({ id: realTransferAuditLogs.id });
+        return row.id;
+      };
+      const block = async (httpStatus, reason, message) => {
+        const auditId2 = await writeAudit("blocked", reason);
+        return { ok: false, httpStatus, reason, message, auditId: auditId2 };
+      };
+      const [user] = await tx.select().from(users).where(eq(users.id, userId));
+      if (!user) return block(404, "user_not_found", "User not found");
+      allowlistEnabled = user.realTransfersEnabled === true;
+      if (!allowlistEnabled) {
+        return block(403, "not_allowlisted", "Real transfers are not enabled for this account.");
+      }
+      const [account] = await tx.select().from(stripeAccounts).where(eq(stripeAccounts.id, stripeAccountId));
+      if (!account || account.userId !== userId) {
+        return block(404, "account_not_found", "Stripe account not found");
+      }
+      if (!account.isActive || account.status !== "linked") {
+        return block(422, "account_not_active", "The selected bank account is not active. Please re-link it.");
+      }
+      if (debtId) {
+        const [debt] = await tx.select().from(debts).where(eq(debts.id, debtId));
+        if (!debt || debt.userId !== userId) {
+          return block(404, "debt_not_found", "Debt not found");
+        }
+        if (!debt.isActive) {
+          return block(422, "debt_inactive", "That debt is no longer active.");
+        }
+      }
+      const dupConds = [
+        eq(transfers.userId, userId),
+        eq(transfers.provider, "stripe"),
+        inArray(transfers.status, pendingStatuses)
+      ];
+      if (debtId) dupConds.push(eq(transfers.debtId, debtId));
+      const dup = await tx.select({ id: transfers.id }).from(transfers).where(and(...dupConds)).limit(1);
+      if (dup.length > 0) {
+        return block(409, "duplicate_pending", "A transfer for this is already in progress. Please wait for it to finish.");
+      }
+      const prior = await tx.select({ id: transfers.id }).from(transfers).where(and(
+        eq(transfers.userId, userId),
+        eq(transfers.provider, "stripe"),
+        inArray(transfers.status, consumedStatuses)
+      ));
+      const isFirst = prior.length === 0;
+      if (isFirst && amount > limits.firstTransferMaxDollars) {
+        return block(
+          422,
+          "over_first_transfer_limit",
+          `Your first real transfer is limited to $${limits.firstTransferMaxDollars.toFixed(2)}.`
+        );
+      }
+      const now = /* @__PURE__ */ new Date();
+      const todayStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const todays = await tx.select({ amount: transfers.amount }).from(transfers).where(and(
+        eq(transfers.userId, userId),
+        eq(transfers.provider, "stripe"),
+        inArray(transfers.status, consumedStatuses),
+        gte(transfers.createdAt, todayStartUtc)
+      ));
+      if (todays.length >= limits.dailyCountMax) {
+        return block(
+          429,
+          "over_daily_count",
+          `You've reached the daily limit of ${limits.dailyCountMax} transfer(s). Please try again tomorrow.`
+        );
+      }
+      const todaysSum = todays.reduce((s, r) => s + parseFloat(r.amount), 0);
+      if (todaysSum + amount > limits.dailyTotalMaxDollars) {
+        return block(
+          422,
+          "over_daily_total",
+          `This would exceed the daily transfer limit of $${limits.dailyTotalMaxDollars.toFixed(2)}.`
+        );
+      }
+      const ledgerId = randomUUID();
+      const [ledger] = await tx.insert(transfers).values({
+        id: ledgerId,
+        userId,
+        type: debtId ? "debt_payment" : "stripe_ach_debit",
+        amount: amount.toFixed(2),
+        status: "created",
+        provider: "stripe",
+        debtId: debtId || null,
+        correlationId,
+        idempotencyKey,
+        rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, real: true }),
+        createdAt: now,
+        updatedAt: now
+      }).returning();
+      const auditId = await writeAudit("approved", null, { transferId: ledger.id });
+      return { ok: true, ledger, auditId, isFirst };
+    });
+  }
+  async setUserRealTransfersEnabled(userId, enabled, adminUserId, notes) {
+    return await db.transaction(async (tx) => {
+      await tx.execute(sql2`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+      const [updated] = await tx.update(users).set({
+        realTransfersEnabled: enabled,
+        realTransfersEnabledAt: enabled ? /* @__PURE__ */ new Date() : null,
+        realTransfersEnabledBy: enabled ? adminUserId : null,
+        realTransfersNotes: notes ?? null,
+        updatedAt: /* @__PURE__ */ new Date()
+      }).where(eq(users.id, userId)).returning();
+      if (!updated) return void 0;
+      await tx.insert(realTransferAuditLogs).values({
+        userId,
+        adminUserId,
+        action: "allowlist_changed",
+        result: enabled ? "enabled" : "disabled",
+        reason: notes ?? null,
+        allowlistEnabled: enabled,
+        environment: process.env.NODE_ENV === "production" ? "production" : "development"
+      });
+      return updated;
+    });
+  }
+  async createRealTransferAuditLog(data) {
+    const [row] = await db.insert(realTransferAuditLogs).values(data).returning();
+    return row;
+  }
+  async getRecentRealTransferAuditLogs(opts) {
+    const limit = Math.max(1, Math.min(500, opts.limit));
+    const base = db.select().from(realTransferAuditLogs);
+    const filtered = opts.userId ? base.where(eq(realTransferAuditLogs.userId, opts.userId)) : base;
+    return await filtered.orderBy(desc(realTransferAuditLogs.createdAt)).limit(limit);
+  }
 };
 var storage = new DatabaseStorage();
 
@@ -1613,8 +2051,8 @@ var dimeTokenService = new DimeTokenService();
 // server/routes.ts
 import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
 import bcrypt from "bcrypt";
-import rateLimit2 from "express-rate-limit";
-import { z as z5 } from "zod";
+import rateLimit3 from "express-rate-limit";
+import { z as z7 } from "zod";
 
 // server/services/plaidService.ts
 import {
@@ -1876,6 +2314,81 @@ var PlaidService = class {
       authorizationId: authorization.id,
       status: transfer.status
     };
+  }
+  /**
+   * Create a Link token scoped to the Liabilities product ONLY.
+   * This deliberately creates a SEPARATE Plaid item from the bank-connect flow
+   * (which uses Transactions + Auth) so importing debts never forces the user to
+   * re-consent their linked funding bank. Used by the automatic debt-import flow.
+   */
+  async createLiabilitiesLinkToken(userId) {
+    if (!this.isConfigured) {
+      throw new Error("Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.");
+    }
+    try {
+      const linkTokenRequest = {
+        user: { client_user_id: userId },
+        client_name: "Dime Time",
+        products: [Products.Liabilities],
+        country_codes: [CountryCode.Us],
+        language: "en"
+      };
+      const redirectUri = process.env.PLAID_REDIRECT_URI;
+      if (redirectUri && !redirectUri.includes("your-domain") && redirectUri.startsWith("https://")) {
+        linkTokenRequest.redirect_uri = redirectUri;
+      }
+      const response = await this.getClient().linkTokenCreate(linkTokenRequest);
+      return response.data.link_token;
+    } catch (error) {
+      console.error("Error creating liabilities link token:", this.redactPlaidError(error));
+      throw error;
+    }
+  }
+  /**
+   * Fetch the raw Liabilities payload for a Plaid item (credit cards, student
+   * loans, mortgages) alongside the accounts they belong to. Callers normalize
+   * this into NormalizedLiability[] — the raw shape never leaks into the app.
+   */
+  async getLiabilities(accessToken) {
+    if (!this.isConfigured) {
+      throw new Error("Plaid service not configured");
+    }
+    try {
+      const response = await this.getClient().liabilitiesGet({ access_token: accessToken });
+      return {
+        accounts: response.data.accounts,
+        liabilities: response.data.liabilities,
+        item: response.data.item
+      };
+    } catch (error) {
+      console.error("Error fetching liabilities:", this.redactPlaidError(error));
+      throw error;
+    }
+  }
+  /**
+   * Remove a Plaid item (best-effort teardown when a user disconnects debt import).
+   */
+  async removeItem(accessToken) {
+    if (!this.isConfigured) {
+      throw new Error("Plaid service not configured");
+    }
+    await this.getClient().itemRemove({ access_token: accessToken });
+  }
+  /**
+   * Extract ONLY non-sensitive fields from a Plaid/axios error for logging.
+   * Plaid errors are axios errors whose `config` contains the request body
+   * (public_token / access_token) and the PLAID-SECRET header — never log those.
+   */
+  redactPlaidError(error) {
+    const data = error?.response?.data;
+    if (data && typeof data === "object") {
+      return {
+        error_code: data.error_code,
+        error_type: data.error_type,
+        request_id: data.request_id
+      };
+    }
+    return { message: error instanceof Error ? error.message : String(error) };
   }
   isServiceConfigured() {
     return this.isConfigured;
@@ -2710,8 +3223,70 @@ var axosService = new AxosService();
 
 // server/routes/axosRoutes.ts
 import { z as z2 } from "zod";
+
+// server/middleware/authHelper.ts
+import { createHash } from "crypto";
+function getSessionSecret() {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET environment variable is required");
+  return secret;
+}
+function verifyAuthToken(token) {
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf-8");
+    const [userId, timestampStr, signature] = decoded.split(":");
+    const payload = `${userId}:${timestampStr}`;
+    const expectedSignature = createHash("sha256").update(payload + getSessionSecret()).digest("hex").substring(0, 16);
+    if (signature !== expectedSignature) return null;
+    const timestamp2 = parseInt(timestampStr, 10);
+    const thirtyDays = 30 * 24 * 60 * 60 * 1e3;
+    if (Date.now() - timestamp2 > thirtyDays) return null;
+    return userId;
+  } catch {
+    return null;
+  }
+}
+function getUserIdFromRequest(req) {
+  const sessionUserId = req.session?.userId;
+  if (sessionUserId) return sessionUserId;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return verifyAuthToken(authHeader.substring(7));
+  }
+  return null;
+}
+
+// server/lib/admin.ts
+function parseAdminIds() {
+  const raw = process.env.ADMIN_USER_IDS ?? "";
+  return new Set(
+    raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
+  );
+}
+var cached2 = null;
+function adminIds() {
+  if (cached2 === null) cached2 = parseAdminIds();
+  return cached2;
+}
+function isAdminUserId(userId) {
+  if (!userId) return false;
+  return adminIds().has(userId);
+}
+function requireAdmin(req, res, next) {
+  const userId = getUserIdFromRequest(req);
+  if (!userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  if (!isAdminUserId(userId)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  req.adminUserId = userId;
+  next();
+}
+
+// server/routes/axosRoutes.ts
 function registerAxosRoutes(app2) {
-  app2.get("/api/axos/business-account", async (req, res) => {
+  app2.get("/api/axos/business-account", requireAdmin, async (req, res) => {
     try {
       if (!axosService.isServiceConfigured()) {
         return res.status(503).json({
@@ -2732,7 +3307,10 @@ function registerAxosRoutes(app2) {
   });
   app2.post("/api/axos/collect-roundup", async (req, res) => {
     try {
-      const userId = "demo-user-1";
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { userAccountId, userRoutingNumber, amount, transactionId } = req.body;
       if (!userAccountId || !userRoutingNumber || !amount) {
         return res.status(400).json({
@@ -2770,7 +3348,7 @@ function registerAxosRoutes(app2) {
       res.status(500).json({ message: "Failed to collect round-up" });
     }
   });
-  app2.post("/api/axos/weekly-distribution", async (req, res) => {
+  app2.post("/api/axos/weekly-distribution", requireAdmin, async (req, res) => {
     try {
       const { payments: payments2 } = req.body;
       if (!payments2 || !Array.isArray(payments2) || payments2.length === 0) {
@@ -2816,7 +3394,7 @@ function registerAxosRoutes(app2) {
       res.status(500).json({ message: "Failed to process weekly distribution" });
     }
   });
-  app2.post("/api/axos/pay-debt", async (req, res) => {
+  app2.post("/api/axos/pay-debt", requireAdmin, async (req, res) => {
     try {
       const { userId, debtAccountId, debtRoutingNumber, amount, debtName } = req.body;
       if (!userId || !debtAccountId || !debtRoutingNumber || !amount || !debtName) {
@@ -2844,7 +3422,7 @@ function registerAxosRoutes(app2) {
       res.status(500).json({ message: "Failed to pay user debt" });
     }
   });
-  app2.get("/api/axos/transfer/:transferId", async (req, res) => {
+  app2.get("/api/axos/transfer/:transferId", requireAdmin, async (req, res) => {
     try {
       const { transferId } = req.params;
       if (!axosService.isServiceConfigured()) {
@@ -2857,7 +3435,7 @@ function registerAxosRoutes(app2) {
       res.status(500).json({ message: "Failed to fetch transfer status" });
     }
   });
-  app2.get("/api/axos/transactions", async (req, res) => {
+  app2.get("/api/axos/transactions", requireAdmin, async (req, res) => {
     try {
       const startDate = req.query.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0];
       const endDate = req.query.end_date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
@@ -2917,7 +3495,7 @@ function registerAxosRoutes(app2) {
       res.status(500).json({ message: "Failed to calculate next Friday" });
     }
   });
-  app2.get("/api/axos/status", async (req, res) => {
+  app2.get("/api/axos/status", requireAdmin, async (req, res) => {
     try {
       const configured = axosService.isServiceConfigured();
       const businessAccountId = axosService.getBusinessAccountId();
@@ -3080,38 +3658,6 @@ var MercuryService = class {
 };
 var mercuryService = new MercuryService();
 
-// server/middleware/authHelper.ts
-import { createHash } from "crypto";
-function getSessionSecret() {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET environment variable is required");
-  return secret;
-}
-function verifyAuthToken(token) {
-  try {
-    const decoded = Buffer.from(token, "base64").toString("utf-8");
-    const [userId, timestampStr, signature] = decoded.split(":");
-    const payload = `${userId}:${timestampStr}`;
-    const expectedSignature = createHash("sha256").update(payload + getSessionSecret()).digest("hex").substring(0, 16);
-    if (signature !== expectedSignature) return null;
-    const timestamp2 = parseInt(timestampStr, 10);
-    const thirtyDays = 30 * 24 * 60 * 60 * 1e3;
-    if (Date.now() - timestamp2 > thirtyDays) return null;
-    return userId;
-  } catch {
-    return null;
-  }
-}
-function getUserIdFromRequest(req) {
-  const sessionUserId = req.session?.userId;
-  if (sessionUserId) return sessionUserId;
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    return verifyAuthToken(authHeader.substring(7));
-  }
-  return null;
-}
-
 // server/routes/mercuryRoutes.ts
 import { z as z3 } from "zod";
 var MAX_ROUNDUP_DOLLARS = 5;
@@ -3175,7 +3721,17 @@ function registerMercuryRoutes(app2) {
         formattedBalance: `$${balance.availableBalance.toFixed(2)}`
       });
     } catch (error) {
-      console.error("Mercury status error:", error?.response?.data || error.message);
+      const detail = error?.response?.data ?? error?.message;
+      const errorCode = error?.response?.data?.errorCode;
+      console.error("Mercury status error:", detail);
+      if (errorCode === "noTokenInDBButMaybeMalformed") {
+        return res.status(503).json({
+          status: "mercury_auth_failed",
+          configured: false,
+          connected: false,
+          message: "Mercury banking service is temporarily unavailable"
+        });
+      }
       res.status(500).json({ message: "Failed to check Mercury service status" });
     }
   });
@@ -3476,7 +4032,11 @@ function webhookLog(event, data) {
 function verifyPlaidSignature(req) {
   const secret = process.env.PLAID_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn("[PlaidWebhook] PLAID_WEBHOOK_SECRET not set \u2014 skipping signature verification. Set this env var for production webhook security.");
+    if (process.env.NODE_ENV === "production") {
+      webhookLog("signature_secret_missing", { severity: "ERROR", note: "PLAID_WEBHOOK_SECRET not set in production \u2014 rejecting webhook (fail closed)." });
+      return false;
+    }
+    console.warn("[PlaidWebhook] PLAID_WEBHOOK_SECRET not set \u2014 skipping signature verification (development only; production fails closed).");
     return true;
   }
   const plaidSignature = req.headers["plaid-verification"];
@@ -3584,7 +4144,7 @@ function registerWebhookRoutes(app2) {
 
 // server/routes/stripeRoutes.ts
 import express from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { randomUUID as randomUUID3 } from "crypto";
 import { z as z4 } from "zod";
 
@@ -3595,18 +4155,77 @@ var ACH_AUTHORIZATION_TEXT = "By selecting \u201CI Authorize\u201D, you authoriz
 // server/services/stripeService.ts
 var cachedClient = null;
 var cachedClientPromise = null;
+function isProductionEnv() {
+  return process.env.NODE_ENV === "production";
+}
+function resolveStripeSecretKey() {
+  if (isProductionEnv()) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      return { secretKey: null, mode: null, reason: "STRIPE_SECRET_KEY (live) is not set in production" };
+    }
+    if (!key.startsWith("sk_live_")) {
+      return { secretKey: null, mode: null, reason: "Production requires a LIVE Stripe secret key (sk_live_\u2026)" };
+    }
+    return { secretKey: key, mode: "live" };
+  }
+  const testKey = process.env.STRIPE_SECRET_KEY_TEST;
+  if (!testKey) {
+    return { secretKey: null, mode: null, reason: "STRIPE_SECRET_KEY_TEST (test) is not set in development" };
+  }
+  if (!testKey.startsWith("sk_test_")) {
+    return { secretKey: null, mode: null, reason: "Development requires a TEST Stripe secret key (sk_test_\u2026)" };
+  }
+  return { secretKey: testKey, mode: "test" };
+}
+function resolveStripeWebhookSecret() {
+  if (isProductionEnv()) {
+    return process.env.STRIPE_WEBHOOK_SECRET_LIVE || process.env.STRIPE_WEBHOOK_SECRET || null;
+  }
+  return process.env.STRIPE_WEBHOOK_SECRET_TEST || null;
+}
 function isStripeAchEnabled() {
-  return isFlagEnabled("ENABLE_STRIPE_ACH") && Boolean(process.env.STRIPE_SECRET_KEY);
+  return isFlagEnabled("ENABLE_STRIPE_ACH") && resolveStripeSecretKey().secretKey !== null;
+}
+function assertStripeKeyModeSafeOnBoot() {
+  if (!isFlagEnabled("ENABLE_STRIPE_ACH")) return;
+  const prod = isProductionEnv();
+  const resolution = resolveStripeSecretKey();
+  if (resolution.secretKey && resolution.mode) {
+    console.log(JSON.stringify({
+      service: "StripeService",
+      event: "stripe_mode_resolved",
+      severity: "INFO",
+      env: prod ? "production" : "development",
+      mode: resolution.mode
+    }));
+    return;
+  }
+  const envKeyRaw = prod ? process.env.STRIPE_SECRET_KEY : process.env.STRIPE_SECRET_KEY_TEST;
+  console.error(JSON.stringify({
+    service: "StripeService",
+    event: "stripe_mode_misconfigured",
+    severity: "ERROR",
+    env: prod ? "production" : "development",
+    reason: resolution.reason,
+    keyPresentButWrongMode: Boolean(envKeyRaw)
+  }));
+  if (envKeyRaw) {
+    throw new Error(
+      `Stripe ACH enabled but the ${prod ? "production" : "development"} Stripe secret key has the wrong mode. ${resolution.reason}`
+    );
+  }
 }
 async function loadStripeClient() {
-  if (!process.env.STRIPE_SECRET_KEY) return null;
+  const { secretKey } = resolveStripeSecretKey();
+  if (!secretKey) return null;
   if (cachedClient) return cachedClient;
   if (cachedClientPromise) return cachedClientPromise;
   cachedClientPromise = (async () => {
     try {
       const mod = await import("stripe");
       const Stripe = mod.default;
-      cachedClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      cachedClient = new Stripe(secretKey, {
         // Pin a recent API version. Bumping requires a code review since
         // Stripe occasionally renames PaymentMethod / FC fields.
         apiVersion: "2024-06-20",
@@ -3635,31 +4254,6 @@ async function getStripe() {
   if (!isStripeAchEnabled()) return null;
   return loadStripeClient();
 }
-async function retrieveAccountDiagnostics() {
-  const stripe = await loadStripeClient();
-  if (!stripe) return null;
-  const acct = await stripe.accounts.retrieve();
-  const req = acct.requirements ?? {};
-  const fut = acct.future_requirements ?? {};
-  return {
-    accountId: acct.id,
-    chargesEnabled: Boolean(acct.charges_enabled),
-    payoutsEnabled: Boolean(acct.payouts_enabled),
-    detailsSubmitted: Boolean(acct.details_submitted),
-    capabilities: acct.capabilities ?? {},
-    requirements: {
-      currentlyDue: req.currently_due ?? [],
-      eventuallyDue: req.eventually_due ?? [],
-      pastDue: req.past_due ?? [],
-      pendingVerification: req.pending_verification ?? [],
-      disabledReason: req.disabled_reason ?? null
-    },
-    futureRequirements: {
-      currentlyDue: fut.currently_due ?? [],
-      eventuallyDue: fut.eventually_due ?? []
-    }
-  };
-}
 async function createFinancialConnectionsSession(args) {
   const stripe = await getStripe();
   if (!stripe) throw new Error("Stripe is not configured");
@@ -3673,7 +4267,7 @@ async function createFinancialConnectionsSession(args) {
   }
   const session2 = await stripe.financialConnections.sessions.create({
     account_holder: { type: "customer", customer: customerId },
-    permissions: ["payment_method", "balances"],
+    permissions: ["payment_method"],
     filters: { countries: ["US"] }
   });
   return {
@@ -3688,7 +4282,8 @@ async function attachFcAccountAsPaymentMethod(args) {
   const account = await stripe.financialConnections.accounts.retrieve(args.fcAccountId);
   const pm = await stripe.paymentMethods.create({
     type: "us_bank_account",
-    us_bank_account: { financial_connections_account: args.fcAccountId }
+    us_bank_account: { financial_connections_account: args.fcAccountId },
+    billing_details: { name: args.holderName }
   });
   await stripe.paymentMethods.attach(pm.id, { customer: args.customerId });
   return {
@@ -3734,14 +4329,17 @@ async function createAchDebit(args) {
 async function verifyStripeWebhook(rawBody, signature) {
   const stripe = await getStripe();
   if (!stripe) throw new Error("Stripe is not configured");
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET is not set");
+  const secret = resolveStripeWebhookSecret();
+  if (!secret) throw new Error("Stripe webhook secret is not set");
   if (!signature) throw new Error("Missing stripe-signature header");
   return stripe.webhooks.constructEvent(rawBody, signature, secret);
 }
 
 // server/routes/stripeRoutes.ts
 var MAX_DEBT_PAYMENT_DOLLARS2 = 500;
+var REAL_FIRST_TRANSFER_MAX_DOLLARS = 1;
+var REAL_DAILY_TOTAL_MAX_DOLLARS = 5;
+var REAL_DAILY_COUNT_MAX = 1;
 var exchangeSchema = z4.object({
   fcAccountId: z4.string().min(3),
   customerId: z4.string().min(3)
@@ -3798,7 +4396,7 @@ var fcSessionLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const uid = getUserIdFromRequest(req);
-    return uid ? `u:${uid}` : `ip:${req.ip}`;
+    return uid ? `u:${uid}` : `ip:${ipKeyGenerator(req.ip ?? "")}`;
   },
   message: { message: "Too many Stripe Connect attempts. Try again in a minute." }
 });
@@ -3864,9 +4462,12 @@ function registerStripeRoutes(app2) {
       }
       const { fcAccountId, customerId } = exchangeSchema.parse(req.body);
       stripeLog(correlationId, "fc_exchange_start", { userId, fcAccountId });
+      const user = await storage.getUser(userId);
+      const holderName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.email || "Dime Time Customer";
       const { paymentMethodId, last4, institutionName } = await attachFcAccountAsPaymentMethod({
         fcAccountId,
-        customerId
+        customerId,
+        holderName
       });
       const saved = await storage.createStripeAccount({
         userId,
@@ -3977,52 +4578,82 @@ function registerStripeRoutes(app2) {
         return res.status(422).json(body);
       }
       const realTransfers = isFlagEnabled("ENABLE_REAL_TRANSFERS");
-      let mandate;
-      if (realTransfers) {
-        const latest = await storage.getLatestAchAuthorization(userId);
-        if (!latest) {
-          const body = {
-            message: "ACH authorization required before debiting. Please authorize ACH in the app."
-          };
-          await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
-          return res.status(422).json(body);
-        }
-        mandate = { ipAddress: latest.ipAddress, userAgent: latest.userAgent };
-      }
-      const ledger = await storage.createTransfer({
-        userId,
-        type: debtId ? "debt_payment" : "stripe_ach_debit",
-        amount: amount.toFixed(2),
-        status: realTransfers ? "created" : "simulated",
-        provider: "stripe",
-        debtId: debtId || null,
-        correlationId,
-        idempotencyKey,
-        rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, simulated: !realTransfers })
-      });
-      if (!realTransfers) {
-        console.log("[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false");
+      const stripeMode = resolveStripeSecretKey().mode;
+      if (!realTransfers || stripeMode !== "live") {
+        const ledger2 = await storage.createTransfer({
+          userId,
+          type: debtId ? "debt_payment" : "stripe_ach_debit",
+          amount: amount.toFixed(2),
+          status: "simulated",
+          provider: "stripe",
+          debtId: debtId || null,
+          correlationId,
+          idempotencyKey,
+          rawRequest: JSON.stringify({ stripeAccountId, amount, debtId, simulated: true })
+        });
+        console.log("[SIMULATION MODE] ACH transfer simulated (real transfers off or non-live Stripe key)");
         stripeLog(correlationId, "ach_debit_simulated", {
           severity: "WARN",
-          ledgerId: ledger.id,
+          ledgerId: ledger2.id,
           stripeAccountId,
           amount,
-          message: "[SIMULATION MODE] ACH transfer blocked by ENABLE_REAL_TRANSFERS=false"
+          realTransfers,
+          stripeMode,
+          message: "[SIMULATION MODE] ACH transfer simulated (real transfers off or non-live Stripe key)"
         });
         const body = {
           success: true,
           simulated: true,
-          ledgerId: ledger.id,
+          ledgerId: ledger2.id,
           status: "simulated",
           correlationId
         };
         await finalizeIdempotency(idempotencyKey, userId, endpoint, 201, body);
         return res.status(201).json(body);
       }
+      const latest = await storage.getLatestAchAuthorization(userId);
+      if (!latest) {
+        const body = {
+          message: "ACH authorization required before debiting. Please authorize ACH in the app."
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
+        return res.status(422).json(body);
+      }
+      const mandate = { ipAddress: latest.ipAddress, userAgent: latest.userAgent };
+      const environment = process.env.NODE_ENV === "production" ? "production" : "development";
+      const gate = await storage.reserveRealStripeAchDebit({
+        userId,
+        stripeAccountId,
+        amount,
+        debtId: debtId || null,
+        idempotencyKey,
+        correlationId,
+        stripeMode,
+        environment,
+        limits: {
+          firstTransferMaxDollars: REAL_FIRST_TRANSFER_MAX_DOLLARS,
+          dailyTotalMaxDollars: REAL_DAILY_TOTAL_MAX_DOLLARS,
+          dailyCountMax: REAL_DAILY_COUNT_MAX
+        }
+      });
+      if (!gate.ok) {
+        stripeLog(correlationId, "ach_debit_blocked", {
+          severity: "WARN",
+          reason: gate.reason,
+          auditId: gate.auditId,
+          stripeAccountId,
+          amount
+        });
+        const body = { message: gate.message, reason: gate.reason, correlationId };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, gate.httpStatus, body);
+        return res.status(gate.httpStatus).json(body);
+      }
+      const ledger = gate.ledger;
       stripeLog(correlationId, "ach_debit_start", {
         ledgerId: ledger.id,
         stripeAccountId,
-        amount
+        amount,
+        isFirstRealTransfer: gate.isFirst
       });
       try {
         const intent = await createAchDebit({
@@ -4045,6 +4676,26 @@ function registerStripeRoutes(app2) {
           stripeChargeId: intent.chargeId || void 0,
           rawResponse: JSON.stringify(intent)
         });
+        try {
+          await storage.createRealTransferAuditLog({
+            userId,
+            action: "ach_debit_outcome",
+            result: "initiated",
+            reason: intent.status,
+            amount: amount.toFixed(2),
+            debtId: debtId || null,
+            stripeAccountId,
+            stripePaymentIntentId: intent.id,
+            transferId: ledger.id,
+            stripeMode,
+            environment,
+            allowlistEnabled: true,
+            idempotencyKey,
+            correlationId
+          });
+        } catch (auditErr) {
+          stripeLog(correlationId, "audit_write_failed", { severity: "ERROR", error: auditErr?.message });
+        }
         stripeLog(correlationId, "ach_debit_initiated", {
           ledgerId: ledger.id,
           paymentIntentId: intent.id,
@@ -4066,6 +4717,25 @@ function registerStripeRoutes(app2) {
           errorMessage: stripeErr?.message || "Stripe ACH debit failed",
           rawResponse: JSON.stringify(stripeErr?.raw || {})
         });
+        try {
+          await storage.createRealTransferAuditLog({
+            userId,
+            action: "ach_debit_outcome",
+            result: "failed",
+            reason: errCode,
+            amount: amount.toFixed(2),
+            debtId: debtId || null,
+            stripeAccountId,
+            transferId: ledger.id,
+            stripeMode,
+            environment,
+            allowlistEnabled: true,
+            idempotencyKey,
+            correlationId
+          });
+        } catch (auditErr) {
+          stripeLog(correlationId, "audit_write_failed", { severity: "ERROR", error: auditErr?.message });
+        }
         stripeLog(correlationId, "ach_debit_failed", {
           severity: "ERROR",
           ledgerId: ledger.id,
@@ -4173,6 +4843,31 @@ function registerStripeWebhook(app2) {
               newStatus: "refunded"
             });
           }
+        } else if (event.type === "charge.failed") {
+          const charge = event.data.object;
+          let ledger = charge.payment_intent ? await storage.getTransferByStripePaymentIntentId(charge.payment_intent) : void 0;
+          if (!ledger && charge.id) {
+            ledger = await storage.getTransferByStripeChargeId(charge.id);
+          }
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: charge.id,
+              paymentIntentId: charge.payment_intent
+            });
+          } else if (ledger.status !== "failed") {
+            await storage.updateTransferStatus(ledger.id, "failed", {
+              stripeChargeId: charge.id,
+              errorCode: charge.failure_code || "charge_failed",
+              errorMessage: charge.failure_message || "ACH charge failed",
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, failureCode: charge.failure_code })
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: "failed"
+            });
+          }
         } else if (event.type === "charge.dispute.created") {
           const dispute = event.data.object;
           const ledger = await storage.getTransferByStripeChargeId(dispute.charge);
@@ -4193,6 +4888,36 @@ function registerStripeWebhook(app2) {
               ledgerId: ledger.id,
               previousStatus: ledger.status,
               newStatus: "disputed"
+            });
+          }
+        } else if (event.type === "charge.dispute.closed") {
+          const dispute = event.data.object;
+          const outcome = dispute.status;
+          const resolvedStatus = outcome === "won" ? "settled" : outcome === "lost" ? "refunded" : null;
+          const ledger = await storage.getTransferByStripeChargeId(dispute.charge);
+          if (!ledger) {
+            stripeLog(correlationId, "webhook_ledger_miss", {
+              severity: "WARN",
+              chargeId: dispute.charge,
+              disputeId: dispute.id
+            });
+          } else if (resolvedStatus && ledger.status !== resolvedStatus) {
+            await storage.updateTransferStatus(ledger.id, resolvedStatus, {
+              stripeChargeId: dispute.charge,
+              errorCode: dispute.reason,
+              errorMessage: `ACH dispute closed: ${outcome}`,
+              rawResponse: JSON.stringify({ eventId: event.id, type: event.type, disputeId: dispute.id, status: dispute.status })
+            });
+            stripeLog(correlationId, "ledger_updated", {
+              ledgerId: ledger.id,
+              previousStatus: ledger.status,
+              newStatus: resolvedStatus
+            });
+          } else {
+            stripeLog(correlationId, "webhook_noop_acknowledged", {
+              eventId: event.id,
+              type: event.type,
+              disputeStatus: outcome
             });
           }
         } else if (event.type === "setup_intent.succeeded" || event.type === "payment_method.attached") {
@@ -4217,35 +4942,521 @@ function registerStripeWebhook(app2) {
   );
 }
 
-// server/lib/admin.ts
-function parseAdminIds() {
-  const raw = process.env.ADMIN_USER_IDS ?? "";
-  return new Set(
-    raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
+// server/routes/debtImportRoutes.ts
+import rateLimit2, { ipKeyGenerator as ipKeyGenerator2 } from "express-rate-limit";
+import { randomUUID as randomUUID4 } from "crypto";
+import { z as z5 } from "zod";
+
+// server/services/debtImport/sandboxProvider.ts
+var delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+var SANDBOX_INSTITUTION = "First Platypus Bank (Sandbox)";
+var SAMPLE_LIABILITIES = [
+  {
+    provider: "sandbox",
+    providerAccountId: "sbx-cc-001",
+    institutionName: SANDBOX_INSTITUTION,
+    creditorName: "Platypus Visa Signature",
+    accountType: "credit_card",
+    mask: "4821",
+    currentBalance: 3450.75,
+    interestRateApr: 22.99,
+    minimumPayment: 89,
+    dueDate: 15,
+    creditLimit: 8e3,
+    availableCredit: 4549.25,
+    paymentStatus: "current"
+  },
+  {
+    provider: "sandbox",
+    providerAccountId: "sbx-sl-002",
+    institutionName: "Sallie Sandbox Servicing",
+    creditorName: "Federal Student Loan",
+    accountType: "student_loan",
+    mask: "7733",
+    currentBalance: 18230.42,
+    interestRateApr: 5.5,
+    minimumPayment: 210,
+    dueDate: 5,
+    creditLimit: null,
+    availableCredit: null,
+    paymentStatus: "current"
+  },
+  {
+    provider: "sandbox",
+    providerAccountId: "sbx-auto-003",
+    institutionName: "Sandbox Auto Finance",
+    creditorName: "Auto Loan \u2014 SUV",
+    accountType: "auto_loan",
+    mask: "1290",
+    currentBalance: 12750,
+    interestRateApr: 7.25,
+    minimumPayment: 345,
+    dueDate: 22,
+    creditLimit: null,
+    availableCredit: null,
+    paymentStatus: "current"
+  }
+];
+var sandboxProvider = {
+  name: "sandbox",
+  async initializeConnection() {
+    await delay(150);
+    return { status: "active", institutionName: SANDBOX_INSTITUTION };
+  },
+  async fetchLiabilities() {
+    await delay(250);
+    return SAMPLE_LIABILITIES.map((l) => ({ ...l }));
+  },
+  async disconnect() {
+    await delay(50);
+  }
+};
+
+// server/services/debtImport/types.ts
+var LinkRequiredError = class extends Error {
+  code = "link_required";
+  constructor(message = "A provider connection is required before importing debts.") {
+    super(message);
+    this.name = "LinkRequiredError";
+  }
+};
+
+// server/services/debtImport/plaidLiabilityProvider.ts
+var PROVIDER = "plaid";
+var REAUTH_ERROR_CODES = /* @__PURE__ */ new Set(["ITEM_LOGIN_REQUIRED", "PENDING_EXPIRATION", "PENDING_DISCONNECT"]);
+function isReauthRequired(err) {
+  const code = err?.response?.data?.error_code;
+  return typeof code === "string" && REAUTH_ERROR_CODES.has(code);
+}
+function num(v, fallback = 0) {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+function parseDueDay(dateStr) {
+  if (!dateStr) return 1;
+  const day = parseInt(String(dateStr).slice(8, 10), 10);
+  if (!Number.isFinite(day) || day < 1 || day > 31) return 1;
+  return day;
+}
+function pickPurchaseApr(aprs) {
+  if (!Array.isArray(aprs) || aprs.length === 0) return 0;
+  const purchase = aprs.find((a) => a?.apr_type === "purchase_apr");
+  const chosen = purchase ?? aprs[0];
+  return num(chosen?.apr_percentage, 0);
+}
+function mapLiabilities(data, institutionName) {
+  const accountsById = /* @__PURE__ */ new Map();
+  for (const acc of data.accounts ?? []) accountsById.set(acc.account_id, acc);
+  const out = [];
+  const libs = data.liabilities ?? {};
+  for (const c of libs.credit ?? []) {
+    const acc = accountsById.get(c.account_id);
+    if (!acc) continue;
+    out.push({
+      provider: PROVIDER,
+      providerAccountId: c.account_id,
+      institutionName,
+      creditorName: acc.name || acc.official_name || "Credit Card",
+      accountType: "credit_card",
+      mask: acc.mask ?? "",
+      currentBalance: num(acc.balances?.current, num(c.last_statement_balance, 0)),
+      interestRateApr: pickPurchaseApr(c.aprs),
+      minimumPayment: num(c.minimum_payment_amount, 0),
+      dueDate: parseDueDay(c.next_payment_due_date),
+      creditLimit: acc.balances?.limit != null ? num(acc.balances.limit) : null,
+      availableCredit: acc.balances?.available != null ? num(acc.balances.available) : null,
+      paymentStatus: c.is_overdue ? "overdue" : "current"
+    });
+  }
+  for (const s of libs.student ?? []) {
+    const acc = accountsById.get(s.account_id);
+    if (!acc) continue;
+    out.push({
+      provider: PROVIDER,
+      providerAccountId: s.account_id,
+      institutionName,
+      creditorName: s.loan_name || acc.name || "Student Loan",
+      accountType: "student_loan",
+      mask: acc.mask ?? "",
+      currentBalance: num(acc.balances?.current, 0),
+      interestRateApr: num(s.interest_rate_percentage, 0),
+      minimumPayment: num(s.minimum_payment_amount, 0),
+      dueDate: parseDueDay(s.next_payment_due_date),
+      creditLimit: null,
+      availableCredit: null,
+      paymentStatus: s.is_overdue ? "overdue" : "current"
+    });
+  }
+  for (const m of libs.mortgage ?? []) {
+    const acc = accountsById.get(m.account_id);
+    if (!acc) continue;
+    out.push({
+      provider: PROVIDER,
+      providerAccountId: m.account_id,
+      institutionName,
+      creditorName: acc.name || "Mortgage",
+      accountType: "mortgage",
+      mask: acc.mask ?? "",
+      currentBalance: num(acc.balances?.current, 0),
+      interestRateApr: num(m.interest_rate?.percentage, 0),
+      minimumPayment: num(m.next_monthly_payment, 0),
+      dueDate: parseDueDay(m.next_payment_due_date),
+      creditLimit: null,
+      availableCredit: null,
+      paymentStatus: m.is_overdue ? "overdue" : "current"
+    });
+  }
+  return out;
+}
+var plaidLiabilityProvider = {
+  name: PROVIDER,
+  linkFlow: {
+    async createLinkToken(userId) {
+      return plaidService.createLiabilitiesLinkToken(userId);
+    },
+    async completeLink(userId, publicToken, institutionName) {
+      const { accessToken, itemId } = await plaidService.exchangePublicToken(publicToken);
+      await storage.upsertDebtProviderConnection({
+        userId,
+        provider: PROVIDER,
+        providerItemId: itemId,
+        accessTokenEnc: encryptToken(accessToken),
+        institutionName: institutionName ?? null,
+        status: "active",
+        consentAt: /* @__PURE__ */ new Date(),
+        lastSyncAt: /* @__PURE__ */ new Date()
+      });
+      return { status: "active", institutionName: institutionName ?? void 0 };
+    }
+  },
+  async initializeConnection(userId) {
+    const conn = await storage.getDebtProviderConnection(userId, PROVIDER);
+    if (!conn || conn.status !== "active" || !conn.accessTokenEnc) {
+      throw new LinkRequiredError();
+    }
+    return { status: "active", institutionName: conn.institutionName ?? void 0 };
+  },
+  async fetchLiabilities(userId) {
+    const conn = await storage.getDebtProviderConnection(userId, PROVIDER);
+    if (!conn || conn.status !== "active" || !conn.accessTokenEnc) {
+      throw new LinkRequiredError();
+    }
+    const accessToken = decryptToken(conn.accessTokenEnc);
+    let data;
+    try {
+      data = await plaidService.getLiabilities(accessToken);
+    } catch (err) {
+      if (isReauthRequired(err)) {
+        throw new LinkRequiredError(
+          "Your bank connection needs attention. Please reconnect to refresh your debts."
+        );
+      }
+      throw err;
+    }
+    return mapLiabilities(data, conn.institutionName ?? "Linked account");
+  },
+  async disconnect(userId) {
+    const conn = await storage.getDebtProviderConnection(userId, PROVIDER);
+    if (conn?.accessTokenEnc) {
+      await plaidService.removeItem(decryptToken(conn.accessTokenEnc));
+    }
+  }
+};
+
+// server/services/debtImport/index.ts
+function getLiabilityProvider() {
+  const name = (process.env.DEBT_IMPORT_PROVIDER || "sandbox").trim().toLowerCase();
+  switch (name) {
+    case "plaid":
+      return plaidLiabilityProvider;
+    case "sandbox":
+    default:
+      return sandboxProvider;
+  }
+}
+
+// server/routes/debtImportRoutes.ts
+function debtImportLog(correlationId, event, data) {
+  console.log(
+    JSON.stringify({
+      ts: (/* @__PURE__ */ new Date()).toISOString(),
+      service: "DebtImport",
+      correlationId,
+      event,
+      ...data ?? {}
+    })
   );
 }
-var cached2 = null;
-function adminIds() {
-  if (cached2 === null) cached2 = parseAdminIds();
-  return cached2;
+var consentSchema = z5.object({ consent: z5.literal(true) });
+var exchangeSchema2 = z5.object({
+  publicToken: z5.string().min(1),
+  institutionName: z5.string().max(200).optional(),
+  consent: z5.literal(true)
+});
+function perUserLimiter(max, action) {
+  return rateLimit2({
+    windowMs: 15 * 60 * 1e3,
+    max,
+    message: { message: `Too many ${action} attempts. Please try again in about 15 minutes.` },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
+    keyGenerator: (req) => {
+      const uid = getUserIdFromRequest(req);
+      return uid ? `u:${uid}` : `ip:${ipKeyGenerator2(req.ip ?? "")}`;
+    }
+  });
 }
-function isAdminUserId(userId) {
-  if (!userId) return false;
-  return adminIds().has(userId);
+var importLimiter = perUserLimiter(10, "import");
+var refreshLimiter = perUserLimiter(20, "refresh");
+var disconnectLimiter = perUserLimiter(20, "disconnect");
+function errMessage(err) {
+  return (err instanceof Error ? err.message : String(err)).slice(0, 500);
 }
-function requireAdmin(req, res, next) {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) {
-    return res.status(401).json({ message: "Not authenticated" });
+async function runImport(userId, action, correlationId) {
+  const provider = getLiabilityProvider();
+  try {
+    const conn = await provider.initializeConnection(userId);
+    await storage.upsertDebtProviderConnection({
+      userId,
+      provider: provider.name,
+      institutionName: conn.institutionName ?? null,
+      status: "active",
+      consentAt: /* @__PURE__ */ new Date(),
+      lastSyncAt: /* @__PURE__ */ new Date()
+    });
+    const liabilities = await provider.fetchLiabilities(userId);
+    const result = await storage.importDebtsFromProvider(userId, provider.name, liabilities);
+    await storage.createDebtImportAuditLog({
+      userId,
+      provider: provider.name,
+      action,
+      status: "success",
+      importedCount: result.imported,
+      updatedCount: result.updated,
+      message: null,
+      correlationId
+    });
+    debtImportLog(correlationId, `debt_${action}_success`, {
+      userId,
+      provider: provider.name,
+      imported: result.imported,
+      updated: result.updated
+    });
+    return {
+      status: 200,
+      body: {
+        imported: result.imported,
+        updated: result.updated,
+        debts: result.debts,
+        provider: provider.name,
+        institutionName: conn.institutionName ?? null,
+        correlationId
+      }
+    };
+  } catch (err) {
+    if (err instanceof LinkRequiredError) {
+      debtImportLog(correlationId, `debt_${action}_link_required`, { userId, provider: provider.name });
+      return {
+        status: 409,
+        body: {
+          code: "link_required",
+          message: "Connect your account to import your debts.",
+          correlationId
+        }
+      };
+    }
+    const message = errMessage(err);
+    await storage.createDebtImportAuditLog({
+      userId,
+      provider: provider.name,
+      action,
+      status: "error",
+      importedCount: 0,
+      updatedCount: 0,
+      message,
+      correlationId
+    });
+    debtImportLog(correlationId, `debt_${action}_error`, { userId, provider: provider.name, error: message });
+    return {
+      status: 502,
+      body: {
+        message: "We couldn't import your debts right now. Please try again in a moment.",
+        correlationId
+      }
+    };
   }
-  if (!isAdminUserId(userId)) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
-  req.adminUserId = userId;
-  next();
+}
+function registerDebtImportRoutes(app2) {
+  app2.post("/api/debts/import", importLimiter, async (req, res) => {
+    const correlationId = randomUUID4();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const parsed = consentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Explicit consent is required to import your debts.",
+        correlationId
+      });
+    }
+    const { status, body } = await runImport(userId, "import", correlationId);
+    res.status(status).json(body);
+  });
+  app2.post("/api/debts/import/link-token", importLimiter, async (req, res) => {
+    const correlationId = randomUUID4();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const provider = getLiabilityProvider();
+    if (!provider.linkFlow) {
+      return res.status(409).json({
+        message: "This provider does not require a connection step.",
+        correlationId
+      });
+    }
+    try {
+      const linkToken = await provider.linkFlow.createLinkToken(userId);
+      return res.json({ linkToken, correlationId });
+    } catch (err) {
+      debtImportLog(correlationId, "debt_link_token_error", {
+        userId,
+        provider: provider.name,
+        error: errMessage(err)
+      });
+      return res.status(502).json({
+        message: "We couldn't start the secure connection. Please try again.",
+        correlationId
+      });
+    }
+  });
+  app2.post("/api/debts/import/exchange", importLimiter, async (req, res) => {
+    const correlationId = randomUUID4();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const parsed = exchangeSchema2.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "A public token and explicit consent are required.",
+        correlationId
+      });
+    }
+    const provider = getLiabilityProvider();
+    if (!provider.linkFlow) {
+      return res.status(409).json({
+        message: "This provider does not support a connection step.",
+        correlationId
+      });
+    }
+    try {
+      await provider.linkFlow.completeLink(userId, parsed.data.publicToken, parsed.data.institutionName);
+    } catch (err) {
+      const message = errMessage(err);
+      await storage.createDebtImportAuditLog({
+        userId,
+        provider: provider.name,
+        action: "import",
+        status: "error",
+        importedCount: 0,
+        updatedCount: 0,
+        message,
+        correlationId
+      });
+      debtImportLog(correlationId, "debt_link_exchange_error", { userId, provider: provider.name, error: message });
+      return res.status(502).json({
+        message: "We couldn't connect your account. Please try again.",
+        correlationId
+      });
+    }
+    const { status, body } = await runImport(userId, "import", correlationId);
+    res.status(status).json(body);
+  });
+  app2.post("/api/debts/refresh", refreshLimiter, async (req, res) => {
+    const correlationId = randomUUID4();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const provider = getLiabilityProvider();
+    const existing = await storage.getDebtProviderConnection(userId, provider.name);
+    if (!existing || existing.status !== "active") {
+      return res.status(409).json({
+        message: "No active debt-import connection to refresh.",
+        correlationId
+      });
+    }
+    const { status, body } = await runImport(userId, "refresh", correlationId);
+    res.status(status).json(body);
+  });
+  app2.get("/api/debts/import/status", async (req, res) => {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const provider = getLiabilityProvider();
+    const conn = await storage.getDebtProviderConnection(userId, provider.name);
+    const connected = !!conn && conn.status === "active";
+    res.json({
+      connected,
+      // True when the provider needs a client-side connect step and the user
+      // isn't connected yet — the client uses this to launch the Link flow.
+      requiresLink: !!provider.linkFlow && !connected,
+      provider: provider.name,
+      institutionName: conn?.institutionName ?? null,
+      lastSyncAt: conn?.lastSyncAt ?? null
+    });
+  });
+  app2.delete("/api/debts/provider", disconnectLimiter, async (req, res) => {
+    const correlationId = randomUUID4();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const provider = getLiabilityProvider();
+    try {
+      await provider.disconnect(userId);
+    } catch (err) {
+      debtImportLog(correlationId, "debt_disconnect_provider_warning", {
+        userId,
+        provider: provider.name,
+        error: errMessage(err)
+      });
+    }
+    await storage.disconnectDebtProvider(userId, provider.name);
+    await storage.createDebtImportAuditLog({
+      userId,
+      provider: provider.name,
+      action: "disconnect",
+      status: "success",
+      importedCount: 0,
+      updatedCount: 0,
+      message: null,
+      correlationId
+    });
+    debtImportLog(correlationId, "debt_disconnect_success", { userId, provider: provider.name });
+    res.json({ ok: true, correlationId });
+  });
 }
 
 // server/routes/adminRoutes.ts
+import { z as z6 } from "zod";
+var realTransfersToggleSchema = z6.object({
+  enabled: z6.boolean(),
+  notes: z6.string().max(500).optional()
+});
+function publicUserRealTransferStatus(u) {
+  return {
+    userId: u.id,
+    realTransfersEnabled: u.realTransfersEnabled,
+    realTransfersEnabledAt: u.realTransfersEnabledAt,
+    realTransfersEnabledBy: u.realTransfersEnabledBy,
+    realTransfersNotes: u.realTransfersNotes
+  };
+}
 function registerAdminRoutes(app2) {
   app2.get("/api/admin/me", requireAdmin, (_req, res) => {
     res.json({ isAdmin: true });
@@ -4285,21 +5496,50 @@ function registerAdminRoutes(app2) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
-  app2.get("/api/admin/stripe/diagnostics", requireAdmin, async (_req, res) => {
+  app2.get("/api/admin/users/:id/real-transfers", requireAdmin, async (req, res) => {
     try {
-      const report = await retrieveAccountDiagnostics();
-      if (!report) {
-        return res.status(503).json({
-          message: "STRIPE_SECRET_KEY is not configured in this environment. Add it as a Replit Secret and restart the workflow."
-        });
-      }
-      res.json(report);
+      const user = await storage.getUser(req.params.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.json(publicUserRealTransferStatus(user));
     } catch (error) {
-      console.error("[admin] /api/admin/stripe/diagnostics error", error?.message ?? error);
-      res.status(502).json({
-        message: "Stripe API call failed.",
-        detail: typeof error?.message === "string" ? error.message : "Unknown error"
-      });
+      console.error("[admin] GET /api/admin/users/:id/real-transfers error", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.post("/api/admin/users/:id/real-transfers", requireAdmin, async (req, res) => {
+    try {
+      const adminUserId = req.adminUserId;
+      const parsed = realTransfersToggleSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const { enabled, notes } = parsed.data;
+      const updated = await storage.setUserRealTransfersEnabled(req.params.id, enabled, adminUserId, notes);
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      console.log(
+        JSON.stringify({
+          event: "admin_real_transfers_toggled",
+          severity: "WARN",
+          targetUserId: req.params.id,
+          enabled,
+          adminUserId
+        })
+      );
+      res.json(publicUserRealTransferStatus(updated));
+    } catch (error) {
+      console.error("[admin] POST /api/admin/users/:id/real-transfers error", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.get("/api/admin/real-transfer-audit", requireAdmin, async (req, res) => {
+    try {
+      const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "100"), 10) || 100));
+      const userId = typeof req.query.userId === "string" && req.query.userId.length > 0 ? String(req.query.userId) : void 0;
+      const rows = await storage.getRecentRealTransferAuditLogs({ limit, userId });
+      res.json({ count: rows.length, logs: rows });
+    } catch (error) {
+      console.error("[admin] /api/admin/real-transfer-audit error", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 }
@@ -5204,9 +6444,15 @@ var notificationTriggers = new NotificationTriggers();
 var notificationRoutes = Router();
 notificationRoutes.get("/api/notifications/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
+    const authUserId = getUserIdFromRequest(req);
+    if (!authUserId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    if (req.params.userId !== authUserId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
     const limit = req.query.limit ? parseInt(req.query.limit) : 20;
-    const notifications2 = await notificationService.getUserNotifications(userId, limit);
+    const notifications2 = await notificationService.getUserNotifications(authUserId, limit);
     res.json(notifications2);
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -5215,7 +6461,15 @@ notificationRoutes.get("/api/notifications/:userId", async (req, res) => {
 });
 notificationRoutes.post("/api/notifications/:id/read", async (req, res) => {
   try {
+    const authUserId = getUserIdFromRequest(req);
+    if (!authUserId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     const { id } = req.params;
+    const existing = await storage.getNotificationById(id);
+    if (!existing || existing.userId !== authUserId) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
     const updatedNotification = await notificationService.markAsRead(id);
     if (!updatedNotification) {
       return res.status(404).json({ message: "Notification not found" });
@@ -5228,7 +6482,11 @@ notificationRoutes.post("/api/notifications/:id/read", async (req, res) => {
 });
 notificationRoutes.post("/api/notifications/test", async (req, res) => {
   try {
-    const { userId, type, amount, merchant } = req.body;
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const { type, amount, merchant } = req.body;
     let notification;
     switch (type) {
       case "roundup":
@@ -5293,7 +6551,11 @@ notificationRoutes.post("/api/notifications/test", async (req, res) => {
 });
 notificationRoutes.post("/api/notifications/trigger", async (req, res) => {
   try {
-    const { userId, event, data } = req.body;
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const { event, data } = req.body;
     switch (event) {
       case "roundup_collected":
         await notificationTriggers.onRoundUpCollected(userId, data.transactionId, data.amount, data.merchant);
@@ -5315,6 +6577,10 @@ notificationRoutes.post("/api/notifications/trigger", async (req, res) => {
 });
 notificationRoutes.post("/api/notifications/browser-permission", async (req, res) => {
   try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     const { permission } = req.body;
     res.json({
       success: true,
@@ -5328,8 +6594,14 @@ notificationRoutes.post("/api/notifications/browser-permission", async (req, res
 });
 notificationRoutes.get("/api/notifications/:userId/stats", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const allNotifications = await notificationService.getUserNotifications(userId, 100);
+    const authUserId = getUserIdFromRequest(req);
+    if (!authUserId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    if (req.params.userId !== authUserId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    const allNotifications = await notificationService.getUserNotifications(authUserId, 100);
     const unreadCount = allNotifications.filter((n) => n.status === "pending" || n.status === "sent").length;
     const totalCount = allNotifications.length;
     const typeStats = allNotifications.reduce((stats, notification) => {
@@ -5556,6 +6828,9 @@ async function sendEmail(params) {
     return { ok: false, provider: "resend", error: message };
   }
 }
+function escapeHtml(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 async function sendPasswordResetEmail(params) {
   const greeting = params.firstName ? `Hi ${params.firstName},` : "Hi,";
   const text2 = [
@@ -5579,7 +6854,7 @@ async function sendPasswordResetEmail(params) {
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
       <tr><td>
         <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">Reset your Dime Time password</h1>
-        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${greeting}</p>
+        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${escapeHtml(greeting)}</p>
         <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5;">We received a request to reset the password for your Dime Time account.</p>
         <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5;">Click the button below to choose a new password. This link expires in <strong>${params.expiresInMinutes} minutes</strong>.</p>
         <p style="text-align: center; margin: 0 0 24px;">
@@ -5626,7 +6901,7 @@ async function sendVerificationEmail(params) {
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
       <tr><td>
         <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">Confirm your email</h1>
-        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${greeting}</p>
+        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${escapeHtml(greeting)}</p>
         <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5;">Welcome to Dime Time. Please confirm this is your email address so we can keep your account secure and send you important notifications about your debt payoff progress.</p>
         <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5;">This link expires in <strong>${expiryLabel}</strong>.</p>
         <p style="text-align: center; margin: 0 0 24px;">
@@ -5817,7 +7092,7 @@ function generateAuthToken(userId) {
   return Buffer.from(`${payload}:${signature}`).toString("base64");
 }
 async function registerRoutes(app2) {
-  const authLimiter = rateLimit2({
+  const authLimiter = rateLimit3({
     windowMs: 15 * 60 * 1e3,
     max: 10,
     message: { message: "Too many attempts. Please try again in 15 minutes." },
@@ -5825,7 +7100,7 @@ async function registerRoutes(app2) {
     legacyHeaders: false,
     validate: { xForwardedForHeader: false }
   });
-  const contactLimiter = rateLimit2({
+  const contactLimiter = rateLimit3({
     windowMs: 60 * 1e3,
     max: 5,
     message: { message: "Too many messages. Please try again in a minute." },
@@ -6102,7 +7377,7 @@ async function registerRoutes(app2) {
         return res.status(500).json({ message: "Failed to logout" });
       }
       res.clearCookie("connect.sid");
-      res.json({ success: true, message: "Logged out successfully" });
+      res.redirect("/");
     });
   });
   app2.delete("/api/account", async (req, res) => {
@@ -6156,7 +7431,7 @@ async function registerRoutes(app2) {
       const submission = await storage.createContactSubmission(toInsert);
       res.json({ success: true, submission });
     } catch (error) {
-      if (error instanceof z5.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid form data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -6206,9 +7481,82 @@ async function registerRoutes(app2) {
       const debt = await storage.createDebt(validatedData);
       res.status(201).json(debt);
     } catch (error) {
-      if (error instanceof z5.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
       }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.patch("/api/debts/:id", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const debt = await storage.getDebt(req.params.id);
+      if (!debt || debt.userId !== userId) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      const editSchema = z7.object({
+        name: z7.string().trim().min(1).optional(),
+        currentBalance: z7.string().optional(),
+        interestRate: z7.string().optional(),
+        minimumPayment: z7.string().optional(),
+        dueDate: z7.number().int().min(1).max(31).optional(),
+        accountNumber: z7.string().optional()
+      }).refine(
+        (d) => d.currentBalance === void 0 || parseFloat(d.currentBalance) > 0 && parseFloat(d.currentBalance) <= 9999999999e-2,
+        { message: "Current balance must be between 0.01 and 99,999,999.99", path: ["currentBalance"] }
+      ).refine(
+        (d) => d.interestRate === void 0 || parseFloat(d.interestRate) >= 0 && parseFloat(d.interestRate) <= 999.99,
+        { message: "Interest rate must be between 0 and 999.99", path: ["interestRate"] }
+      ).refine(
+        (d) => d.minimumPayment === void 0 || parseFloat(d.minimumPayment) >= 0 && parseFloat(d.minimumPayment) <= 9999999999e-2,
+        { message: "Minimum payment must be between 0 and 99,999,999.99", path: ["minimumPayment"] }
+      );
+      const parsed = editSchema.parse(req.body);
+      const updates = {};
+      if (parsed.name !== void 0) updates.name = parsed.name.trim();
+      if (parsed.currentBalance !== void 0) updates.currentBalance = parseFloat(parsed.currentBalance).toFixed(2);
+      if (parsed.interestRate !== void 0) updates.interestRate = parseFloat(parsed.interestRate).toFixed(2);
+      if (parsed.minimumPayment !== void 0) updates.minimumPayment = parseFloat(parsed.minimumPayment).toFixed(2);
+      if (parsed.dueDate !== void 0) updates.dueDate = parsed.dueDate;
+      if (parsed.accountNumber !== void 0) {
+        const acct = String(parsed.accountNumber).trim();
+        updates.accountNumber = acct !== "" ? acct : "\u2014";
+      }
+      if (debt.source === "imported") {
+        const refreshTracked = ["name", "currentBalance", "interestRate", "minimumPayment", "dueDate"];
+        const changed = refreshTracked.filter(
+          (f) => updates[f] !== void 0 && String(updates[f]) !== String(debt[f])
+        );
+        if (changed.length > 0) {
+          const existingEdited = debt.userEditedFields ?? [];
+          updates.userEditedFields = Array.from(/* @__PURE__ */ new Set([...existingEdited, ...changed]));
+        }
+      }
+      const updated = await storage.updateDebt(req.params.id, updates);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z7.ZodError) {
+        return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.delete("/api/debts/:id", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const debt = await storage.getDebt(req.params.id);
+      if (!debt || debt.userId !== userId) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      await storage.updateDebt(req.params.id, { isActive: false });
+      res.json({ success: true });
+    } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -6271,7 +7619,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(transaction);
     } catch (error) {
-      if (error instanceof z5.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -6327,25 +7675,30 @@ async function registerRoutes(app2) {
         ...req.body,
         userId
       });
-      const payment = await storage.createPayment(validatedData);
-      const debt = await storage.getDebt(validatedData.debtId);
-      if (debt) {
-        const newBalance = (parseFloat(debt.currentBalance) - parseFloat(validatedData.amount)).toFixed(2);
-        await storage.updateDebt(validatedData.debtId, {
-          currentBalance: newBalance
-        });
-        await notificationTriggers.onDebtPaymentProcessed(
-          userId,
-          validatedData.debtId,
-          parseFloat(validatedData.amount)
-        );
+      const paymentAmount = parseFloat(validatedData.amount);
+      if (!Number.isFinite(paymentAmount) || paymentAmount <= 0 || paymentAmount > 9999999999e-2) {
+        return res.status(400).json({ message: "Payment amount must be between 0.01 and 99,999,999.99" });
       }
+      const debt = await storage.getDebt(validatedData.debtId);
+      if (!debt || debt.userId !== userId || debt.isActive === false) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      const payment = await storage.createPayment(validatedData);
+      const newBalance = (parseFloat(debt.currentBalance) - paymentAmount).toFixed(2);
+      await storage.updateDebt(validatedData.debtId, {
+        currentBalance: newBalance
+      });
+      await notificationTriggers.onDebtPaymentProcessed(
+        userId,
+        validatedData.debtId,
+        paymentAmount
+      );
       if (idempotencyKey) {
         await saveIdempotency2(idempotencyKey, userId, "/api/payments", 201, payment);
       }
       res.status(201).json(payment);
     } catch (error) {
-      if (error instanceof z5.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid payment data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -6366,7 +7719,11 @@ async function registerRoutes(app2) {
       if (!debtId || !amount) {
         return res.status(400).json({ message: "debtId and amount are required" });
       }
-      const result = await storage.makeAcceleratedPayment(userId, debtId, amount);
+      const acceleratedAmount = parseFloat(String(amount));
+      if (!Number.isFinite(acceleratedAmount) || acceleratedAmount <= 0 || acceleratedAmount > 9999999999e-2) {
+        return res.status(400).json({ message: "Payment amount must be between 0.01 and 99,999,999.99" });
+      }
+      const result = await storage.makeAcceleratedPayment(userId, debtId, acceleratedAmount.toFixed(2));
       const responseBody = {
         success: true,
         payment: result.payment,
@@ -6378,10 +7735,11 @@ async function registerRoutes(app2) {
       }
       res.json(responseBody);
     } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
+      console.error("Error processing accelerated payment:", error);
+      if (error instanceof Error && /not found|unauthorized/i.test(error.message)) {
+        return res.status(404).json({ message: "Debt not found" });
       }
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Failed to process payment" });
     }
   });
   app2.get("/api/round-up-settings", async (req, res) => {
@@ -6463,19 +7821,24 @@ async function registerRoutes(app2) {
       if (!debtId || !amount) {
         return res.status(400).json({ message: "debtId and amount are required" });
       }
+      const roundUpAmount = parseFloat(String(amount));
+      if (!Number.isFinite(roundUpAmount) || roundUpAmount <= 0 || roundUpAmount > 9999999999e-2) {
+        return res.status(400).json({ message: "Payment amount must be between 0.01 and 99,999,999.99" });
+      }
+      const debt = await storage.getDebt(String(debtId));
+      if (!debt || debt.userId !== userId || debt.isActive === false) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
       const payment = await storage.createPayment({
         userId,
         debtId,
-        amount,
+        amount: roundUpAmount.toFixed(2),
         source: "round_up"
       });
-      const debt = await storage.getDebt(debtId);
-      if (debt) {
-        const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
-        await storage.updateDebt(debtId, {
-          currentBalance: newBalance
-        });
-      }
+      const newBalance = (parseFloat(debt.currentBalance) - roundUpAmount).toFixed(2);
+      await storage.updateDebt(debtId, {
+        currentBalance: newBalance
+      });
       res.json({ success: true, payment });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
@@ -6607,7 +7970,7 @@ async function registerRoutes(app2) {
         res.status(201).json(demoResponse);
       }
     } catch (error) {
-      if (error instanceof z5.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid crypto purchase data", errors: error.errors });
       }
       console.error("Error creating crypto purchase:", error);
@@ -6851,6 +8214,10 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/coinbase/transactions/:accountId", async (req, res) => {
     try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { accountId } = req.params;
       if (!coinbaseService.isServiceConfigured()) {
         return res.status(503).json({ message: "Coinbase service not configured" });
@@ -6984,8 +8351,12 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/dime-token/award", async (req, res) => {
     try {
-      const { userId, action, amount } = req.body;
-      const reward = await dimeTokenService.awardTokens(userId || "demo-user-1", action, amount);
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const { action, amount } = req.body;
+      const reward = await dimeTokenService.awardTokens(userId, action, amount);
       res.json(reward);
     } catch (error) {
       console.error("Error awarding tokens:", error);
@@ -7033,7 +8404,14 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/aws/files/:userId", async (req, res) => {
     try {
+      const authUserId = getUserIdFromRequest(req);
+      if (!authUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { userId } = req.params;
+      if (userId !== authUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
       const documentType = req.query.type;
       if (!s3Service.isServiceConfigured()) {
         return res.status(503).json({ message: "S3 service not configured" });
@@ -7047,7 +8425,10 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/aws/backup-user-data", async (req, res) => {
     try {
-      const userId = "demo-user-1";
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       if (!s3Service.isServiceConfigured()) {
         return res.status(503).json({ message: "S3 service not configured" });
       }
@@ -7080,7 +8461,10 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/aws/sync-to-dynamo", async (req, res) => {
     try {
-      const userId = "demo-user-1";
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       if (!dynamoService.isServiceConfigured()) {
         return res.status(503).json({
           message: "DynamoDB service not configured. Please provide AWS credentials.",
@@ -7133,12 +8517,22 @@ async function registerRoutes(app2) {
   registerMercuryRoutes(app2);
   registerWebhookRoutes(app2);
   if (isFlagEnabled("ENABLE_STRIPE_ACH")) {
+    assertStripeKeyModeSafeOnBoot();
     registerStripeRoutes(app2);
     registerStripeWebhook(app2);
     console.log(JSON.stringify({
       service: "Server",
       event: "stripe_routes_mounted",
       flag: "ENABLE_STRIPE_ACH"
+    }));
+  }
+  if (isFlagEnabled("ENABLE_DEBT_IMPORT")) {
+    registerDebtImportRoutes(app2);
+    console.log(JSON.stringify({
+      service: "Server",
+      event: "debt_import_routes_mounted",
+      flag: "ENABLE_DEBT_IMPORT",
+      provider: (process.env.DEBT_IMPORT_PROVIDER || "sandbox").trim().toLowerCase()
     }));
   }
   registerAdminRoutes(app2);
@@ -7455,6 +8849,15 @@ var corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+if (process.env.NODE_ENV === "production") {
+  app.use((_req, res, next) => {
+    res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
+}
 app.use((req, res, next) => {
   if (req.path.startsWith("/webhooks/") && req.path !== "/webhooks/stripe") {
     let data = "";
@@ -7519,6 +8922,21 @@ app.use((req, res, next) => {
     console.log("Starting server...");
     console.log("NODE_ENV:", process.env.NODE_ENV);
     console.log("Express env:", app.get("env"));
+    {
+      const flags = getFlags();
+      const rawDiag = {};
+      for (const name of Object.keys(flags)) {
+        const raw = process.env[name];
+        rawDiag[name] = raw === void 0 ? "<unset>" : JSON.stringify(raw);
+      }
+      console.log(
+        JSON.stringify({
+          event: "flags_resolved_at_boot",
+          resolved: flags,
+          rawEnv: rawDiag
+        })
+      );
+    }
     console.log("Setting up auth...");
     await setupAuth(app);
     console.log("Auth setup complete");
@@ -7528,8 +8946,8 @@ app.use((req, res, next) => {
     setupExpressErrorHandler(app);
     app.use((err, _req, res, _next) => {
       const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
       console.error("Unhandled error:", err);
+      const message = status >= 500 ? "Internal Server Error" : err.message || "Request failed";
       res.status(status).json({ message });
     });
     console.log("Checking environment for static file setup...");
