@@ -23,7 +23,8 @@ export function AcceleratedPayment({ debt, className = "" }: AcceleratedPaymentP
 
   const acceleratedPaymentMutation = useMutation({
     mutationFn: async ({ debtId, amount }: { debtId: string; amount: string }) => {
-      return await apiRequest("/api/accelerated-payment", "POST", { debtId, amount });
+      const res = await apiRequest("POST", "/api/accelerated-payment", { debtId, amount });
+      return await res.json();
     },
     onSuccess: (data: any) => {
       toast({
