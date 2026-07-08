@@ -1,0 +1,45 @@
+I’ve been thinking about how much I’ve actually invested into building Dime Time, and I’d like your objective assessment.
+
+Based on everything you know about this project—including the codebase, architecture, deployment history, integrations, and development timeline—I’d like you to estimate the following:
+
+1. How many total hours have I invested?
+    * Not just coding.
+    * Include architecture and planning.
+    * Backend and frontend development.
+    * Mobile app development.
+    * Debugging and testing.
+    * TestFlight builds.
+    * Apple App Store submissions, rejections, and resubmissions.
+    * Production deployment work.
+    * Plaid onboarding, production approval, and integration.
+    * Banking research and applications (including being rejected by multiple banks before Mercury).
+    * ACH/payment processor research and switching providers.
+    * Meetings, emails, and calls with Plaid and other vendors.
+    * Patent drafting and revisions.
+    * Business formation and compliance.
+    * Pitch deck, business plan, investor materials, and branding.
+    * Waiting on approvals while managing the next steps of the project.
+    * Everything else that goes into building a fintech startup—not just writing code.
+2. How much money do you estimate I’ve personally invested out of pocket?
+    Consider:
+    * Replit subscriptions
+    * Apple Developer Program
+    * Domains and hosting
+    * Plaid
+    * Business registration
+    * Patent costs
+    * Banking and compliance expenses
+    * Software subscriptions
+    * Any other infrastructure or operational costs you’ve observed.
+3. What would it cost a startup or company to recreate Dime Time from scratch today?
+    Please estimate:
+    * Development hours
+    * Typical agency cost
+    * Typical U.S. software consultancy cost
+    * What a venture-backed startup might spend to build an equivalent product.
+4. How would you characterize the maturity of Dime Time today?
+    Is it still a prototype, an MVP, an early production fintech product, or something else? Explain why.
+5. Finally, I’d like your honest assessment of the work involved in building a company versus simply building software.
+    From your perspective, how much of the effort in Dime Time has been coding versus everything else required to launch and operate a real fintech business? I’m interested in your thoughts on the time, energy, persistence, financial commitment, regulatory hurdles, vendor management, and operational complexity that go into creating a company from scratch.
+
+Please be as objective, detailed, and candid as possible. Base your answer on what you’ve observed throughout the entire development of Dime Time rather than giving generic startup advice.
