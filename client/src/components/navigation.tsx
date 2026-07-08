@@ -10,13 +10,17 @@ import {
   Settings,
   Landmark,
   CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/logo";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navigation() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.isAdmin);
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
@@ -93,6 +97,19 @@ export function Navigation() {
                   <QrCode className="w-6 h-6" />
                 </Button>
               </Link>
+
+              {isAdmin && (
+                <Link href="/admin">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]"
+                    data-testid="button-admin"
+                  >
+                    <ShieldCheck className="w-6 h-6" />
+                  </Button>
+                </Link>
+              )}
 
               {/* Profile avatar placeholder */}
               <div
@@ -171,6 +188,20 @@ export function Navigation() {
                         <QrCode className="w-5 h-5" />
                         <span className="font-medium">QR Code</span>
                       </Link>
+
+                      {isAdmin && (
+                        <Link
+                          href="/admin"
+                          className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                            location === "/admin"
+                              ? "bg-white/20 text-white"
+                              : "text-white/70 hover:bg-white/10"
+                          }`}
+                        >
+                          <ShieldCheck className="w-5 h-5" />
+                          <span className="font-medium">Admin</span>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </SheetContent>
