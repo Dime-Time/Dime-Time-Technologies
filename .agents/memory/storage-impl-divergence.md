@@ -25,9 +25,5 @@ payment history 500s on the FK and destroys the money trail. Debts are removed
 via soft-delete (`isActive=false`) and hidden by the `getDebtsByUserId` filter.
 Same lesson family as the account-deletion cascade note.
 
-## Known adjacent gap (found in review, left out of scope)
-`POST /api/payments` performs **no ownership check on `debtId`** — an
-authenticated user can pass another user's debt id and mutate that victim's
-`currentBalance` (cross-tenant IDOR; no real money moves while
-`ENABLE_REAL_TRANSFERS` is off). The fix is the same getDebt→userId-match→404
-pattern used by `PATCH`/`DELETE /api/debts/:id`. Worth closing next.
+(The previously-noted `POST /api/payments` debtId IDOR was closed in the
+2026-07 pre-launch security pass — ownership + isActive are now checked.)

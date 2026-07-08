@@ -26,7 +26,6 @@ export default function NotificationTest() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: 'demo-user-1',
           type,
           ...data
         }),

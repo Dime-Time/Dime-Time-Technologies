@@ -53,7 +53,7 @@ function decryptWith(key: Buffer, stored: string): string {
   const iv = combined.subarray(0, IV_LENGTH);
   const tag = combined.subarray(combined.length - TAG_LENGTH);
   const ciphertext = combined.subarray(IV_LENGTH, combined.length - TAG_LENGTH);
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
+  const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: TAG_LENGTH });
   decipher.setAuthTag(tag);
   const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
   return decrypted.toString('utf8');

@@ -163,6 +163,7 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   getNotificationsByUserId(userId: string, limit?: number): Promise<Notification[]>;
   updateNotificationStatus(id: string, status: string, sentAt?: Date, deliveredAt?: Date): Promise<Notification | undefined>;
+  getNotificationById(id: string): Promise<Notification | undefined>;
   
   // Notification settings methods
   getNotificationSettings(userId: string): Promise<NotificationSettings | undefined>;
@@ -1468,6 +1469,10 @@ export class MemStorage implements IStorage {
     };
   }
 
+  async getNotificationById(id: string): Promise<Notification | undefined> {
+    return this.notifications.get(id);
+  }
+
   async updateNotificationStatus(id: string, status: string, sentAt?: Date, deliveredAt?: Date): Promise<Notification | undefined> {
     const notification = this.notifications.get(id);
     if (!notification) return undefined;
@@ -2125,6 +2130,11 @@ export class DatabaseStorage implements IStorage {
       return await query.limit(limit);
     }
     return await query;
+  }
+
+  async getNotificationById(id: string): Promise<Notification | undefined> {
+    const [result] = await db.select().from(notifications).where(eq(notifications.id, id));
+    return result;
   }
 
   async updateNotificationStatus(id: string, status: string, sentAt?: Date, deliveredAt?: Date): Promise<Notification | undefined> {

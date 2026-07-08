@@ -88,6 +88,19 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 
+// Production security headers. CSP is intentionally omitted for now
+// (Capacitor WebView + Stripe.js compatibility risk); these headers are
+// safe for the SPA and API responses.
+if (process.env.NODE_ENV === "production") {
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
+}
+
 // Capture raw body for Plaid webhook signature verification before JSON parsing.
 // IMPORTANT: `/webhooks/stripe` is EXCLUDED — that route installs its own
 // `express.raw({ type: "application/json" })` parser because Stripe's
@@ -200,9 +213,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
 
+      // Full details go to server logs (and Sentry) only. 5xx responses must
+      // never leak internal error text (DB/provider messages) to clients.
       console.error("Unhandled error:", err);
+      const message =
+        status >= 500 ? "Internal Server Error" : err.message || "Request failed";
       res.status(status).json({ message });
     });
 

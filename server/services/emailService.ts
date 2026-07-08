@@ -92,6 +92,16 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   }
 }
 
+// Escape user-derived values before interpolating into HTML email templates.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export interface PasswordResetEmailParams {
   to: string;
   firstName?: string | null;
@@ -124,7 +134,7 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
       <tr><td>
         <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">Reset your Dime Time password</h1>
-        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${greeting}</p>
+        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${escapeHtml(greeting)}</p>
         <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5;">We received a request to reset the password for your Dime Time account.</p>
         <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5;">Click the button below to choose a new password. This link expires in <strong>${params.expiresInMinutes} minutes</strong>.</p>
         <p style="text-align: center; margin: 0 0 24px;">
@@ -184,7 +194,7 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
       <tr><td>
         <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">Confirm your email</h1>
-        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${greeting}</p>
+        <p style="margin: 16px 0; font-size: 15px; line-height: 1.5;">${escapeHtml(greeting)}</p>
         <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5;">Welcome to Dime Time. Please confirm this is your email address so we can keep your account secure and send you important notifications about your debt payoff progress.</p>
         <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5;">This link expires in <strong>${expiryLabel}</strong>.</p>
         <p style="text-align: center; margin: 0 0 24px;">

@@ -1,0 +1,65 @@
+DIME TIME — PRE-LAUNCH SECURITY & READINESS REVIEW
+
+Thank you for the recent work.
+
+The following has been completed:
+
+- Debt management improvements
+- Edit/Delete debt functionality
+- Payment history
+- Real roundup balance
+- Ownership validation on payment endpoints
+- Deleted debt protection
+- Payment amount validation
+- Independent review passed
+
+Before I enable real-money ACH, I want one final verification.
+
+Please perform a comprehensive review covering:
+
+1. Authentication
+- Verify every authenticated endpoint properly validates the logged-in user.
+
+2. Authorization
+- Verify every endpoint that accesses debts, payments, transfers, roundups, bank accounts, or financial records enforces ownership.
+- Verify admin-only endpoints cannot be accessed by standard users.
+
+3. IDOR Review
+- Search the codebase for any remaining object-reference vulnerabilities where another user's resource could be accessed by guessing an ID.
+
+4. Money Movement
+- Verify the real-money ACH path still fails closed unless:
+  - live Stripe keys exist,
+  - ENABLE_REAL_TRANSFERS=true,
+  - ENABLE_STRIPE_ACH=true,
+  - user is allowlisted,
+  - mandate exists.
+
+5. Idempotency
+- Review all payment and transfer endpoints.
+- Identify any remaining endpoints that should use the idempotency reservation helper.
+
+6. Error Handling
+- Replace any remaining raw internal error responses with safe user-facing messages while preserving detailed server-side logs.
+
+7. Security Headers
+- Verify production HTTP security headers and CORS configuration remain appropriate.
+
+8. Database Integrity
+- Verify ownership is enforced before writes.
+- Verify foreign-key relationships and cascade behavior.
+- Verify no orphan financial records can be created.
+
+9. Launch Readiness
+Please provide a final PASS / FAIL report covering:
+- Authentication
+- Authorization
+- Payment security
+- ACH safety controls
+- Webhook processing
+- Audit logging
+- Database integrity
+- Remaining medium/high risks
+
+Goal:
+I want confidence that Dime Time is ready for one founder-only $1 live ACH test before inviting any additional users.

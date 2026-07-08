@@ -7,11 +7,13 @@ import {
   insertInterestEarningsSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { getUserIdFromRequest } from "../middleware/authHelper";
+import { requireAdmin } from "../lib/admin";
 
 export function registerAxosRoutes(app: Express) {
   
   // Get business account status and balance
-  app.get("/api/axos/business-account", async (req: Request, res: Response) => {
+  app.get("/api/axos/business-account", requireAdmin, async (req: Request, res: Response) => {
     try {
       if (!axosService.isServiceConfigured()) {
         return res.status(503).json({ 
@@ -35,7 +37,10 @@ export function registerAxosRoutes(app: Express) {
   // Collect round-up from user account
   app.post("/api/axos/collect-roundup", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { userAccountId, userRoutingNumber, amount, transactionId } = req.body;
 
       if (!userAccountId || !userRoutingNumber || !amount) {
@@ -82,7 +87,7 @@ export function registerAxosRoutes(app: Express) {
   });
 
   // Process weekly bulk debt payments (Friday distribution)
-  app.post("/api/axos/weekly-distribution", async (req: Request, res: Response) => {
+  app.post("/api/axos/weekly-distribution", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { payments } = req.body;
 
@@ -140,7 +145,7 @@ export function registerAxosRoutes(app: Express) {
   });
 
   // Pay individual user debt
-  app.post("/api/axos/pay-debt", async (req: Request, res: Response) => {
+  app.post("/api/axos/pay-debt", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { userId, debtAccountId, debtRoutingNumber, amount, debtName } = req.body;
 
@@ -174,7 +179,7 @@ export function registerAxosRoutes(app: Express) {
   });
 
   // Get transfer status
-  app.get("/api/axos/transfer/:transferId", async (req: Request, res: Response) => {
+  app.get("/api/axos/transfer/:transferId", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { transferId } = req.params;
 
@@ -191,7 +196,7 @@ export function registerAxosRoutes(app: Express) {
   });
 
   // Get business account transaction history
-  app.get("/api/axos/transactions", async (req: Request, res: Response) => {
+  app.get("/api/axos/transactions", requireAdmin, async (req: Request, res: Response) => {
     try {
       const startDate = req.query.start_date as string || 
         new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -265,7 +270,7 @@ export function registerAxosRoutes(app: Express) {
   });
 
   // Check Axos service configuration and status
-  app.get("/api/axos/status", async (req: Request, res: Response) => {
+  app.get("/api/axos/status", requireAdmin, async (req: Request, res: Response) => {
     try {
       const configured = axosService.isServiceConfigured();
       const businessAccountId = axosService.getBusinessAccountId();

@@ -1111,10 +1111,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(responseBody);
     } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
+      console.error('Error processing accelerated payment:', error);
+      if (error instanceof Error && /not found|unauthorized/i.test(error.message)) {
+        return res.status(404).json({ message: "Debt not found" });
       }
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Failed to process payment" });
     }
   });
 
@@ -1708,6 +1709,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/coinbase/transactions/:accountId", async (req: Request, res: Response) => {
     try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { accountId } = req.params;
 
       if (!coinbaseService.isServiceConfigured()) {
@@ -1863,12 +1868,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Award DTT tokens for user actions (called internally)
+  // Award DTT tokens for user actions (authenticated; always targets the caller's own account)
   app.post('/api/dime-token/award', async (req: Request, res: Response) => {
     try {
-      const { userId, action, amount } = req.body;
-      
-      const reward = await dimeTokenService.awardTokens(userId || "demo-user-1", action, amount);
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const { action, amount } = req.body;
+
+      const reward = await dimeTokenService.awardTokens(userId, action, amount);
       res.json(reward);
     } catch (error) {
       console.error('Error awarding tokens:', error);
@@ -1924,7 +1933,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/aws/files/:userId", async (req: Request, res: Response) => {
     try {
+      const authUserId = getUserIdFromRequest(req);
+      if (!authUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const { userId } = req.params;
+      if (userId !== authUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
       const documentType = req.query.type as string;
 
       if (!s3Service.isServiceConfigured()) {
@@ -1941,8 +1957,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/aws/backup-user-data", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
-      
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       if (!s3Service.isServiceConfigured()) {
         return res.status(503).json({ message: "S3 service not configured" });
       }
@@ -1982,7 +2001,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AWS DynamoDB Routes (for migration or parallel storage)
   app.post("/api/aws/sync-to-dynamo", async (req: Request, res: Response) => {
     try {
-      const userId = "demo-user-1";
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
 
       if (!dynamoService.isServiceConfigured()) {
         return res.status(503).json({ 

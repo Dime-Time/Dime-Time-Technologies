@@ -2,16 +2,23 @@ import { Router, Request, Response } from "express";
 import { notificationService } from "../services/notificationService";
 import { notificationTriggers } from "../services/notificationTriggers";
 import { storage } from "../storage";
+import { getUserIdFromRequest } from "../middleware/authHelper";
 
 export const notificationRoutes = Router();
 
-// Get user notifications
+// Get user notifications (self only)
 notificationRoutes.get("/api/notifications/:userId", async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const authUserId = getUserIdFromRequest(req);
+    if (!authUserId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    if (req.params.userId !== authUserId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-    
-    const notifications = await notificationService.getUserNotifications(userId, limit);
+
+    const notifications = await notificationService.getUserNotifications(authUserId, limit);
     res.json(notifications);
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -19,16 +26,25 @@ notificationRoutes.get("/api/notifications/:userId", async (req: Request, res: R
   }
 });
 
-// Mark notification as read
+// Mark notification as read (must own the notification)
 notificationRoutes.post("/api/notifications/:id/read", async (req: Request, res: Response) => {
   try {
+    const authUserId = getUserIdFromRequest(req);
+    if (!authUserId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     const { id } = req.params;
-    
+
+    const existing = await storage.getNotificationById(id);
+    if (!existing || existing.userId !== authUserId) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
     const updatedNotification = await notificationService.markAsRead(id);
     if (!updatedNotification) {
       return res.status(404).json({ message: "Notification not found" });
     }
-    
+
     res.json(updatedNotification);
   } catch (error) {
     console.error('Error marking notification as read:', error);
@@ -36,13 +52,17 @@ notificationRoutes.post("/api/notifications/:id/read", async (req: Request, res:
   }
 });
 
-// Test notification endpoint (for development)
+// Test notification endpoint (authenticated; always targets the caller's own account)
 notificationRoutes.post("/api/notifications/test", async (req: Request, res: Response) => {
   try {
-    const { userId, type, amount, merchant } = req.body;
-    
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const { type, amount, merchant } = req.body;
+
     let notification;
-    
+
     switch (type) {
       case 'roundup':
         notification = await notificationService.sendRoundUpNotification(userId, amount, merchant);
@@ -98,7 +118,7 @@ notificationRoutes.post("/api/notifications/test", async (req: Request, res: Res
       default:
         return res.status(400).json({ message: "Invalid notification type" });
     }
-    
+
     res.json({ success: true, notification });
   } catch (error) {
     console.error('Error sending test notification:', error);
@@ -106,11 +126,15 @@ notificationRoutes.post("/api/notifications/test", async (req: Request, res: Res
   }
 });
 
-// Trigger notification events manually (for testing)
+// Trigger notification events manually (authenticated; always targets the caller's own account)
 notificationRoutes.post("/api/notifications/trigger", async (req: Request, res: Response) => {
   try {
-    const { userId, event, data } = req.body;
-    
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const { event, data } = req.body;
+
     switch (event) {
       case 'roundup_collected':
         await notificationTriggers.onRoundUpCollected(userId, data.transactionId, data.amount, data.merchant);
@@ -124,7 +148,7 @@ notificationRoutes.post("/api/notifications/trigger", async (req: Request, res: 
       default:
         return res.status(400).json({ message: "Invalid event type" });
     }
-    
+
     res.json({ success: true, message: `${event} notification triggered` });
   } catch (error) {
     console.error('Error triggering notification:', error);
@@ -135,15 +159,19 @@ notificationRoutes.post("/api/notifications/trigger", async (req: Request, res: 
 // Enable/disable browser notifications
 notificationRoutes.post("/api/notifications/browser-permission", async (req: Request, res: Response) => {
   try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     const { permission } = req.body;
-    
+
     // This endpoint acknowledges the browser notification permission status
     // Actual permission handling is done client-side
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: `Browser notifications ${permission}`,
-      permission 
+      permission
     });
   } catch (error) {
     console.error('Error handling browser permission:', error);
@@ -151,20 +179,26 @@ notificationRoutes.post("/api/notifications/browser-permission", async (req: Req
   }
 });
 
-// Get notification statistics
+// Get notification statistics (self only)
 notificationRoutes.get("/api/notifications/:userId/stats", async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
-    
-    const allNotifications = await notificationService.getUserNotifications(userId, 100);
+    const authUserId = getUserIdFromRequest(req);
+    if (!authUserId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    if (req.params.userId !== authUserId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const allNotifications = await notificationService.getUserNotifications(authUserId, 100);
     const unreadCount = allNotifications.filter(n => n.status === 'pending' || n.status === 'sent').length;
     const totalCount = allNotifications.length;
-    
+
     const typeStats = allNotifications.reduce((stats: any, notification) => {
       stats[notification.type] = (stats[notification.type] || 0) + 1;
       return stats;
     }, {});
-    
+
     res.json({
       unreadCount,
       totalCount,

@@ -32,7 +32,13 @@ function webhookLog(event: string, data?: Record<string, unknown>): void {
 function verifyPlaidSignature(req: Request): boolean {
   const secret = process.env.PLAID_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn('[PlaidWebhook] PLAID_WEBHOOK_SECRET not set — skipping signature verification. Set this env var for production webhook security.');
+    // Fail CLOSED in production: an unsigned webhook must never mutate the
+    // transfer ledger. Development keeps the skip for local testing.
+    if (process.env.NODE_ENV === 'production') {
+      webhookLog('signature_secret_missing', { severity: 'ERROR', note: 'PLAID_WEBHOOK_SECRET not set in production — rejecting webhook (fail closed).' });
+      return false;
+    }
+    console.warn('[PlaidWebhook] PLAID_WEBHOOK_SECRET not set — skipping signature verification (development only; production fails closed).');
     return true;
   }
   const plaidSignature = req.headers['plaid-verification'] as string | undefined;
