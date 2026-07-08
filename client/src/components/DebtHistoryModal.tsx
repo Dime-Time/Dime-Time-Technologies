@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency } from "@/lib/calculations";
 import type { Debt, Payment } from "@shared/schema";
@@ -25,6 +31,11 @@ export function DebtHistoryModal({ open, onOpenChange, debt, payments }: DebtHis
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{debt ? `${debt.name} — Payment History` : "Payment History"}</DialogTitle>
+          <DialogDescription data-testid="text-history-description">
+            {debtPayments.length === 0
+              ? "All payments toward this debt will appear here."
+              : `${debtPayments.length} payment${debtPayments.length === 1 ? "" : "s"} recorded toward this debt.`}
+          </DialogDescription>
         </DialogHeader>
 
         {debtPayments.length === 0 ? (
