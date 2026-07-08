@@ -13,3 +13,4 @@
 - [Automatic debt import](debt-import-feature.md) — flag-gated; real Plaid Liabilities provider verified in SANDBOX; prod promotion is config-only (never flip); provider via DEBT_IMPORT_PROVIDER.
 - [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — bank-connect (beta) 502s with "not registered" until founder submits FC registration in live Stripe dashboard; external onboarding, not a code bug.
 - [Forced white-text theme](forced-white-text-theme.md) — index.css forces `* {color:white!important;text-shadow}` + remaps bg-white→lavender; readable inputs/real colors need a scoped opt-out (.dt-marketing / .dt-auth).
+- [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab was deliberately deleted post ACH go/no-go; verdict logic lives on as tested pure fn in shared/stripeVerdict.ts; don't re-add the UI/route.
