@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -68,6 +69,7 @@ interface UserProfile {
 export default function Settings() {
   const { toast } = useToast();
   const { logout } = useAuth();
+  const [, setLocation] = useLocation();
   const { setNeedsPinSetup, clearSecurity, hasPinConfigured } = useSecurity();
   const [showPassword, setShowPassword] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(isBiometricEnabled());
@@ -543,7 +545,11 @@ export default function Settings() {
             <span className="text-sm font-medium text-slate-500 tabular-nums">1.0.0</span>
           </div>
 
-          <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left border-b border-slate-100 press-scale">
+          <button
+            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left border-b border-slate-100 press-scale"
+            onClick={() => setLocation("/privacy")}
+            data-testid="link-privacy-policy"
+          >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
                 <ShieldCheck className="h-4 w-4" />
@@ -553,7 +559,11 @@ export default function Settings() {
             <ChevronRight className="h-4 w-4 text-slate-400" />
           </button>
 
-          <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left press-scale">
+          <button
+            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left press-scale"
+            onClick={() => setLocation("/terms")}
+            data-testid="link-terms-of-service"
+          >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
                 <FileText className="h-4 w-4" />

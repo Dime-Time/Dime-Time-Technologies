@@ -272,6 +272,7 @@ export default function Notifications() {
                               onClick={() => markAsRead(notification.id)}
                               className="text-slate-400 hover:text-green-600 hover:bg-green-50"
                               title="Mark as read"
+                              aria-label="Mark as read"
                             >
                               <Check className="h-5 w-5" />
                             </Button>
@@ -282,6 +283,7 @@ export default function Notifications() {
                             onClick={() => deleteNotification(notification.id)}
                             className="text-slate-400 hover:text-red-600 hover:bg-red-50"
                             title="Delete notification"
+                            aria-label="Delete notification"
                           >
                             <X className="h-5 w-5" />
                           </Button>

@@ -9,7 +9,7 @@
 - [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; the mismatch is INTENTIONAL+permanent, never reconcile it.
 - [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
 - [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic/features before declaring done.
-- [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com only; dev widget error 110200 is EXPECTED; e2e proof = founder submits live form → check contact_submissions.
+- [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, dep audit, no CSP.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift (e.g. getDebtsByUserId isActive filter); update BOTH; debts soft-delete not hard-delete.
 - [Automatic debt import](debt-import-feature.md) — flag-gated; real Plaid Liabilities provider verified in SANDBOX; prod promotion is config-only (never flip); provider via DEBT_IMPORT_PROVIDER.

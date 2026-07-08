@@ -1,0 +1,149 @@
+DIME TIME — PHASE 2 UI PRE-LAUNCH VERIFICATION
+
+Thank you for completing the Phase 2 Premium UI redesign.
+
+Before we move forward with the founder-only $1 ACH live test, I want one final verification that the UI redesign did not introduce any functional regressions.
+
+Please verify the following:
+
+===========================================================
+1. BANKING
+===========================================================
+
+Confirm:
+
+✓ Link Bank still works.
+
+✓ Stripe Financial Connections launches correctly.
+
+✓ Bank setup flow cannot be bypassed.
+
+✓ Step locking still works.
+
+✓ Continue buttons only enable when appropriate.
+
+===========================================================
+2. DEBTS
+===========================================================
+
+Verify:
+
+✓ Add Debt
+
+✓ Edit Debt
+
+✓ Delete Debt
+
+✓ Make Payment
+
+✓ Recent Payments
+
+✓ View History
+
+✓ Debt totals
+
+✓ Imported Debt badge (feature remains disabled unless ENABLE_DEBT_IMPORT=true)
+
+===========================================================
+3. DASHBOARD
+===========================================================
+
+Verify:
+
+✓ Total debt calculations
+
+✓ Total savings calculations
+
+✓ Round-up totals
+
+✓ Progress calculations
+
+✓ Charts
+
+✓ Recent activity
+
+===========================================================
+4. TRANSACTIONS
+===========================================================
+
+Verify:
+
+✓ Transaction list
+
+✓ Filtering
+
+✓ Status display
+
+✓ Pagination (if applicable)
+
+===========================================================
+5. SETTINGS
+===========================================================
+
+Verify:
+
+✓ Every settings action still functions.
+
+✓ Account deletion flow.
+
+✓ Logout.
+
+✓ Notifications.
+
+✓ Privacy / Terms links.
+
+===========================================================
+6. FEATURE FLAGS
+===========================================================
+
+Confirm:
+
+ENABLE_REAL_TRANSFERS remains OFF.
+
+ENABLE_DEBT_IMPORT remains OFF.
+
+ENABLE_STRIPE_ACH behavior unchanged.
+
+===========================================================
+7. ACCESSIBILITY
+===========================================================
+
+Quick review for:
+
+✓ Color contrast.
+
+✓ Dynamic text.
+
+✓ Screen reader labels.
+
+✓ Keyboard navigation (web).
+
+===========================================================
+8. RELEASE PLAN
+===========================================================
+
+Recommended order:
+
+1. Republish web application.
+
+2. Verify production UI.
+
+3. Configure live Stripe production secrets and webhook.
+
+4. Execute founder-only $1 live ACH test.
+
+5. Verify Stripe dashboard, ledger, webhook, and audit logs.
+
+6. If successful, create new Capacitor/Codemagic iOS build with the updated UI and submit it.
+
+===========================================================
+DELIVERABLES
+===========================================================
+
+Please provide:
+
+1. Any remaining UI regressions.
+2. Any remaining accessibility issues.
+3. Confirmation that no business logic changed.
+4. Confirmation that money movement remains fully gated.
+5. PASS / FAIL recommendation for production web deployment.

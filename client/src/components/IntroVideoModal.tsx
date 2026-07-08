@@ -70,6 +70,7 @@ export function IntroVideoModal({ isOpen, onClose }: IntroVideoModalProps) {
             className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white rounded-full w-10 h-10 transition-colors border border-white/10"
             onClick={onClose}
             data-testid="close-intro-video"
+            aria-label="Close video"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -117,6 +118,7 @@ export function IntroVideoModal({ isOpen, onClose }: IntroVideoModalProps) {
                     className="bg-dime-purple hover:bg-dime-accent text-white rounded-full w-20 h-20 shadow-lg border-4 border-white/20 transition-all hover:scale-105"
                     onClick={togglePlay}
                     data-testid="play-pause-button"
+            aria-label="Play video"
                   >
                     <Play className="h-8 w-8 ml-1" />
                   </Button>
@@ -131,6 +133,7 @@ export function IntroVideoModal({ isOpen, onClose }: IntroVideoModalProps) {
                   className="bg-black/50 hover:bg-black/80 text-white rounded-full w-12 h-12 backdrop-blur-sm border border-white/10 transition-colors press-scale"
                   onClick={togglePlay}
                   data-testid="control-play-pause"
+            aria-label="Play or pause"
                 >
                   {isPlaying ? (
                     <Pause className="h-5 w-5" />
@@ -145,6 +148,7 @@ export function IntroVideoModal({ isOpen, onClose }: IntroVideoModalProps) {
                   className="bg-black/50 hover:bg-black/80 text-white rounded-full w-12 h-12 backdrop-blur-sm border border-white/10 transition-colors press-scale"
                   onClick={toggleMute}
                   data-testid="mute-button"
+            aria-label="Mute or unmute"
                 >
                   {isMuted ? (
                     <VolumeX className="h-5 w-5" />

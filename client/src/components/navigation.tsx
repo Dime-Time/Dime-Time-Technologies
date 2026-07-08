@@ -75,6 +75,7 @@ export function Navigation() {
                   size="icon"
                   className="text-slate-500 hover:text-slate-900 relative h-11 w-11 min-h-[44px] min-w-[44px]"
                   data-testid="button-notifications"
+                  aria-label="Notifications"
                 >
                   <Bell className="w-6 h-6" />
                 </Button>
@@ -86,6 +87,7 @@ export function Navigation() {
                   size="icon"
                   className="text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                   data-testid="button-settings"
+                  aria-label="Settings"
                 >
                   <Settings className="w-6 h-6" />
                 </Button>
@@ -97,6 +99,7 @@ export function Navigation() {
                   size="icon"
                   className="text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                   data-testid="button-qr"
+                  aria-label="QR code"
                 >
                   <QrCode className="w-6 h-6" />
                 </Button>
@@ -109,6 +112,7 @@ export function Navigation() {
                     size="icon"
                     className="text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                     data-testid="button-admin"
+                  aria-label="Admin"
                   >
                     <ShieldCheck className="w-6 h-6" />
                   </Button>
@@ -131,6 +135,7 @@ export function Navigation() {
                     size="icon"
                     className="md:hidden text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                     data-testid="button-menu"
+                  aria-label="Menu"
                   >
                     <Menu className="w-6 h-6" />
                   </Button>
