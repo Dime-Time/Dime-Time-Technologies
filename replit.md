@@ -25,6 +25,7 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
 
 ### Marketing Site Invariants (LandingPage.tsx, privacy.tsx, terms.tsx)
 - Homepage is single-page scroll — no separate `/about`, `/contact`, or `/faq` routes
+- **Web root `/` ALWAYS shows the marketing page** — even for logged-in users (their app lives at `/dashboard`; the landing header swaps Log In/Get Started for a "My Dashboard" button when authenticated). Native iOS is the exception: in the Capacitor app `/` remains the dashboard (marketing page never renders natively)
 - `/privacy` and `/terms` are standalone pages, scoped to `.dt-marketing` wrapper (opts out of in-app lavender theme)
 - Legal effective date: **May 27, 2026** (constant `EFFECTIVE_DATE` — only bump when policy text actually changes)
 - Contact form must POST to `/api/contact` and save to `contact_submissions` table

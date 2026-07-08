@@ -141,10 +141,14 @@ function AppContent() {
   return (
     <Switch>
       <Route path="/">
-        {effectivelyAuthenticated ? (
-          <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>
+        {isNative ? (
+          effectivelyAuthenticated ? (
+            <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>
+          ) : (
+            UnauthenticatedRoot
+          )
         ) : (
-          UnauthenticatedRoot
+          <LandingPage />
         )}
       </Route>
 

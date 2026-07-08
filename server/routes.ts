@@ -625,7 +625,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logout endpoint
+  // Logout endpoint — browsers full-navigate here, so redirect home instead
+  // of rendering raw JSON. (In dev, replitAuth's own /api/logout handler wins;
+  // this one is what runs in production deployments.)
   app.get("/api/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {
       if (err) {
@@ -633,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to logout" });
       }
       res.clearCookie("connect.sid");
-      res.json({ success: true, message: "Logged out successfully" });
+      res.redirect("/");
     });
   });
 

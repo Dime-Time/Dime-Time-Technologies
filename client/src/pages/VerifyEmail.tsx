@@ -90,7 +90,7 @@ export default function VerifyEmail() {
             <h1 className="text-xl font-bold text-white mb-2">Email verified</h1>
             <p className="text-white/80 text-sm mb-6">{message}</p>
             <Button
-              onClick={() => setLocation("/")}
+              onClick={() => setLocation("/dashboard")}
               variant="ghost"
               className="auth-submit w-full h-12 rounded-xl font-semibold"
               data-testid="button-continue-to-app"
@@ -106,7 +106,7 @@ export default function VerifyEmail() {
             <h1 className="text-xl font-bold text-white mb-2">Verification link didn't work</h1>
             <p className="text-white/80 text-sm mb-6">{message}</p>
             <Link
-              href="/"
+              href="/dashboard"
               className="block text-white underline text-sm"
               data-testid="link-back-to-app"
             >

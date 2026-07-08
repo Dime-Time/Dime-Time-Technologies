@@ -168,7 +168,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAuthToken();
     clearDashboardCache();
     queryClient.clear();
-    window.location.href = getApiUrl("/api/logout");
+    if (Capacitor.isNativePlatform()) {
+      // Never navigate the WebView to the remote domain (that would load the
+      // marketing site outside the Capacitor bridge). Kill the server session
+      // in the background, then reload the bundled app → Login screen.
+      fetch(getApiUrl("/api/logout"), {
+        credentials: "include",
+        keepalive: true,
+      }).catch(() => {});
+      window.location.href = "/";
+    } else {
+      window.location.href = getApiUrl("/api/logout");
+    }
   };
 
   return (

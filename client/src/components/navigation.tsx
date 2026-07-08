@@ -21,9 +21,11 @@ export function Navigation() {
   const [location] = useLocation();
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
+  const isActive = (href: string) =>
+    location === href || (href === "/dashboard" && location === "/");
 
   const navItems = [
-    { href: "/", label: "Home", icon: Home },
+    { href: "/dashboard", label: "Home", icon: Home },
     { href: "/debts", label: "Debts", icon: CreditCard },
     { href: "/banking", label: "Banking", icon: Landmark },
     { href: "/crypto", label: "Crypto", icon: Bitcoin },
@@ -53,7 +55,7 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   className={`font-medium transition-colors ${
-                    location === item.href
+                    isActive(item.href)
                       ? "text-white font-bold"
                       : "text-white/70 hover:text-white"
                   }`}
@@ -135,7 +137,7 @@ export function Navigation() {
                   <div className="flex flex-col space-y-4 mt-8">
                     {navItems.map((item) => {
                       const Icon = item.icon;
-                      const active = location === item.href;
+                      const active = isActive(item.href);
                       return (
                         <Link
                           key={item.href}

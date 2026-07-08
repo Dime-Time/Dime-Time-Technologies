@@ -19,6 +19,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { SiApple } from "react-icons/si";
+import { useAuth } from "@/hooks/useAuth";
 import logoUrl from "@/assets/dime-time-app-icon.png";
 
 const APP_STORE_URL = "https://apps.apple.com/app/id6755106723";
@@ -93,6 +94,7 @@ export default function LandingPage() {
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   // Load the Turnstile script + render the widget once mounted.
   useEffect(() => {
@@ -238,20 +240,33 @@ export default function LandingPage() {
             </nav>
 
             <div className="hidden md:flex items-center gap-2">
-              <Link href="/login">
-                <Button
-                  variant="ghost"
-                  className="text-slate-700 hover:text-dime-purple"
-                  data-testid="button-nav-login"
-                >
-                  Log In
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="bg-dime-purple text-white hover:bg-dime-purple/90">
-                  Get Started
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <Link href="/dashboard">
+                  <Button
+                    className="bg-dime-purple text-white hover:bg-dime-purple/90"
+                    data-testid="button-nav-dashboard"
+                  >
+                    My Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button
+                      variant="ghost"
+                      className="text-slate-700 hover:text-dime-purple"
+                      data-testid="button-nav-login"
+                    >
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link href="/signup">
+                    <Button className="bg-dime-purple text-white hover:bg-dime-purple/90">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
 
             <button
@@ -276,24 +291,38 @@ export default function LandingPage() {
                     {link.label}
                   </a>
                 ))}
-                <Link href="/login">
-                  <Button
-                    variant="outline"
-                    className="w-full border-dime-purple/30 text-slate-700 hover:text-dime-purple"
-                    onClick={() => setMobileOpen(false)}
-                    data-testid="button-nav-login-mobile"
-                  >
-                    Log In
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button
-                    className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Get Started
-                  </Button>
-                </Link>
+                {isAuthenticated ? (
+                  <Link href="/dashboard">
+                    <Button
+                      className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
+                      onClick={() => setMobileOpen(false)}
+                      data-testid="button-nav-dashboard-mobile"
+                    >
+                      My Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login">
+                      <Button
+                        variant="outline"
+                        className="w-full border-dime-purple/30 text-slate-700 hover:text-dime-purple"
+                        onClick={() => setMobileOpen(false)}
+                        data-testid="button-nav-login-mobile"
+                      >
+                        Log In
+                      </Button>
+                    </Link>
+                    <Link href="/signup">
+                      <Button
+                        className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           )}
