@@ -1028,24 +1028,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId,
       });
-      
-      const payment = await storage.createPayment(validatedData);
-      
-      // Update debt balance
-      const debt = await storage.getDebt(validatedData.debtId);
-      if (debt) {
-        const newBalance = (parseFloat(debt.currentBalance) - parseFloat(validatedData.amount)).toFixed(2);
-        await storage.updateDebt(validatedData.debtId, {
-          currentBalance: newBalance,
-        });
 
-        // Trigger debt payment notification
-        await notificationTriggers.onDebtPaymentProcessed(
-          userId,
-          validatedData.debtId,
-          parseFloat(validatedData.amount)
-        );
+      // Amount sanity: positive, finite, and within the decimal(10,2) column
+      // so a bad value can't inflate a balance or trigger a raw DB overflow.
+      const paymentAmount = parseFloat(validatedData.amount);
+      if (!Number.isFinite(paymentAmount) || paymentAmount <= 0 || paymentAmount > 99999999.99) {
+        return res.status(400).json({ message: "Payment amount must be between 0.01 and 99,999,999.99" });
       }
+
+      // Ownership check BEFORE any write: the debt being paid must exist,
+      // belong to the authenticated user, and still be active (not soft-deleted).
+      const debt = await storage.getDebt(validatedData.debtId);
+      if (!debt || debt.userId !== userId || debt.isActive === false) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+
+      const payment = await storage.createPayment(validatedData);
+
+      // Update debt balance
+      const newBalance = (parseFloat(debt.currentBalance) - paymentAmount).toFixed(2);
+      await storage.updateDebt(validatedData.debtId, {
+        currentBalance: newBalance,
+      });
+
+      // Trigger debt payment notification
+      await notificationTriggers.onDebtPaymentProcessed(
+        userId,
+        validatedData.debtId,
+        paymentAmount
+      );
 
       if (idempotencyKey) {
         await saveIdempotency(idempotencyKey, userId, '/api/payments', 201, payment);
@@ -1080,7 +1091,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "debtId and amount are required" });
       }
 
-      const result = await storage.makeAcceleratedPayment(userId, debtId, amount);
+      const acceleratedAmount = parseFloat(String(amount));
+      if (!Number.isFinite(acceleratedAmount) || acceleratedAmount <= 0 || acceleratedAmount > 99999999.99) {
+        return res.status(400).json({ message: "Payment amount must be between 0.01 and 99,999,999.99" });
+      }
+
+      const result = await storage.makeAcceleratedPayment(userId, debtId, acceleratedAmount.toFixed(2));
       
       const responseBody = {
         success: true,
@@ -1196,22 +1212,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "debtId and amount are required" });
       }
 
+      const roundUpAmount = parseFloat(String(amount));
+      if (!Number.isFinite(roundUpAmount) || roundUpAmount <= 0 || roundUpAmount > 99999999.99) {
+        return res.status(400).json({ message: "Payment amount must be between 0.01 and 99,999,999.99" });
+      }
+
+      // Ownership check BEFORE any write: the debt must exist, belong to the
+      // authenticated user, and still be active (not soft-deleted).
+      const debt = await storage.getDebt(String(debtId));
+      if (!debt || debt.userId !== userId || debt.isActive === false) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+
       // Create payment record
       const payment = await storage.createPayment({
         userId,
         debtId,
-        amount,
+        amount: roundUpAmount.toFixed(2),
         source: "round_up",
       });
 
       // Update debt balance
-      const debt = await storage.getDebt(debtId);
-      if (debt) {
-        const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
-        await storage.updateDebt(debtId, {
-          currentBalance: newBalance,
-        });
-      }
+      const newBalance = (parseFloat(debt.currentBalance) - roundUpAmount).toFixed(2);
+      await storage.updateDebt(debtId, {
+        currentBalance: newBalance,
+      });
 
       res.json({ success: true, payment });
     } catch (error) {

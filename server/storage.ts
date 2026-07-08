@@ -1245,7 +1245,7 @@ export class MemStorage implements IStorage {
 
   async makeAcceleratedPayment(userId: string, debtId: string, amount: string): Promise<{ payment: Payment; updatedDebt: Debt }> {
     const debt = this.debts.get(debtId);
-    if (!debt || debt.userId !== userId) {
+    if (!debt || debt.userId !== userId || debt.isActive === false) {
       throw new Error('Debt not found or unauthorized');
     }
 
@@ -1926,7 +1926,12 @@ export class DatabaseStorage implements IStorage {
 
   async makeAcceleratedPayment(userId: string, debtId: string, amount: string): Promise<{ payment: Payment; updatedDebt: Debt }> {
     const debt = await this.getDebt(debtId);
-    if (!debt) throw new Error("Debt not found");
+    // Ownership + active check — MUST match MemStorage.makeAcceleratedPayment.
+    // Without the userId match any authenticated user could pay down (or
+    // corrupt the balance of) another user's debt by guessing its id.
+    if (!debt || debt.userId !== userId || debt.isActive === false) {
+      throw new Error("Debt not found or unauthorized");
+    }
     
     const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
     const payment = await this.createPayment({
