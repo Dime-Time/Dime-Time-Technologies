@@ -69,7 +69,7 @@ export default function DimeToken() {
   // Stake tokens mutation
   const stakeMutation = useMutation({
     mutationFn: async (data: { amount: string; duration: number }) => {
-      return apiRequest('/api/dime-token/stake', 'POST', data);
+      return apiRequest('POST', '/api/dime-token/stake', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/dime-token/balance'] });

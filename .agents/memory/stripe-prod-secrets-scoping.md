@@ -55,3 +55,22 @@ money on the wrong account.
    ledger row and **never** calls Stripe / creates a PaymentIntent — the whole UI→ledger flow is
    exercised with zero money movement. Verify via `/admin/transfers`.
 4. NEVER flip `ENABLE_REAL_TRANSFERS` on without staged testing + the founder's explicit go.
+
+## Replit Configurations: published vs testing values (go-live gotcha)
+
+**Rule:** Non-secret env vars like the `ENABLE_*` flags live in Replit **Configurations**, which
+hold TWO values per key: a published-app value and a "Testing value" (workspace). The deployment's
+copy is **linked** to the source configuration — editing the value inside the deployment pane gets
+**overwritten on the next republish** by the source value. Always edit the source Configurations
+entry (published value), and remember the deployment only reads env at **boot**, so a republish is
+required after every change.
+
+**Why:** During the first real $1 ACH go-live (2026-07-08) the founder set `true` in the
+deployment secrets pane twice, but each republish re-synced `false` from the source config,
+producing repeated "simulated" transfers with `stripeMode:"live"`.
+
+**How to apply:** Debug this class of issue with the boot log event `flags_resolved_at_boot`
+(server/index.ts) — it prints every resolved flag AND the raw env string in both dev workflow
+logs and deployment logs, so a wrong/missing value is visible without guessing. Desired steady
+state: `ENABLE_REAL_TRANSFERS` published=`true`, testing=`false` (dev also stays safe via the
+test-key-only resolver).
