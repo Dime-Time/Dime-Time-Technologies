@@ -18,7 +18,10 @@ import {
   Mail,
   ChevronDown,
 } from "lucide-react";
+import { SiApple } from "react-icons/si";
 import logoUrl from "@/assets/dime-time-app-icon.png";
+
+const APP_STORE_URL = "https://apps.apple.com/app/id6755106723";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
@@ -328,6 +331,29 @@ export default function LandingPage() {
                 Learn More
               </Button>
             </a>
+          </div>
+          <div className="mt-8 flex flex-col items-center gap-2">
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 rounded-xl bg-slate-900 px-5 py-2.5 text-white hover:bg-slate-800 transition-colors"
+              data-testid="link-app-store"
+              aria-label="Download Dime Time on the App Store"
+            >
+              <SiApple className="w-6 h-6" />
+              <span className="text-left leading-tight">
+                <span className="block text-[10px] uppercase tracking-wide text-slate-300">
+                  Download on the
+                </span>
+                <span className="block text-base font-semibold">
+                  App Store
+                </span>
+              </span>
+            </a>
+            <p className="text-xs text-slate-500">
+              Now available for iPhone
+            </p>
           </div>
         </div>
       </section>

@@ -253,6 +253,8 @@
   .dt-marketing .bg-slate-50   { background-color: rgb(248 250 252) !important; }
   .dt-marketing .bg-slate-100  { background-color: rgb(241 245 249) !important; }
   .dt-marketing .bg-dime-purple{ background-color: var(--dime-purple) !important; color: #ffffff !important; }
+  .dt-marketing .bg-slate-900  { background-color: rgb(15 23 42) !important; color: #ffffff !important; }
+  .dt-marketing .hover\:bg-slate-800:hover { background-color: rgb(30 41 59) !important; }
 
   .dt-marketing .text-white     { color: #ffffff !important; }
   .dt-marketing .text-slate-900 { color: rgb(15 23 42) !important; }
@@ -260,6 +262,7 @@
   .dt-marketing .text-slate-600 { color: rgb(71 85 105) !important; }
   .dt-marketing .text-slate-500 { color: rgb(100 116 139) !important; }
   .dt-marketing .text-slate-400 { color: rgb(148 163 184) !important; }
+  .dt-marketing .text-slate-300 { color: rgb(203 213 225) !important; }
   .dt-marketing .text-dime-purple { color: var(--dime-purple) !important; }
 
   .dt-marketing svg, .dt-marketing img { filter: none !important; }
