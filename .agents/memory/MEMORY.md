@@ -1,18 +1,24 @@
-- [Stripe/Plaid secret scoping](stripe-prod-secrets-scoping.md) — sensitive keys go in global Secrets only; per-env vars leak plaintext to git-tracked .replit; only flags + public pk_* belong in env scope.
-- [Account deletion cascade](account-deletion-cascade.md) — deleteUserAccount must delete EVERY userId-FK table atomically (one txn); a new user-scoped table left out → account deletion 500s on FK violation.
-- [Real Stripe ACH transfer gates](stripe-ach-real-transfer-gates.md) — before ENABLE_REAL_TRANSFERS on: server-side enforce account isActive+linked & debtId ownership; Stage 1 proved only the simulation path.
-- [App Store demo account](appstore-demo-account.md) — give Apple the founder's prod account (clean sample debts, no bank link); prod DB is read-only to agent tools; screenshots must come from a real iPhone.
-- [Demo data for review account](demo-review-account.md) — empty review account is populated via a client-side sample dataset gated to the review email; real data always wins, never cache transformed demo values.
-- [App Store screenshot prep](appstore-screenshots.md) — SE 1170×2532 → cover-resize to 1290×2796 (6.7"); never fake numbers into images; kill TestFlight banner by opening app from home screen or covering top ~162px.
-- [Real-money gate testing](real-money-gate-testing.md) — verify ACH money gates at the storage layer on dev DB (throwaway allowlisted user), never via Stripe; agent never flips prod flag or runs a live charge.
-- [App Store status & rejection vectors](appstore-rejection-history.md) — APPROVED & LIVE 2026-06-29 (App ID 6755106723); "no changes while waiting" is over. Historical rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; gotcha: BetaModeBanner NOT flag-gated → 2.2 risk on future submits.
-- [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; the mismatch is INTENTIONAL+permanent, never reconcile it.
+- [Stripe/Plaid secret scoping](stripe-prod-secrets-scoping.md) — sensitive keys go in global Secrets only; per-env vars leak plaintext to git-tracked .replit; only flags + public pk_* in env scope.
+- [Account deletion cascade](account-deletion-cascade.md) — deleteUserAccount must delete EVERY userId-FK table atomically; a new user-scoped table left out → deletion 500s on FK violation.
+- [Real Stripe ACH transfer gates](stripe-ach-real-transfer-gates.md) — prerequisites + env-var naming decisions for real transfers; gate gaps now closed, don't re-report.
+- [Real-money rollout gate spec](real-money-rollout-gate.md) — per-user allowlist + $1-first/$5-day/1-count limits in reserveRealStripeAchDebit; blocks never call Stripe; full audit trail.
+- [Stripe ACH implementation](stripe-ach-implementation.md) — flag-off = routes 404 + SDK never imported; required secrets; route list; provider-agnostic ledger contract.
+- [Real-money gate testing](real-money-gate-testing.md) — verify ACH money gates at the storage layer on dev DB (throwaway allowlisted user); agent never flips prod flag or runs a live charge.
+- [Plaid key rotation runbook](plaid-key-rotation-runbook.md) — ordered steps to rotate PLAID_TOKEN_ENCRYPTION_KEY (stop workflow FIRST); covers Plaid tokens AND Stripe PM ids.
+- [App Store demo account](appstore-demo-account.md) — give Apple the founder's prod account (clean sample debts, no bank link); screenshots must come from a real iPhone.
+- [Demo data for review account](demo-review-account.md) — review account populated via client-side sample dataset gated to the review email; real data always wins, never cache demo values.
+- [App Store screenshot prep](appstore-screenshots.md) — SE 1170×2532 → cover-resize to 1290×2796 (6.7"); never fake numbers into images; avoid TestFlight banner in captures.
+- [App Store status & rejection vectors](appstore-rejection-history.md) — LIVE 2026-06-29 (App ID 6755106723); historical rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; BetaModeBanner not flag-gated → 2.2 risk.
+- [iOS build versioning](ios-build-versioning.md) — Info.plist is ONLY version source of truth; never reintroduce version-overwrite build phases; never set server.url; build+cap sync before CI.
+- [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; mismatch is INTENTIONAL+permanent, never reconcile.
 - [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
-- [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic/features before declaring done.
+- [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic before declaring done.
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
-- [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, dep audit, no CSP.
-- [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift (e.g. getDebtsByUserId isActive filter); update BOTH; debts soft-delete not hard-delete.
-- [Automatic debt import](debt-import-feature.md) — flag-gated; real Plaid Liabilities provider verified in SANDBOX; prod promotion is config-only (never flip); provider via DEBT_IMPORT_PROVIDER.
-- [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — bank-connect (beta) 502s with "not registered" until founder submits FC registration in live Stripe dashboard; external onboarding, not a code bug.
-- [Forced white-text theme](forced-white-text-theme.md) — index.css forces `* {color:white!important;text-shadow}` + remaps bg-white→lavender; readable inputs/real colors need a scoped opt-out (.dt-marketing / .dt-auth).
-- [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab was deliberately deleted post ACH go/no-go; verdict logic lives on as tested pure fn in shared/stripeVerdict.ts; don't re-add the UI/route.
+- [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
+- [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
+- [Automatic debt import](debt-import-feature.md) — flag-gated; Plaid Liabilities provider verified in SANDBOX; prod promotion is config-only (never flip); provider via DEBT_IMPORT_PROVIDER.
+- [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — bank-connect 502s "not registered" until founder submits FC registration in live Stripe dashboard.
+- [Forced white-text theme](forced-white-text-theme.md) — index.css forces white text + remaps bg-white→lavender; readable inputs need a scoped opt-out (.dt-marketing / .dt-auth).
+- [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab deliberately deleted post go/no-go; verdict logic lives in shared/stripeVerdict.ts; don't re-add.
+- [Sentry config](sentry-config.md) — DSN-gated dynamic import (no SDK without DSN); test-enforced PII redaction incl. /verify-email & /reset-password must never carry query strings.
+- [Internal admin surface](internal-admin.md) — ADMIN_USER_IDS fails closed; GET-only reads strip raw payloads; Real Money tab is UI over audited allowlist endpoints.

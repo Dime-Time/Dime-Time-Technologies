@@ -1,7 +1,9 @@
 # Dime Time - Fintech Debt Reduction App
 
 ## Overview
-Dime Time is an innovative fintech mobile application designed to make debt reduction engaging and user-friendly. It features real user authentication, bank account integration via Plaid, cryptocurrency functionalities, and automated round-up debt payment technology. The app aims to help users systematically reduce debt through automated financial tracking, micro-investment strategies, and consistent micro-payments. The project's ambition is to provide a fully functional, secure, and intuitive platform for financial well-being.
+Dime Time is a live fintech app (Apple App Store, App ID 6755106723) that helps consumers get out of debt via automated round-up payments: everyday purchases are rounded up and the spare change is directed toward debt paydown through real ACH transfers. Stack: Capacitor iOS app + React/TypeScript web app + Express/PostgreSQL backend. Marketing site + web app at https://dime-time.com.
+
+Detailed operational runbooks and subsystem specs live in `.agents/memory/` — see "Detailed Docs" at the bottom.
 
 ## User Preferences
 - Focus on mobile-first experience
@@ -13,223 +15,77 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
 ## Canonical Project Rules (locked — do not drift)
 
 ### Domain & Contact
-- Official domain: **https://dime-time.com** (with hyphen)
-- Working business email: **tim@dime-time.com**
-- DO NOT use `dimetime.com` (no hyphen) — Tim does not own that domain
-- All user-facing email references must be `tim@dime-time.com` until further notice
+- Official domain: **https://dime-time.com** (with hyphen). DO NOT use `dimetime.com` — Tim does not own it.
+- All user-facing email references: **tim@dime-time.com**
 
 ### Compliance Language (use verbatim where contact/legal copy is needed)
 - Positioning: *"Dime Time is a financial technology platform that helps consumers automate payments, manage ACH transfers, and build healthier financial habits through secure digital money tools."*
 - Disclaimer: *"Dime Time is a financial technology platform and is not a bank. Banking services and payment infrastructure are provided through regulated financial partners."*
-- DO NOT add Stripe / Plaid / Dwolla / Moov / Increase / bank partner logos until written approval/permission is confirmed.
+- DO NOT add Stripe / Plaid / Dwolla / Moov / Increase / bank partner logos until written approval is confirmed.
 
 ### Marketing Site Invariants (LandingPage.tsx, privacy.tsx, terms.tsx)
 - Homepage is single-page scroll — no separate `/about`, `/contact`, or `/faq` routes
-- **Web root `/` ALWAYS shows the marketing page** — even for logged-in users (their app lives at `/dashboard`; the landing header swaps Log In/Get Started for a "My Dashboard" button when authenticated). Native iOS is the exception: in the Capacitor app `/` remains the dashboard (marketing page never renders natively)
-- `/privacy` and `/terms` are standalone pages, scoped to `.dt-marketing` wrapper (opts out of in-app lavender theme)
-- Legal effective date: **May 27, 2026** (constant `EFFECTIVE_DATE` — only bump when policy text actually changes)
-- Contact form must POST to `/api/contact` and save to `contact_submissions` table
-- Contact form fallback / mailto link → `tim@dime-time.com`
-- All "Get Started" CTAs route to `/signup` on desktop/Android; on iOS browsers (detected via `IS_IOS_BROWSER` in LandingPage.tsx) they link to the App Store (`APP_STORE_URL`, App ID 6755106723) instead — founder decision 2026-07-08. The `apple-itunes-app` Smart Banner meta tag in `client/index.html` complements this.
+- **Web root `/` ALWAYS shows the marketing page** — even for logged-in users (their app lives at `/dashboard`; the header swaps to "My Dashboard" when authenticated). Native iOS exception: in the Capacitor app `/` remains the dashboard (marketing page never renders natively).
+- `/privacy` and `/terms` are standalone pages scoped to the `.dt-marketing` wrapper (opts out of the in-app lavender theme)
+- Legal effective date: **May 27, 2026** (`EFFECTIVE_DATE` constant — only bump when policy text actually changes)
+- Contact form POSTs to `/api/contact` → `contact_submissions` table; fallback mailto → tim@dime-time.com
+- "Get Started" CTAs route to `/signup` on desktop/Android; on iOS browsers (`IS_IOS_BROWSER` in LandingPage.tsx) they link to the App Store (`APP_STORE_URL`, App ID 6755106723) — founder decision 2026-07-08. The `apple-itunes-app` Smart Banner meta in `client/index.html` complements this.
 - Use only the official logo (`@/assets/dime-time-app-icon.png`) and color `#918EF4` (`bg-dime-purple` / `text-dime-purple`)
 
 ### Backend Invariants
-- `POST /api/contact` is rate-limited via `contactLimiter` (5 req/min/IP) AND requires a valid Cloudflare Turnstile token (`turnstileToken` in body) when `TURNSTILE_SECRET_KEY` is configured. In production, missing `TURNSTILE_SECRET_KEY` causes the endpoint to fail closed (fails verification). The frontend reads `VITE_TURNSTILE_SITE_KEY` and renders the widget only when set. Required secrets before public launch: `TURNSTILE_SECRET_KEY` (server) + `VITE_TURNSTILE_SITE_KEY` (client build).
-- Webhooks and ACH endpoints stay signature-verified, idempotent, and structured-logged with `correlationId` (see ACH Production Hardening below).
+- `POST /api/contact` is rate-limited (`contactLimiter`, 5 req/min/IP) AND requires a valid Cloudflare Turnstile token when `TURNSTILE_SECRET_KEY` is set; in production a missing secret fails closed. Client widget renders only when `VITE_TURNSTILE_SITE_KEY` is set.
+- Webhooks and ACH endpoints stay signature-verified, idempotent, and structured-logged with `correlationId`.
+- The `transfers` ledger is provider-agnostic (Plaid/Mercury/Stripe write the same row shape); status strings are normalized via `shared/transactionStatus.ts` — UI never branches on raw provider statuses.
+- Auth tokens encrypted at rest (AES-GCM WebCrypto) in localStorage; PIN lock with SHA-256 hash, auto-lock on background.
 
-### External Infrastructure Status (as of 2026-05-27)
-- Stripe account is **live**; Stripe Treasury review is **in progress**
-- Business bank account is connected in Stripe
-- Pursuing ACH infrastructure via Stripe, Dwolla, Moov, Increase, Plaid (Plaid previously rejected; pursuing alternates)
-- Transfer adapter layer (transfers ledger + idempotency + encrypted access tokens) is provider-agnostic — swapping providers is adapter-level, not core work
+### Launch Status (as of 2026-07-08)
+- App Store: **LIVE** (approved 2026-06-29); v1.0.4 redesign submitted, "Waiting for Review". Next build number must be 207+.
+- First real $1.00 ACH debt payment executed in production (Stripe, 2026-07-07) — end-to-end money loop proven. ACH settles in 2–4 business days via webhook.
+- Stripe account live; prod has `ENABLE_STRIPE_ACH` + `ENABLE_REAL_TRANSFERS` ON (founder decision; public protected by the default-false per-user allowlist).
+- Current focus: launch marketing (App Store download funnel from LinkedIn) and same-day fixes for user-reported issues.
 
-### Next Development Priority
-- Build the first end-to-end working ACH/payment flow:
-  signup → bank account connect → schedule payment/transfer → transaction tracked in dashboard
-
-## System Architecture
-
-### UI/UX Decisions
-- **Styling**: Tailwind CSS with a custom Dime Time purple (#918EF4)
-- **UI Components**: shadcn/ui for professional design
-- **Branding**: Clean, intuitive UI with purple branding
-
-### Technical Implementations
-- **Platform**: Capacitor Hybrid App (iOS/Android)
-  - **Web Framework**: React.js with TypeScript (runs in native WebView)
-  - **Native Layer**: Capacitor 7.4.x (wraps web app for iOS/Android)
-  - **Routing**: Wouter for SPA navigation
-- **Frontend State Management**: TanStack Query (React Query) for API calls
-- **Backend**: Express.js with Node.js
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Email/password with SHA256 hashing; PostgreSQL session store
-- **API**: RESTful endpoints for all fintech features
-
-### Feature Specifications
-- **User Authentication**: Email/password signup, secure login with session management, real user accounts.
-- **Debt Management**: View and track personal debts, interest rates, minimum payments, and accelerated payment options.
-- **Roundup Technology**: Collect spare change from purchases, direct roundups to debt payments, customizable multiplier settings.
-- **Banking Integration**: Connect real bank accounts, view actual transactions.
-- **Crypto Features**: Coinbase integration, Bitcoin purchases via roundups, portfolio tracking.
-- **Analytics & Insights**: Debt-free projections, payment tracking, financial progress visualization.
-
-### System Design Choices
-- **Security**: Auth tokens encrypted at rest using AES-GCM (WebCrypto API) and stored in localStorage. PIN lock with SHA-256 hash, auto-lock on background.
-- **ACH Production Hardening**:
-    - **Transfer Ledger**: `transfers` table tracks money movements with full lifecycle status.
-    - **Idempotency**: `Idempotency-Key` header support for `collect-roundup` and `pay-debt` routes.
-    - **Plaid Access Token Encryption**: Tokens stored AES-256-GCM encrypted at rest.
-    - **Plaid Webhook Endpoint**: `POST /webhooks/plaid` for status updates, signature-verified and idempotent.
-    - **Structured Reconciliation Logging**: JSON logs with `correlationId` for all transfer operations.
-    - **Funding Account Validation**: Explicit failure if `MERCURY_PLAID_FUNDING_ID` is not set in production.
-    - **Plaid Token Encryption Key Rotation**: `PLAID_TOKEN_ENCRYPTION_KEY` lives only as a Replit Secret (never in `.replit`). To rotate (e.g. after a suspected leak), perform steps in this order — the order matters, otherwise a token can be written with the old key after migration but before the Secret swap and become permanently unreadable:
-        1. **Stop the `Start application` workflow.** This guarantees no new `bank_accounts` rows are inserted under the old key during or just after the migration. (The migration script also takes an `ACCESS EXCLUSIVE` table lock as defense-in-depth.)
-        2. Generate a new key: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
-        3. Dry run against prod to confirm every row decrypts cleanly:
-           `PLAID_TOKEN_ENCRYPTION_KEY_OLD=<old> PLAID_TOKEN_ENCRYPTION_KEY_NEW=<new> DATABASE_URL=$PROD_DATABASE_URL DRY_RUN=1 npx tsx scripts/rotate-plaid-encryption-key.ts`
-        4. Re-run without `DRY_RUN=1` to re-encrypt every `bank_accounts.plaid_access_token` in a single transaction (the script rolls back if any row fails).
-        5. Update the `PLAID_TOKEN_ENCRYPTION_KEY` Replit Secret to the NEW key value.
-        6. Restart the `Start application` workflow and verify a test user's balances/transactions still load end-to-end.
-        7. Discard the old key value from any local shells / password manager entries.
-- **Mobile Deployment**: CodeMagic CI/CD on Mac mini M2, distribution via App Store Connect (TestFlight → App Store) with Apple Developer Account certificates.
-- **Capacitor Cold-Start Rule**: NEVER set `server.url` in `capacitor.config.ts`. Doing so makes the iOS WebView download the entire Vite bundle from `https://dime-time.com` on every cold launch (~10s delay observed in TestFlight). Bundled web assets must ship inside the IPA (`webDir: 'dist/public'` → `ios/App/App/public/`); API calls are routed to production via `Capacitor.isNativePlatform()` in `client/src/lib/queryClient.ts`. Before each Codemagic build, run `npm run build && npx cap sync ios` so `ios/App/App/public/` contains a fresh bundle (otherwise stale placeholders ship).
-- **iOS Build Number Source of Truth**: `ios/App/App/Info.plist` is authoritative for BOTH `CFBundleShortVersionString` (marketing version, e.g. `1.0.3`) and `CFBundleVersion` (build number, e.g. `201`). `codemagic.yaml` READS from Info.plist and does NOT overwrite it. Two guards prevent Apple rejections: (1) the "Verify iOS build number from Info.plist" step fails the build if Info.plist's CFBundleVersion is `<= LAST_ACCEPTED_BY_APPLE`, (2) the "Inspect final IPA metadata" step unzips the built IPA and re-checks before upload. To bump the build number: edit `CFBundleVersion` in Info.plist, also bump `CURRENT_PROJECT_VERSION` in `ios/App/App.xcodeproj/project.pbxproj` to match, commit, push, trigger Codemagic. After Apple accepts the upload, update `LAST_ACCEPTED_BY_APPLE` in `codemagic.yaml`. Historical rejections (do not repeat): build 110 hardcoded April 2026, build 200 hardcoded May 2026 — both caused by a prior agvtool step that OVERWROTE Info.plist. A second overwrite vector — an Xcode `Force App Version` `PBXShellScriptBuildPhase` that ran PlistBuddy to hardcode `CFBundleVersion 35` / `CFBundleShortVersionString 1.0.1` onto the built app — was removed from `ios/App/App.xcodeproj/project.pbxproj` (2026-05-30). NEVER reintroduce any build phase that writes version values into the built product's Info.plist; Info.plist is the only source of truth.
+## Architecture (summary)
+- **Platform**: Capacitor 7.4.x hybrid app (iOS/Android) wrapping a React 18 + TypeScript SPA; Wouter routing; TanStack Query for API state
+- **Backend**: Express.js on Node; PostgreSQL via Drizzle ORM; email/password auth (SHA256) with PostgreSQL session store; RESTful API
+- **Styling**: Tailwind CSS + shadcn/ui, Dime Time purple `#918EF4`
+- **Key integrations**: Plaid (bank linking), Stripe (Financial Connections + ACH), Coinbase (crypto round-ups), Resend (email), Sentry (error tracking), Codemagic (iOS CI/CD)
+- **Features**: auth + PIN lock, debt tracking with payoff projections, round-up engine with multipliers, bank connections, real ACH payments behind a defense-in-depth gate, crypto round-ups, analytics, internal admin panel
 
 ## Feature Flags
-
-All feature flags are defined once in `shared/flags.ts` and read on both sides:
-
-- **Server**: `server/lib/flags.ts` exposes `getFlags()` / `isFlagEnabled(name)`. Resolved once at module load — flipping a flag requires restarting the `Start application` workflow (matches our env-var deployment model).
-- **Client**: `useFlag(name)` hook in `client/src/hooks/useFlag.ts`. Values are piggybacked onto the `/api/user` bootstrap response as `_flags` (no extra round trip — important for iOS WebView cold-start latency). NEVER read flags from `import.meta.env` on the client; build-time env vars can't be flipped without a redeploy.
-
-Flag env vars (all read with tolerant parsing — `1` / `true` / `yes` / `on` / `0` / `false` / `no` / `off`, case-insensitive):
+Defined once in `shared/flags.ts`; server reads via `server/lib/flags.ts` (`getFlags()` / `isFlagEnabled()`, resolved at module load — restart to flip), client via `useFlag()` hook (values piggybacked on `/api/user` as `_flags`; NEVER read flags from `import.meta.env` on the client). Tolerant env parsing (`1/true/yes/on` etc). To add a flag: append to `FLAG_DEFINITIONS` and the table below — no other plumbing.
 
 | Env var | Default | Purpose |
 |---|---|---|
-| `ENABLE_STRIPE_ACH` | OFF | Gate Stripe Financial Connections + ACH debit code paths. OFF means the Stripe SDK is not initialized and Stripe routes are not mounted. |
-| `ENABLE_REAL_TRANSFERS` | OFF | Allow money-movement endpoints to actually move money. OFF keeps the app in sandbox/no-op mode — transfers are recorded but never settled. |
-| `ENABLE_CRYPTO` | **ON** | Enable the crypto / Bitcoin round-up surfaces. ON preserves current behavior. |
-| `ENABLE_BETA_BANNER` | OFF | Render the in-app beta banner across every authed screen. Flip ON for the TestFlight beta window, OFF for the public launch build. |
-| `ENABLE_AUTO_ROUNDUP_SWEEPS` | OFF | Gate automatic weekly round-up sweep dispersals (`sweepService.processWeeklyDispersals` → JP Morgan debt payments). OFF makes the dispersal a logged no-op even if a scheduler or admin trigger fires — the public can never have funds auto-dispersed by default. |
-| `ENABLE_DEBT_IMPORT` | OFF | Gate the provider-agnostic automatic debt-import surface (`registerDebtImportRoutes` → `/api/debts/import`, `/refresh`, `DELETE /api/debts/provider`). OFF means the routes are never mounted (fail-closed) and the import UI is hidden. Ships with a sandbox provider; swap-ready to Plaid Liabilities / Method. Write routes are per-user rate-limited (import 10/15min, refresh & disconnect 20/15min) and every import/refresh/disconnect writes a token-free row to `debt_import_audit_logs`. |
+| `ENABLE_STRIPE_ACH` | OFF | Stripe FC + ACH debit code paths. OFF = Stripe SDK never loaded, routes return 404. |
+| `ENABLE_REAL_TRANSFERS` | OFF | Master switch for real money movement. OFF = transfers recorded but never settled. |
+| `ENABLE_CRYPTO` | **ON** | Crypto / Bitcoin round-up surfaces. |
+| `ENABLE_BETA_BANNER` | OFF | In-app beta banner (TestFlight windows only). |
+| `ENABLE_AUTO_ROUNDUP_SWEEPS` | OFF | Weekly auto round-up sweep dispersals. OFF = logged no-op even if triggered. |
+| `ENABLE_DEBT_IMPORT` | OFF | Automatic debt-import routes + UI (fail-closed unmounted when OFF; rate-limited; audited). |
 
-To add a new flag: append to `FLAG_DEFINITIONS` in `shared/flags.ts` and add a row above. Server and client pick it up automatically — no other plumbing needed.
+## Money-Movement Safety (invariants)
+- `ENABLE_REAL_TRANSFERS` alone is NOT sufficient to move public money: every real ACH debit passes through `storage.reserveRealStripeAchDebit()` — per-user allowlist (`users.realTransfersEnabled`, default false) + first transfer ≤ $1 + daily total ≤ $5 + daily count ≤ 1 + duplicate-pending guard, all inside one transaction with an advisory lock. Every approve AND block writes a `real_transfer_audit_logs` row. Blocks never call Stripe.
+- Test key mode → simulation path (`status="simulated"`, no settlement). Admin can revoke a user's allowlist instantly via `/api/admin/users/:id/real-transfers` (takes effect on next attempt, no restart).
+- `PLAID_TOKEN_ENCRYPTION_KEY` (Replit Secret only) encrypts ALL at-rest provider credentials (Plaid access tokens + Stripe PM ids, AES-256-GCM).
+- Agent guardrails: the agent never flips real-money flags, never sets live secrets, never runs live charges — founder-run steps only. Prod DB is read-only to agent tools.
 
-## Stripe ACH (BETA — flagged off by default)
+## Internal Admin
+Gated by `ADMIN_USER_IDS` secret (fails closed when empty). `/admin` page: Transfers, Stripe Webhooks, and Real Money (allowlist approve/revoke) tabs. `/api/user` piggybacks `_isAdmin`. Do NOT re-add the removed Stripe Diagnostics tab (verdict logic preserved in `shared/stripeVerdict.ts`).
 
-Stripe Financial Connections + ACH debit support lives behind the `ENABLE_STRIPE_ACH` flag. When OFF (the production default) **none** of the Stripe code paths exist at runtime:
-
-- `server/services/stripeService.ts` uses `await import("stripe")` gated on `isStripeAchEnabled()` → the `stripe` npm package is never required and never added to the server's import graph at boot.
-- `server/routes.ts` skips `registerStripeRoutes(app)` / `registerStripeWebhook(app)` so `/api/stripe/*` and `/webhooks/stripe` return 404, not 401 — there is no attack surface to probe.
-- The client component `StripeConnectButton` returns `null` when `useFlag("ENABLE_STRIPE_ACH")` is false, so `@stripe/stripe-js` is only fetched on click in a build where the flag is on.
-
-**Required secrets when flipping the flag ON** (all live as Replit Secrets — never in `.replit` or `codemagic.yaml`):
-
-| Secret | Side | Purpose |
-|---|---|---|
-| `STRIPE_SECRET_KEY` | server | `sk_test_…` / `sk_live_…`. Mandatory — `isStripeAchEnabled()` returns false without it even when the flag env var is true (fails closed). |
-| `STRIPE_WEBHOOK_SECRET` | server | `whsec_…`. Mandatory before flipping the flag — `verifyStripeWebhook` throws (→ 400) if missing, so unsigned events can never mutate the ledger. |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | client (build) | `pk_test_…` / `pk_live_…`. Read by `StripeConnectButton` to call `loadStripe(...)` at click time. |
-
-**Routes (only mounted when flag ON):**
-
-- `POST /api/stripe/financial-connections/session` — auth-gated. Creates/reuses a Stripe Customer for the user and starts a Financial Connections session. Returns `clientSecret` for the browser to feed into Stripe.js.
-- `POST /api/stripe/financial-connections/exchange` — auth-gated. Materialises an FC account id into a `us_bank_account` PaymentMethod, attaches it to the customer, encrypts the PM id (AES-256-GCM via `encryptionService` — same key as Plaid tokens), and writes the row to `stripe_accounts`.
-- `POST /api/stripe/ach/debit` — auth-gated, **requires `Idempotency-Key` header**. The key is stored in our `idempotency_keys` table AND forwarded to Stripe so a retry never double-charges. Writes a row to the `transfers` ledger (`provider="stripe"`, `stripePaymentIntentId`) before calling Stripe.
-- `POST /webhooks/stripe` — signature-verified via `Stripe.webhooks.constructEvent`, deduped on `event.id` in `stripe_webhook_events`, updates the matching `transfers` row by `stripePaymentIntentId`. Mounted with `express.raw({ type: "application/json" })` on this single path — Stripe's signature is computed over the raw body.
-
-**Ledger contract:** the `transfers` table is provider-agnostic. Stripe writes the same row shape as Plaid/Mercury, populating `provider`, `stripePaymentIntentId`, and `stripeChargeId`. The canonical status mapper in `shared/transactionStatus.ts` collapses Stripe's `succeeded` → `completed`, `processing` → `processing`, `requires_payment_method` / `requires_action` → `requires_action`, `canceled` → `failed` — UI never branches on raw Stripe strings.
-
-**Encryption parity with Plaid:** `stripe_accounts.stripe_payment_method_enc` reuses `encryptToken`/`decryptToken` from `server/services/encryptionService.ts`, so `PLAID_TOKEN_ENCRYPTION_KEY` is the single canonical secret for ALL at-rest provider credentials. The same rotation runbook applies — when rotating, the Stripe PM ids re-encrypt as part of the same migration (see "Plaid Token Encryption Key Rotation").
-
-**Sentry / correlationId:** every route's `stripeLog(correlationId, ...)` calls `setCorrelationTag(correlationId)` so any captured exception during a Stripe request carries the same id as the structured log line and the ledger row.
-
-## Real-Money ACH Rollout Gate (defense-in-depth on top of `ENABLE_REAL_TRANSFERS`)
-
-`ENABLE_REAL_TRANSFERS` is the master switch, but flipping it ON is **not** sufficient to move money for the public. A second, per-user gate sits in front of every real ACH debit so that even with the master switch ON, only explicitly allowlisted users — under conservative dollar/count limits, with a full audit trail and instant revoke — can ever trigger a real charge. The public can never be auto-enrolled.
-
-**Per-user allowlist (`users` table):** `realTransfersEnabled` (bool, default `false`), `realTransfersEnabledAt`, `realTransfersEnabledBy` (admin user id), `realTransfersNotes`. Default-false means a brand-new user is never allowlisted.
-
-**The gate — `storage.reserveRealStripeAchDebit()`** (`server/storage.ts`): runs inside a single DB transaction holding a per-user advisory lock, and re-reads live state (allowlist flag, active/linked `stripe_accounts` row, debt ownership, in-flight transfers) *inside* the lock so a concurrent request or a just-revoked allowlist can't race past it. It enforces, in order:
-
-- **Allowlist** — `realTransfersEnabled` must be true → else `{ ok:false, reason:"not_allowlisted", httpStatus:403 }`. **The route never calls Stripe on a block.**
-- **First transfer ≤ $1** — a user's very first real transfer (no prior consumed transfer) is capped at `REAL_FIRST_TRANSFER_MAX_DOLLARS=1` → else `over_first_transfer_limit`, 422.
-- **Daily total ≤ $5** — `REAL_DAILY_TOTAL_MAX_DOLLARS=5` across the UTC day → else `over_daily_total`, 422.
-- **Daily count ≤ 1** — `REAL_DAILY_COUNT_MAX=1` consumed transfer per UTC day → else `over_daily_count`, 429.
-- **Duplicate-pending guard** — an existing non-terminal transfer for the same debt → `duplicate_pending`, 409.
-
-Only if every check passes does it write the `real_transfer_audit_logs` row **and** the `transfers` ledger row (`status="created"`) atomically and return `{ ok:true, ledger, auditId, isFirst }`. Limit math counts only consumed statuses (`created`/`authorized`/`pending`/`processing`/`posted`/`settled`/`requires_action`); `simulated`/`failed`/`refunded`/`disputed` are excluded. Every decision — approve **and** block — writes a `real_transfer_audit_logs` row, so the money trail is complete regardless of outcome.
-
-**Simulation vs real split in `POST /api/stripe/ach/debit`:** when the resolved Stripe key mode is `test` (or real transfers are off) the route takes the **simulation path** — no allowlist check, writes a `transfers` row with `status="simulated"`, and never calls Stripe for settlement. The **real path** (live key mode) requires a valid mandate, then routes the request through `reserveRealStripeAchDebit`; on a block it finalizes with `gate.httpStatus` and **Stripe is never called**; on approval it uses `gate.ledger` + Stripe and writes outcome audit logs.
-
-**Emergency disable (admin):**
-
-- `POST /api/admin/users/:id/real-transfers` — `requireAdmin`, body `{ enabled: boolean, notes?: string (≤500) }`. Flips the allowlist and stamps `realTransfersEnabledBy`/`At`. Because the gate re-reads the flag live inside the lock, a revoke takes effect on the very next debit attempt — no restart, no cache.
-- `GET /api/admin/users/:id/real-transfers` — current allowlist status for a user.
-- `GET /api/admin/real-transfer-audit` — recent real-transfer audit decisions across all users.
-
-**Auto round-up sweeps are blocked by default:** `sweepService.processWeeklyDispersals` is gated behind `ENABLE_AUTO_ROUNDUP_SWEEPS` (default OFF) and returns a logged no-op when off, so even if a scheduler or admin trigger fires, the public can never have funds auto-dispersed. `sweepRoutes` (currently unmounted dead code, hardened defensively) had its `demo-user-1` fallback removed and now requires auth + `requireAdmin`.
-
-**Verifying the gate (DEV ONLY, no Stripe, no money):** the gate logic is provable in isolation by calling `reserveRealStripeAchDebit` directly against the dev DB with a throwaway allowlisted user (allowlist→403, first-$1→422, approve, duplicate→409, daily-count→429, instant revoke, audit trail, delete-cascade). This never flips the prod flag and never calls Stripe. **Do NOT run a live $1 charge from the agent** — the first real-money test is a founder-run step in the live rollout runbook.
-
-## Error Tracking (Sentry)
-
-Production error visibility is provided by Sentry on both the Express server and the React client. Wiring lives in `server/lib/sentry.ts`, `client/src/lib/sentry.ts`, and the shared redactor in `shared/sentryRedact.ts`.
-
-**Env vars (all optional — Sentry is silent if unset):**
-
-| Env var | Side | Purpose |
-|---|---|---|
-| `SENTRY_DSN` | server + client | Single canonical DSN. The server reads it at runtime; `vite.config.ts` forwards it to the client bundle at build time as `VITE_SENTRY_DSN`. Missing → no SDK init on either side AND the `@sentry/node` / `@sentry/react` packages are never imported (dynamic `import()` is gated on the DSN being present), so neither the server process nor the client bundle pays SDK overhead beyond the tiny init shim. |
-| `SENTRY_ENVIRONMENT` | both | Override the environment tag (defaults to `NODE_ENV` / Vite `MODE`). Also forwarded to the client bundle. |
-| `SENTRY_RELEASE` | both | Release name (matched between client & server for cross-stack grouping). Also forwarded to the client bundle. |
-| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | build time | Required to enable client source-map upload via the Sentry Vite plugin (prod build only). |
-
-**Redaction guarantees (enforced by `server/lib/__tests__/sentry-redact.test.ts`):**
-
-- Query strings AND URL fragments are stripped from `request.url`, all `breadcrumbs[].data.url` (and `to` / `from`), and any string in `extra` / `contexts` / `request.data` that looks like an http(s) URL.
-- Any field whose key matches `/token|password|secret|api[_-]?key|authorization|cookie|plaid[_-]?access[_-]?token|access[_-]?token|refresh[_-]?token/i` (case-insensitive) is replaced with the literal string `[Filtered]`.
-- `Authorization`, `Cookie`, and `Set-Cookie` request headers are filtered.
-- Free-form `message` and `exception.value` strings have `token=…` / `password=…` / `access_token=…` query-style params scrubbed.
-- **Hard assertion:** `/verify-email` and `/reset-password` (and the corresponding POST endpoints) MUST NOT carry a query string in any captured event. The test suite asserts that the redacted `request.url` for these paths contains neither `?` nor `token=`.
-
-**CorrelationId propagation:** the `transferLog` / `log` helpers in `server/routes/mercuryRoutes.ts`, `server/services/mercuryService.ts`, and `server/services/plaidService.ts` call `setCorrelationTag(correlationId)` on the current Sentry isolation scope, so any exception captured during a transfer / ACH request carries the same `correlationId` already present in our structured logs. On the client, `throwIfResNotOk` in `client/src/lib/queryClient.ts` parses the server's JSON error body and, if a `correlationId` is present, tags the current Sentry scope with it — so a client-side exception thrown from a failed API call carries the same id as the server's Sentry event.
-
-**Source maps:** the Sentry Vite plugin uploads source maps only when `NODE_ENV=production` AND all three of `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` are set. Generated `.map` files are deleted after upload (`sourcemaps.filesToDeleteAfterUpload: ["**/*.map"]`), and `server/index.ts` returns 404 for any request whose path ends in `.map` as a second layer of defense.
-
-**Running the redaction test:** `npx tsx --test server/lib/__tests__/sentry-redact.test.ts`
-
-## Internal Admin (read-only operator surface)
-
-Gated by `ADMIN_USER_IDS` (Replit Secret, comma-separated user UUIDs). Empty/unset = no admins (fails closed). Restart required after changes.
-
-- Backend: `server/lib/admin.ts` (`requireAdmin` middleware), `server/routes/adminRoutes.ts`. All endpoints are GET-only and strip `rawRequest` / `rawResponse` from transfer rows before serialization.
-  - `GET /api/admin/me` — 200 `{isAdmin:true}` if caller is admin, else 401/403.
-  - `GET /api/admin/transfers?limit=&provider=&status=` — recent transfers across all users (clamp 1..500).
-  - `GET /api/admin/transfers/:id` — one transfer with full operational fields (no raw payloads).
-  - `GET /api/admin/webhooks/stripe?limit=` — recent Stripe webhook events (eventId, type, receivedAt).
-- `/api/user` piggybacks `_isAdmin: boolean` alongside `_flags` so the client knows whether to show the admin surface (no extra round trip).
-- The temporary "Stripe Diagnostics" tab (Verdict UI + `GET /api/admin/stripe/diagnostics`) was deliberately removed 2026-06-30 after the ACH go/no-go decision — do NOT re-add it. Its decision-critical verdict mapping is preserved verbatim as the pure function `computeStripeVerdict` in `shared/stripeVerdict.ts`, locked by `npx tsx --test shared/__tests__/stripeVerdict.test.ts` (10 cases). Any reinstated UI must consume this function, not re-inline the copy.
-- Frontend: `/admin` route → `client/src/pages/admin.tsx` (Transfers + Stripe Webhooks + Real Money tabs). Non-admin users see a "not authorized" card; backend stays the source of truth regardless of client state.
-  - **Real Money tab**: one-click approve/revoke of a user's `realTransfersEnabled` allowlist flag via `GET`/`POST /api/admin/users/:id/real-transfers`. A "Your account" card targets the logged-in admin's own `user.id` (self-approval for the $1 go-live test); an "Approve another user" card takes a pasted user id. Every enable/revoke goes through an `AlertDialog` confirmation. This is purely a UI over the existing audited endpoints — the backend gate/limits remain the source of truth.
+## iOS Release Rules
+- `ios/App/App/Info.plist` is the ONLY source of truth for version/build numbers; `codemagic.yaml` reads it and must never overwrite it. Never reintroduce any build phase that writes version values into the built product.
+- Never set `server.url` in `capacitor.config.ts` (breaks cold-start). Before each Codemagic build: `npm run build && npx cap sync ios`.
+- After Apple accepts an upload, update `LAST_ACCEPTED_BY_APPLE` in codemagic.yaml (two lines). Currently 206 (v1.0.4).
 
 ## Investor / Patent Materials
-- `attached_assets/patent-application/` — USPTO provisional draft (.pdf + .docx) and 7 black-and-white figures
-- `attached_assets/patent-deck-slides/dime-time-patent-deck.pptx` — 12-slide investor patent overview deck (Google Slides-uploadable). PDF and per-slide PNG previews in same folder.
-- `attached_assets/pitch-deck-slides/` — 13-slide pitch deck (.pptx + .pdf)
-- `attached_assets/business-plan-slides/` — 14-slide business plan (.pptx + .pdf)
+- `attached_assets/patent-application/` — USPTO provisional draft + 7 figures
+- `attached_assets/patent-deck-slides/` — 12-slide investor patent deck (.pptx/.pdf/PNGs)
+- `attached_assets/pitch-deck-slides/` — 13-slide pitch deck; `attached_assets/business-plan-slides/` — 14-slide business plan
 
-## External Dependencies
-- **Plaid**: For banking integration and linking user bank accounts.
-- **Coinbase**: For cryptocurrency features and Bitcoin purchases.
-- **CodeMagic**: CI/CD for building and deploying iOS and Android applications.
-- **PostgreSQL**: Primary database for application data.
-- **Express.js**: Backend framework.
-- **Node.js**: Backend runtime environment.
-- **React.js**: Frontend framework.
-- **TypeScript**: For type-safe development.
-- **Tailwind CSS**: For styling.
-- **Wouter**: For client-side routing.
-- **shadcn/ui**: For UI components.
-- **TanStack Query (React Query)**: For API data fetching and state management.
-- **Drizzle ORM**: Object-Relational Mapper for PostgreSQL.
+## Detailed Docs (in `.agents/memory/`)
+- `plaid-key-rotation-runbook.md` — ordered steps to rotate `PLAID_TOKEN_ENCRYPTION_KEY`
+- `stripe-ach-implementation.md` — Stripe ACH routes, secrets, flag-off guarantees, ledger contract
+- `real-money-rollout-gate.md` — full gate spec, limits, audit trail, dev-only verification
+- `sentry-config.md` — Sentry env vars, redaction guarantees, correlationId propagation
+- `ios-build-versioning.md` — build-number history, rejection causes, Capacitor rules
+- `internal-admin.md` — admin endpoint list and UI details
