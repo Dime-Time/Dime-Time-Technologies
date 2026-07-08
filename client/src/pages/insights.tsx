@@ -106,7 +106,7 @@ export default function Insights() {
   const avgMonthlyReduction = totalPaid / 7; // 7 months of data
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Financial Insights</h1>
         <p className="text-slate-600">Understand your spending patterns and debt payoff progress</p>
@@ -351,14 +351,14 @@ export default function Insights() {
                         className="rounded-md border border-slate-200 px-3 py-2"
                         data-testid={`transfer-row-${t.id}`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
                             <span className="text-sm font-medium text-slate-900">
                               {formatCurrency(t.amount)}
                             </span>
                             <StatusBadge status={t.status} timestamp={t.createdAt} />
                           </div>
-                          <span className="text-xs text-slate-500 capitalize">
+                          <span className="text-xs text-slate-500 capitalize whitespace-nowrap">
                             {t.type.replace(/_/g, " ")}
                           </span>
                         </div>

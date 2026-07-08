@@ -70,12 +70,12 @@ export default function Banking() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Banking</h1>
           <p className="text-gray-600">Connect and manage your bank accounts</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={() => refreshDataMutation.mutate()}

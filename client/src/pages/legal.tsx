@@ -5,7 +5,7 @@ import { BetaModeBanner } from "@/components/BetaModeBanner";
 
 export default function Legal() {
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Legal Information</h1>
         <p className="text-slate-600">Terms of Service, Privacy Policy, and Risk Disclosures</p>

@@ -65,8 +65,10 @@ export function Navigation() {
               ))}
             </div>
 
-            {/* Right-side actions (notifications, settings, QR, profile, menu) */}
-            <div className="flex items-center space-x-4">
+            {/* Right-side actions (notifications, settings, QR, profile, menu).
+                On mobile only bell + menu render — Settings lives in the bottom
+                tab bar and everything else is inside the hamburger sheet. */}
+            <div className="flex items-center space-x-1 md:space-x-4">
               <Link href="/notifications">
                 <Button
                   variant="ghost"
@@ -78,7 +80,7 @@ export function Navigation() {
                 </Button>
               </Link>
 
-              <Link href="/settings">
+              <Link href="/settings" className="hidden md:block">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -89,7 +91,7 @@ export function Navigation() {
                 </Button>
               </Link>
 
-              <Link href="/qr">
+              <Link href="/qr" className="hidden md:block">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -101,7 +103,7 @@ export function Navigation() {
               </Link>
 
               {isAdmin && (
-                <Link href="/admin">
+                <Link href="/admin" className="hidden md:block">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -115,7 +117,7 @@ export function Navigation() {
 
               {/* Profile avatar placeholder */}
               <div
-                className="w-11 h-11 min-h-[44px] min-w-[44px] bg-white/20 rounded-full flex items-center justify-center"
+                className="hidden md:flex w-11 h-11 min-h-[44px] min-w-[44px] bg-white/20 rounded-full items-center justify-center"
                 data-testid="button-profile"
               >
                 <User className="w-5 h-5 text-white" />
@@ -216,19 +218,20 @@ export function Navigation() {
       {/* Bottom Navigation (mobile) – respects home indicator via safe-area-bottom */}
       <nav className="safe-area-bottom md:hidden fixed bottom-0 left-0 right-0 border-t border-white/20 px-1 z-50 bg-dime-background">
         <div className="flex justify-around items-center max-w-screen-xl mx-auto">
-          {navItems.map((item) => {
+          {[...navItems, { href: "/settings", label: "Settings", icon: Settings }].map((item) => {
             const Icon = item.icon;
-            const active = location === item.href;
+            const active = isActive(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center py-3 px-2 min-h-[56px] transition-colors ${
+                className={`flex flex-col items-center py-3 px-1 min-h-[56px] transition-colors ${
                   active ? "text-white" : "text-white/70"
                 }`}
+                data-testid={`tab-${item.label.toLowerCase()}`}
               >
                 <Icon className="w-6 h-6 mb-1" />
-                <span className="text-xs font-medium">{item.label}</span>
+                <span className="text-[11px] font-medium">{item.label}</span>
               </Link>
             );
           })}

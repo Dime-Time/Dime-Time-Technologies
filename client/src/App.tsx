@@ -55,15 +55,13 @@ import NotFound from "@/pages/not-found";
 
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-top safe-area-bottom">
+    <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-bottom">
+      <Navigation />
       <BetaBanner />
       <EmailVerificationBanner />
-      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-24 md:pb-4">
         {children}
       </main>
-      <nav className="sticky bottom-0 left-0 right-0 safe-area-bottom">
-        <Navigation />
-      </nav>
     </div>
   );
 }

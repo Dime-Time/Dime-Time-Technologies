@@ -186,7 +186,7 @@ export function DebtProgressChart({ data, labels, className = "", enableVariatio
   }, [data, labels, enableVariation, freezeLast]);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative min-w-0 w-full max-w-full overflow-hidden ${className}`}>
       <canvas ref={canvasRef} />
     </div>
   );
