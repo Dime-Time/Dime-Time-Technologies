@@ -24,6 +24,40 @@ import logoUrl from "@/assets/dime-time-app-icon.png";
 
 const APP_STORE_URL = "https://apps.apple.com/app/id6755106723";
 
+const IS_IOS_BROWSER =
+  typeof navigator !== "undefined" &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.userAgent.includes("Macintosh") && navigator.maxTouchPoints > 1));
+
+function GetStartedCTA({
+  className,
+  size,
+  onClick,
+  testId,
+}: {
+  className?: string;
+  size?: "default" | "sm" | "lg" | "icon";
+  onClick?: () => void;
+  testId?: string;
+}) {
+  if (IS_IOS_BROWSER) {
+    return (
+      <a href={APP_STORE_URL} onClick={onClick}>
+        <Button size={size} className={className} data-testid={testId}>
+          Get Started
+        </Button>
+      </a>
+    );
+  }
+  return (
+    <Link href="/signup">
+      <Button size={size} className={className} onClick={onClick} data-testid={testId}>
+        Get Started
+      </Button>
+    </Link>
+  );
+}
+
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
   { label: "About", href: "#about" },
@@ -260,11 +294,10 @@ export default function LandingPage() {
                       Log In
                     </Button>
                   </Link>
-                  <Link href="/signup">
-                    <Button className="bg-dime-purple text-white hover:bg-dime-purple/90">
-                      Get Started
-                    </Button>
-                  </Link>
+                  <GetStartedCTA
+                    className="bg-dime-purple text-white hover:bg-dime-purple/90"
+                    testId="button-nav-get-started"
+                  />
                 </>
               )}
             </div>
@@ -313,14 +346,11 @@ export default function LandingPage() {
                         Log In
                       </Button>
                     </Link>
-                    <Link href="/signup">
-                      <Button
-                        className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        Get Started
-                      </Button>
-                    </Link>
+                    <GetStartedCTA
+                      className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
+                      onClick={() => setMobileOpen(false)}
+                      testId="button-nav-get-started-mobile"
+                    />
                   </>
                 )}
               </div>
@@ -343,14 +373,11 @@ export default function LandingPage() {
             tools.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup">
-              <Button
-                size="lg"
-                className="bg-dime-purple text-white hover:bg-dime-purple/90 px-8"
-              >
-                Get Started
-              </Button>
-            </Link>
+            <GetStartedCTA
+              size="lg"
+              className="bg-dime-purple text-white hover:bg-dime-purple/90 px-8"
+              testId="button-hero-get-started"
+            />
             <a href="#how-it-works">
               <Button
                 size="lg"

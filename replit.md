@@ -30,7 +30,7 @@ Dime Time is an innovative fintech mobile application designed to make debt redu
 - Legal effective date: **May 27, 2026** (constant `EFFECTIVE_DATE` — only bump when policy text actually changes)
 - Contact form must POST to `/api/contact` and save to `contact_submissions` table
 - Contact form fallback / mailto link → `tim@dime-time.com`
-- All "Get Started" CTAs route to `/signup`
+- All "Get Started" CTAs route to `/signup` on desktop/Android; on iOS browsers (detected via `IS_IOS_BROWSER` in LandingPage.tsx) they link to the App Store (`APP_STORE_URL`, App ID 6755106723) instead — founder decision 2026-07-08. The `apple-itunes-app` Smart Banner meta tag in `client/index.html` complements this.
 - Use only the official logo (`@/assets/dime-time-app-icon.png`) and color `#918EF4` (`bg-dime-purple` / `text-dime-purple`)
 
 ### Backend Invariants
