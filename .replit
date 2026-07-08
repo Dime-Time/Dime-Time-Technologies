@@ -49,13 +49,13 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 [userenv.development]
 VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51Tb9PzPZOgMsSXBjAoH02yCOIMODtxjgLraSajbcrDDbzcwqs3Ee9suyiwRjmDbqofcYX6p9Xj2gX5ImaIoKkXnr00283eQFwa"
 ENABLE_STRIPE_ACH = "true"
-ENABLE_REAL_TRANSFERS = "true"
+ENABLE_REAL_TRANSFERS = "false"
 ENABLE_DEBT_IMPORT = "1"
 DEBT_IMPORT_PROVIDER = "plaid"
 
 [userenv.production]
 ENABLE_STRIPE_ACH = "true"
-ENABLE_REAL_TRANSFERS = "false"
+ENABLE_REAL_TRANSFERS = "true"
 VITE_STRIPE_PUBLISHABLE_KEY = "pk_live_51Tb9PzPZOgMsSXBjPyXmJCWrXTnVySYlcbjkqo4yMfdlqfwcc7UPXmeIy6BRMLqASWV9UwjHoP0RV6CG1GqPvYNb00FbpzuMae"
 PUBLIC_APP_URL = "https://dime-time.com"
 
