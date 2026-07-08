@@ -26,3 +26,8 @@ Rejection reasons Apple has cited across submission cycles (most recent first):
 
 # Orphaned-but-routed risky pages (reachable only by direct URL, not in nav)
 Routed in `App.tsx` but NOT linked from primary navigation (Home/Banking/Crypto/Insights): `/business-analytics` (growth projections + TikTok marketing strategy — looks like internal pitch material), `/dime-token`, `/stats` (shows "Web, iOS, Android" → 2.3.10 risk), `/admin` (backend `requireAdmin`-gated). `ComingSoon.tsx` and lowercase `landing.tsx` ("Coming soon!" + `alert()` CTA) are imported but NOT routed → currently unreachable. Low discoverability, but a stray nav link or reviewer deep-link would expose them.
+
+# Upload failure: CONTRACT_NOT_VALID (2026-07-08, resolved)
+Codemagic step "Upload IPA to App Store Connect" fails with altool 403 `FORBIDDEN_ERROR.CONTRACT_NOT_VALID` ("You do not have required contracts") when Apple has a pending Program License Agreement (or Paid Apps agreement) awaiting Account Holder acceptance, or the $99 membership lapsed.
+**Why:** Apple periodically pushes updated agreements; ALL uploads freeze account-wide until accepted. Not a code/build issue — the IPA builds fine.
+**How to apply:** founder logs into App Store Connect → Business / "Agreements, Tax, and Banking" → accept; then simply re-run the same Codemagic build (no push, no code change needed).
