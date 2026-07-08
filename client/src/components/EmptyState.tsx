@@ -11,9 +11,7 @@ interface EmptyStateProps {
   className?: string;
   testIdPrefix?: string;
   /**
-   * Visual tone for the surface this is rendered on.
-   * - "onLight" (default): dark text + dime-purple accent, for white Card surfaces
-   * - "onPurple": white text + white-outline CTA, for the lavender auth/onboarding surfaces
+   * Ignored in Phase 2 light theme, kept for backward compatibility.
    */
   tone?: "onLight" | "onPurple";
 }
@@ -22,8 +20,7 @@ interface EmptyStateProps {
  * Friendly, consistent empty-state block for list-style surfaces
  * (transactions, debts, roundups, crypto, feedback). One CTA only.
  *
- * Theme-safe: pick `tone` based on the parent surface so the text stays
- * legible on either a white Card or the lavender #918EF4 brand panel.
+ * Theme-safe: Restyled for the premium light theme.
  * CTA height is ≥44px to satisfy mobile tap-target guidance.
  */
 export function EmptyState({
@@ -36,62 +33,34 @@ export function EmptyState({
   testIdPrefix = "empty-state",
   tone = "onLight",
 }: EmptyStateProps) {
-  const isPurple = tone === "onPurple";
-
   return (
     <div
       className={cn(
-        "flex flex-col items-center text-center py-8 px-4",
+        "flex flex-col items-center text-center py-10 px-6 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 animate-fade-in",
         className
       )}
       data-testid={testIdPrefix}
     >
       {Icon && (
-        <div
-          className={cn(
-            "w-12 h-12 rounded-full flex items-center justify-center mb-3",
-            isPurple
-              ? "bg-white/15"
-              : "bg-dime-purple/10 border border-dime-purple/20"
-          )}
-        >
-          <Icon
-            className={cn(
-              "w-6 h-6",
-              isPurple ? "text-white" : "text-dime-purple"
-            )}
-          />
+        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-dime-purple/10 border border-dime-purple/20 shadow-sm">
+          <Icon className="w-6 h-6 text-dime-purple" />
         </div>
       )}
       <p
-        className={cn(
-          "font-semibold",
-          isPurple ? "text-white" : "text-slate-900"
-        )}
+        className="font-semibold text-slate-900 text-base"
         data-testid={`${testIdPrefix}-title`}
       >
         {title}
       </p>
       {description && (
-        <p
-          className={cn(
-            "text-sm mt-1 max-w-xs",
-            isPurple ? "text-white/80" : "text-slate-600"
-          )}
-        >
+        <p className="text-sm mt-1.5 max-w-sm text-slate-500 leading-relaxed">
           {description}
         </p>
       )}
       {ctaLabel && onCtaClick && (
         <Button
           variant="outline"
-          size="lg"
-          className={cn(
-            "mt-4 min-h-[44px]",
-            isPurple
-              ? "border-white/40 text-white hover:bg-white/10"
-              : "border-dime-purple/40 text-dime-purple hover:bg-dime-purple/5"
-          )}
+          className="mt-6 min-h-[44px] min-w-[140px] font-medium border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-all press-scale"
           onClick={onCtaClick}
           data-testid={`${testIdPrefix}-cta`}
         >

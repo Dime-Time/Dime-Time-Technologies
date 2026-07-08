@@ -2,62 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Dime Time Design System — Phase 2 premium fintech theme
+   Light, airy surfaces. Purple (#918EF4) is reserved for primary actions
+   and accents. Text is dark charcoal. Cards are white with a thin border
+   and a soft shadow. 8pt spacing grid via Tailwind defaults.
+   ───────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: hsl(243, 84%, 76%);
-  --foreground: hsl(0, 0%, 100%);
-  --muted: hsl(243, 74%, 82%);
-  --muted-foreground: hsl(0, 0%, 100%);
-  --popover: hsl(243, 84%, 76%);
-  --popover-foreground: hsl(0, 0%, 100%);
-  --card: hsl(243, 84%, 76%);
-  --card-foreground: hsl(0, 0%, 100%);
-  --border: hsl(243, 64%, 88%);
-  --input: hsl(243, 74%, 82%);
-  --primary: hsl(243, 84%, 76%);
+  /* Core surfaces */
+  --background: hsl(225, 40%, 98%);            /* #F8F9FC page background */
+  --foreground: hsl(222, 22%, 16%);            /* dark charcoal text */
+  --card: hsl(0, 0%, 100%);                    /* white cards */
+  --card-foreground: hsl(222, 22%, 16%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 22%, 16%);
+
+  /* Muted / secondary surfaces */
+  --muted: hsl(225, 30%, 95%);
+  --muted-foreground: hsl(222, 10%, 45%);
+  --secondary: hsl(225, 30%, 95%);
+  --secondary-foreground: hsl(222, 22%, 16%);
+
+  /* Brand */
+  --primary: hsl(243, 84%, 76%);               /* Dime Time purple #918EF4 */
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(243, 74%, 82%);
-  --secondary-foreground: hsl(0, 0%, 100%);
-  --accent: hsl(243, 64%, 88%);
-  --accent-foreground: hsl(0, 0%, 100%);
-  --destructive: hsl(0, 84.2%, 60.2%);
+  --accent: hsl(243, 84%, 95%);                /* light purple tint */
+  --accent-foreground: hsl(243, 45%, 48%);
+
+  /* Feedback */
+  --destructive: hsl(0, 72%, 51%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(243, 64%, 88%);
-  --radius: 0.5rem;
-  
-  /* Dime Time brand colors - Updated with #918EF4 */
+
+  /* Chrome */
+  --border: hsl(225, 22%, 90%);
+  --input: hsl(225, 22%, 88%);
+  --ring: hsl(243, 84%, 76%);
+  --radius: 0.75rem;
+
+  /* Charts */
+  --chart-1: hsl(243, 84%, 76%);
+  --chart-2: hsl(243, 60%, 55%);
+  --chart-3: hsl(160, 60%, 42%);
+  --chart-4: hsl(38, 92%, 50%);
+  --chart-5: hsl(0, 72%, 51%);
+
+  /* Dime Time brand palette (#918EF4 family) */
   --dime-primary: hsl(243, 84%, 76%);
   --dime-purple: hsl(243, 84%, 76%);
   --dime-lilac: hsl(243, 74%, 82%);
   --dime-lavender: hsl(243, 64%, 88%);
-  --dime-accent: hsl(243, 79%, 72%);
-  --dime-background: hsl(243, 84%, 76%);
-  --dime-dark: hsl(243, 84%, 45%);
+  --dime-accent: hsl(243, 55%, 55%);           /* deeper indigo for accent text */
+  --dime-background: hsl(225, 40%, 98%);       /* now the light page bg */
+  --dime-dark: hsl(243, 50%, 40%);
   --slate-50: hsl(210, 40%, 98%);
-  --slate-600: hsl(0, 0%, 0%);
-  --slate-900: hsl(0, 0%, 0%);
+  --slate-600: hsl(215, 16%, 40%);
+  --slate-900: hsl(222, 47%, 11%);
 }
 
+/* Dark mode palette is intentionally a duplicate of light for now —
+   a designed dark theme ships with the ThemeProvider (spec §14).
+   This guarantees a stray `.dark` class can never break readability. */
 .dark {
-  --background: hsl(243, 84%, 76%);
-  --foreground: hsl(0, 0%, 100%);
-  --muted: hsl(243, 74%, 82%);
-  --muted-foreground: hsl(0, 0%, 100%);
-  --popover: hsl(243, 84%, 76%);
-  --popover-foreground: hsl(0, 0%, 100%);
-  --card: hsl(243, 84%, 76%);
-  --card-foreground: hsl(0, 0%, 100%);
-  --border: hsl(243, 64%, 88%);
-  --input: hsl(243, 74%, 82%);
+  --background: hsl(225, 40%, 98%);
+  --foreground: hsl(222, 22%, 16%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 22%, 16%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 22%, 16%);
+  --muted: hsl(225, 30%, 95%);
+  --muted-foreground: hsl(222, 10%, 45%);
+  --secondary: hsl(225, 30%, 95%);
+  --secondary-foreground: hsl(222, 22%, 16%);
   --primary: hsl(243, 84%, 76%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(243, 74%, 82%);
-  --secondary-foreground: hsl(0, 0%, 100%);
-  --accent: hsl(243, 64%, 88%);
-  --accent-foreground: hsl(0, 0%, 100%);
-  --destructive: hsl(0, 62.8%, 30.6%);
+  --accent: hsl(243, 84%, 95%);
+  --accent-foreground: hsl(243, 45%, 48%);
+  --destructive: hsl(0, 72%, 51%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(243, 64%, 88%);
-  --radius: 0.5rem;
+  --border: hsl(225, 22%, 90%);
+  --input: hsl(225, 22%, 88%);
+  --ring: hsl(243, 84%, 76%);
+  --radius: 0.75rem;
 }
 
 @layer base {
@@ -66,9 +92,8 @@
   }
 
   body {
-    @apply font-sans antialiased text-foreground;
+    @apply font-sans antialiased bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
-    background-color: var(--dime-background);
     /* iOS safe area support */
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
@@ -76,162 +101,34 @@
     padding-right: env(safe-area-inset-right);
   }
 
+  html, #root {
+    background-color: var(--background);
+  }
+
   /* iOS safe area utilities - Dynamic Island requires ~59px, notch ~44px */
   .safe-area-top {
     padding-top: max(env(safe-area-inset-top, 0px), 44px);
   }
-  
+
   .safe-area-bottom {
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
   }
-  
+
   /* Extra spacing for sticky headers below safe area */
   .safe-area-top-header {
     padding-top: calc(max(env(safe-area-inset-top, 0px), 44px) + 8px);
   }
 
-  /* Force all text to be white with dark purple outline */
-  * {
-    color: white !important;
-    text-shadow: 
-      -1px -1px 0 #5a56a8,
-      1px -1px 0 #5a56a8,
-      -1px 1px 0 #5a56a8,
-      1px 1px 0 #5a56a8,
-      0 0 2px #5a56a8;
+  /* Number-heavy fintech UI: keep digits aligned everywhere */
+  .tabular-nums, [data-amount] {
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Dark shadow for all SVG elements (logos, icons) */
-  svg {
-    filter: drop-shadow(-1px -1px 0 #5a56a8) 
-            drop-shadow(1px -1px 0 #5a56a8) 
-            drop-shadow(-1px 1px 0 #5a56a8) 
-            drop-shadow(1px 1px 0 #5a56a8) 
-            drop-shadow(0 0 2px #5a56a8) !important;
-  }
-
-  /* Dark shadow for images including logos - exclude clean logo images */
-  img:not(.logo-image-clean) {
-    filter: drop-shadow(-1px -1px 0 #5a56a8) 
-            drop-shadow(1px -1px 0 #5a56a8) 
-            drop-shadow(-1px 1px 0 #5a56a8) 
-            drop-shadow(1px 1px 0 #5a56a8) 
-            drop-shadow(0 0 2px #5a56a8) !important;
-  }
-
-  /* Dark shadow for buttons and interactive elements */
-  button, .button, [role="button"] {
-    text-shadow: 
-      -1px -1px 0 #5a56a8,
-      1px -1px 0 #5a56a8,
-      -1px 1px 0 #5a56a8,
-      1px 1px 0 #5a56a8,
-      0 0 2px #5a56a8 !important;
-  }
-
-  /* Dark shadow for all white paths in SVGs */
-  svg path[fill="white"], 
-  svg path[fill="#ffffff"], 
-  svg path[fill="#FFFFFF"],
-  svg path[stroke="white"],
-  svg path[stroke="#ffffff"],
-  svg path[stroke="#FFFFFF"] {
-    filter: drop-shadow(-1px -1px 0 #5a56a8) 
-            drop-shadow(1px -1px 0 #5a56a8) 
-            drop-shadow(-1px 1px 0 #5a56a8) 
-            drop-shadow(1px 1px 0 #5a56a8) 
-            drop-shadow(0 0 2px #5a56a8) !important;
-  }
-
-  /* Dark shadow for logos specifically - excluding clean logo classes */
-  .logo:not(.logo-clean), [class*="logo"]:not([class*="logo-clean"]), [id*="logo"]:not([id*="logo-clean"]) {
-    filter: drop-shadow(-1px -1px 0 #5a56a8) 
-            drop-shadow(1px -1px 0 #5a56a8) 
-            drop-shadow(-1px 1px 0 #5a56a8) 
-            drop-shadow(1px 1px 0 #5a56a8) 
-            drop-shadow(0 0 2px #5a56a8) !important;
-  }
-
-  /* Shadowed logos with enhanced dark outline */
-  .logo-with-shadow, .logo-with-text-shadowed, .logo-image-shadowed {
-    filter: drop-shadow(-2px -2px 0 #5a56a8) 
-            drop-shadow(2px -2px 0 #5a56a8) 
-            drop-shadow(-2px 2px 0 #5a56a8) 
-            drop-shadow(2px 2px 0 #5a56a8) 
-            drop-shadow(0 0 3px #5a56a8) !important;
-  }
-
-  /* Clean logos without shadow - override all shadow rules */
-  .logo-clean, .logo-with-text-clean, .logo-image-clean,
-  .logo-clean img, .logo-with-text-clean img, .logo-image-clean img,
-  .logo-clean svg, .logo-with-text-clean svg, .logo-image-clean svg,
-  div.logo-clean img.logo-image-clean,
-  .logo-clean .logo-image-clean,
-  [class*="logo-clean"] img,
-  [class*="logo-clean"] svg {
-    filter: none !important;
-    text-shadow: none !important;
-    box-shadow: none !important;
-    drop-shadow: none !important;
-  }
-
-  /* Enhanced dark shadow for white text elements */
-  .text-white, [class*="text-white"] {
-    text-shadow: 
-      -1px -1px 0 #5a56a8,
-      1px -1px 0 #5a56a8,
-      -1px 1px 0 #5a56a8,
-      1px 1px 0 #5a56a8,
-      0 0 3px #5a56a8 !important;
-  }
-
-  /* Dark shadow for icons */
-  .lucide, [class*="lucide"] {
-    filter: drop-shadow(-1px -1px 0 #5a56a8) 
-            drop-shadow(1px -1px 0 #5a56a8) 
-            drop-shadow(-1px 1px 0 #5a56a8) 
-            drop-shadow(1px 1px 0 #5a56a8) 
-            drop-shadow(0 0 2px #5a56a8) !important;
-  }
-
-  /* Dark shadow for navigation elements */
-  nav, .nav, [role="navigation"] {
-    text-shadow: 
-      -1px -1px 0 #5a56a8,
-      1px -1px 0 #5a56a8,
-      -1px 1px 0 #5a56a8,
-      1px 1px 0 #5a56a8,
-      0 0 2px #5a56a8 !important;
-  }
-
-  /* Dark shadow for headings */
-  h1, h2, h3, h4, h5, h6 {
-    text-shadow: 
-      -1px -1px 0 #5a56a8,
-      1px -1px 0 #5a56a8,
-      -1px 1px 0 #5a56a8,
-      1px 1px 0 #5a56a8,
-      0 0 3px #5a56a8 !important;
-  }
-  
-  /* Ensure all backgrounds use the lavender color */
-  body, html, #root {
-    background-color: var(--dime-background) !important;
-  }
-  
-  /* All components use lavender background */
-  .bg-white, .bg-slate-50, .bg-slate-100, .bg-slate-200, .bg-slate-300,
-  .bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-gray-300,
-  .bg-neutral-50, .bg-neutral-100, .bg-neutral-200, .bg-neutral-300 {
-    background-color: var(--dime-background) !important;
-  }
-
-  /* ── Marketing-page scope overrides ────────────────────────────────────
-     The lavender theme + white outlined text + SVG drop-shadow rules above
-     are meant for the in-app authenticated experience. The marketing /
-     landing page needs to look like a clean fintech site — white BG, real
-     text colors, no neon outlines. The `.dt-marketing` wrapper opts out
-     of those forced rules without changing the in-app behavior.
+  /* ── Marketing-page scope ──────────────────────────────────────────────
+     LandingPage / privacy / terms render inside `.dt-marketing`. The app
+     theme is now light too, but this scope stays as a hard guarantee that
+     the marketing site keeps its exact look regardless of app-theme
+     changes (including future dark mode).
      -------------------------------------------------------------------- */
   .dt-marketing,
   .dt-marketing *,
@@ -270,19 +167,16 @@
     text-shadow: none !important;
   }
 
-  /* ── Auth-page scope overrides ─────────────────────────────────────────
-     Login / signup / password / verify screens. Keeps the purple brand
-     background + white headings, but drops the neon text outline and makes
-     the characters the user TYPES dark-on-white so they are easy to read.
-     Mirrors the `.dt-marketing` opt-out without forcing a white page bg.
+  /* ── Auth-page scope ───────────────────────────────────────────────────
+     Login / signup / password / verify screens keep their purple brand
+     background (set explicitly in those components) with white headings.
+     Inputs stay dark-on-white for readability.
      -------------------------------------------------------------------- */
   .dt-auth,
   .dt-auth * {
     text-shadow: none !important;
   }
 
-  /* Status icons (spinner / check / x on the verify screen) drop the outline
-     too, to match the now-clean headings. The brand logo keeps its own look. */
   .dt-auth .lucide {
     filter: none !important;
   }
@@ -299,7 +193,6 @@
     color: rgb(148 163 184) !important;
   }
 
-  /* Keep browser-autofilled values dark-on-white too (matches the screenshot). */
   .dt-auth input:-webkit-autofill,
   .dt-auth input:-webkit-autofill:hover,
   .dt-auth input:-webkit-autofill:focus {
@@ -308,7 +201,6 @@
     box-shadow: 0 0 0 1000px #ffffff inset !important;
   }
 
-  /* Solid white primary CTA with deep-purple label for strong contrast. */
   .dt-auth .auth-submit {
     background-color: #ffffff !important;
     color: #4f46e5 !important;
@@ -320,202 +212,97 @@
 }
 
 @layer utilities {
-  .text-dime-lilac {
-    color: var(--dime-lilac);
+  /* Brand color utilities */
+  .text-dime-lilac { color: var(--dime-lilac); }
+  .text-dime-purple { color: var(--dime-purple); }
+  .text-dime-lavender { color: var(--dime-lavender); }
+  .text-dime-accent { color: var(--dime-accent); }
+  .text-dime-dark { color: var(--dime-dark); }
+  .text-dime-primary { color: var(--dime-primary); }
+
+  .bg-dime-lilac { background-color: var(--dime-lilac); }
+  .bg-dime-purple { background-color: var(--dime-purple); }
+  .bg-dime-lavender { background-color: var(--dime-lavender); }
+  .bg-dime-accent { background-color: var(--dime-accent); }
+  .bg-dime-background { background-color: var(--dime-background); }
+  .bg-dime-primary { background-color: var(--dime-primary); }
+
+  .border-dime-primary { border-color: var(--dime-primary); }
+  .border-dime-purple { border-color: var(--dime-purple); }
+  .border-dime-lilac { border-color: var(--dime-lilac); }
+
+  .hover\:bg-dime-purple\/90:hover { background-color: hsl(243, 84%, 70%); }
+  .hover\:bg-dime-lilac\/90:hover { background-color: hsl(243, 74%, 78%); }
+  .hover\:bg-dime-accent\/90:hover { background-color: hsl(243, 55%, 50%); }
+
+  .bg-dime-purple\/10 { background-color: hsla(243, 84%, 76%, 0.1); }
+  .bg-dime-lilac\/10 { background-color: hsla(243, 74%, 82%, 0.1); }
+  .bg-dime-lavender\/10 { background-color: hsla(243, 64%, 88%, 0.15); }
+  .bg-dime-accent\/10 { background-color: hsla(243, 55%, 55%, 0.1); }
+
+  .from-dime-purple { --tw-gradient-from: var(--dime-purple); }
+  .to-dime-lilac { --tw-gradient-to: var(--dime-lilac); }
+  .from-dime-lavender { --tw-gradient-from: var(--dime-lavender); }
+  .to-dime-accent { --tw-gradient-to: var(--dime-accent); }
+  .from-dime-purple\/10 { --tw-gradient-from: hsla(243, 84%, 76%, 0.1); }
+  .to-dime-lilac\/10 { --tw-gradient-to: hsla(243, 74%, 82%, 0.1); }
+  .border-dime-purple\/20 { border-color: hsla(243, 84%, 76%, 0.2); }
+  .border-dime-lilac\/20 { border-color: hsla(243, 74%, 82%, 0.2); }
+
+  /* Premium card shadow — soft, layered, barely-there */
+  .shadow-card {
+    box-shadow:
+      0 1px 2px 0 rgb(15 23 42 / 0.04),
+      0 2px 8px -2px rgb(15 23 42 / 0.06);
   }
-  
-  .text-dime-purple {
-    color: var(--dime-purple);
+
+  .shadow-card-hover {
+    box-shadow:
+      0 2px 4px 0 rgb(15 23 42 / 0.05),
+      0 8px 20px -4px rgb(15 23 42 / 0.10);
   }
-  
-  .text-dime-lavender {
-    color: var(--dime-lavender);
+
+  /* Micro-animations (spec §15 — subtle only) */
+  .animate-fade-in {
+    animation: dt-fade-in 0.35s ease-out both;
   }
-  
-  .text-dime-accent {
-    color: var(--dime-accent);
+
+  .animate-fade-in-up {
+    animation: dt-fade-in-up 0.4s ease-out both;
   }
-  
-  .bg-dime-lilac {
-    background-color: var(--dime-lilac);
+
+  .press-scale {
+    transition: transform 0.12s ease;
   }
-  
-  .bg-dime-purple {
-    background-color: var(--dime-purple);
-  }
-  
-  .bg-dime-lavender {
-    background-color: var(--dime-lavender);
-  }
-  
-  .bg-dime-accent {
-    background-color: var(--dime-accent);
-  }
-  
-  .bg-dime-background {
-    background-color: var(--dime-background);
-  }
-  
-  .bg-dime-primary {
-    background-color: var(--dime-primary);
-  }
-  
-  .text-dime-primary {
-    color: var(--dime-primary);
-  }
-  
-  .border-dime-primary {
-    border-color: var(--dime-primary);
-  }
-  
-  .border-dime-purple {
-    border-color: var(--dime-purple);
-  }
-  
-  .border-dime-lilac {
-    border-color: var(--dime-lilac);
-  }
-  
-  .hover\:bg-dime-purple\/90:hover {
-    background-color: hsl(260, 60%, 60%);
-  }
-  
-  .hover\:bg-dime-lilac\/90:hover {
-    background-color: hsl(270, 50%, 75%);
-  }
-  
-  .hover\:bg-dime-accent\/90:hover {
-    background-color: hsl(250, 55%, 53%);
-  }
-  
-  .bg-dime-purple\/10 {
-    background-color: hsl(260, 60%, 65%, 0.1);
-  }
-  
-  .bg-dime-lilac\/10 {
-    background-color: hsl(270, 50%, 80%, 0.1);
-  }
-  
-  .bg-dime-lavender\/10 {
-    background-color: hsl(280, 45%, 85%, 0.1);
-  }
-  
-  .bg-dime-accent\/10 {
-    background-color: hsl(250, 55%, 58%, 0.1);
-  }
-  
-  .from-dime-purple {
-    --tw-gradient-from: var(--dime-purple);
-  }
-  
-  .to-dime-lilac {
-    --tw-gradient-to: var(--dime-lilac);
-  }
-  
-  .from-dime-lavender {
-    --tw-gradient-from: var(--dime-lavender);
-  }
-  
-  .to-dime-accent {
-    --tw-gradient-to: var(--dime-accent);
-  }
-  
-  .from-dime-purple\/10 {
-    --tw-gradient-from: hsl(271, 81%, 66%, 0.1);
-  }
-  
-  .to-dime-lilac\/10 {
-    --tw-gradient-to: hsl(281, 83%, 79%, 0.1);
-  }
-  
-  .border-dime-purple\/20 {
-    border-color: hsl(271, 81%, 66%, 0.2);
-  }
-  
-  .border-dime-lilac\/20 {
-    border-color: hsl(281, 83%, 79%, 0.2);
+  .press-scale:active {
+    transform: scale(0.97);
   }
 }
 
-/* iPad Responsive Design - Optimized for tablet screens */
-@media screen and (min-width: 768px) and (max-width: 1024px) {
-  /* iPad portrait and landscape */
-  body {
-    font-size: 16px;
-    line-height: 1.6;
-  }
+@keyframes dt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  /* Ensure containers are responsive */
-  .container {
-    max-width: 100% !important;
-    padding-left: 1.5rem !important;
-    padding-right: 1.5rem !important;
-  }
+@keyframes dt-fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  /* Optimize card layouts for iPad */
-  .card {
-    max-width: 100% !important;
-  }
-
-  /* Adjust grid layouts for iPad */
-  .grid {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
-  }
-
-  /* Ensure flexible box layouts */
-  .flex {
-    flex-wrap: wrap !important;
-  }
-
-  /* Adjust text shadows for larger screens */
-  h1, h2, h3, h4, h5, h6 {
-    text-shadow: 
-      -1.5px -1.5px 0 #5a56a8,
-      1.5px -1.5px 0 #5a56a8,
-      -1.5px 1.5px 0 #5a56a8,
-      1.5px 1.5px 0 #5a56a8,
-      0 0 4px #5a56a8 !important;
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .press-scale {
+    animation: none;
+    transition: none;
   }
 }
 
-/* iPad Pro 12.9" specific optimizations */
-@media screen and (min-width: 1024px) and (max-width: 1366px) {
-  .container {
-    max-width: 1200px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-
-  /* Optimize spacing for larger iPad screens */
-  .p-4 {
-    padding: 1.5rem !important;
-  }
-
-  .p-6 {
-    padding: 2rem !important;
-  }
-
-  /* Ensure responsive images */
-  img {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-}
-
-/* Touch-friendly interactions for iPad */
+/* Touch-friendly interactions (Apple HIG 44px tap targets) */
 @media (hover: none) and (pointer: coarse) {
-  /* Increase touch target sizes */
   button, a, [role="button"] {
-    min-height: 44px !important;
-    min-width: 44px !important;
-  }
-
-  /* Adjust interactive element spacing */
-  .space-x-2 > * + * {
-    margin-left: 0.75rem !important;
-  }
-
-  .space-y-2 > * + * {
-    margin-top: 0.75rem !important;
+    min-height: 44px;
+    min-width: 44px;
   }
 }

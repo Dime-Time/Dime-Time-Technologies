@@ -8,6 +8,7 @@
 - [App Store status & rejection vectors](appstore-rejection-history.md) — APPROVED & LIVE 2026-06-29 (App ID 6755106723); "no changes while waiting" is over. Historical rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; gotcha: BetaModeBanner NOT flag-gated → 2.2 risk on future submits.
 - [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; the mismatch is INTENTIONAL+permanent, never reconcile it.
 - [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
+- [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic/features before declaring done.
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com only; dev widget error 110200 is EXPECTED; e2e proof = founder submits live form → check contact_submissions.
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, dep audit, no CSP.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift (e.g. getDebtsByUserId isActive filter); update BOTH; debts soft-delete not hard-delete.

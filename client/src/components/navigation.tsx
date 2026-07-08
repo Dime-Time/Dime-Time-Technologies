@@ -35,7 +35,7 @@ export function Navigation() {
   return (
     <>
       {/* Top Navigation (respects Dynamic Island via safe-area-top) */}
-      <nav className="safe-area-top shadow-sm border-b border-white/20 sticky top-0 z-50 bg-dime-background">
+      <nav className="safe-area-top border-b border-border sticky top-0 z-50 bg-card/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 min-h-[56px]">
             {/* Brand / Logo */}
@@ -43,7 +43,7 @@ export function Navigation() {
               <div className="mt-1">
                 <Logo size={32} clean={true} />
               </div>
-              <span className="text-xl font-black text-white">
+              <span className="text-xl font-bold text-slate-900 tracking-tight">
                 Dime Time
               </span>
             </div>
@@ -56,8 +56,8 @@ export function Navigation() {
                   href={item.href}
                   className={`font-medium transition-colors ${
                     isActive(item.href)
-                      ? "text-white font-bold"
-                      : "text-white/70 hover:text-white"
+                      ? "text-dime-accent font-semibold"
+                      : "text-slate-500 hover:text-slate-900"
                   }`}
                 >
                   {item.label}
@@ -73,7 +73,7 @@ export function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white/70 hover:text-white relative h-11 w-11 min-h-[44px] min-w-[44px]"
+                  className="text-slate-500 hover:text-slate-900 relative h-11 w-11 min-h-[44px] min-w-[44px]"
                   data-testid="button-notifications"
                 >
                   <Bell className="w-6 h-6" />
@@ -84,7 +84,7 @@ export function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]"
+                  className="text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                   data-testid="button-settings"
                 >
                   <Settings className="w-6 h-6" />
@@ -95,7 +95,7 @@ export function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]"
+                  className="text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                   data-testid="button-qr"
                 >
                   <QrCode className="w-6 h-6" />
@@ -107,7 +107,7 @@ export function Navigation() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-white/70 hover:text-white h-11 w-11 min-h-[44px] min-w-[44px]"
+                    className="text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                     data-testid="button-admin"
                   >
                     <ShieldCheck className="w-6 h-6" />
@@ -117,10 +117,10 @@ export function Navigation() {
 
               {/* Profile avatar placeholder */}
               <div
-                className="hidden md:flex w-11 h-11 min-h-[44px] min-w-[44px] bg-white/20 rounded-full items-center justify-center"
+                className="hidden md:flex w-11 h-11 min-h-[44px] min-w-[44px] bg-accent rounded-full items-center justify-center"
                 data-testid="button-profile"
               >
-                <User className="w-5 h-5 text-white" />
+                <User className="w-5 h-5 text-dime-accent" />
               </div>
 
               {/* Mobile menu trigger */}
@@ -129,13 +129,13 @@ export function Navigation() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="md:hidden h-11 w-11 min-h-[44px] min-w-[44px]"
+                    className="md:hidden text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
                     data-testid="button-menu"
                   >
                     <Menu className="w-6 h-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent className="bg-dime-background">
+                <SheetContent className="bg-card">
                   <div className="flex flex-col space-y-4 mt-8">
                     {navItems.map((item) => {
                       const Icon = item.icon;
@@ -146,8 +146,8 @@ export function Navigation() {
                           href={item.href}
                           className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                             active
-                              ? "bg-white/20 text-white"
-                              : "text-white/70 hover:bg-white/10"
+                              ? "bg-accent text-dime-accent font-semibold"
+                              : "text-slate-600 hover:bg-muted"
                           }`}
                         >
                           <Icon className="w-5 h-5" />
@@ -156,13 +156,13 @@ export function Navigation() {
                       );
                     })}
 
-                    <div className="border-t border-white/20 pt-4 mt-4">
+                    <div className="border-t border-border pt-4 mt-4">
                       <Link
                         href="/notifications"
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                           location === "/notifications"
-                            ? "bg-white/20 text-white"
-                            : "text-white/70 hover:bg-white/10"
+                            ? "bg-accent text-dime-accent font-semibold"
+                            : "text-slate-600 hover:bg-muted"
                         }`}
                       >
                         <Bell className="w-5 h-5" />
@@ -173,8 +173,8 @@ export function Navigation() {
                         href="/settings"
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                           location === "/settings"
-                            ? "bg-white/20 text-white"
-                            : "text-white/70 hover:bg-white/10"
+                            ? "bg-accent text-dime-accent font-semibold"
+                            : "text-slate-600 hover:bg-muted"
                         }`}
                       >
                         <Settings className="w-5 h-5" />
@@ -185,8 +185,8 @@ export function Navigation() {
                         href="/qr"
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                           location === "/qr"
-                            ? "bg-white/20 text-white"
-                            : "text-white/70 hover:bg-white/10"
+                            ? "bg-accent text-dime-accent font-semibold"
+                            : "text-slate-600 hover:bg-muted"
                         }`}
                       >
                         <QrCode className="w-5 h-5" />
@@ -198,8 +198,8 @@ export function Navigation() {
                           href="/admin"
                           className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                             location === "/admin"
-                              ? "bg-white/20 text-white"
-                              : "text-white/70 hover:bg-white/10"
+                              ? "bg-accent text-dime-accent font-semibold"
+                              : "text-slate-600 hover:bg-muted"
                           }`}
                         >
                           <ShieldCheck className="w-5 h-5" />
@@ -216,7 +216,7 @@ export function Navigation() {
       </nav>
 
       {/* Bottom Navigation (mobile) – respects home indicator via safe-area-bottom */}
-      <nav className="safe-area-bottom md:hidden fixed bottom-0 left-0 right-0 border-t border-white/20 px-1 z-50 bg-dime-background">
+      <nav className="safe-area-bottom md:hidden fixed bottom-0 left-0 right-0 border-t border-border px-1 z-50 bg-card/95 backdrop-blur-sm">
         <div className="flex justify-around items-center max-w-screen-xl mx-auto">
           {[...navItems, { href: "/settings", label: "Settings", icon: Settings }].map((item) => {
             const Icon = item.icon;
@@ -226,12 +226,12 @@ export function Navigation() {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center py-3 px-1 min-h-[56px] transition-colors ${
-                  active ? "text-white" : "text-white/70"
+                  active ? "text-dime-accent" : "text-slate-400"
                 }`}
                 data-testid={`tab-${item.label.toLowerCase()}`}
               >
                 <Icon className="w-6 h-6 mb-1" />
-                <span className="text-[11px] font-medium">{item.label}</span>
+                <span className={`text-[11px] ${active ? "font-semibold" : "font-medium"}`}>{item.label}</span>
               </Link>
             );
           })}

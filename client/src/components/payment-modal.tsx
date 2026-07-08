@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/calculations";
 import type { Debt } from "@shared/schema";
 import { BetaModeBanner, ComplianceDisclaimer } from "@/components/BetaModeBanner";
+import { Banknote } from "lucide-react";
 
 interface PaymentModalProps {
   open: boolean;
@@ -25,8 +26,6 @@ export function PaymentModal({ open, onOpenChange, debts, roundUpBalance, initia
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Pre-select the debt the user clicked "Make Payment" on (blank when opened
-  // from the top-level button).
   useEffect(() => {
     if (open) setSelectedDebtId(initialDebtId ?? "");
   }, [open, initialDebtId]);
@@ -80,94 +79,78 @@ export function PaymentModal({ open, onOpenChange, debts, roundUpBalance, initia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Make Extra Payment</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden p-0">
+        <div className="h-2 w-full bg-dime-purple"></div>
+        <div className="p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900">
+              <Banknote className="w-6 h-6 text-dime-purple" /> Make Payment
+            </DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <BetaModeBanner variant="compact" />
-          <ComplianceDisclaimer />
-          <div>
-            <Label htmlFor="debt-select">Select Debt Account</Label>
-            <Select value={selectedDebtId} onValueChange={setSelectedDebtId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a debt account" />
-              </SelectTrigger>
-              <SelectContent>
-                {debts.map((debt) => (
-                  <SelectItem key={debt.id} value={debt.id}>
-                    {debt.name} - {formatCurrency(debt.currentBalance)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="amount">Payment Amount</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-slate-500">$</span>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="pl-8"
-                placeholder="0.00"
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-3">
+              <BetaModeBanner variant="compact" />
+              <ComplianceDisclaimer />
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickAmount(roundUpBalance)}
-                className="text-xs"
-              >
-                Use Round-ups ({formatCurrency(roundUpBalance)})
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="debt-select" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Target Debt Account</Label>
+                <Select value={selectedDebtId} onValueChange={setSelectedDebtId}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-slate-200 focus:bg-white text-base font-semibold">
+                    <SelectValue placeholder="Choose a debt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {debts.map((debt) => (
+                      <SelectItem key={debt.id} value={debt.id} className="font-medium">
+                        {debt.name} <span className="text-slate-400 ml-1">— {formatCurrency(debt.currentBalance)}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="amount" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Payment Amount</Label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3 text-slate-400 font-bold">$</span>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="pl-8 h-12 bg-slate-50 border-slate-200 focus:bg-white text-lg font-bold tabular-nums"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleQuickAmount(roundUpBalance)}
+                    className="bg-dime-purple/5 border-dime-purple/20 text-dime-purple hover:bg-dime-purple/10 font-bold tabular-nums shadow-sm"
+                  >
+                    Send All {formatCurrency(roundUpBalance)}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => handleQuickAmount(50)} className="font-bold tabular-nums text-slate-600 bg-white shadow-sm border-slate-200 hover:bg-slate-50 hover:text-slate-900">$50</Button>
+                  <Button type="button" variant="outline" onClick={() => handleQuickAmount(100)} className="font-bold tabular-nums text-slate-600 bg-white shadow-sm border-slate-200 hover:bg-slate-50 hover:text-slate-900">$100</Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2 mt-6 border-t border-slate-100">
+              <Button type="button" variant="outline" className="flex-1 h-12 font-bold text-slate-700 bg-white shadow-sm" onClick={() => onOpenChange(false)}>
+                Cancel
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickAmount(50)}
-                className="text-xs"
-              >
-                $50
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickAmount(100)}
-                className="text-xs"
-              >
-                $100
+              <Button type="submit" className="flex-1 h-12 bg-dime-purple hover:bg-dime-purple/90 text-white font-bold press-scale shadow-sm" disabled={paymentMutation.isPending}>
+                {paymentMutation.isPending ? "Processing..." : "Pay Now"}
               </Button>
             </div>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
-              disabled={paymentMutation.isPending}
-            >
-              {paymentMutation.isPending ? "Processing..." : "Process Payment"}
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

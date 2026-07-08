@@ -55,7 +55,7 @@ import NotFound from "@/pages/not-found";
 
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-dime-lilac flex flex-col safe-area-bottom">
+    <div className="min-h-screen bg-background flex flex-col safe-area-bottom">
       <Navigation />
       <BetaBanner />
       <EmailVerificationBanner />
@@ -265,7 +265,7 @@ function AppContent() {
 
       <Route path="/bank-setup">
         {effectivelyAuthenticated ? (
-          <div className="min-h-screen bg-dime-lilac safe-area-top safe-area-bottom">
+          <div className="min-h-screen bg-background safe-area-top safe-area-bottom">
             <main className="flex-1 px-4 pt-4 pb-4">
               <BankSetupFlow
                 onComplete={() => (window.location.href = "/dashboard")}

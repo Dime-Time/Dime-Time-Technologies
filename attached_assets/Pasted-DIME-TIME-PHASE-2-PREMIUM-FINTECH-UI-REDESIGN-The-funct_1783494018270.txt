@@ -1,0 +1,376 @@
+DIME TIME — PHASE 2: PREMIUM FINTECH UI REDESIGN
+
+The functional issues have been addressed. Thank you.
+
+Now I want to focus entirely on visual polish and making Dime Time feel like a premium consumer fintech application. Do NOT modify backend functionality, business logic, APIs, or data models. This is a UI/UX refinement pass only.
+
+GOAL
+
+The app should feel comparable in quality to:
+
+• Monarch Money
+• Rocket Money
+• Acorns
+• Copilot Money
+• Wealthfront
+• Robinhood
+• Apple Wallet
+
+I want users to immediately trust the product the moment they open it.
+
+------------------------------------------------------------
+1. CREATE A TRUE DESIGN SYSTEM
+------------------------------------------------------------
+
+Establish a consistent design language throughout the app.
+
+Define and use consistent:
+
+• spacing (8pt grid)
+• typography
+• button styles
+• card styles
+• shadows
+• corner radius
+• icon sizing
+• colors
+• animations
+
+Everything should feel like one cohesive application.
+
+------------------------------------------------------------
+2. REDUCE THE PURPLE
+------------------------------------------------------------
+
+Currently almost everything is purple.
+
+Please redesign the color hierarchy.
+
+Background:
+• White or very light gray (#F8F9FC)
+
+Cards:
+• White
+• Thin border
+• Soft shadow
+
+Primary Buttons:
+• Dime Time Purple
+
+Secondary Buttons:
+• Outline style
+
+Accent Color:
+• Purple
+
+Text:
+• Dark charcoal
+
+This should dramatically improve readability.
+
+------------------------------------------------------------
+3. REMOVE HEAVY TEXT SHADOWS
+------------------------------------------------------------
+
+Remove the outlined/shadowed typography.
+
+Replace with:
+
+• clean typography
+• stronger font hierarchy
+• bold weights
+• modern spacing
+
+Typography should resemble Apple Wallet or Monarch.
+
+------------------------------------------------------------
+4. IMPROVE VISUAL HIERARCHY
+------------------------------------------------------------
+
+Numbers should dominate.
+
+Labels should support.
+
+Example:
+
+Round-Up Balance
+
+$42.18
+
++$40.94 this month
+
+Instead of every element having equal weight.
+
+------------------------------------------------------------
+5. HOME SCREEN REDESIGN
+------------------------------------------------------------
+
+The dashboard should answer:
+
+"How am I doing financially?"
+
+Suggested order:
+
+Welcome Back
+
+Today's Progress
+
+Debt Payoff Progress Ring
+
+Round-Up Balance
+
+Debt Remaining
+
+Saved This Month
+
+Projected Debt-Free Date
+
+Recent Transfers
+
+Quick Actions
+
+Daily Tip
+
+Everything should be immediately understandable.
+
+------------------------------------------------------------
+6. IMPROVE CARDS
+------------------------------------------------------------
+
+Current cards feel oversized and flat.
+
+Please redesign them with:
+
+• softer shadows
+• better spacing
+• improved typography
+• better alignment
+• consistent padding
+
+Cards should feel premium.
+
+------------------------------------------------------------
+7. QUICK ACTIONS
+------------------------------------------------------------
+
+Turn Quick Actions into modern action cards.
+
+Examples:
+
+➕ Make Extra Payment
+
+⬆ Boost Round-Ups
+
+📈 View Insights
+
+⚙ Settings
+
+These should feel interactive.
+
+------------------------------------------------------------
+8. SETTINGS
+------------------------------------------------------------
+
+Settings should become the application's control center.
+
+Include:
+
+ACCOUNT
+
+• Name
+• Email
+• Phone
+• Profile Photo
+
+SECURITY
+
+• Change Password
+• Change PIN
+• Face ID / Touch ID
+• Two-Factor Authentication
+
+BANKING
+
+• Connected Accounts
+• Plaid Reconnect
+• Primary Funding Account
+
+DEBT
+
+• Manage Debt Accounts
+• Payoff Strategy
+• Extra Payment Defaults
+
+ROUND-UPS
+
+• Round-Up Multiplier
+• Minimum Round-Up
+• Weekly Transfer Day
+• Pause Round-Ups
+
+CRYPTO
+
+• Coinbase
+• Allocation Percentages
+• Demo Mode
+• Investment Preferences
+
+NOTIFICATIONS
+
+• Payment Alerts
+• Weekly Summary
+• Transfer Updates
+• Milestone Notifications
+
+APPEARANCE
+
+• Light Mode
+• Dark Mode
+• System Default
+
+SUPPORT
+
+• Contact Support
+• FAQ
+• Privacy Policy
+• Terms
+
+ACCOUNT
+
+• Log Out
+
+Danger Zone
+
+• Delete Account
+
+------------------------------------------------------------
+9. IMPROVE BANKING PAGE
+------------------------------------------------------------
+
+When no bank is connected:
+
+Replace the empty page with a premium onboarding experience.
+
+Example:
+
+Connect Your First Bank
+
+Securely connect through Plaid.
+
+Benefits:
+
+✓ Automatic Round-Ups
+
+✓ Bank-Level Security
+
+✓ Faster Debt Payoff
+
+Large primary button:
+
+Connect Bank
+
+------------------------------------------------------------
+10. IMPROVE INSIGHTS
+------------------------------------------------------------
+
+Insights should feel analytical.
+
+Add attractive visualizations:
+
+• Weekly savings chart
+• Monthly debt trend
+• Round-Up history
+• Savings streak
+• Debt-free projection timeline
+• Spending categories
+• Monthly progress
+
+------------------------------------------------------------
+11. IMPROVE CRYPTO
+------------------------------------------------------------
+
+Replace empty cards with:
+
+Portfolio Value
+
+Bitcoin Purchased
+
+Average Cost
+
+Allocation %
+
+Recent Purchases
+
+Performance
+
+Educational Tip
+
+------------------------------------------------------------
+12. TRUST BUILDERS
+------------------------------------------------------------
+
+Throughout the application include subtle trust indicators.
+
+Examples:
+
+🔒 256-bit Encryption
+
+Plaid Secure
+
+Coinbase Integration
+
+Secure Transfers
+
+These should reinforce confidence without overwhelming the interface.
+
+------------------------------------------------------------
+13. ACCESSIBILITY
+------------------------------------------------------------
+
+Increase text contrast.
+
+Improve readability.
+
+Ensure all tap targets follow Apple's Human Interface Guidelines.
+
+Support Dynamic Type.
+
+------------------------------------------------------------
+14. DARK MODE
+------------------------------------------------------------
+
+Implement a professionally designed Dark Mode.
+
+Support:
+
+• Light
+• Dark
+• System
+
+Dark Mode should be intentionally designed rather than color inverted.
+
+------------------------------------------------------------
+15. MICRO-ANIMATIONS
+------------------------------------------------------------
+
+Add subtle animations only.
+
+Examples:
+
+• Cards fade in
+• Counters animate upward
+• Button press animations
+• Smooth page transitions
+• Skeleton loaders
+
+Avoid excessive animation.
+
+------------------------------------------------------------
+16. OVERALL GOAL
+------------------------------------------------------------
+
+When someone downloads Dime Time from the App Store, I want the immediate impression to be:
+
+"This feels like a polished, trustworthy fintech application."
+
+The app should no longer resemble an early startup prototype. It should feel like a premium financial platform that users would trust to connect their bank accounts and manage their money.

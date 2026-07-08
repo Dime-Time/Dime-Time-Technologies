@@ -22,10 +22,6 @@ interface ImportStatus {
   institutionName?: string | null;
 }
 
-/**
- * apiRequest throws `Error("<status>: <rawBody>")`. Pull the server's JSON
- * `message` out of the raw body so the user sees a clean sentence, not a blob.
- */
 function parseErrorMessage(err: unknown): string {
   const fallback = "Something went wrong while importing your debts. Please try again.";
   if (!(err instanceof Error)) return fallback;
@@ -34,7 +30,6 @@ function parseErrorMessage(err: unknown): string {
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed.message === "string") return parsed.message;
   } catch {
-    // Not JSON — fall through to the raw (already status-stripped) text.
   }
   return raw || fallback;
 }
@@ -45,11 +40,6 @@ interface ImportResult {
   institutionName?: string | null;
 }
 
-/**
- * Opens Plaid Link as soon as the SDK is ready. Kept as a child so it can call
- * `usePlaidLink` only once we actually have a link token (the hook needs the
- * token up front, and the token arrives asynchronously).
- */
 function PlaidLinkLauncher({
   token,
   onSuccess,
@@ -95,8 +85,6 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
   };
 
   const handleOpenChange = (next: boolean) => {
-    // Block closing only during the actual import write. "linking" stays
-    // cancellable so a failed/slow Plaid Link script can never trap the user.
     if (!next && phase === "importing") return;
     if (!next) reset();
     onOpenChange(next);
@@ -118,8 +106,6 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
     });
   };
 
-  // Direct import — provider needs no client connect step (sandbox), or the
-  // user already has an active connection.
   const runImportDirect = async () => {
     setPhase("importing");
     try {
@@ -132,14 +118,13 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
     }
   };
 
-  // Start the Plaid Link connect flow, then import via the exchange endpoint.
   const startLinkFlow = async () => {
     setPhase("linking");
     try {
       const res = await apiRequest("POST", "/api/debts/import/link-token", {});
       const data = await res.json();
       if (!data.linkToken) throw new Error("No link token returned");
-      setLinkToken(data.linkToken); // PlaidLinkLauncher auto-opens when ready.
+      setLinkToken(data.linkToken); 
     } catch (err) {
       setErrorMessage(parseErrorMessage(err));
       setPhase("error");
@@ -172,169 +157,141 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
   };
 
   const onPlaidExit = () => {
-    // User backed out of Plaid Link — return to consent so they can retry.
     setLinkToken(null);
     setPhase("consent");
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md" data-testid="modal-import-debts">
-        {phase === "linking" && linkToken && (
-          <PlaidLinkLauncher token={linkToken} onSuccess={onPlaidSuccess} onExit={onPlaidExit} />
-        )}
+      <DialogContent className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden p-0" data-testid="modal-import-debts">
+        <div className="h-2 w-full bg-dime-purple"></div>
+        <div className="p-6">
+          {phase === "linking" && linkToken && (
+            <PlaidLinkLauncher token={linkToken} onSuccess={onPlaidSuccess} onExit={onPlaidExit} />
+          )}
 
-        {phase === "consent" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-dime-purple" />
-                Import your debts
-              </DialogTitle>
-              <DialogDescription>
-                Securely connect your accounts to bring in your balances, interest rates, and
-                minimum payments automatically — no manual entry.
-              </DialogDescription>
-            </DialogHeader>
+          {phase === "consent" && (
+            <div className="space-y-6">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900">
+                  <Landmark className="w-6 h-6 text-dime-purple" />
+                  Import your debts
+                </DialogTitle>
+                <DialogDescription className="text-base text-slate-600 mt-2 font-medium">
+                  Securely connect your accounts to bring in balances, rates, and minimums automatically.
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="rounded-lg bg-dime-purple/5 border border-dime-purple/20 p-4 space-y-2">
-              <div className="flex items-start gap-2">
-                <ShieldCheck className="w-5 h-5 text-dime-purple mt-0.5 shrink-0" />
-                <p className="text-sm text-slate-600">
-                  Your credentials are handled by a secure provider and are never stored by Dime
-                  Time. We only receive your debt balances and terms.
-                </p>
+              <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-dime-purple mt-0.5 shrink-0" />
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                    Credentials are handled by a secure provider and never stored by Dime Time. We only access balances and terms.
+                  </p>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors" data-testid="checkbox-import-consent-wrap">
+                <Checkbox
+                  checked={consented}
+                  onCheckedChange={(v) => setConsented(v === true)}
+                  className="mt-1"
+                  data-testid="checkbox-import-consent"
+                />
+                <span className="text-sm font-semibold text-slate-700 select-none">
+                  I authorize Dime Time to securely import my debt accounts.
+                </span>
+              </label>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 font-semibold text-slate-700 shadow-sm"
+                  onClick={() => handleOpenChange(false)}
+                  data-testid="button-import-cancel"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 bg-dime-purple hover:bg-dime-purple/90 text-white font-bold shadow-sm press-scale"
+                  disabled={!consented || statusLoading}
+                  onClick={handleStart}
+                  data-testid="button-import-start"
+                >
+                  {statusLoading ? "Loading…" : status?.requiresLink ? "Connect & Import" : "Import Now"}
+                </Button>
               </div>
             </div>
+          )}
 
-            <label className="flex items-start gap-3 cursor-pointer" data-testid="checkbox-import-consent-wrap">
-              <Checkbox
-                checked={consented}
-                onCheckedChange={(v) => setConsented(v === true)}
-                data-testid="checkbox-import-consent"
-                className="mt-0.5"
-              />
-              <span className="text-sm text-slate-600">
-                I authorize Dime Time to securely import my debt accounts and their balances.
-              </span>
-            </label>
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => handleOpenChange(false)}
-                data-testid="button-import-cancel"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
-                disabled={!consented || statusLoading}
-                onClick={handleStart}
-                data-testid="button-import-start"
-              >
-                {statusLoading ? "Loading…" : status?.requiresLink ? "Connect & Import" : "Import Debts"}
-              </Button>
-            </div>
-          </>
-        )}
-
-        {phase === "linking" && (
-          <div className="py-8 flex flex-col items-center text-center gap-3" data-testid="state-import-linking">
-            <Loader2 className="w-10 h-10 text-dime-purple animate-spin" />
-            <p className="text-slate-900 font-medium">Opening secure connection…</p>
-            <p className="text-sm text-slate-500">Choose your bank in the window that appears.</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-2 text-slate-500"
-              onClick={onPlaidExit}
-              data-testid="button-import-cancel-linking"
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
-
-        {phase === "importing" && (
-          <div className="py-8 flex flex-col items-center text-center gap-3" data-testid="state-import-loading">
-            <Loader2 className="w-10 h-10 text-dime-purple animate-spin" />
-            <p className="text-slate-900 font-medium">Importing your debts…</p>
-            <p className="text-sm text-slate-500">This only takes a moment.</p>
-          </div>
-        )}
-
-        {phase === "complete" && result && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-dime-green" />
-                Import complete
-              </DialogTitle>
-              <DialogDescription>
-                {result.institutionName
-                  ? `Connected to ${result.institutionName}.`
-                  : "Your debts are now up to date."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="rounded-lg border border-slate-200 p-4 flex justify-around text-center">
+          {phase === "linking" && (
+            <div className="py-12 flex flex-col items-center text-center space-y-4" data-testid="state-import-linking">
+              <Loader2 className="w-12 h-12 text-dime-purple animate-spin" />
               <div>
-                <p className="text-2xl font-bold text-dime-purple" data-testid="text-import-added">
-                  {result.imported}
-                </p>
-                <p className="text-xs text-slate-500">Added</p>
+                <p className="text-xl font-bold text-slate-900">Opening connection…</p>
+                <p className="text-slate-500 font-medium mt-1">Choose your bank in the window.</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-dime-accent" data-testid="text-import-updated">
-                  {result.updated}
-                </p>
-                <p className="text-xs text-slate-500">Updated</p>
-              </div>
+              <Button variant="ghost" className="mt-4 text-slate-500 font-semibold hover:bg-slate-100" onClick={onPlaidExit} data-testid="button-import-cancel-linking">Cancel</Button>
             </div>
-            <Button
-              type="button"
-              className="w-full bg-dime-purple hover:bg-dime-purple/90"
-              onClick={() => handleOpenChange(false)}
-              data-testid="button-import-done"
-            >
-              Done
-            </Button>
-          </>
-        )}
+          )}
 
-        {phase === "error" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                Import failed
-              </DialogTitle>
-              <DialogDescription>{errorMessage}</DialogDescription>
-            </DialogHeader>
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => handleOpenChange(false)}
-                data-testid="button-import-error-close"
-              >
-                Close
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
-                onClick={handleStart}
-                data-testid="button-import-retry"
-              >
-                Try Again
+          {phase === "importing" && (
+            <div className="py-12 flex flex-col items-center text-center space-y-4" data-testid="state-import-loading">
+              <Loader2 className="w-12 h-12 text-dime-purple animate-spin" />
+              <div>
+                <p className="text-xl font-bold text-slate-900">Importing debts…</p>
+                <p className="text-slate-500 font-medium mt-1">This only takes a moment.</p>
+              </div>
+            </div>
+          )}
+
+          {phase === "complete" && result && (
+            <div className="space-y-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Import complete</h3>
+                <p className="text-slate-600 mt-2 font-medium">
+                  {result.institutionName ? `Connected to ${result.institutionName}.` : "Your debts are up to date."}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 border border-slate-100 p-6 flex justify-around text-center">
+                <div>
+                  <p className="text-4xl font-bold text-dime-purple tabular-nums mb-1" data-testid="text-import-added">{result.imported}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Added</p>
+                </div>
+                <div className="w-px bg-slate-200"></div>
+                <div>
+                  <p className="text-4xl font-bold text-slate-900 tabular-nums mb-1" data-testid="text-import-updated">{result.updated}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Updated</p>
+                </div>
+              </div>
+              <Button className="w-full bg-dime-purple hover:bg-dime-purple/90 text-white font-bold h-12 text-lg shadow-sm press-scale rounded-xl" onClick={() => handleOpenChange(false)} data-testid="button-import-done">
+                Done
               </Button>
             </div>
-          </>
-        )}
+          )}
+
+          {phase === "error" && (
+            <div className="space-y-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <AlertCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Import failed</h3>
+                <p className="text-slate-600 mt-2 font-medium px-4">{errorMessage}</p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 font-semibold text-slate-700" onClick={() => handleOpenChange(false)} data-testid="button-import-error-close">Close</Button>
+                <Button className="flex-1 bg-dime-purple hover:bg-dime-purple/90 text-white font-bold shadow-sm press-scale" onClick={handleStart} data-testid="button-import-retry">Try Again</Button>
+              </div>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

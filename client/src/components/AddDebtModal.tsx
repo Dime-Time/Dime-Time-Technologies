@@ -80,8 +80,7 @@ export function AddDebtModal({ open, onOpenChange }: AddDebtModalProps) {
     ) {
       toast({
         title: "Check Your Details",
-        description:
-          "Please enter a name, balance, interest rate, minimum payment, and a due date between 1 and 31.",
+        description: "Please enter a name, balance, interest rate, minimum payment, and a due date between 1 and 31.",
         variant: "destructive",
       });
       return;
@@ -100,119 +99,116 @@ export function AddDebtModal({ open, onOpenChange }: AddDebtModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add a Debt</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden p-0">
+        <div className="h-2 w-full bg-slate-200"></div>
+        <div className="p-6">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Add a Debt</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="debt-name">Debt Name</Label>
-            <Input
-              id="debt-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Credit Card, Student Loan"
-              data-testid="input-debt-name"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="debt-balance">Current Balance</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-slate-500">$</span>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <Label htmlFor="debt-name" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Debt Name</Label>
               <Input
-                id="debt-balance"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={currentBalance}
-                onChange={(e) => setCurrentBalance(e.target.value)}
-                className="pl-8"
-                placeholder="0.00"
-                data-testid="input-debt-balance"
+                id="debt-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Credit Card, Student Loan"
+                className="h-12 bg-slate-50 border-slate-200 focus:bg-white text-base font-semibold"
+                data-testid="input-debt-name"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="debt-rate">Interest Rate (%)</Label>
-              <Input
-                id="debt-rate"
-                type="number"
-                step="0.01"
-                min="0"
-                value={interestRate}
-                onChange={(e) => setInterestRate(e.target.value)}
-                placeholder="0.00"
-                data-testid="input-debt-rate"
-              />
-            </div>
-            <div>
-              <Label htmlFor="debt-min">Min. Payment</Label>
+              <Label htmlFor="debt-balance" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Current Balance</Label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-slate-500">$</span>
+                <span className="absolute left-4 top-3 text-slate-400 font-bold">$</span>
                 <Input
-                  id="debt-min"
+                  id="debt-balance"
                   type="number"
                   step="0.01"
-                  min="0"
-                  value={minimumPayment}
-                  onChange={(e) => setMinimumPayment(e.target.value)}
-                  className="pl-8"
+                  min="0.01"
+                  value={currentBalance}
+                  onChange={(e) => setCurrentBalance(e.target.value)}
+                  className="pl-8 h-12 bg-slate-50 border-slate-200 focus:bg-white text-base font-bold tabular-nums"
                   placeholder="0.00"
-                  data-testid="input-debt-min"
+                  data-testid="input-debt-balance"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="debt-due">Due Day (1-31)</Label>
-              <Input
-                id="debt-due"
-                type="number"
-                min="1"
-                max="31"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                placeholder="e.g. 15"
-                data-testid="input-debt-due"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="debt-rate" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">APR (%)</Label>
+                <Input
+                  id="debt-rate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={interestRate}
+                  onChange={(e) => setInterestRate(e.target.value)}
+                  placeholder="0.00"
+                  className="h-12 bg-slate-50 border-slate-200 focus:bg-white text-base font-bold tabular-nums"
+                  data-testid="input-debt-rate"
+                />
+              </div>
+              <div>
+                <Label htmlFor="debt-min" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Min. Payment</Label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3 text-slate-400 font-bold">$</span>
+                  <Input
+                    id="debt-min"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={minimumPayment}
+                    onChange={(e) => setMinimumPayment(e.target.value)}
+                    className="pl-8 h-12 bg-slate-50 border-slate-200 focus:bg-white text-base font-bold tabular-nums"
+                    placeholder="0.00"
+                    data-testid="input-debt-min"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="debt-account">Account (optional)</Label>
-              <Input
-                id="debt-account"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-                placeholder="Last 4 digits"
-                data-testid="input-debt-account"
-              />
-            </div>
-          </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-dime-purple hover:bg-dime-purple/90"
-              disabled={addDebtMutation.isPending}
-              data-testid="button-submit-debt"
-            >
-              {addDebtMutation.isPending ? "Adding..." : "Add Debt"}
-            </Button>
-          </div>
-        </form>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="debt-due" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Due Day (1-31)</Label>
+                <Input
+                  id="debt-due"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  placeholder="e.g. 15"
+                  className="h-12 bg-slate-50 border-slate-200 focus:bg-white text-base font-bold tabular-nums"
+                  data-testid="input-debt-due"
+                />
+              </div>
+              <div>
+                <Label htmlFor="debt-account" className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Account (opt)</Label>
+                <Input
+                  id="debt-account"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  placeholder="Last 4"
+                  className="h-12 bg-slate-50 border-slate-200 focus:bg-white text-base font-bold tabular-nums"
+                  data-testid="input-debt-account"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-slate-100 mt-6">
+              <Button type="button" variant="outline" className="flex-1 h-12 font-bold text-slate-700 bg-white" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1 h-12 bg-dime-purple hover:bg-dime-purple/90 text-white font-bold press-scale" disabled={addDebtMutation.isPending} data-testid="button-submit-debt">
+                {addDebtMutation.isPending ? "Adding..." : "Add Debt"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

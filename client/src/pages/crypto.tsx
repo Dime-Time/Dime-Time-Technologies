@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { 
@@ -17,10 +16,11 @@ import {
   Settings,
   Coins,
   ArrowUpRight,
-  Wallet
+  Wallet,
+  ShieldCheck,
+  LineChart
 } from "lucide-react";
 import { formatCurrency } from "@/lib/calculations";
-import { apiRequest } from "@/lib/queryClient";
 import { CoinbaseStatus } from "@/components/CoinbaseStatus";
 import { trackCryptoInvestment, trackFeatureUsage, trackUserMilestone } from "../../lib/analytics";
 
@@ -138,316 +138,381 @@ export default function CryptoPage() {
   const cryptoPercentage = settings ? parseFloat(settings.cryptoPercentage) : 0;
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Crypto Round-ups</h1>
-          <p className="text-slate-600">Invest spare change in cryptocurrency through Coinbase</p>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={() => setShowSettings(!showSettings)}
-          className="flex items-center gap-2"
-        >
-          <Settings className="w-4 h-4" />
-          Settings
-        </Button>
-      </div>
-
-      {/* Settings Panel */}
-      {showSettings && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Crypto Round-up Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label htmlFor="crypto-enabled">Enable Crypto Round-ups</Label>
-                <p className="text-sm text-slate-500">
-                  Automatically invest a portion of your round-ups in cryptocurrency
-                </p>
+    <main className="min-h-[100dvh] pb-20 animate-fade-in-up">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+              <div className="w-12 h-12 bg-dime-purple/10 rounded-xl flex items-center justify-center">
+                <Bitcoin className="w-6 h-6 text-dime-purple" />
               </div>
-              <Switch
-                id="crypto-enabled"
-                checked={settings?.cryptoEnabled || false}
-                onCheckedChange={(checked) => handleSettingsUpdate({ cryptoEnabled: checked })}
-              />
-            </div>
+              Crypto Round-ups
+            </h1>
+            <p className="text-slate-600 mt-2 ml-1 text-lg">Invest spare change in cryptocurrency through Coinbase</p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-2 press-scale border-slate-200 text-slate-700 bg-white"
+          >
+            <Settings className="w-4 h-4" />
+            Settings
+          </Button>
+        </div>
 
-            {settings?.cryptoEnabled && (
-              <>
-                <div className="space-y-3">
-                  <Label>Crypto Allocation: {cryptoPercentage}%</Label>
-                  <p className="text-sm text-slate-500">
-                    Percentage of round-ups to invest in crypto (remaining goes to debt payments)
+        {/* Settings Panel */}
+        {showSettings && (
+          <Card className="mb-8 shadow-card animate-fade-in-up border-dime-purple/10">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+              <CardTitle className="flex items-center gap-2 text-slate-900 text-xl">
+                <Settings className="w-5 h-5 text-slate-500" />
+                Crypto Round-up Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8 pt-6">
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="space-y-1">
+                  <Label htmlFor="crypto-enabled" className="text-base font-bold text-slate-900 cursor-pointer">Enable Crypto Round-ups</Label>
+                  <p className="text-sm font-medium text-slate-500">
+                    Automatically invest a portion of your round-ups in cryptocurrency
                   </p>
-                  <Slider
-                    value={[cryptoPercentage]}
-                    onValueChange={([value]) => 
-                      handleSettingsUpdate({ cryptoPercentage: value.toString() })
-                    }
-                    max={100}
-                    step={5}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>0% (All to debt)</span>
-                    <span>50%</span>
-                    <span>100% (All to crypto)</span>
+                </div>
+                <Switch
+                  id="crypto-enabled"
+                  checked={settings?.cryptoEnabled || false}
+                  onCheckedChange={(checked) => handleSettingsUpdate({ cryptoEnabled: checked })}
+                />
+              </div>
+
+              {settings?.cryptoEnabled && (
+                <div className="space-y-8 animate-fade-in">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                      <Label className="text-base font-bold text-slate-900">Crypto Allocation</Label>
+                      <span className="text-lg font-bold text-dime-purple tabular-nums">{cryptoPercentage}%</span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-500 -mt-2">
+                      Percentage of round-ups to invest in crypto (remaining goes to debt payments)
+                    </p>
+                    <Slider
+                      value={[cryptoPercentage]}
+                      onValueChange={([value]) => 
+                        handleSettingsUpdate({ cryptoPercentage: value.toString() })
+                      }
+                      max={100}
+                      step={5}
+                      className="w-full py-2"
+                    />
+                    <div className="flex justify-between text-xs font-semibold text-slate-400">
+                      <span>0% (All to debt)</span>
+                      <span>50%</span>
+                      <span>100% (All to crypto)</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-base font-bold text-slate-900">Preferred Cryptocurrency</Label>
+                    <Select
+                      value={settings?.preferredCrypto || 'BTC'}
+                      onValueChange={(value) => handleSettingsUpdate({ preferredCrypto: value })}
+                    >
+                      <SelectTrigger className="w-full sm:max-w-xs h-12 text-base">
+                        <SelectValue placeholder="Choose cryptocurrency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cryptoOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value} className="py-2.5">
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-sm">
+                                {option.icon}
+                              </span>
+                              <span className="font-medium">{option.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="p-5 bg-blue-50/50 rounded-xl border border-blue-100">
+                    <div className="flex gap-3 mb-3">
+                      <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+                      <h4 className="font-bold text-slate-900">How it works</h4>
+                    </div>
+                    <ul className="text-sm font-medium text-slate-600 space-y-2 ml-8 list-disc pl-2">
+                      <li>Round-ups are automatically split between debt payments and crypto</li>
+                      <li>Crypto purchases are made through Coinbase's secure API</li>
+                      <li>You maintain full control and can change allocation anytime</li>
+                      <li>View your crypto portfolio growth alongside debt reduction</li>
+                    </ul>
                   </div>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-                <div className="space-y-2">
-                  <Label>Preferred Cryptocurrency</Label>
-                  <Select
-                    value={settings?.preferredCrypto || 'BTC'}
-                    onValueChange={(value) => handleSettingsUpdate({ preferredCrypto: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose cryptocurrency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cryptoOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-2">
-                            <span>{option.icon}</span>
-                            <span>{option.label}</span>
+        {/* Coinbase Connection Status */}
+        <CoinbaseStatus />
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <Card className="shadow-card border-slate-200">
+            <CardContent className="p-5 sm:p-6 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-dime-purple/10 rounded-xl flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-dime-purple" />
+                </div>
+                <Badge variant="secondary" className={settings?.cryptoEnabled ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}>
+                  {settings?.cryptoEnabled ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-500 mb-1">Total Invested</p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+                  {formatCurrency(cryptoSummary?.totalInvested || "0")}
+                </p>
+                <p className="text-xs font-medium text-slate-400 mt-1">Via round-ups</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-slate-200">
+            <CardContent className="p-5 sm:p-6 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <LineChart className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                </div>
+                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{cryptoPercentage}% allocation</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-500 mb-1">Total Purchases</p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+                  {cryptoSummary?.totalPurchases || 0}
+                </p>
+                <p className="text-xs font-medium text-slate-400 mt-1">Completed orders</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-slate-200">
+            <CardContent className="p-5 sm:p-6 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-50 rounded-xl flex items-center justify-center">
+                  <Bitcoin className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-slate-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-500 mb-1">Portfolio Assets</p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+                  {cryptoSummary?.portfolio?.length || 0}
+                </p>
+                <p className="text-xs font-medium text-slate-400 mt-1">Cryptocurrencies held</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-slate-200">
+            <CardContent className="p-5 sm:p-6 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                  <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
+                </div>
+                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">Coinbase</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-500 mb-1">Last Purchase</p>
+                <p className="text-lg sm:text-xl font-bold text-slate-900 tabular-nums truncate">
+                  {cryptoSummary?.lastPurchase 
+                    ? new Date(cryptoSummary.lastPurchase).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                    : 'No purchases'
+                  }
+                </p>
+                <p className="text-xs font-medium text-slate-400 mt-1">Recent activity</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Portfolio Overview */}
+          <Card className="shadow-card border-slate-200">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <TrendingUp className="w-5 h-5 text-dime-purple" />
+                Crypto Portfolio
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {cryptoSummary?.portfolio && cryptoSummary.portfolio.length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {cryptoSummary.portfolio.map((coin) => {
+                    const cryptoOption = cryptoOptions.find(opt => opt.value === coin.symbol);
+                    return (
+                      <div key={coin.symbol} className="flex items-center justify-between p-4 sm:p-6 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
+                            <span className="text-xl font-bold text-slate-700">
+                              {cryptoOption?.icon || coin.symbol[0]}
+                            </span>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="p-4 bg-dime-purple/5 rounded-lg border border-dime-purple/10">
-                  <h4 className="font-medium text-slate-900 mb-2">How it works</h4>
-                  <ul className="text-sm text-slate-600 space-y-1">
-                    <li>• Round-ups are automatically split between debt payments and crypto</li>
-                    <li>• Crypto purchases are made through Coinbase's API</li>
-                    <li>• You maintain full control and can change allocation anytime</li>
-                    <li>• View your crypto portfolio growth alongside debt reduction</li>
-                  </ul>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Coinbase Connection Status */}
-      <CoinbaseStatus />
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-dime-purple/5 rounded-lg border border-dime-purple/10 flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-dime-purple" />
-              </div>
-              <Badge variant="secondary" className="text-dime-accent">
-                {settings?.cryptoEnabled ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Total Invested</h3>
-            <p className="text-2xl font-bold text-slate-900">
-              {formatCurrency(cryptoSummary?.totalInvested || "0")}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Via round-ups</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-dime-accent/5 rounded-lg border border-dime-accent/10 flex items-center justify-center">
-                <Coins className="w-6 h-6 text-dime-accent" />
-              </div>
-              <span className="text-xs text-slate-600">{cryptoPercentage}% allocation</span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Total Purchases</h3>
-            <p className="text-2xl font-bold text-slate-900">
-              {cryptoSummary?.totalPurchases || 0}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Completed orders</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10 flex items-center justify-center">
-                <Bitcoin className="w-6 h-6 text-dime-lilac" />
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-dime-accent" />
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Portfolio</h3>
-            <p className="text-2xl font-bold text-slate-900">
-              {cryptoSummary?.portfolio?.length || 0}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Cryptocurrencies</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-dime-lavender/5 rounded-lg border border-dime-lavender/10 flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-dime-lavender" />
-              </div>
-              <span className="text-xs text-slate-600">Coinbase</span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Last Purchase</h3>
-            <p className="text-lg font-bold text-slate-900">
-              {cryptoSummary?.lastPurchase 
-                ? new Date(cryptoSummary.lastPurchase).toLocaleDateString()
-                : 'No purchases'
-              }
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Recent activity</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Portfolio Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Crypto Portfolio
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {cryptoSummary?.portfolio && cryptoSummary.portfolio.length > 0 ? (
-              <div className="space-y-4">
-                {cryptoSummary.portfolio.map((coin) => {
-                  const cryptoOption = cryptoOptions.find(opt => opt.value === coin.symbol);
-                  return (
-                    <div key={coin.symbol} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-dime-purple/5 rounded-full border border-dime-purple/10 flex items-center justify-center">
-                          <span className="text-lg font-bold text-dime-purple">
-                            {cryptoOption?.icon || coin.symbol[0]}
-                          </span>
+                          <div>
+                            <p className="font-bold text-slate-900 text-lg">{cryptoOption?.label.split(' ')[0] || coin.symbol}</p>
+                            <p className="text-sm font-medium text-slate-500">
+                              {coin.purchaseCount} purchase{coin.purchaseCount !== 1 ? 's' : ''}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-slate-900">{coin.symbol}</p>
-                          <p className="text-sm text-slate-500">
-                            {coin.purchaseCount} purchase{coin.purchaseCount !== 1 ? 's' : ''}
+                        <div className="text-right">
+                          <p className="font-bold text-slate-900 text-lg tabular-nums">
+                            {formatCurrency(coin.totalInvested)}
+                          </p>
+                          <p className="text-sm font-semibold text-slate-500 tabular-nums">
+                            {coin.totalCrypto.toFixed(8)} {coin.symbol}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-slate-900">
-                          {formatCurrency(coin.totalInvested)}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {coin.totalCrypto.toFixed(8)} {coin.symbol}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Bitcoin className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">No crypto purchases yet</h3>
-                <p className="text-slate-500">
-                  {settings?.cryptoEnabled 
-                    ? "Make your first purchase to see your portfolio here"
-                    : "Enable crypto round-ups to start building your portfolio"
-                  }
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8">
+                  <EmptyState
+                    icon={LineChart}
+                    title="No crypto assets yet"
+                    description={settings?.cryptoEnabled 
+                      ? "Make your first purchase via round-ups to see your portfolio grow."
+                      : "Enable crypto round-ups in Settings to start building your portfolio."
+                    }
+                    testIdPrefix="empty-crypto-portfolio"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Recent Purchases */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Coins className="w-5 h-5" />
-              Recent Purchases
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {cryptoPurchases.length > 0 ? (
-              <div className="space-y-4">
-                {cryptoPurchases.slice(0, 5).map((purchase) => (
-                  <div key={purchase.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-dime-accent/5 rounded-full border border-dime-accent/10 flex items-center justify-center">
-                        <span className="text-xs font-bold text-dime-accent">
-                          {purchase.cryptoSymbol}
-                        </span>
+          {/* Recent Purchases */}
+          <Card className="shadow-card border-slate-200">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Coins className="w-5 h-5 text-dime-accent" />
+                Recent Purchases
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {cryptoPurchases.length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {cryptoPurchases.slice(0, 5).map((purchase) => {
+                    const cryptoOption = cryptoOptions.find(opt => opt.value === purchase.cryptoSymbol);
+                    return (
+                      <div key={purchase.id} className="flex items-center justify-between p-4 sm:p-6 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
+                            <span className="text-sm font-bold text-slate-700">
+                              {cryptoOption?.icon || purchase.cryptoSymbol[0]}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-base font-bold text-slate-900">
+                              {purchase.cryptoSymbol} Purchase
+                            </p>
+                            <p className="text-sm font-medium text-slate-500 tabular-nums">
+                              {new Date(purchase.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-base font-bold text-slate-900 tabular-nums">
+                            {formatCurrency(purchase.amountUsd)}
+                          </p>
+                          <div className="mt-1">
+                            <StatusBadge status={purchase.status} />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">
-                          {purchase.cryptoSymbol} Purchase
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {new Date(purchase.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-slate-900">
-                        {formatCurrency(purchase.amountUsd)}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <StatusBadge status={purchase.status} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={Coins}
-                title="No purchases yet"
-                description="Your crypto purchase history will appear here as round-ups are converted."
-                testIdPrefix="empty-crypto-purchases"
-              />
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8">
+                  <EmptyState
+                    icon={Coins}
+                    title="No recent purchases"
+                    description="Your crypto purchase history will appear here as round-ups are converted."
+                    testIdPrefix="empty-crypto-purchases"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Educational Content */}
-      <div className="mt-8">
-        <Card className="bg-dime-purple/5 border border-dime-purple/10">
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">💡 About Crypto Round-ups</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium text-slate-900 mb-2">🔒 Security & Control</h4>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• Purchases made through Coinbase's secure API</li>
-                  <li>• You maintain full ownership of your crypto</li>
-                  <li>• Change or disable at any time</li>
-                  <li>• No minimum purchase amounts</li>
-                </ul>
+        {/* Educational Content */}
+        <div className="mt-8">
+          <Card className="bg-slate-50 border-slate-200 shadow-sm">
+            <CardContent className="p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-dime-purple/10 rounded-full flex items-center justify-center">
+                  <span className="text-lg">💡</span>
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">About Crypto Round-ups</h3>
               </div>
-              <div>
-                <h4 className="font-medium text-slate-900 mb-2">📈 Smart Investing</h4>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• Dollar-cost averaging with spare change</li>
-                  <li>• Balanced approach: debt reduction + investing</li>
-                  <li>• Start small and build over time</li>
-                  <li>• Track performance alongside debt progress</li>
-                </ul>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                <div className="space-y-4">
+                  <h4 className="flex items-center gap-2 font-bold text-slate-900 text-lg">
+                    <ShieldCheck className="w-5 h-5 text-slate-400" />
+                    Security & Control
+                  </h4>
+                  <ul className="text-base font-medium text-slate-600 space-y-2.5">
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>Purchases made through Coinbase's secure API</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>You maintain full ownership of your crypto</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>Change allocation or disable at any time</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>No minimum purchase amounts</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="flex items-center gap-2 font-bold text-slate-900 text-lg">
+                    <TrendingUp className="w-5 h-5 text-slate-400" />
+                    Smart Investing
+                  </h4>
+                  <ul className="text-base font-medium text-slate-600 space-y-2.5">
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>Dollar-cost averaging with spare change</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>Balanced approach: debt reduction + investing</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>Start small and build over time</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-dime-purple mt-0.5">•</span>
+                      <span>Track performance alongside debt progress</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   );

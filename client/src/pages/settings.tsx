@@ -2,13 +2,11 @@ import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useSecurity } from "@/hooks/useSecurity";
@@ -32,7 +30,11 @@ import {
   Trash2,
   AlertTriangle,
   MessageSquare,
-  Send
+  Send,
+  ChevronRight,
+  ShieldCheck,
+  FileText,
+  Info
 } from "lucide-react";
 import {
   Dialog,
@@ -88,9 +90,6 @@ export default function Settings() {
 
   const sendFeedbackMutation = useMutation({
     mutationFn: async (payload: { subject: string; message: string }) => {
-      // Server prefills name/email/userId from the session and sets
-      // source="in_app". The only client-supplied field that's honored
-      // on the authenticated path is `message`.
       const composed = payload.subject
         ? `[${payload.subject}]\n\n${payload.message}`
         : payload.message;
@@ -213,190 +212,172 @@ export default function Settings() {
     }
   };
 
-  return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
+  const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
+    <div className="mb-8 animate-fade-in-up">
+      <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-4">{title}</h2>
+      <div className="bg-card rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        {children}
       </div>
+    </div>
+  );
 
-      <div className="space-y-6">
-        {/* Profile Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Settings
-            </CardTitle>
-            <CardDescription>
-              Your personal information and account details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  const Row = ({ children, isLast }: { children: React.ReactNode, isLast?: boolean }) => (
+    <div className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${!isLast ? 'border-b border-slate-100' : ''}`}>
+      {children}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background pb-20 pt-4 md:pt-8 animate-fade-in">
+      <div className="container mx-auto px-4 max-w-2xl">
+        <div className="mb-8 px-2">
+          <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
+        </div>
+
+        {/* ACCOUNT */}
+        <Section title="Account">
+          <Row>
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName" className="text-slate-700">First Name</Label>
                 <Input
                   id="firstName"
                   value={profileData.firstName}
                   readOnly
                   disabled
+                  className="bg-slate-50 border-slate-200 text-slate-900"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName" className="text-slate-700">Last Name</Label>
                 <Input
                   id="lastName"
                   value={profileData.lastName}
                   readOnly
                   disabled
+                  className="bg-slate-50 border-slate-200 text-slate-900"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+          </Row>
+          <Row isLast>
+            <div className="w-full space-y-2">
+              <Label htmlFor="email" className="text-slate-700">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 value={profileData.email}
                 readOnly
                 disabled
+                className="bg-slate-50 border-slate-200 text-slate-900"
               />
             </div>
-          </CardContent>
-        </Card>
+          </Row>
+        </Section>
 
-        {/* App Lock Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <KeyRound className="h-5 w-5" />
-              App Lock
-            </CardTitle>
-            <CardDescription>
-              Secure your app with PIN and Face ID
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Lock className="h-5 w-5 text-gray-500" />
-                <div>
-                  <Label>PIN Lock</Label>
-                  <p className="text-sm text-gray-600">
-                    {pinConfigured ? "Your app is secured with a PIN" : "Set up a 4-digit PIN to lock your app"}
-                  </p>
-                </div>
+        {/* SECURITY */}
+        <Section title="Security">
+          <Row>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <KeyRound className="h-4 w-4" />
               </div>
-              {pinConfigured ? (
-                <Button variant="outline" size="sm" onClick={handleClearPin}>
-                  Remove PIN
-                </Button>
-              ) : (
-                <Button size="sm" onClick={handleSetupPin} className="bg-dime-purple hover:bg-dime-purple/90">
-                  Set Up PIN
-                </Button>
-              )}
-            </div>
-
-            {/* Face ID: Not yet implemented - hidden until native biometrics integrated */}
-          </CardContent>
-        </Card>
-
-        {/* Security Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Password Settings
-            </CardTitle>
-            <CardDescription>
-              Change your account password
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={profileData.currentPassword}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={profileData.newPassword}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, newPassword: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={profileData.confirmPassword}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                />
-              </div>
-            </div>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Update Password
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Round-Up Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Round-Up Settings
-            </CardTitle>
-            <CardDescription>
-              Configure how your spare change is collected and applied
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Enable Round-Ups</Label>
-                <p className="text-sm text-gray-600">
-                  Automatically round up purchases to the nearest dollar
+              <div>
+                <p className="font-medium text-slate-900 text-sm">App Lock PIN</p>
+                <p className="text-xs text-slate-500">
+                  {pinConfigured ? "Secured with a 4-digit PIN" : "Not configured"}
                 </p>
               </div>
-              <Switch
-                checked={roundUpSettings?.isEnabled ?? false}
-                onCheckedChange={(checked) => handleRoundUpToggle("isEnabled", checked)}
-              />
             </div>
+            {pinConfigured ? (
+              <Button variant="outline" size="sm" onClick={handleClearPin} className="text-slate-700 press-scale shrink-0">
+                Remove PIN
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleSetupPin} className="bg-dime-purple hover:bg-dime-accent text-white press-scale shrink-0">
+                Set Up PIN
+              </Button>
+            )}
+          </Row>
+          <Row isLast>
+            <div className="w-full space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                  <Shield className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900 text-sm">Change Password</p>
+                </div>
+              </div>
+              <div className="space-y-3 pl-11">
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Current Password"
+                    value={profileData.currentPassword}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    className="pr-10 border-slate-200 focus-visible:ring-dime-purple"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-slate-600"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    type="password"
+                    placeholder="New Password"
+                    value={profileData.newPassword}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="border-slate-200 focus-visible:ring-dime-purple"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    value={profileData.confirmPassword}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className="border-slate-200 focus-visible:ring-dime-purple"
+                  />
+                </div>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto text-slate-700 press-scale">
+                  Update Password
+                </Button>
+              </div>
+            </div>
+          </Row>
+        </Section>
 
-            <Separator />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ROUND-UPS */}
+        <Section title="Round-Ups">
+          <Row>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <DollarSign className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm">Enable Round-Ups</p>
+                <p className="text-xs text-slate-500">Automatically round up purchases</p>
+              </div>
+            </div>
+            <Switch
+              checked={roundUpSettings?.isEnabled ?? false}
+              onCheckedChange={(checked) => handleRoundUpToggle("isEnabled", checked)}
+            />
+          </Row>
+          <Row>
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Round-Up Multiplier</Label>
+                <Label className="text-slate-700 text-xs font-semibold uppercase tracking-wider">Multiplier</Label>
                 <Select
                   value={roundUpSettings?.multiplier ?? "1.00"}
                   onValueChange={(value) => handleRoundUpToggle("multiplier", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-slate-200 focus:ring-dime-purple">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -407,14 +388,13 @@ export default function Settings() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
-                <Label>Auto-Apply Threshold</Label>
+                <Label className="text-slate-700 text-xs font-semibold uppercase tracking-wider">Auto-Apply Threshold</Label>
                 <Select
                   value={roundUpSettings?.autoApplyThreshold ?? "25.00"}
                   onValueChange={(value) => handleRoundUpToggle("autoApplyThreshold", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-slate-200 focus:ring-dime-purple">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -426,203 +406,306 @@ export default function Settings() {
                 </Select>
               </div>
             </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Crypto Investment</Label>
-                  <p className="text-sm text-gray-600">
-                    Invest a portion of round-ups in cryptocurrency
-                  </p>
-                </div>
-                <Switch
-                  checked={roundUpSettings?.cryptoEnabled ?? false}
-                  onCheckedChange={(checked) => handleRoundUpToggle("cryptoEnabled", checked)}
-                />
+          </Row>
+          
+          <Row>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                <span className="font-bold text-xs">₿</span>
               </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm">Crypto Investment</p>
+                <p className="text-xs text-slate-500">Invest a portion of round-ups in crypto</p>
+              </div>
+            </div>
+            <Switch
+              checked={roundUpSettings?.cryptoEnabled ?? false}
+              onCheckedChange={(checked) => handleRoundUpToggle("cryptoEnabled", checked)}
+            />
+          </Row>
+          
+          {roundUpSettings?.cryptoEnabled && (
+            <Row isLast>
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 pl-11">
+                <div className="space-y-2">
+                  <Label className="text-slate-700 text-xs font-semibold uppercase tracking-wider">Percentage</Label>
+                  <Select
+                    value={roundUpSettings?.cryptoPercentage ?? "25.00"}
+                    onValueChange={(value) => handleRoundUpToggle("cryptoPercentage", value)}
+                  >
+                    <SelectTrigger className="border-slate-200 focus:ring-dime-purple">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10.00">10%</SelectItem>
+                      <SelectItem value="25.00">25%</SelectItem>
+                      <SelectItem value="50.00">50%</SelectItem>
+                      <SelectItem value="75.00">75%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 text-xs font-semibold uppercase tracking-wider">Preferred Asset</Label>
+                  <Select
+                    value={roundUpSettings?.preferredCrypto ?? "BTC"}
+                    onValueChange={(value) => handleRoundUpToggle("preferredCrypto", value)}
+                  >
+                    <SelectTrigger className="border-slate-200 focus:ring-dime-purple">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BTC">Bitcoin (BTC)</SelectItem>
+                      <SelectItem value="ETH">Ethereum (ETH)</SelectItem>
+                      <SelectItem value="XRP">Ripple (XRP)</SelectItem>
+                      <SelectItem value="LTC">Litecoin (LTC)</SelectItem>
+                      <SelectItem value="ADA">Cardano (ADA)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Row>
+          )}
+        </Section>
 
-              {roundUpSettings?.cryptoEnabled && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Crypto Percentage</Label>
-                    <Select
-                      value={roundUpSettings?.cryptoPercentage ?? "25.00"}
-                      onValueChange={(value) => handleRoundUpToggle("cryptoPercentage", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10.00">10%</SelectItem>
-                        <SelectItem value="25.00">25%</SelectItem>
-                        <SelectItem value="50.00">50%</SelectItem>
-                        <SelectItem value="75.00">75%</SelectItem>
-                      </SelectContent>
-                    </Select>
+        {/* NOTIFICATIONS */}
+        <Section title="Notifications">
+          <Row>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <Smartphone className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm">Push Notifications</p>
+                <p className="text-xs text-slate-500">Alerts on your device</p>
+              </div>
+            </div>
+            <Switch defaultChecked />
+          </Row>
+          <Row>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <Mail className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm">Email Notifications</p>
+                <p className="text-xs text-slate-500">Weekly progress summaries</p>
+              </div>
+            </div>
+            <Switch defaultChecked />
+          </Row>
+          <Row>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                <CreditCard className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm">Payment Reminders</p>
+                <p className="text-xs text-slate-500">Upcoming due dates</p>
+              </div>
+            </div>
+            <Switch defaultChecked />
+          </Row>
+          <Row isLast>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Bell className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm">Round-Up Milestones</p>
+                <p className="text-xs text-slate-500">Savings achievements</p>
+              </div>
+            </div>
+            <Switch defaultChecked />
+          </Row>
+        </Section>
+
+        {/* SUPPORT */}
+        <Section title="Support & Info">
+          <button onClick={() => setFeedbackOpen(true)} className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left border-b border-slate-100 press-scale" data-testid="button-open-feedback">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-dime-purple/10 text-dime-purple flex items-center justify-center shrink-0">
+                <MessageSquare className="h-4 w-4" />
+              </div>
+              <p className="font-medium text-slate-900 text-sm">Send Feedback</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </button>
+          
+          <div className="p-4 flex items-center justify-between border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                <Info className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm">App Version</p>
+              </div>
+            </div>
+            <span className="text-sm font-medium text-slate-500 tabular-nums">1.0.0</span>
+          </div>
+
+          <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left border-b border-slate-100 press-scale">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <p className="font-medium text-slate-900 text-sm">Privacy Policy</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </button>
+
+          <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left press-scale">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                <FileText className="h-4 w-4" />
+              </div>
+              <p className="font-medium text-slate-900 text-sm">Terms of Service</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </button>
+        </Section>
+
+        {/* LOGOUT & DANGER */}
+        <div className="space-y-4 mb-8">
+          <Button 
+            variant="outline" 
+            className="w-full bg-white text-slate-900 border-slate-200 hover:bg-slate-50 h-12 press-scale shadow-sm"
+            onClick={logout}
+          >
+            <LogOut className="h-4 w-4 mr-2 text-slate-500" />
+            Log Out
+          </Button>
+
+          <div className="bg-red-50/50 border border-red-100 rounded-2xl p-1 shadow-sm overflow-hidden animate-fade-in-up">
+            {!showDeleteConfirm ? (
+              <Button 
+                variant="ghost" 
+                className="w-full text-red-600 hover:bg-red-100 hover:text-red-700 h-12 press-scale"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Account
+              </Button>
+            ) : (
+              <div className="p-4 space-y-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-red-900 text-sm">This action cannot be undone.</p>
+                    <p className="text-xs text-red-700 mt-1 leading-relaxed">
+                      All your data, connections, and settings will be permanently removed.
+                    </p>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Preferred Cryptocurrency</Label>
-                    <Select
-                      value={roundUpSettings?.preferredCrypto ?? "BTC"}
-                      onValueChange={(value) => handleRoundUpToggle("preferredCrypto", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BTC">Bitcoin (BTC)</SelectItem>
-                        <SelectItem value="ETH">Ethereum (ETH)</SelectItem>
-                        <SelectItem value="XRP">Ripple (XRP)</SelectItem>
-                        <SelectItem value="LTC">Litecoin (LTC)</SelectItem>
-                        <SelectItem value="ADA">Cardano (ADA)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notification Preferences */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notification Preferences
-            </CardTitle>
-            <CardDescription>
-              Choose how you want to be notified about your progress
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Smartphone className="h-5 w-5 text-gray-500" />
-                <div>
-                  <Label>Push Notifications</Label>
-                  <p className="text-sm text-gray-600">Receive alerts on your device</p>
+                <div className="space-y-2">
+                  <Label htmlFor="deleteConfirm" className="text-xs font-semibold text-red-800 uppercase tracking-wider">
+                    Type <span className="font-bold font-mono bg-red-100 px-1 py-0.5 rounded">DELETE</span> to confirm
+                  </Label>
+                  <Input
+                    id="deleteConfirm"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    className="border-red-200 focus-visible:ring-red-500 bg-white"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800 press-scale"
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white press-scale"
+                    disabled={deleteConfirmText !== "DELETE" || deleteAccountMutation.isPending}
+                    onClick={handleDeleteAccount}
+                  >
+                    {deleteAccountMutation.isPending ? "Deleting..." : "Confirm Delete"}
+                  </Button>
                 </div>
               </div>
-              <Switch defaultChecked />
-            </div>
+            )}
+          </div>
+        </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-gray-500" />
-                <div>
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-gray-600">Weekly progress summaries</p>
-                </div>
-              </div>
-              <Switch defaultChecked />
-            </div>
+        {/* TRUST FOOTER */}
+        <div className="flex flex-col items-center justify-center py-6 text-slate-400 space-y-2 animate-fade-in-up delay-200">
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <Lock className="h-3 w-3" />
+            <span>256-bit encryption</span>
+            <span className="mx-1">•</span>
+            <span>Secured by Plaid</span>
+          </div>
+          <p className="text-[10px] uppercase tracking-wider font-semibold">Dime Time Financial</p>
+        </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-gray-500" />
-                <div>
-                  <Label>Payment Reminders</Label>
-                  <p className="text-sm text-gray-600">Alerts for upcoming due dates</p>
-                </div>
-              </div>
-              <Switch defaultChecked />
-            </div>
+        {/* Beta + Compliance */}
+        <div className="mb-6 hidden">
+          <BetaModeBanner variant="full" showCompliance />
+        </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-gray-500" />
-                <div>
-                  <Label>Round-Up Milestones</Label>
-                  <p className="text-sm text-gray-600">Celebrate your savings achievements</p>
-                </div>
-              </div>
-              <Switch defaultChecked />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Send Feedback (beta) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-dime-purple" />
-              Send Feedback
-            </CardTitle>
-            <CardDescription>
-              Found a bug or have an idea? Send a note straight to the team.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="outline"
-              onClick={() => setFeedbackOpen(true)}
-              data-testid="button-open-feedback"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Send feedback
-            </Button>
-          </CardContent>
-        </Card>
-
+        {/* Modals */}
         <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Send feedback</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="sm:max-w-md bg-card border-none shadow-card">
+            <DialogHeader className="bg-slate-50 p-6 border-b -mx-6 -mt-6 mb-6">
+              <DialogTitle className="text-xl font-bold text-slate-900">Send Feedback</DialogTitle>
+              <DialogDescription className="text-slate-600 mt-1">
                 Your name and email are attached automatically from your account.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label htmlFor="feedback-from">From</Label>
+                <Label htmlFor="feedback-from" className="text-slate-700 text-xs font-semibold uppercase tracking-wider">From</Label>
                 <Input
                   id="feedback-from"
                   value={user?.email ?? ""}
                   readOnly
                   disabled
+                  className="bg-slate-50 border-slate-200 text-slate-900"
                   data-testid="input-feedback-from"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="feedback-subject">Subject (optional)</Label>
+                <Label htmlFor="feedback-subject" className="text-slate-700 text-xs font-semibold uppercase tracking-wider">Subject (optional)</Label>
                 <Input
                   id="feedback-subject"
                   value={feedbackSubject}
                   onChange={(e) => setFeedbackSubject(e.target.value)}
                   placeholder="Short summary"
                   maxLength={120}
+                  className="border-slate-200 focus-visible:ring-dime-purple"
                   data-testid="input-feedback-subject"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="feedback-message">Message</Label>
+                <Label htmlFor="feedback-message" className="text-slate-700 text-xs font-semibold uppercase tracking-wider">Message</Label>
                 <Textarea
                   id="feedback-message"
                   value={feedbackMessage}
                   onChange={(e) => setFeedbackMessage(e.target.value)}
                   placeholder="Tell us what's working, what's broken, or what you'd love to see."
-                  rows={6}
+                  rows={5}
                   maxLength={4000}
+                  className="border-slate-200 focus-visible:ring-dime-purple resize-none"
                   data-testid="textarea-feedback-message"
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="mt-4 pt-4 border-t border-slate-100">
               <Button
                 variant="outline"
                 onClick={() => setFeedbackOpen(false)}
                 disabled={sendFeedbackMutation.isPending}
+                className="press-scale"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSendFeedback}
                 disabled={sendFeedbackMutation.isPending || !feedbackMessage.trim()}
-                className="bg-dime-purple text-white hover:bg-dime-purple/90"
+                className="bg-dime-purple text-white hover:bg-dime-accent press-scale shadow-sm"
                 data-testid="button-send-feedback"
               >
                 {sendFeedbackMutation.isPending ? "Sending..." : "Send"}
@@ -631,107 +714,6 @@ export default function Settings() {
           </DialogContent>
         </Dialog>
 
-        {/* App Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>App Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Version</span>
-              <Badge variant="outline">1.0.0</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Last Updated</span>
-              <span className="text-sm">August 12, 2025</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Privacy Policy</span>
-              <Button variant="link" size="sm">View</Button>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Terms of Service</span>
-              <Button variant="link" size="sm">View</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Delete Account */}
-        <Card className="border-red-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <Trash2 className="h-5 w-5" />
-              Delete Account
-            </CardTitle>
-            <CardDescription>
-              Permanently delete your account and all associated data
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!showDeleteConfirm ? (
-              <Button 
-                variant="outline" 
-                className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete My Account
-              </Button>
-            ) : (
-              <div className="space-y-4 p-4 bg-red-50 rounded-lg border border-red-200">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-2">
-                    <p className="font-semibold text-red-800">This action cannot be undone</p>
-                    <p className="text-sm text-red-700">
-                      This will permanently delete your account and remove all your data including debts, transactions, payments, bank connections, crypto purchases, and settings.
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deleteConfirm" className="text-sm text-red-700">
-                    Type <span className="font-mono font-bold">DELETE</span> to confirm
-                  </Label>
-                  <Input
-                    id="deleteConfirm"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    placeholder="Type DELETE to confirm"
-                    className="border-red-300 focus:ring-red-500"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <Button 
-                    variant="destructive"
-                    disabled={deleteConfirmText !== "DELETE" || deleteAccountMutation.isPending}
-                    onClick={handleDeleteAccount}
-                  >
-                    {deleteAccountMutation.isPending ? "Deleting..." : "Permanently Delete Account"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Beta + Compliance */}
-        <BetaModeBanner variant="full" showCompliance />
-
-        {/* Logout */}
-        <Button 
-          variant="outline" 
-          className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-          onClick={logout}
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Log Out
-        </Button>
       </div>
     </div>
   );

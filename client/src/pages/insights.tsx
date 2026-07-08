@@ -10,7 +10,8 @@ import {
   Calendar,
   Award,
   PieChart,
-  BarChart3
+  BarChart3,
+  ArrowRight
 } from "lucide-react";
 import type { Transaction, Debt, Payment } from "@shared/schema";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -106,120 +107,121 @@ export default function Insights() {
   const avgMonthlyReduction = totalPaid / 7; // 7 months of data
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Financial Insights</h1>
-        <p className="text-slate-600">Understand your spending patterns and debt payoff progress</p>
-      </div>
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 animate-fade-in-up">
+      <header className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-1">Financial Insights</h1>
+        <p className="text-sm text-slate-500">Understand your spending patterns and debt payoff progress</p>
+      </header>
 
       {/* Key Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <Card className="shadow-card border-slate-200/60">
+          <CardHeader className="p-4 sm:p-5 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-500 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-dime-purple" />
               Avg. Round-up
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-dime-accent">{formatCurrency(averageRoundUp)}</p>
-            <p className="text-xs text-slate-500 mt-1">Per transaction</p>
+          <CardContent className="p-4 sm:p-5 pt-0">
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">{formatCurrency(averageRoundUp)}</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Per transaction</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
-              <TrendingDown className="w-4 h-4" />
+        <Card className="shadow-card border-slate-200/60">
+          <CardHeader className="p-4 sm:p-5 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-500 flex items-center gap-2">
+              <TrendingDown className="w-4 h-4 text-green-500" />
               Debt Reduction
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-dime-purple">{formatCurrency(avgMonthlyReduction)}</p>
-            <p className="text-xs text-slate-500 mt-1">Per month avg.</p>
+          <CardContent className="p-4 sm:p-5 pt-0">
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">{formatCurrency(avgMonthlyReduction)}</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Per month avg.</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
-              <Target className="w-4 h-4" />
+        <Card className="shadow-card border-slate-200/60">
+          <CardHeader className="p-4 sm:p-5 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-500 flex items-center gap-2">
+              <Target className="w-4 h-4 text-blue-500" />
               Round-up Rate
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 sm:p-5 pt-0">
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">
               {totalSpending > 0 ? ((totalRoundUps / totalSpending) * 100).toFixed(1) : 0}%
             </p>
-            <p className="text-xs text-slate-500 mt-1">Of total spending</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Of total spending</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
-              <Award className="w-4 h-4" />
+        <Card className="shadow-card border-slate-200/60">
+          <CardHeader className="p-4 sm:p-5 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-500 flex items-center gap-2">
+              <Award className="w-4 h-4 text-yellow-500" />
               Total Saved
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-dime-lilac">{formatCurrency(totalRoundUps)}</p>
-            <p className="text-xs text-slate-500 mt-1">Via round-ups</p>
+          <CardContent className="p-4 sm:p-5 pt-0">
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">{formatCurrency(totalRoundUps)}</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Via round-ups</p>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Debt Progress Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
+        <Card className="shadow-card border-slate-200/60">
+          <CardHeader className="p-5 sm:p-6 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+              <BarChart3 className="w-5 h-5 text-slate-400" />
               Debt Reduction Progress
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 sm:p-6 pt-4">
             <DebtProgressChart 
               data={debtChartData}
               labels={debtChartLabels}
               className="h-64"
               enableVariation={true}
             />
-            <div className="mt-4 p-3 bg-dime-accent/5 rounded-lg border border-dime-accent/10">
-              <p className="text-sm text-slate-700">
-                <span className="font-semibold text-dime-accent">Great progress!</span> You've reduced your debt by{' '}
-                {formatCurrency(totalPaid)} this year, averaging {formatCurrency(avgMonthlyReduction)} per month.
+            <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-100 flex items-start gap-3">
+              <div className="shrink-0 mt-0.5"><Award className="w-5 h-5 text-dime-purple" /></div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                <span className="font-semibold text-slate-900">Great progress!</span> You've reduced your debt by <span className="font-bold text-slate-900 tabular-nums">{formatCurrency(totalPaid)}</span> this year, averaging <span className="font-bold text-slate-900 tabular-nums">{formatCurrency(avgMonthlyReduction)}</span> per month.
               </p>
             </div>
           </CardContent>
         </Card>
 
         {/* Spending by Category */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="w-5 h-5" />
+        <Card className="shadow-card border-slate-200/60">
+          <CardHeader className="p-5 sm:p-6 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+              <PieChart className="w-5 h-5 text-slate-400" />
               Top Spending Categories
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-5 sm:p-6 pt-4">
+            <div className="space-y-5">
               {topCategories.map(([category, amount], index) => {
                 const percentage = (amount / totalSpending) * 100;
-                const colors = ['bg-dime-purple', 'bg-dime-accent', 'bg-dime-lilac', 'bg-dime-lavender', 'bg-purple-500'];
+                // Premium chart palette corresponding to new design
+                const colors = ['bg-dime-purple', 'bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-rose-400'];
                 
                 return (
                   <div key={category}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-slate-700">{category}</span>
+                      <span className="text-sm font-medium text-slate-700 capitalize">{category}</span>
                       <div className="text-right">
-                        <span className="text-sm font-semibold text-slate-900">{formatCurrency(amount)}</span>
-                        <span className="text-xs text-slate-500 ml-2">{percentage.toFixed(1)}%</span>
+                        <span className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(amount)}</span>
+                        <span className="text-xs font-semibold text-slate-400 tabular-nums ml-2">{percentage.toFixed(1)}%</span>
                       </div>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                       <div 
-                        className={`${colors[index]} h-2 rounded-full transition-all duration-300`}
+                        className={`${colors[index]} h-full rounded-full transition-all duration-1000 ease-out`}
                         style={{ width: `${percentage}%` }}
                       ></div>
                     </div>
@@ -229,10 +231,12 @@ export default function Insights() {
             </div>
             
             {topCategories.length === 0 && (
-              <div className="text-center py-8">
-                <PieChart className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">No spending data available</p>
-                <p className="text-sm text-slate-400 mt-1">Start making transactions to see your spending breakdown</p>
+              <div className="text-center py-10">
+                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-3">
+                  <PieChart className="w-6 h-6 text-slate-300" />
+                </div>
+                <p className="text-sm font-semibold text-slate-900">No spending data</p>
+                <p className="text-xs text-slate-500 mt-1">Start making transactions to see your breakdown.</p>
               </div>
             )}
           </CardContent>
@@ -240,37 +244,37 @@ export default function Insights() {
       </div>
 
       {/* Monthly Trends */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
+      <Card className="mb-8 shadow-card border-slate-200/60 overflow-hidden">
+        <CardHeader className="p-5 sm:p-6 bg-white border-b border-slate-100">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+            <Calendar className="w-5 h-5 text-slate-400" />
             Monthly Activity
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 text-sm font-medium text-slate-600">Month</th>
-                  <th className="text-right py-2 text-sm font-medium text-slate-600">Transactions</th>
-                  <th className="text-right py-2 text-sm font-medium text-slate-600">Total Spending</th>
-                  <th className="text-right py-2 text-sm font-medium text-slate-600">Round-ups</th>
-                  <th className="text-right py-2 text-sm font-medium text-slate-600">Avg. Round-up</th>
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th className="text-left py-3 px-6 font-medium text-slate-500">Month</th>
+                  <th className="text-right py-3 px-6 font-medium text-slate-500">Transactions</th>
+                  <th className="text-right py-3 px-6 font-medium text-slate-500">Total Spending</th>
+                  <th className="text-right py-3 px-6 font-medium text-slate-500">Round-ups</th>
+                  <th className="text-right py-3 px-6 font-medium text-slate-500">Avg. Round-up</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {Object.entries(monthlyData).map(([month, data]) => (
-                  <tr key={month} className="border-b border-slate-100">
-                    <td className="py-3 text-sm font-medium text-slate-900">{month}</td>
-                    <td className="py-3 text-sm text-slate-600 text-right">{data.count}</td>
-                    <td className="py-3 text-sm text-slate-900 text-right font-medium">
+                  <tr key={month} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3 px-6 font-medium text-slate-900">{month}</td>
+                    <td className="py-3 px-6 text-slate-500 text-right tabular-nums">{data.count}</td>
+                    <td className="py-3 px-6 text-slate-900 text-right font-semibold tabular-nums">
                       {formatCurrency(data.spending)}
                     </td>
-                    <td className="py-3 text-sm text-dime-accent text-right font-medium">
+                    <td className="py-3 px-6 text-dime-purple text-right font-bold tabular-nums">
                       {formatCurrency(data.roundUps)}
                     </td>
-                    <td className="py-3 text-sm text-slate-600 text-right">
+                    <td className="py-3 px-6 text-slate-500 text-right tabular-nums font-medium">
                       {formatCurrency(data.count > 0 ? data.roundUps / data.count : 0)}
                     </td>
                   </tr>
@@ -279,38 +283,38 @@ export default function Insights() {
             </table>
             
             {Object.keys(monthlyData).length === 0 && (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">No monthly data available</p>
-                <p className="text-sm text-slate-400 mt-1">Transaction history will appear here as you use Dime Time</p>
+              <div className="text-center py-12 bg-white">
+                <Calendar className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-900">No monthly data</p>
+                <p className="text-xs text-slate-500 mt-1">Transaction history will appear here over time.</p>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Insights and Tips */}
+      {/* Insights and Transfers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card className="bg-dime-purple/5 border border-dime-purple/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Your Progress
+        <Card className="shadow-card border-slate-200/60 bg-gradient-to-br from-white to-slate-50">
+          <CardHeader className="p-5 sm:p-6 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+              <TrendingUp className="w-5 h-5 text-slate-400" />
+              Your Progress Snapshot
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 sm:p-6 pt-4">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Debt paid off</span>
-                <span className="font-semibold text-dime-accent">{summary?.progressPercentage}%</span>
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                <span className="text-sm font-medium text-slate-600">Debt Paid Off</span>
+                <span className="text-base font-bold text-slate-900 tabular-nums">{summary?.progressPercentage}%</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Projected debt-free date</span>
-                <span className="font-semibold text-dime-purple">{summary?.debtFreeDate}</span>
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                <span className="text-sm font-medium text-slate-600">Projected Freedom</span>
+                <span className="text-base font-bold text-slate-900">{summary?.debtFreeDate}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Round-ups collected</span>
-                <span className="font-semibold text-dime-lilac">
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                <span className="text-sm font-medium text-slate-600">Total Gathered</span>
+                <span className="text-base font-bold text-dime-purple tabular-nums">
                   {formatCurrency(totalRoundUps)}
                 </span>
               </div>
@@ -318,25 +322,21 @@ export default function Insights() {
           </CardContent>
         </Card>
 
-        {transfers.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
+        {transfers.length > 0 ? (
+          <Card className="shadow-card border-slate-200/60">
+            <CardHeader className="p-5 sm:p-6 pb-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                <ArrowRight className="w-5 h-5 text-slate-400" />
                 Recent Transfers
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
+            <CardContent className="p-5 sm:p-6 pt-4">
+              <ul className="space-y-3">
                 {transfers
                   .slice()
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .slice(0, 5)
+                  .slice(0, 4)
                   .map((t) => {
-                    // For failed transfers, prefer a tailored recovery
-                    // hint mapped from `errorCode` when we have one;
-                    // otherwise fall back to the generic transfer-status
-                    // description so the user always sees plain English.
                     const errorDetail =
                       t.status === "failed" || t.status === "requires_action"
                         ? describeTransferError(t.errorCode)
@@ -348,23 +348,21 @@ export default function Insights() {
                     return (
                       <li
                         key={t.id}
-                        className="rounded-md border border-slate-200 px-3 py-2"
+                        className="rounded-lg border border-slate-100 bg-white p-3 shadow-sm"
                         data-testid={`transfer-row-${t.id}`}
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-                            <span className="text-sm font-medium text-slate-900">
-                              {formatCurrency(t.amount)}
-                            </span>
-                            <StatusBadge status={t.status} timestamp={t.createdAt} />
-                          </div>
-                          <span className="text-xs text-slate-500 capitalize whitespace-nowrap">
-                            {t.type.replace(/_/g, " ")}
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-bold text-slate-900 tabular-nums">
+                            {formatCurrency(t.amount)}
                           </span>
+                          <StatusBadge status={t.status} compact />
+                        </div>
+                        <div className="text-xs text-slate-500 capitalize">
+                          {t.type.replace(/_/g, " ")} • {formatDate(t.createdAt)}
                         </div>
                         {errorDetail && (
                           <div
-                            className="mt-2 rounded border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-900"
+                            className="mt-2 rounded bg-red-50 px-2.5 py-1.5 text-xs text-red-900"
                             data-testid={`transfer-error-${t.id}`}
                           >
                             <div className="font-medium">{errorDetail.headline}</div>
@@ -373,7 +371,7 @@ export default function Insights() {
                         )}
                         {fallback && (
                           <div
-                            className="mt-2 rounded border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700"
+                            className="mt-2 rounded bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700"
                             data-testid={`transfer-fallback-${t.id}`}
                           >
                             {fallback}
@@ -385,38 +383,36 @@ export default function Insights() {
               </ul>
             </CardContent>
           </Card>
+        ) : (
+          <Card className="shadow-card border-slate-200/60">
+            <CardHeader className="p-5 sm:p-6 pb-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                <Target className="w-5 h-5 text-slate-400" />
+                Optimization Tips
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 sm:p-6 pt-4">
+              <div className="space-y-4">
+                <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                  <p className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
+                    <span>💡</span> Boost Your Round-ups
+                  </p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Consider rounding up to the nearest $5 instead of $1 to significantly accelerate your debt payoff timeline.
+                  </p>
+                </div>
+                <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                  <p className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
+                    <span>🎯</span> High-Interest First
+                  </p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Make sure extra payments target your highest interest rate debt first to save the most money over time.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
-
-        <Card className="bg-dime-accent/5 border border-dime-accent/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Optimization Tips
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="text-sm">
-                <p className="font-medium text-slate-900 mb-1">💡 Boost Your Round-ups</p>
-                <p className="text-slate-600">
-                  Consider rounding up to the nearest $5 instead of $1 to accelerate debt payoff.
-                </p>
-              </div>
-              <div className="text-sm">
-                <p className="font-medium text-slate-900 mb-1">🎯 Focus on High-Interest Debt</p>
-                <p className="text-slate-600">
-                  Apply extra payments to your highest interest rate debt first to save money.
-                </p>
-              </div>
-              <div className="text-sm">
-                <p className="font-medium text-slate-900 mb-1">📊 Track Your Habits</p>
-                <p className="text-slate-600">
-                  Your top spending category is {topCategories[0]?.[0] || 'not available yet'}. Consider budgeting here.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </main>
   );

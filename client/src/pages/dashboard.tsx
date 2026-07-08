@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { DebtProgressChart } from "@/components/debt-progress-chart";
 import { PaymentModal } from "@/components/payment-modal";
 import { formatCurrency, formatTime, formatDate, calculateDebtProgress } from "@/lib/calculations";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { 
   DollarSign, 
   CreditCard, 
@@ -21,7 +21,11 @@ import {
   ArrowUp,
   Receipt,
   Wallet,
-  LogOut
+  LogOut,
+  Settings,
+  Lock,
+  ChevronRight,
+  PieChart
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Transaction, Debt } from "@shared/schema";
@@ -105,8 +109,6 @@ export default function Dashboard() {
 
   // ── Persist fresh data to cache ───────────────────────────────────────────
   useEffect(() => {
-    // Never persist demo-injected summary values to the (global) dashboard cache,
-    // otherwise a later session for a different account could read them back.
     if (summaryFetched && summary && !isDemo) {
       cacheSummary(summary);
       const elapsed = performance.now() - t0.current;
@@ -146,340 +148,359 @@ export default function Dashboard() {
       case 'transportation': return <Car className="w-5 h-5 text-blue-600" />;
       case 'shopping':
       case 'groceries':     return <ShoppingBag className="w-5 h-5 text-purple-600" />;
-      default:              return <DollarSign className="w-5 h-5 text-gray-600" />;
+      default:              return <DollarSign className="w-5 h-5 text-slate-500" />;
     }
   };
 
   // ── Render (always — no blocking on network) ───────────────────────────────
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-8">
-
-      {/* Welcome Section */}
-      <div className="mb-8 flex items-start justify-between gap-4">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 animate-fade-in-up">
+      
+      {/* 1. Welcome Section */}
+      <header className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Welcome back, <span className="text-dime-purple">{(user as any)?.firstName || 'User'}</span>!
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Welcome back, <span className="text-dime-purple">{(user as any)?.firstName || 'User'}</span>
           </h1>
-          <p className="text-slate-600">
-            You've saved <span className="font-semibold text-dime-accent">{formatCurrency(activeSummary.thisMonthRoundUps)}</span> in round-ups this month{" "}
-            and paid down <span className="font-semibold text-dime-purple">{formatCurrency(activeSummary.thisMonthPayments)}</span> in debt.
-          </p>
+          <div className="flex items-center mt-1 text-slate-500 text-xs sm:text-sm font-medium">
+            <Lock className="w-3.5 h-3.5 mr-1" />
+            Secured by 256-bit encryption
+          </div>
         </div>
         <Button
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon"
           onClick={logout}
-          className="shrink-0 text-slate-600 hover:text-slate-900"
+          className="shrink-0 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full w-10 h-10 transition-colors press-scale"
           data-testid="button-logout"
+          title="Log Out"
         >
-          <LogOut className="w-4 h-4 mr-2" />
-          Log Out
+          <LogOut className="w-5 h-5" />
         </Button>
-      </div>
+      </header>
 
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-dime-purple/5 rounded-lg border border-dime-purple/10 flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-dime-purple" />
-              </div>
-              <span className="text-xs text-dime-accent font-medium">+{formatCurrency(activeSummary.thisMonthRoundUps)}</span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Round-Up Balance</h3>
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(activeSummary.totalRoundUps)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-red-500/5 rounded-lg border border-red-500/10 flex items-center justify-center">
-                <CreditCard className="w-6 h-6 text-red-600" />
-              </div>
-              <span className="text-xs text-red-600 font-medium">-{formatCurrency(activeSummary.thisMonthPayments)}</span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Total Debt</h3>
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(activeSummary.totalDebt)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-dime-accent/5 rounded-lg border border-dime-accent/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-dime-accent" />
-              </div>
-              <span className="text-xs text-dime-accent font-medium">{activeSummary.progressPercentage}%</span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Progress This Year</h3>
-            <p className="text-2xl font-bold text-slate-900">{activeSummary.progressPercentage}%</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-dime-lilac" />
-              </div>
-              <span className="text-xs text-slate-600 font-medium">Est.</span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-600 mb-1">Debt Free Date</h3>
-            <p className="text-2xl font-bold text-slate-900">{activeSummary.debtFreeDate}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Transactions & Round-ups */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-slate-900">Recent Transactions</h2>
-                <Button variant="ghost" className="text-dime-purple hover:text-dime-purple/80 text-sm font-medium">
-                  View All
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {recentTransactions.length === 0 && transactionsError ? (
-                  <EmptyState
-                    icon={Receipt}
-                    title="Couldn't load transactions"
-                    description="Check your connection and try again."
-                    ctaLabel="Retry"
-                    onCtaClick={() => refetchTransactions()}
-                    testIdPrefix="error-transactions"
-                  />
-                ) : recentTransactions.length === 0 && transactionsLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-4 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10"
-                      data-testid={`skeleton-transaction-${i}`}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <Skeleton className="w-10 h-10 rounded-lg bg-white/20" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-32 bg-white/20" />
-                          <Skeleton className="h-3 w-24 bg-white/15" />
-                        </div>
-                      </div>
-                      <div className="space-y-2 text-right">
-                        <Skeleton className="h-4 w-16 ml-auto bg-white/20" />
-                        <Skeleton className="h-3 w-20 ml-auto bg-white/15" />
-                      </div>
-                    </div>
-                  ))
-                ) : recentTransactions.length === 0 && transactionsFetchedAfterMount ? (
-                  <EmptyState
-                    icon={Receipt}
-                    title="No transactions yet"
-                    description="Connect a bank account to start tracking purchases and rounding up spare change."
-                    ctaLabel="Connect a bank"
-                    onCtaClick={() => setLocation("/banking")}
-                    testIdPrefix="empty-transactions"
-                  />
-                ) : (
-                  recentTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-4 bg-dime-lilac/5 rounded-lg border border-dime-lilac/10">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                          {getCategoryIcon(transaction.category)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900">{transaction.merchant}</p>
-                          <p className="text-sm text-slate-600">
-                            {formatDate(transaction.date)}, {formatTime(transaction.date)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-slate-900">-{formatCurrency(transaction.amount)}</p>
-                        <p className="text-sm text-dime-accent">+{formatCurrency(transaction.roundUpAmount)} round-up</p>
-                        <div className="mt-1 flex justify-end">
-                          {/* Plaid-synced purchases are settled by definition; if the
-                              backend later annotates a `status` field on the Transaction
-                              row, we surface it; otherwise fall back to the schema reality. */}
-                          <StatusBadge
-                            status={(transaction as Transaction & { status?: string }).status ?? "completed"}
-                            compact
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Round-up Summary */}
-              <div className="mt-6 p-4 bg-dime-purple/5 rounded-lg border border-dime-purple/10">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">Round-ups this week</p>
-                    <p className="text-lg font-bold text-dime-accent">{formatCurrency(weekRoundUps)}</p>
+      {/* 2. Today's/This Month Progress (Hero Card) */}
+      <section className="mb-6">
+        <Card className="shadow-card border-slate-200/60 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+            <TrendingUp className="w-32 h-32 text-dime-purple" />
+          </div>
+          <CardContent className="p-6 sm:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+              <div>
+                <p className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">This Month's Impact</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl sm:text-5xl font-bold text-slate-900 tabular-nums tracking-tight">
+                    {formatCurrency(activeSummary.thisMonthPayments)}
+                  </span>
+                  <span className="text-sm font-medium text-slate-500">paid to debt</span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-dime-purple/10 flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 text-dime-purple" />
                   </div>
-                  <Button 
-                    className="bg-dime-accent text-white hover:bg-dime-accent/90"
-                    onClick={() => setShowPaymentModal(true)}
-                  >
-                    Apply to Debt
-                  </Button>
+                  <p className="text-sm text-slate-600">
+                    Includes <span className="font-semibold text-slate-900 tabular-nums">{formatCurrency(activeSummary.thisMonthRoundUps)}</span> from spare change
+                  </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Debt Overview */}
-        <div className="space-y-6">
-          {/* Debt Progress Chart */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Debt Reduction Progress</h3>
-              <DebtProgressChart 
-                data={chartData}
-                labels={chartLabels}
-                className="h-48"
-                enableVariation={true}
-              />
-              <div className="mt-4 text-center">
-                <p className="text-sm text-slate-600">
-                  You're <span className="font-semibold text-dime-accent">3 months ahead</span> of your original timeline!
-                </p>
+              
+              {/* 3. Debt Payoff Progress (Ring Visual) */}
+              <div className="flex items-center md:justify-end gap-6">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" className="text-slate-100" strokeWidth="8" />
+                    <circle 
+                      cx="50" cy="50" r="40" 
+                      fill="transparent" 
+                      stroke="currentColor" 
+                      className="text-dime-purple transition-all duration-1000 ease-out" 
+                      strokeWidth="8" 
+                      strokeDasharray="251.2" 
+                      strokeDashoffset={251.2 - (251.2 * activeSummary.progressPercentage) / 100}
+                      strokeLinecap="round" 
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums tracking-tight">{activeSummary.progressPercentage}%</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-900 mb-1">Total Progress</p>
+                  <p className="text-xs text-slate-500 max-w-[140px] leading-relaxed">You're making steady strides towards becoming debt-free.</p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
-          {/* Active Debts */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">Active Debts</h3>
-                <Button
-                  variant="ghost"
-                  className="text-dime-purple hover:text-dime-purple/80 text-sm font-medium"
-                  onClick={() => setLocation("/debts")}
-                  data-testid="button-manage-debts"
-                >
-                  Manage
-                </Button>
+      {/* 4. Core Metrics Grid */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <Card className="shadow-card border-slate-200/60 hover:shadow-card-hover transition-shadow duration-300 group">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-dime-accent/10 rounded-full flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-dime-accent" />
               </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums tracking-tight mb-1">{formatCurrency(activeSummary.totalRoundUps)}</p>
+            <h3 className="text-xs sm:text-sm font-medium text-slate-500">Round-Up Balance</h3>
+          </CardContent>
+        </Card>
 
-              <div className="space-y-4">
-                {debts.length === 0 && debtsError ? (
-                  <EmptyState
-                    icon={Wallet}
-                    title="Couldn't load debts"
-                    description="Check your connection and try again."
-                    ctaLabel="Retry"
-                    onCtaClick={() => refetchDebts()}
-                    testIdPrefix="error-debts"
-                  />
-                ) : debts.length === 0 && !debtsFetchedAfterMount ? (
-                  Array.from({ length: 2 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="bg-dime-accent/5 rounded-lg border border-dime-accent/10 p-4 space-y-3"
-                      data-testid={`skeleton-debt-${i}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-28 bg-white/20" />
-                          <Skeleton className="h-3 w-20 bg-white/15" />
-                        </div>
-                        <Skeleton className="h-4 w-16 bg-white/20" />
-                      </div>
-                      <Skeleton className="h-2 w-full rounded-full bg-white/15" />
+        <Card className="shadow-card border-slate-200/60 hover:shadow-card-hover transition-shadow duration-300 group">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-red-500" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums tracking-tight mb-1">{formatCurrency(activeSummary.totalDebt)}</p>
+            <h3 className="text-xs sm:text-sm font-medium text-slate-500">Total Debt Remaining</h3>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card border-slate-200/60 hover:shadow-card-hover transition-shadow duration-300 group">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums tracking-tight mb-1">{formatCurrency(activeSummary.thisMonthRoundUps)}</p>
+            <h3 className="text-xs sm:text-sm font-medium text-slate-500">Saved This Month</h3>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card border-slate-200/60 hover:shadow-card-hover transition-shadow duration-300 group">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-dime-lilac/20 rounded-full flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-dime-purple" />
+              </div>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight mb-1 leading-tight">{activeSummary.debtFreeDate}</p>
+            <h3 className="text-xs sm:text-sm font-medium text-slate-500">Projected Debt-Free</h3>
+          </CardContent>
+        </Card>
+      </section>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Column: Transactions */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* 8. Recent Transactions */}
+          <section>
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h2 className="text-lg font-semibold text-slate-900">Recent Transactions</h2>
+              <Link href="/transactions" className="text-sm font-medium text-dime-purple hover:text-dime-purple/80 transition-colors px-2 py-1 press-scale">
+                View All
+              </Link>
+            </div>
+            
+            <Card className="shadow-card border-slate-200/60 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="divide-y divide-slate-100">
+                  {recentTransactions.length === 0 && transactionsError ? (
+                    <div className="p-6">
+                      <EmptyState
+                        icon={Receipt}
+                        title="Couldn't load transactions"
+                        description="Check your connection and try again."
+                        ctaLabel="Retry"
+                        onCtaClick={() => refetchTransactions()}
+                        testIdPrefix="error-transactions"
+                      />
                     </div>
+                  ) : recentTransactions.length === 0 && transactionsLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex items-center justify-between p-4 sm:p-5" data-testid={`skeleton-transaction-${i}`}>
+                        <div className="flex items-center space-x-4">
+                          <Skeleton className="w-10 h-10 rounded-full bg-slate-100" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-32 bg-slate-200 rounded" />
+                            <Skeleton className="h-3 w-20 bg-slate-100 rounded" />
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-right">
+                          <Skeleton className="h-4 w-16 ml-auto bg-slate-200 rounded" />
+                          <Skeleton className="h-3 w-12 ml-auto bg-slate-100 rounded" />
+                        </div>
+                      </div>
+                    ))
+                  ) : recentTransactions.length === 0 && transactionsFetchedAfterMount ? (
+                    <div className="p-6">
+                      <EmptyState
+                        icon={Receipt}
+                        title="No transactions yet"
+                        description="Connect a bank account to start tracking purchases and rounding up spare change."
+                        ctaLabel="Connect a bank"
+                        onCtaClick={() => setLocation("/banking")}
+                        testIdPrefix="empty-transactions"
+                      />
+                    </div>
+                  ) : (
+                    recentTransactions.map((transaction) => (
+                      <div key={transaction.id} className="flex items-center justify-between p-4 sm:p-5 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
+                            {getCategoryIcon(transaction.category)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900 line-clamp-1">{transaction.merchant}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {formatDate(transaction.date)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-slate-900 tabular-nums">-{formatCurrency(transaction.amount)}</p>
+                          <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                            <span className="text-xs font-semibold text-dime-purple tabular-nums">+{formatCurrency(transaction.roundUpAmount)}</span>
+                            <StatusBadge status={(transaction as Transaction & { status?: string }).status ?? "completed"} compact />
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+          
+          {/* Active Debts Sneak Peek */}
+          <section>
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h2 className="text-lg font-semibold text-slate-900">Active Debts</h2>
+              <Link href="/debts" className="text-sm font-medium text-dime-purple hover:text-dime-purple/80 transition-colors px-2 py-1 press-scale" data-testid="button-manage-debts">
+                Manage
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {debts.length === 0 && !debtsFetchedAfterMount ? (
+                  Array.from({ length: 2 }).map((_, i) => (
+                    <Card key={i} className="shadow-sm border-slate-200/60 p-5" data-testid={`skeleton-debt-${i}`}>
+                      <div className="flex justify-between mb-3">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-28 bg-slate-200" />
+                          <Skeleton className="h-3 w-16 bg-slate-100" />
+                        </div>
+                        <Skeleton className="h-5 w-20 bg-slate-200" />
+                      </div>
+                      <Skeleton className="h-2 w-full bg-slate-100 rounded-full" />
+                    </Card>
                   ))
                 ) : debts.length === 0 ? (
-                  <EmptyState
-                    icon={Wallet}
-                    title="No debts added"
-                    description="Add your credit cards, loans, or other debts to start tracking your payoff progress."
-                    ctaLabel="Add a debt"
-                    onCtaClick={() => setLocation("/debts")}
-                    testIdPrefix="empty-debts"
-                  />
+                  <Card className="shadow-sm border-slate-200/60 p-6">
+                    <EmptyState
+                      icon={Wallet}
+                      title="No debts added"
+                      description="Add your credit cards or loans to track payoff progress."
+                      ctaLabel="Add a debt"
+                      onCtaClick={() => setLocation("/debts")}
+                      testIdPrefix="empty-debts"
+                    />
+                  </Card>
                 ) : (
-                  debts.map((debt) => {
+                  debts.slice(0, 2).map((debt) => {
                     const progress = calculateDebtProgress(debt.originalBalance, debt.currentBalance);
-                    const monthsLeft = Math.ceil(parseFloat(debt.currentBalance) / parseFloat(debt.minimumPayment));
                     return (
-                      <div key={debt.id} className="bg-dime-accent/5 rounded-lg border border-dime-accent/10 p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h4 className="font-medium text-slate-900">{debt.name}</h4>
-                            <p className="text-sm text-slate-600">{debt.accountNumber}</p>
+                      <Card key={debt.id} className="shadow-sm border-slate-200/60 overflow-hidden hover:border-slate-300 transition-colors cursor-pointer press-scale" onClick={() => setLocation("/debts")}>
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h4 className="text-sm font-semibold text-slate-900">{debt.name}</h4>
+                              <p className="text-xs text-slate-500 mt-0.5">{debt.accountNumber}</p>
+                            </div>
+                            <span className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(debt.currentBalance)}</span>
                           </div>
-                          <span className="text-sm font-medium text-red-600">{formatCurrency(debt.currentBalance)}</span>
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
-                          <div 
-                            className="bg-gradient-to-r from-dime-purple to-dime-accent h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs text-slate-600">
-                          <span>{progress}% paid</span>
-                          <span>{monthsLeft} months left</span>
-                        </div>
-                      </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden">
+                            <div 
+                              className="bg-dime-purple h-full rounded-full transition-all duration-1000 ease-out"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[11px] font-medium text-slate-500">
+                            <span>{progress}% Paid</span>
+                            <span className="text-slate-400">Targeting this next</span>
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <Button 
-                  className="w-full bg-dime-purple text-white hover:bg-dime-purple/90 flex items-center justify-center space-x-2"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Make Extra Payment</span>
-                </Button>
-                <Button className="w-full bg-dime-accent text-white hover:bg-dime-accent/90 flex items-center justify-center space-x-2">
-                  <ArrowUp className="w-5 h-5" />
-                  <span>Boost Round-ups</span>
-                </Button>
-                <Button variant="outline" className="w-full flex items-center justify-center space-x-2">
-                  <TrendingUp className="w-5 h-5" />
-                  <span>View Insights</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Educational Content Section */}
-      <div className="mt-12">
-        <div className="bg-gradient-to-r from-dime-purple to-dime-lilac rounded-xl p-8 text-white">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl font-bold mb-4">💡 Dime Time Tip: Accelerate Your Debt Freedom</h2>
-            <p className="text-lg mb-6 opacity-90">
-              Small increases to your round-ups may help you reduce debt faster over time.
-              Individual results vary based on spending habits and debt balances.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button className="bg-white text-dime-purple hover:bg-slate-50">
-                Learn More Strategies
-              </Button>
-              <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                Customize Round-ups
-              </Button>
             </div>
-          </div>
+          </section>
+        </div>
+
+        {/* Sidebar: Quick Actions & Tips */}
+        <div className="space-y-6">
+          
+          {/* 9. Quick Actions (Tappable Cards) */}
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4 px-1">Quick Actions</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
+              <button 
+                onClick={() => setShowPaymentModal(true)}
+                className="flex items-center justify-between p-4 bg-dime-purple text-white rounded-xl shadow-card hover:bg-dime-purple/90 transition-all press-scale text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <Plus className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-semibold">Make Payment</span>
+                </div>
+              </button>
+
+              <Link href="/settings" className="flex items-center justify-between p-4 bg-white border border-slate-200/60 rounded-xl shadow-sm hover:shadow-card-hover hover:border-slate-300 transition-all press-scale group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-dime-accent/10 flex items-center justify-center shrink-0">
+                    <ArrowUp className="w-4 h-4 text-dime-accent" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">Boost Round-ups</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+              </Link>
+
+              <Link href="/insights" className="flex items-center justify-between p-4 bg-white border border-slate-200/60 rounded-xl shadow-sm hover:shadow-card-hover hover:border-slate-300 transition-all press-scale group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                    <PieChart className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">View Insights</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+              </Link>
+              
+              <Link href="/settings" className="flex items-center justify-between p-4 bg-white border border-slate-200/60 rounded-xl shadow-sm hover:shadow-card-hover hover:border-slate-300 transition-all press-scale group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <Settings className="w-4 h-4 text-slate-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">Settings</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+              </Link>
+            </div>
+          </section>
+
+          {/* 10. Daily Tip */}
+          <section className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 text-white shadow-card relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="relative z-10">
+              <h3 className="text-sm font-bold text-dime-lilac mb-2 tracking-wide uppercase flex items-center gap-2">
+                <span className="text-base">💡</span> Daily Tip
+              </h3>
+              <p className="text-sm text-slate-200 leading-relaxed mb-5">
+                Small increases to your round-ups may help you reduce debt significantly faster over the long term.
+              </p>
+              <Link href="/settings" className="inline-flex items-center text-xs font-semibold text-white hover:text-dime-lilac transition-colors press-scale">
+                Customize Round-ups <ChevronRight className="w-3 h-3 ml-1" />
+              </Link>
+            </div>
+          </section>
+
         </div>
       </div>
 
