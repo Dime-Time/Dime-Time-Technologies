@@ -49,7 +49,7 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 [userenv.development]
 VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51Tb9PzPZOgMsSXBjAoH02yCOIMODtxjgLraSajbcrDDbzcwqs3Ee9suyiwRjmDbqofcYX6p9Xj2gX5ImaIoKkXnr00283eQFwa"
 ENABLE_STRIPE_ACH = "true"
-ENABLE_REAL_TRANSFERS = "false"
+ENABLE_REAL_TRANSFERS = "true"
 ENABLE_DEBT_IMPORT = "1"
 DEBT_IMPORT_PROVIDER = "plaid"
 
