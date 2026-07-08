@@ -4,6 +4,7 @@
 // dynamic import) when a DSN is configured.
 import { initSentry, setupExpressErrorHandler as setupSentryExpressErrorHandler } from "./lib/sentry";
 import { validateProductionSecrets } from "./lib/validateEnv";
+import { getFlags } from "./lib/flags";
 
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
@@ -188,6 +189,25 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     console.log("Starting server...");
     console.log("NODE_ENV:", process.env.NODE_ENV);
     console.log("Express env:", app.get("env"));
+
+    // Boot-time flag diagnostics. Flag values are non-secret booleans; the
+    // raw env string is logged ONLY for flag vars so a misconfigured
+    // deployment secret (typo, stray quotes) is visible in the deploy logs.
+    {
+      const flags = getFlags();
+      const rawDiag: Record<string, string> = {};
+      for (const name of Object.keys(flags)) {
+        const raw = process.env[name];
+        rawDiag[name] = raw === undefined ? "<unset>" : JSON.stringify(raw);
+      }
+      console.log(
+        JSON.stringify({
+          event: "flags_resolved_at_boot",
+          resolved: flags,
+          rawEnv: rawDiag,
+        }),
+      );
+    }
 
     /**
      * 1) Auth / sessions
