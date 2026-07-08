@@ -20,8 +20,10 @@ import {
   Plus,
   ArrowUp,
   Receipt,
-  Wallet
+  Wallet,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import type { Transaction, Debt } from "@shared/schema";
 import {
   getCachedSummary,
@@ -64,6 +66,7 @@ export default function Dashboard() {
 
   // ── User (already seeded by AuthProvider from cache) ─────────────────────
   const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  const { logout } = useAuth();
   const isDemo = isDemoUser(user);
 
   // ── Dashboard summary — cache-first ───────────────────────────────────────
@@ -152,14 +155,26 @@ export default function Dashboard() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-24 md:pb-8">
 
       {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">
-          Welcome back, <span className="text-dime-purple">{(user as any)?.firstName || 'User'}</span>!
-        </h1>
-        <p className="text-slate-600">
-          You've saved <span className="font-semibold text-dime-accent">{formatCurrency(activeSummary.thisMonthRoundUps)}</span> in round-ups this month{" "}
-          and paid down <span className="font-semibold text-dime-purple">{formatCurrency(activeSummary.thisMonthPayments)}</span> in debt.
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            Welcome back, <span className="text-dime-purple">{(user as any)?.firstName || 'User'}</span>!
+          </h1>
+          <p className="text-slate-600">
+            You've saved <span className="font-semibold text-dime-accent">{formatCurrency(activeSummary.thisMonthRoundUps)}</span> in round-ups this month{" "}
+            and paid down <span className="font-semibold text-dime-purple">{formatCurrency(activeSummary.thisMonthPayments)}</span> in debt.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={logout}
+          className="shrink-0 text-slate-600 hover:text-slate-900"
+          data-testid="button-logout"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Log Out
+        </Button>
       </div>
 
       {/* Key Metrics Cards */}
