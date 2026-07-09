@@ -38,8 +38,8 @@ Detailed operational runbooks and subsystem specs live in `.agents/memory/` — 
 - The `transfers` ledger is provider-agnostic (Plaid/Mercury/Stripe write the same row shape); status strings are normalized via `shared/transactionStatus.ts` — UI never branches on raw provider statuses.
 - Auth tokens encrypted at rest (AES-GCM WebCrypto) in localStorage; PIN lock with SHA-256 hash, auto-lock on background.
 
-### Launch Status (as of 2026-07-08)
-- App Store: **LIVE** (approved 2026-06-29); v1.0.4 redesign submitted, "Waiting for Review". Next build number must be 207+.
+### Launch Status (as of 2026-07-09)
+- App Store: **LIVE**; v1.0.4 redesign APPROVED & LIVE (2026-07-09). Next build number must be 207+.
 - First real $1.00 ACH debt payment executed in production (Stripe, 2026-07-07) — end-to-end money loop proven. ACH settles in 2–4 business days via webhook.
 - Stripe account live; prod has `ENABLE_STRIPE_ACH` + `ENABLE_REAL_TRANSFERS` ON (founder decision; public protected by the default-false per-user allowlist).
 - Current focus: launch marketing (App Store download funnel from LinkedIn) and same-day fixes for user-reported issues.
