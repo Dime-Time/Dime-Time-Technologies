@@ -27,6 +27,7 @@ import { StripeAchPayButton } from "@/components/StripeAchPayButton";
 import { useFlag } from "@/hooks/useFlag";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { isDemoUser, applyDemoSummary } from "@/lib/demoData";
 import type { Debt, Payment } from "@shared/schema";
 
 type DashboardSummary = {
@@ -50,6 +51,9 @@ export default function Debts() {
   const debtImportEnabled = useFlag("ENABLE_DEBT_IMPORT");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  const isDemo = isDemoUser(user);
 
   const { data: debts = [], isLoading } = useQuery<Debt[]>({
     queryKey: ["/api/debts"],
@@ -97,7 +101,7 @@ export default function Debts() {
   const totalMinimumPayments = debts.reduce((sum, debt) => sum + parseFloat(debt.minimumPayment), 0);
   const overallProgress = totalOriginalDebt > 0 ? ((totalOriginalDebt - totalDebt) / totalOriginalDebt) * 100 : 0;
 
-  const thisMonthPayments = payments
+  const realThisMonthPayments = payments
     .filter(payment => {
       const thisMonth = new Date();
       thisMonth.setDate(1);
@@ -105,6 +109,14 @@ export default function Debts() {
       return new Date(payment.date) >= thisMonth;
     })
     .reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+
+  // Keep "Paid This Month" consistent with the dashboard hero card: for the
+  // demo/review account with zero real activity, fall back to the same demo
+  // overlay the dashboard uses. Real payment data always wins.
+  const thisMonthPayments =
+    realThisMonthPayments > 0
+      ? realThisMonthPayments
+      : parseFloat((isDemo ? applyDemoSummary(summary) : summary)?.thisMonthPayments ?? "0");
 
   return (
     <main className="max-w-5xl mx-auto px-4 md:px-6 py-8 space-y-8">

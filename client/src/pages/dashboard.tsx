@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
-import { DebtProgressChart } from "@/components/debt-progress-chart";
 import { PaymentModal } from "@/components/payment-modal";
 import { formatCurrency, formatTime, formatDate, calculateDebtProgress } from "@/lib/calculations";
 import { useLocation, Link } from "wouter";
@@ -134,13 +133,6 @@ export default function Dashboard() {
       return new Date(t.date) >= weekAgo;
     })
     .reduce((sum, t) => sum + parseFloat(t.roundUpAmount), 0);
-
-  const chartData = [
-    30500, 29200, 28100, 26800, 25600, 24300,
-    parseFloat(activeSummary.totalDebt || "23847"),
-    22500, 21200, 19800, 18400, 17000,
-  ];
-  const chartLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {

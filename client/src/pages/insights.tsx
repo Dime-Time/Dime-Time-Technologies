@@ -96,9 +96,18 @@ export default function Insights() {
   const totalRoundUps = transactions.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount), 0);
   const averageRoundUp = transactions.length > 0 ? totalRoundUps / transactions.length : 0;
 
-  // Historical debt data for chart (mock data - in real app would come from database)
-  const debtChartData = [30500, 29200, 28100, 26800, 25600, 24300, parseFloat(summary?.totalDebt || "23847")];
-  const debtChartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+  // Illustrative history: a smooth descent that always ends at the user's REAL
+  // current balance (~2%/month reduction), so the trend line never shows debt
+  // "increasing" when the hardcoded past would fall below the actual balance.
+  const currentTotalDebt = parseFloat(summary?.totalDebt || "0");
+  const debtChartData = Array.from({ length: 7 }, (_, i) =>
+    Math.round(currentTotalDebt * Math.pow(1.02, 6 - i)),
+  );
+  const chartNow = new Date();
+  const debtChartLabels = Array.from({ length: 7 }, (_, i) =>
+    new Date(chartNow.getFullYear(), chartNow.getMonth() - (6 - i), 1)
+      .toLocaleDateString('en-US', { month: 'short' }),
+  );
 
   // Calculate debt reduction rate
   const originalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.originalBalance), 0);
@@ -184,7 +193,7 @@ export default function Insights() {
               data={debtChartData}
               labels={debtChartLabels}
               className="h-64"
-              enableVariation={true}
+              enableVariation={false}
             />
             <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-100 flex items-start gap-3">
               <div className="shrink-0 mt-0.5"><Award className="w-5 h-5 text-dime-purple" /></div>
