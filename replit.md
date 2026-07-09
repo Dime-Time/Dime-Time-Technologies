@@ -42,7 +42,7 @@ Detailed operational runbooks and subsystem specs live in `.agents/memory/` — 
 - App Store: **LIVE**; v1.0.4 redesign APPROVED & LIVE (2026-07-09). Next build number must be 207+.
 - First real $1.00 ACH debt payment executed in production (Stripe, 2026-07-07) — end-to-end money loop proven. ACH settles in 2–4 business days via webhook.
 - Stripe account live; prod has `ENABLE_STRIPE_ACH` + `ENABLE_REAL_TRANSFERS` ON (founder decision; public protected by the default-false per-user allowlist).
-- Current focus: launch marketing (App Store download funnel from LinkedIn) and same-day fixes for user-reported issues.
+- LinkedIn launch post is INTENTIONALLY HELD (founder decision 2026-07-09) until two milestones land: (1) real money movement working for users, (2) Plaid debt import live in production. Blockers are external approvals: Stripe Financial Connections registration + Plaid production/Liabilities approval.
 
 ## Architecture (summary)
 - **Platform**: Capacitor 7.4.x hybrid app (iOS/Android) wrapping a React 18 + TypeScript SPA; Wouter routing; TanStack Query for API state
