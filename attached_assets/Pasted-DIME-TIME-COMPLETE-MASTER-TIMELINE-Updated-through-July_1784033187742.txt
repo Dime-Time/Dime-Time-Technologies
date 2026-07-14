@@ -1,0 +1,194 @@
+DIME TIME — COMPLETE MASTER TIMELINE
+(Updated through July 14, 2026)
+
+Founder:
+Tim Carlisle
+U.S. Navy Veteran • MBA + MIS (UNLV) • Certified Sommelier
+Founder & CEO, Dime Time Technologies LLC
+
+MISSION
+Help consumers eliminate debt automatically by rounding up everyday
+debit purchases and applying the spare change toward real debt payments
+via ACH.
+
+────────────────────────────────────────────
+THE IDEA ERA
+────────────────────────────────────────────
+
+2014
+• The original Dime Time concept is created before moving to Las Vegas.
+• Instead of sending spare change to savings, direct it toward debt.
+
+2015–2024
+• Multiple concept revisions.
+• Early prototype work during MBA/MIS studies at UNLV.
+• Initial outreach to banks and investors using only the concept.
+• The company survives nearly a decade without funding or a technical
+team.
+
+────────────────────────────────────────────
+THE BUILD ERA
+────────────────────────────────────────────
+
+August 3, 2025
+• First commit on Replit.
+• Dime Time officially becomes a software project.
+• Original purple branding and crypto round-up concept already exist.
+
+October 3, 2025
+• First iOS build.
+• First App Store submission attempts.
+• Apple review process officially begins.
+
+Late 2025
+• Core banking architecture begins taking shape.
+• Plaid integration work starts.
+• Stripe payment infrastructure begins.
+• Database and authentication systems mature.
+
+February 2, 2026
+• Production environment goes live.
+• Tim creates the first production account.
+
+February 20, 2026
+• First Plaid employee signs up.
+
+────────────────────────────────────────────
+THE STRATEGY ERA
+(ChatGPT + Founder Planning)
+────────────────────────────────────────────
+
+March 2026
+• Large-scale strategy planning begins.
+• Business planning accelerates.
+• Investor planning begins.
+• Product roadmap formalized.
+• Launch strategy documented.
+• First major ChatGPT planning documents created.
+
+March–April 2026
+• Complete business model developed.
+• Revenue model refined.
+• Investor strategy developed.
+• Compliance planning begins.
+• Patent drafting begins.
+
+April 1, 2026
+• Plaid Growth agreement executed.
+• Production Client ID activated. 
+
+April 2026
+• TestFlight Build 106 released.
+• Mercury banking integration completed.
+• DUNS number assigned.
+• Apple organization conversion planning.
+• Production ACH approval process begins.
+
+April 2026
+• Multiple foundational company documents completed:
+    - Business Plan
+    - Pitch Deck
+    - Patent Deck
+    - Investor Appendix
+    - Product Strategy
+    - Operational Roadmap
+
+April–May 2026
+• Major planning sessions produce:
+    - 13-slide investor pitch deck
+    - 14-slide business plan
+    - 12-slide patent presentation
+    - USPTO provisional patent draft
+    - App Store reviewer demo package
+    - Legal/compliance documentation
+    - Investor data room planning
+
+May 2026
+• Terms of Service completed.
+• Privacy Policy completed.
+• Launch compliance framework finalized.
+
+May 27, 2026
+• Terms of Service and Privacy Policy become effective.
+
+────────────────────────────────────────────
+PUBLIC LAUNCH ERA
+────────────────────────────────────────────
+
+June 2026
+• Multiple App Store resubmissions.
+• Continued refinement based on Apple review feedback.
+
+June 29, 2026
+• Dime Time officially launches on the Apple App Store.
+• App ID 6755106723.
+• First public production release.
+
+July 7, 2026
+• First real ACH debt payment executes successfully.
+• $1.00 moves through Stripe in production.
+• Twelve years after the idea, real money moves.
+
+July 8, 2026
+• Founder verifies complete end-to-end money movement.
+• Banking rails proven in production.
+• Infrastructure validated.
+
+July 9, 2026
+• Version 1.0.4 approved.
+• Major UI redesign released.
+• Mobile navigation improvements deployed.
+
+July 2026
+• Provisional patent filed:
+  "Dynamic Dual-Split and Multi-Destination Round-Up
+   Microallocation System."
+
+July 2026
+• Subscription model finalized:
+    • Dime Time Debt — $2.99/month
+    • Bitcoin Round-Ups — $3.99/month
+    • Split Round-Ups — $4.99/month
+
+July 2026
+• Complete fintech stack operational:
+    • Plaid
+    • Stripe ACH
+    • Stripe Financial Connections
+    • Coinbase integration
+    • Mercury banking
+    • Production infrastructure
+
+July 14, 2026
+
+Current Project Metrics
+
+• Live on Apple App Store
+• 17 registered users
+• 1,088 Git commits
+• 35,000+ lines of production code
+• Solo founder
+• Built while working full-time as a Sommelier at Delilah Dallas
+• First real production ACH payment successfully completed
+• Pre-revenue
+• Public launch marketing intentionally delayed pending completion of
+  remaining launch features
+
+────────────────────────────────────────────
+
+THE ARC
+
+2014
+The idea begins.
+
+2025
+The first line of code is written.
+
+2026
+The company becomes a real fintech product.
+
+12 years from idea to production.
+
+11 months from first commit to App Store launch.
+
+Real money now moves through Dime Time.
