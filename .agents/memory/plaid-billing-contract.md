@@ -5,8 +5,10 @@ description: Founder is on a ~$1,064/month Plaid committed plan pre-revenue and 
 
 # Plaid billing contract (discovered 2026-07-11)
 
-- Founder reports a **~$1,064/month Plaid charge** for API access, while the company is pre-revenue (~15 users, debt import not yet live in prod).
+- Founder signed a **12-month Plaid "Growth" contract** with a **~$1,064/month minimum** (~$12k+/yr committed), while the company is pre-revenue (~15 users, debt import not yet live in prod).
 - He was **one month behind** as of 2026-07-11 and planning to transfer personal funds ($1,100) to cover it.
+- Key leverage: he is paying for production access while the **Liabilities production entitlement was rejected** — "paying for what we can't use" is the negotiation anchor.
+- 2026-07-11: gave him a restructure email (pay-as-you-go / pause / stretch, in that order) and advised NOT to pay month 2 before the conversation.
 
 **Why this matters:**
 - Plaid offers $0/month pay-as-you-go; a committed-minimum contract at this stage is almost certainly the wrong plan and dwarfs all other burn (~$150/mo everything else combined).
