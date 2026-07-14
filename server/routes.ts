@@ -1,5 +1,6 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 import { storage } from "./storage";
 
 declare module 'express-session' {
@@ -256,6 +257,32 @@ function generateAuthToken(userId: string): string {
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  // ── Public marketing static assets (robots.txt, sitemap.xml, icons) ──
+  // Root /public holds crawler files. Served explicitly here so crawlers get
+  // the real files — otherwise the Vite dev middleware / prod SPA catch-all
+  // swallows these paths and returns index.html instead.
+  const publicDir = path.resolve(process.cwd(), "public");
+  app.use(express.static(publicDir, { index: false }));
+
+  // ── GEO guide pages: pre-rendered, crawler-readable static HTML ──────
+  // AI crawlers (GPTBot, ClaudeBot, PerplexityBot) do not execute the SPA's
+  // JavaScript, so these guides are served as complete static HTML.
+  const guidesDir = path.resolve(process.cwd(), "server", "guides");
+  const guideFiles: Record<string, string> = {
+    "_style.css": "_style.css",
+    "round-up-apps-for-debt": "round-up-apps-for-debt.html",
+    "how-to-pay-off-credit-card-debt": "how-to-pay-off-credit-card-debt.html",
+    "spare-change-debt-or-savings": "spare-change-debt-or-savings.html",
+  };
+  app.get("/guides", (_req: Request, res: Response) => {
+    res.sendFile(path.join(guidesDir, "index.html"));
+  });
+  app.get("/guides/:slug", (req: Request, res: Response, next) => {
+    const file = guideFiles[req.params.slug.replace(/\.html$/, "")];
+    if (!file) return next();
+    res.sendFile(path.join(guidesDir, file));
+  });
 
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

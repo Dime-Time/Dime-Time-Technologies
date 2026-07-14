@@ -1,8 +1,35 @@
-# Dime Time - Robots.txt
-# Allow all crawlers to index all content
+# Dime Time — https://dime-time.com
+# All crawlers welcome, including AI/LLM crawlers.
 
 User-agent: *
 Allow: /
 
-# Sitemap location
+# AI / LLM crawlers — explicitly allowed
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
 Sitemap: https://dime-time.com/sitemap.xml

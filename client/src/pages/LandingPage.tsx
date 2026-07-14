@@ -658,6 +658,9 @@ export default function LandingPage() {
             </Link>
 
             <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
+              <a href="/guides" className="hover:text-dime-purple">
+                Debt Payoff Guides
+              </a>
               <Link href="/privacy" className="hover:text-dime-purple">
                 Privacy Policy
               </Link>
