@@ -24,3 +24,4 @@
 - [Internal admin surface](internal-admin.md) — ADMIN_USER_IDS fails closed; GET-only reads strip raw payloads; Real Money tab is UI over audited allowlist endpoints.
 - [Plaid billing contract](plaid-billing-contract.md) — founder on ~$1,064/mo Plaid committed plan pre-revenue, fell behind; goal = downgrade to pay-as-you-go before production reapplication.
 - Founder profile (day job, income, goals) provided by Tim in attached_assets/Pasted-FOUNDER-PROFILE-TIM-CARLISLE*.txt — use it for runway/quit-timeline planning; don't copy figures into memory.
+- [Founder launch narrative](founder-launch-narrative.md) — approved public arc of Tim's debt story (Navy→2007 recession→debt-fatigue→built the app he needed) for launch post/pitch; private chapters stay private.
