@@ -1,0 +1,266 @@
+DIME TIME — COMPLETE MILESTONE TIMELINE
+(Updated: July 14, 2026)
+
+Founder:
+Tim Carlisle
+U.S. Navy Veteran | MBA + MIS (UNLV) | Certified Sommelier
+Dallas, Texas
+
+Company:
+Dime Time Technologies LLC
+
+MISSION
+Help people eliminate debt by automatically rounding up everyday debit
+card purchases and applying the spare change toward debt payments.
+Future allocation options include Bitcoin investing and other financial
+goals through automated micro-payments.
+
+------------------------------------------------------------
+THE IDEA ERA (2014–2025)
+------------------------------------------------------------
+
+• 2014
+  - Original concept created before moving to Las Vegas.
+  - Vision: redirect spare change toward debt instead of savings.
+
+• 2015–2024
+  - Earned MBA + MIS from UNLV.
+  - Built early prototypes.
+  - Pitched banks and investors while working full-time.
+  - Continued refining the concept despite no funding and no team.
+
+------------------------------------------------------------
+THE BUILD ERA (2025–2026)
+------------------------------------------------------------
+
+August 3, 2025
+• First commit in Replit.
+• Dime Time officially becomes a software project.
+
+2025–2026
+
+• Over 35,000 lines of application code written.
+• More than 1,055 Git commits.
+• Full-stack fintech platform developed.
+
+Infrastructure includes:
+
+• React + TypeScript
+• Capacitor (iOS/Android)
+• Express.js
+• PostgreSQL
+• Drizzle ORM
+• Stripe
+• Plaid
+• Mercury
+• Coinbase integration
+• AES-256 encryption
+• Secure authentication
+• Banking infrastructure
+• Production deployment
+
+------------------------------------------------------------
+LEGAL
+------------------------------------------------------------
+
+• Montana LLC formed.
+
+• D-U-N-S number obtained.
+
+• Provisional patent application filed covering the automated
+  round-up-to-debt payment system and multi-allocation engine.
+
+------------------------------------------------------------
+BANKING INFRASTRUCTURE
+------------------------------------------------------------
+
+Completed integrations:
+
+✓ Plaid
+✓ Stripe ACH
+✓ Stripe Financial Connections
+✓ Mercury Business Banking
+✓ Coinbase API
+
+Built support for:
+
+• Bank account linking
+• ACH transfers
+• User authentication
+• Transaction processing
+• Banking reconciliation
+• Crypto purchases
+
+------------------------------------------------------------
+APPLE APP STORE
+------------------------------------------------------------
+
+• Multiple review cycles completed.
+
+• App approved by Apple.
+
+• Live on the Apple App Store.
+
+Current Version:
+1.0.4
+
+App ID:
+6755106723
+
+Public launch announcement intentionally delayed while remaining
+production features are completed.
+
+------------------------------------------------------------
+MAJOR TECHNICAL MILESTONE
+------------------------------------------------------------
+
+First real production money movement successfully completed.
+
+Verified production flow:
+
+Debit Account
+        ↓
+Round-Up Calculation
+        ↓
+Stripe ACH Debit
+        ↓
+Settlement
+        ↓
+Transfer into Mercury Business Account
+
+This proved the complete production payment pipeline works using
+real money—not simulations.
+
+------------------------------------------------------------
+EARLY TRACTION
+------------------------------------------------------------
+
+• Approximately 15 registered users.
+• No paid advertising.
+• No public launch yet.
+• Product intentionally kept in soft-launch status.
+
+------------------------------------------------------------
+WEBSITE
+------------------------------------------------------------
+
+Official website live:
+
+https://dime-time.com
+
+Features include:
+
+• Landing page
+• App Store download
+• Smart App Banner
+• Marketing pages
+
+------------------------------------------------------------
+USER EXPERIENCE IMPROVEMENTS
+------------------------------------------------------------
+
+Major redesign completed.
+
+Included:
+
+• Header relocated correctly
+• Settings restored
+• Mobile navigation redesigned
+• Six-tab navigation added
+• Improved safe-area support
+• General UI cleanup
+
+------------------------------------------------------------
+MONETIZATION MODEL
+------------------------------------------------------------
+
+Planned subscription pricing:
+
+Debt Round-Ups
+$2.99/month
+
+Bitcoin Round-Ups
+$3.99/month
+
+Split Allocation
+(Debt + Bitcoin)
+$4.99/month
+
+Subscription accepted through Terms & Conditions during onboarding.
+
+------------------------------------------------------------
+COMING FEATURES
+------------------------------------------------------------
+
+• Production debt account importing
+• Automatic debt detection
+• Debt balance tracking
+• Liability synchronization
+• Bitcoin purchasing
+• Multi-goal allocation engine
+• Savings support
+• Enhanced analytics
+• Android release
+
+------------------------------------------------------------
+LONG-TERM VISION
+------------------------------------------------------------
+
+Create an automated financial platform where every purchase
+works toward improving a user's financial future.
+
+Potential allocation destinations include:
+
+• Credit card debt
+• Student loans
+• Auto loans
+• Personal loans
+• Mortgage principal
+• Bitcoin
+• Emergency savings
+• Investment accounts
+
+------------------------------------------------------------
+CURRENT STATUS (July 14, 2026)
+------------------------------------------------------------
+
+Company Stage:
+Pre-seed
+
+Revenue:
+Pre-revenue
+
+Marketing:
+Not yet publicly launched
+
+Platform Status:
+
+✓ Live on Apple App Store
+✓ Website live
+✓ Banking integrations complete
+✓ Real production ACH payment verified
+✓ Patent filed
+✓ 35,000+ lines of code
+✓ 1,055 Git commits
+✓ 15 early users
+✓ Full fintech infrastructure operational
+
+NEXT MAJOR MILESTONES
+
+1. Enable production debt-import functionality for all users.
+
+2. Begin accepting paid subscribers.
+
+3. Publicly announce Dime Time.
+
+4. Acquire first 100 paying users.
+
+5. Reach 1,000 users.
+
+6. Raise pre-seed funding.
+
+7. Hire first full-time engineer.
+
+8. Launch Android version.
+
+9. Expand into additional financial products and international markets.
