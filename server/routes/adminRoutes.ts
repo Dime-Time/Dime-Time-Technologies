@@ -2,7 +2,6 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { requireAdmin } from "../lib/admin";
-import { PLAN_CATALOG, DEFAULT_PLAN_ID } from "@shared/subscriptionPlans";
 
 /**
  * Internal operator surface. Gated by `ADMIN_USER_IDS` env (Replit Secret).
@@ -120,25 +119,6 @@ export function registerAdminRoutes(app: Express): void {
       res.json(publicUserRealTransferStatus(updated));
     } catch (error) {
       console.error("[admin] POST /api/admin/users/:id/real-transfers error", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Founder runway metrics (read-only): live user + paying-subscriber counts
-  // for the admin Runway tab. Price comes from the shared plan catalog so the
-  // tracker can never drift from what Stripe actually bills.
-  app.get("/api/admin/runway", requireAdmin, async (_req: Request, res: Response) => {
-    try {
-      const metrics = await storage.getRunwayMetrics();
-      const priceCents = PLAN_CATALOG[DEFAULT_PLAN_ID].priceCents;
-      res.json({
-        ...metrics,
-        priceCents,
-        mrrCents: metrics.payingSubscribers * priceCents,
-        asOf: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error("[admin] /api/admin/runway error", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

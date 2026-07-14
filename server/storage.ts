@@ -87,7 +87,6 @@ import { encryptToken, decryptToken } from "./services/encryptionService";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte } from "drizzle-orm";
-import { ENTITLED_SUBSCRIPTION_STATUSES } from "@shared/subscriptionPlans";
 
 /**
  * Result of the real-money ACH rollout gate. `ok:true` means a `created`
@@ -237,14 +236,6 @@ export interface IStorage {
   // Admin (read-only operator surface — gated by requireAdmin middleware)
   getRecentTransfers(opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]>;
   getRecentStripeWebhookEvents(limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>>;
-  /**
-   * Founder runway metrics (admin Runway tab). Counts DISTINCT users whose
-   * subscription status is currently entitled (shared/subscriptionPlans.ts) —
-   * cancel→resubscribe history rows flip to terminal statuses via webhook, so
-   * a distinct-user count over entitled rows is the live paying-subscriber
-   * number, not an inflated historical one.
-   */
-  getRunwayMetrics(): Promise<{ totalUsers: number; payingSubscribers: number; newPayingLast30Days: number }>;
 
   // Encrypted bank account token methods
   getPlaidAccessToken(bankAccountId: string): Promise<string | undefined>;
@@ -1724,10 +1715,6 @@ export class MemStorage implements IStorage {
   async getTransfersByUserId(_userId: string): Promise<Transfer[]> { return []; }
   async getRecentTransfers(_opts: { limit: number; provider?: string; status?: string }): Promise<Transfer[]> { return []; }
   async getRecentStripeWebhookEvents(_limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>> { return []; }
-  async getRunwayMetrics(): Promise<{ totalUsers: number; payingSubscribers: number; newPayingLast30Days: number }> {
-    // MemStorage has no subscriptions table — report user count only.
-    return { totalUsers: this.users.size, payingSubscribers: 0, newPayingLast30Days: 0 };
-  }
   async getTransferByStripePaymentIntentId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getTransferByStripeChargeId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
@@ -2641,25 +2628,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId))
       .limit(1);
     return result;
-  }
-
-  async getRunwayMetrics(): Promise<{ totalUsers: number; payingSubscribers: number; newPayingLast30Days: number }> {
-    const entitled = Array.from(ENTITLED_SUBSCRIPTION_STATUSES);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const [usersRow] = await db.select({ n: sql<number>`count(*)::int` }).from(users);
-    const [payingRow] = await db
-      .select({ n: sql<number>`count(distinct ${subscriptions.userId})::int` })
-      .from(subscriptions)
-      .where(inArray(subscriptions.status, entitled));
-    const [newRow] = await db
-      .select({ n: sql<number>`count(distinct ${subscriptions.userId})::int` })
-      .from(subscriptions)
-      .where(and(inArray(subscriptions.status, entitled), gte(subscriptions.createdAt, thirtyDaysAgo)));
-    return {
-      totalUsers: usersRow?.n ?? 0,
-      payingSubscribers: payingRow?.n ?? 0,
-      newPayingLast30Days: newRow?.n ?? 0,
-    };
   }
 
   async createSubscriptionConsent(data: InsertSubscriptionConsent): Promise<SubscriptionConsent> {
