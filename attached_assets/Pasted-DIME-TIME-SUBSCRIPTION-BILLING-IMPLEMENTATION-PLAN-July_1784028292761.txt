@@ -1,0 +1,141 @@
+DIME TIME — SUBSCRIPTION BILLING IMPLEMENTATION PLAN (July 2026)
+
+GOAL:
+Launch Dime Time with simple recurring monthly subscriptions billed
+through Stripe Billing (not Apple In-App Purchase, assuming the app
+continues to qualify under Apple's financial-services guidelines).
+The objective is to begin generating recurring revenue immediately
+once users subscribe while keeping the onboarding experience simple.
+
+SUBSCRIPTION TIERS:
+
+1. DIME TIME DEBT
+- $2.99/month
+- Automatically round up everyday debit purchases
+- Apply spare change toward the user's selected debt via ACH payments
+
+2. DIME TIME BITCOIN
+- $3.99/month
+- Automatically round up purchases
+- Purchase Bitcoin using the accumulated round-ups
+- Coinbase integration required before launch
+
+3. DIME TIME SPLIT
+- $4.99/month
+- Automatically split round-ups between:
+  • Debt payoff
+  • Bitcoin purchases
+
+------------------------------------------------------------
+
+SUBSCRIPTION FLOW:
+
+1. User creates an account.
+2. User links their bank account.
+3. User selects one of the subscription plans.
+4. Present a checkout screen showing:
+   - Monthly subscription price
+   - Billing frequency
+   - Auto-renewal terms
+   - Cancellation policy
+5. Require the user to:
+   - Agree to the Terms of Service
+   - Agree to the Privacy Policy
+   - Explicitly authorize recurring monthly billing
+6. User taps "Subscribe."
+7. Stripe creates the subscription.
+8. Round-ups begin immediately.
+
+NOTE:
+Agreement to the Terms of Service can include recurring billing
+language, but the subscription itself should also require explicit,
+affirmative consent to recurring charges.
+
+------------------------------------------------------------
+
+BILLING STRATEGY:
+
+Recommended approach:
+
+• Bill each customer based on their individual signup date.
+
+Example:
+- July 14: User subscribes
+- July 14: First payment (or free trial if offered)
+- August 14: Renewal
+- September 14: Renewal
+
+Advantages:
+- Eliminates billing spikes.
+- Easier recurring subscription management.
+- Fully supported by Stripe Billing.
+- No need to prorate mid-month signups.
+
+Alternative:
+A fixed billing date (such as the 15th of every month) is possible
+using Stripe Billing Anchors, but requires handling prorated billing
+for customers who subscribe between billing cycles.
+
+------------------------------------------------------------
+
+LAUNCH REVENUE STRATEGY:
+
+If the goal is immediate recurring revenue:
+
+- Charge users immediately when they subscribe.
+- Do not require a free trial.
+- Begin recurring monthly billing immediately.
+
+This produces revenue from the first day customers begin subscribing.
+
+------------------------------------------------------------
+
+CANCELLATION POLICY:
+
+The subscription experience should clearly explain:
+
+- Billing occurs monthly.
+- Subscription renews automatically until canceled.
+- Users can cancel at any time.
+- Cancellation process.
+- Refund policy (if applicable).
+
+Clear disclosure reduces customer confusion and minimizes chargebacks.
+
+------------------------------------------------------------
+
+PRODUCT STRATEGY OBSERVATION:
+
+The proposed pricing ladder is simple and easy for users to understand:
+
+$2.99 → Debt
+$3.99 → Bitcoin
+$4.99 → Split
+
+It creates natural upgrade paths while keeping the core product
+accessible.
+
+The primary focus should remain the debt-payoff product first, since
+it is already functioning in production. Bitcoin tiers can be enabled
+once Coinbase integration is complete.
+
+------------------------------------------------------------
+
+IMPLEMENTATION NOTES FOR REPLIT:
+
+- Integrate Stripe Billing subscriptions.
+- Create Products and Prices for all three plans.
+- Store the user's selected subscription tier.
+- Verify active subscription status before enabling premium features.
+- Handle renewals, cancellations, and payment failures via Stripe
+  webhooks.
+- Require explicit recurring billing authorization during checkout.
+- Log acceptance of the Terms of Service, Privacy Policy, and
+  subscription authorization (including timestamp/version) for audit
+  purposes.
+- Support future plan upgrades and downgrades without requiring users
+  to create a new account.
+
+OBJECTIVE:
+Keep onboarding friction low while creating predictable monthly
+recurring revenue and a scalable subscription model for Dime Time.
