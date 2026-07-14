@@ -22,3 +22,4 @@
 - [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab deliberately deleted post go/no-go; verdict logic lives in shared/stripeVerdict.ts; don't re-add.
 - [Sentry config](sentry-config.md) — DSN-gated dynamic import (no SDK without DSN); test-enforced PII redaction incl. /verify-email & /reset-password must never carry query strings.
 - [Internal admin surface](internal-admin.md) — ADMIN_USER_IDS fails closed; GET-only reads strip raw payloads; Real Money tab is UI over audited allowlist endpoints.
+- [Plaid billing contract](plaid-billing-contract.md) — founder on ~$1,064/mo Plaid committed plan pre-revenue, fell behind; goal = downgrade to pay-as-you-go before production reapplication.
