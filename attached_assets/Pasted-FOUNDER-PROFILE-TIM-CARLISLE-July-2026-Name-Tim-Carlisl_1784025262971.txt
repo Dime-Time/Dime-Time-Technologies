@@ -1,0 +1,138 @@
+FOUNDER PROFILE — TIM CARLISLE (July 2026)
+
+Name: Tim Carlisle
+Age: 43
+Location: Dallas, Texas
+Occupation:
+- Full-time Sommelier at Delilah Dallas (The h.wood Group)
+- Founder & CEO of Dime Time Technologies LLC
+
+EDUCATION
+- MBA + MIS — University of Nevada, Las Vegas
+- B.A. — University of Washington
+- Certified Sommelier (Court of Master Sommeliers Level 1)
+- U.S. Navy Veteran (EA-6B Prowler, USS Ronald Reagan)
+
+==================================================
+CURRENT COMPANY
+==================================================
+
+Dime Time is a fintech platform that automatically rounds up debit card purchases and applies those round-ups toward paying off debt.
+
+Current status:
+- Live on the Apple App Store
+- Version 1.0.4
+- Pre-seed
+- Pre-revenue
+- Approximately 15 registered users
+- Over 35,000 lines of code
+- More than 1,000 Git commits
+- Production ACH money movement successfully completed
+- Plaid + Stripe + Mercury integrated
+- Provisional patent filed
+
+I'm building Dime Time while working nights as a Sommelier.
+
+==================================================
+DELILAH DALLAS EMPLOYMENT
+==================================================
+
+Started at Delilah as a Server.
+
+Promoted to Sommelier in May 2026.
+
+Timeline:
+
+February–May 11
+Role:
+- Server
+
+May 12–May 31
+Role:
+- Mixed schedule
+- Server + Sommelier
+
+Week Ending June 7, 2026
+First payroll week that was 100% Sommelier.
+
+Since then I have primarily worked as a full-time Sommelier.
+
+==================================================
+PAYROLL HISTORY
+==================================================
+
+These numbers are BEFORE taxes.
+
+Sample weekly gross earnings:
+
+$820
+$1,586
+$1,683
+$2,057
+$2,142
+$2,128
+$1,719
+$1,758
+$1,513
+$1,835
+
+Typical weekly gross today:
+Approximately $1,700–$2,100.
+
+Typical shifts:
+4–5 nights per week.
+
+Average shift:
+6–8 hours.
+
+Additional tax withholding:
+I voluntarily withhold an additional $125 every week ($500/month) beyond normal payroll deductions.
+
+==================================================
+INCOME ANALYSIS
+==================================================
+
+Current annualized income:
+Approximately $95,000–100,000.
+
+Expected range if current business remains stable:
+$100,000–110,000.
+
+Optimistic forecast with strong holiday business:
+$110,000–115,000+.
+
+Reasoning:
+
+- Delilah continues performing well during Dallas' slower summer season.
+- The restaurant has three private dining rooms (PDRs).
+- Corporate dinners frequently generate $8,000–20,000+ in food and wine sales.
+- Holiday season is expected to increase sales and gratuities.
+- My Sommelier role has greater upside than my previous Server position.
+
+==================================================
+CAREER GOALS
+==================================================
+
+Long-term objective:
+
+Transition from restaurant work into running Dime Time full-time.
+
+Current strategy:
+
+- Continue working at Delilah.
+- Continue growing Dime Time nights and days off.
+- Raise investment capital rather than take excessive personal debt.
+- Scale Dime Time until it replaces my restaurant income.
+
+==================================================
+HOW TO TREAT THESE NUMBERS
+==================================================
+
+Whenever discussing my personal finances:
+
+- Assume my payroll numbers are gross income before taxes.
+- Remember I voluntarily withhold an additional $125/week.
+- Distinguish between historical income and projected future income.
+- Base future projections primarily on my full-time Sommelier earnings beginning with the payroll week ending June 7, 2026, rather than my earlier Server wages.
+
+Use this context when helping me with financial planning, budgeting, startup runway calculations, fundraising, compensation analysis, and long-term planning.
