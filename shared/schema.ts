@@ -381,6 +381,70 @@ export const insertAchAuthorizationSchema = createInsertSchema(achAuthorizations
 export type AchAuthorization = typeof achAuthorizations.$inferSelect;
 export type InsertAchAuthorization = z.infer<typeof insertAchAuthorizationSchema>;
 
+// ── Subscriptions (Stripe Billing) ─────────────────────────────────────────
+// One row PER STRIPE SUBSCRIPTION (unique stripeSubscriptionId), not per
+// user — cancel→resubscribe creates a new Stripe subscription id and we keep
+// the full history. "Current" subscription for a user = latest by createdAt.
+// Rows are written via upsert keyed on stripeSubscriptionId by BOTH the
+// subscribe route and the webhook handler, so delivery order can't race.
+// Stripe owns product/price objects; we store only ids + normalized state.
+export const subscriptions = pgTable("subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  plan: text("plan").notNull().default("debt"), // PlanId from shared/subscriptionPlans.ts
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+  stripePriceId: text("stripe_price_id").notNull(),
+  // Stripe subscription status verbatim (see shared/subscriptionPlans.ts):
+  // incomplete | incomplete_expired | trialing | active | past_due |
+  // canceled | unpaid | paused
+  status: text("status").notNull().default("incomplete"),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
+  canceledAt: timestamp("canceled_at"),
+  latestInvoiceId: text("latest_invoice_id"),
+  lastPaymentError: text("last_payment_error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("subscriptions_user_idx").on(table.userId),
+}));
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+
+// Durable evidence of the user's explicit recurring-billing consent (ToS +
+// ACH mandate acceptance) — mirrors ach_authorizations. One row per consent
+// action; never updated or deleted while the account exists.
+export const subscriptionConsents = pgTable("subscription_consents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  plan: text("plan").notNull(),
+  priceCentsAtConsent: integer("price_cents_at_consent").notNull(),
+  version: text("version").notNull(),
+  text: text("text").notNull(),
+  ipAddress: text("ip_address").notNull(),
+  userAgent: text("user_agent").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("subscription_consents_user_idx").on(table.userId),
+}));
+
+export const insertSubscriptionConsentSchema = createInsertSchema(subscriptionConsents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type SubscriptionConsent = typeof subscriptionConsents.$inferSelect;
+export type InsertSubscriptionConsent = z.infer<typeof insertSubscriptionConsentSchema>;
+
 export const insertTransferSchema = createInsertSchema(transfers).omit({
   id: true,
   createdAt: true,

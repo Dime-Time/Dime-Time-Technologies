@@ -25,6 +25,10 @@ import { registerMercuryRoutes } from "./routes/mercuryRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
 import { registerStripeRoutes, registerStripeWebhook } from "./routes/stripeRoutes";
 import { registerDebtImportRoutes } from "./routes/debtImportRoutes";
+import { registerSubscriptionRoutes } from "./routes/subscriptionRoutes";
+import { hasRoundUpAutomationAccess, SUBSCRIPTION_REQUIRED_RESPONSE } from "./lib/subscriptionGate";
+import { cancelSubscriptionImmediately } from "./services/subscriptionService";
+import { isSubscriptionTerminal } from "@shared/subscriptionPlans";
 import { assertStripeKeyModeSafeOnBoot } from "./services/stripeService";
 import { registerAdminRoutes } from "./routes/adminRoutes";
 import { isAdminUserId } from "./lib/admin";
@@ -646,7 +650,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      
+
+      // Best-effort: cancel any live Stripe subscription BEFORE wiping local
+      // state, so a deleted user is never billed again. A Stripe failure must
+      // not block deletion (Apple requirement) — but log it loudly for
+      // operator follow-up in the Stripe dashboard.
+      if (isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+        try {
+          const sub = await storage.getLatestSubscriptionByUserId(userId);
+          if (sub && !isSubscriptionTerminal(sub.status)) {
+            await cancelSubscriptionImmediately(sub.stripeSubscriptionId);
+          }
+        } catch (cancelErr) {
+          console.error(JSON.stringify({
+            service: "Server",
+            event: "account_delete_subscription_cancel_failed",
+            severity: "ERROR",
+            userId,
+            error: cancelErr instanceof Error ? cancelErr.message : String(cancelErr),
+          }));
+        }
+      }
+
       await storage.deleteUserAccount(userId);
       
       req.session.destroy((err) => {
@@ -921,8 +946,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const transaction = await storage.createTransaction(validatedData);
       
-      // Process round-up split (crypto immediate + debt accumulation) if round-up > 0
-      if (totalRoundUp > 0 && roundUpSettingsData?.isEnabled) {
+      // Process round-up split (crypto immediate + debt accumulation) if
+      // round-up > 0. Round-up AUTOMATION is the premium feature: when
+      // subscriptions are live, non-subscribers still get the transaction
+      // recorded (with its computed round-up amount) but no automated split.
+      // Flag OFF → hasRoundUpAutomationAccess is always true (no change).
+      if (totalRoundUp > 0 && roundUpSettingsData?.isEnabled && (await hasRoundUpAutomationAccess(userId))) {
         try {
           console.log(`🔄 Processing split round-up: $${totalRoundUp.toFixed(2)}`);
           
@@ -1153,6 +1182,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+      // Premium gate: only block when the request would ENABLE automation.
+      // Disabling or tweaking other settings stays free.
+      if (req.body?.isEnabled === true && !(await hasRoundUpAutomationAccess(userId))) {
+        return res.status(402).json(SUBSCRIPTION_REQUIRED_RESPONSE);
+      }
       const settings = await storage.createOrUpdateRoundUpSettings({
         ...req.body,
         userId,
@@ -1169,6 +1203,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // This route always writes isEnabled:true (it's the automation setup
+      // flow), so it is premium-gated as a whole when subscriptions are live.
+      if (!(await hasRoundUpAutomationAccess(userId))) {
+        return res.status(402).json(SUBSCRIPTION_REQUIRED_RESPONSE);
       }
       
       const { sourceAccountId, targetDebtId, cryptoEnabled, cryptoPercentage } = req.body;
@@ -1207,6 +1247,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Applying accumulated round-ups to a debt is part of round-up
+      // automation — premium when subscriptions are live.
+      if (!(await hasRoundUpAutomationAccess(userId))) {
+        return res.status(402).json(SUBSCRIPTION_REQUIRED_RESPONSE);
       }
       
       const { debtId, amount } = req.body;
@@ -2102,6 +2148,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }));
   }
 
+  // Register subscription billing routes ONLY when the flag is ON (404 when
+  // OFF — same fail-closed pattern as Stripe/debt-import). Subscriptions bill
+  // via ACH against the Stripe-linked bank account, so ENABLE_STRIPE_ACH is a
+  // hard dependency: fail the boot loudly rather than mount a half-working
+  // billing surface.
+  if (isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+    if (!isFlagEnabled("ENABLE_STRIPE_ACH")) {
+      throw new Error(
+        "ENABLE_SUBSCRIPTIONS requires ENABLE_STRIPE_ACH: subscriptions bill via " +
+        "Stripe ACH and cannot function without the Stripe code paths. " +
+        "Enable ENABLE_STRIPE_ACH or disable ENABLE_SUBSCRIPTIONS.",
+      );
+    }
+    registerSubscriptionRoutes(app);
+    console.log(JSON.stringify({
+      service: "Server",
+      event: "subscription_routes_mounted",
+      flag: "ENABLE_SUBSCRIPTIONS",
+    }));
+  }
+
   // Register internal admin (read-only) routes — always mounted; every
   // endpoint requires `requireAdmin`, which fails closed when ADMIN_USER_IDS
   // is unset/empty.
@@ -2113,7 +2180,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
-
-// ... ADD THESE ENDPOINTS BEFORE THE FINAL RETURN ...
-
-// NO WAIT - I need to properly insert these. Let me use a different approach.

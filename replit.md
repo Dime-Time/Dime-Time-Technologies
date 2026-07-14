@@ -62,10 +62,12 @@ Defined once in `shared/flags.ts`; server reads via `server/lib/flags.ts` (`getF
 | `ENABLE_BETA_BANNER` | OFF | In-app beta banner (TestFlight windows only). |
 | `ENABLE_AUTO_ROUNDUP_SWEEPS` | OFF | Weekly auto round-up sweep dispersals. OFF = logged no-op even if triggered. |
 | `ENABLE_DEBT_IMPORT` | OFF | Automatic debt-import routes + UI (fail-closed unmounted when OFF; rate-limited; audited). |
+| `ENABLE_SUBSCRIPTIONS` | OFF | Stripe Billing $2.99/mo "Dime Time Debt" plan (round-up automation paywall). Requires `ENABLE_STRIPE_ACH` — boot throws otherwise. OFF = routes unmounted, all round-up gates pass (no behavior change). See `.agents/memory/subscription-billing.md` before enabling in prod. |
 
 ## Money-Movement Safety (invariants)
-- `ENABLE_REAL_TRANSFERS` alone is NOT sufficient to move public money: every real ACH debit passes through `storage.reserveRealStripeAchDebit()` — per-user allowlist (`users.realTransfersEnabled`, default false) + first transfer ≤ $1 + daily total ≤ $5 + daily count ≤ 1 + duplicate-pending guard, all inside one transaction with an advisory lock. Every approve AND block writes a `real_transfer_audit_logs` row. Blocks never call Stripe.
+- `ENABLE_REAL_TRANSFERS` alone is NOT sufficient to move public money: every real ACH **transfer/debt-payment** debit passes through `storage.reserveRealStripeAchDebit()` — per-user allowlist (`users.realTransfersEnabled`, default false) + first transfer ≤ $1 + daily total ≤ $5 + daily count ≤ 1 + duplicate-pending guard, all inside one transaction with an advisory lock. Every approve AND block writes a `real_transfer_audit_logs` row. Blocks never call Stripe.
 - Test key mode → simulation path (`status="simulated"`, no settlement). Admin can revoke a user's allowlist instantly via `/api/admin/users/:id/real-transfers` (takes effect on next attempt, no restart).
+- Subscription billing debits ($2.99/mo, `ENABLE_SUBSCRIPTIONS`) are charged by Stripe Billing and intentionally do NOT pass the transfer allowlist gate; their own guards: consent-first ordering, Idempotency-Key + per-user subscribe lock, duplicate-sub 409, webhook-driven entitlement revocation.
 - `PLAID_TOKEN_ENCRYPTION_KEY` (Replit Secret only) encrypts ALL at-rest provider credentials (Plaid access tokens + Stripe PM ids, AES-256-GCM).
 - Agent guardrails: the agent never flips real-money flags, never sets live secrets, never runs live charges — founder-run steps only. Prod DB is read-only to agent tools.
 

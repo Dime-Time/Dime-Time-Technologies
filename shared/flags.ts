@@ -23,7 +23,8 @@ export type FlagName =
   | "ENABLE_CRYPTO"
   | "ENABLE_BETA_BANNER"
   | "ENABLE_AUTO_ROUNDUP_SWEEPS"
-  | "ENABLE_DEBT_IMPORT";
+  | "ENABLE_DEBT_IMPORT"
+  | "ENABLE_SUBSCRIPTIONS";
 
 export interface FlagDefinition {
   /** Production default when the env var is unset or invalid. */
@@ -71,6 +72,15 @@ export const FLAG_DEFINITIONS: Record<FlagName, FlagDefinition> = {
       "debts). OFF means the /api/debts/import routes are not mounted and the client " +
       "Import Debts UI is hidden. Uses the sandbox provider until a real liability-data " +
       "provider (Plaid Liabilities / Method) is approved.",
+  },
+  ENABLE_SUBSCRIPTIONS: {
+    defaultValue: false,
+    description:
+      "Gate the Stripe Billing subscription feature (Dime Time Debt $2.99/mo). " +
+      "OFF means /api/subscription routes are not mounted, no premium gating is " +
+      "applied anywhere (today's behavior is unchanged), and all subscription UI " +
+      "is hidden. Requires ENABLE_STRIPE_ACH — the server refuses to boot if " +
+      "SUBSCRIPTIONS is on while STRIPE_ACH is off.",
   },
 };
 

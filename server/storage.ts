@@ -47,6 +47,12 @@ import {
   type RealTransferAuditLog,
   type InsertRealTransferAuditLog,
   realTransferAuditLogs,
+  type Subscription,
+  type InsertSubscription,
+  subscriptions,
+  type SubscriptionConsent,
+  type InsertSubscriptionConsent,
+  subscriptionConsents,
   users, 
   debts, 
   transactions, 
@@ -195,6 +201,13 @@ export interface IStorage {
   >;
   finalizeIdempotencyKey(key: string, userId: string, endpoint: string, status: number, body: string): Promise<void>;
   releaseIdempotencyKey(key: string, userId: string, endpoint: string): Promise<void>;
+  // Per-user mutual exclusion for /api/subscription/subscribe. Two concurrent
+  // requests with DIFFERENT Idempotency-Keys (two tabs/devices) could otherwise
+  // both pass the duplicate-subscription check during the multi-second Stripe
+  // round-trip and create two live subscriptions (double billing). Stale locks
+  // from crashed requests expire after 2 minutes.
+  acquireSubscribeLock(userId: string): Promise<boolean>;
+  releaseSubscribeLock(userId: string): Promise<void>;
 
   // Transfer ledger methods
   createTransfer(data: InsertTransfer): Promise<Transfer>;
@@ -246,6 +259,16 @@ export interface IStorage {
   // ACH debit authorization (Nacha mandate) evidence
   createAchAuthorization(data: InsertAchAuthorization): Promise<AchAuthorization>;
   getLatestAchAuthorization(userId: string): Promise<AchAuthorization | undefined>;
+
+  // Subscriptions (Stripe Billing — gated by ENABLE_SUBSCRIPTIONS).
+  // upsertSubscription is keyed on the UNIQUE stripeSubscriptionId and is
+  // used by BOTH the subscribe route and the webhook handler so delivery
+  // order can never race or duplicate rows.
+  upsertSubscription(data: InsertSubscription): Promise<Subscription>;
+  getLatestSubscriptionByUserId(userId: string): Promise<Subscription | undefined>;
+  getSubscriptionByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription | undefined>;
+  createSubscriptionConsent(data: InsertSubscriptionConsent): Promise<SubscriptionConsent>;
+  getLatestSubscriptionConsent(userId: string): Promise<SubscriptionConsent | undefined>;
 
   // Password reset token methods
   createPasswordResetToken(data: InsertPasswordResetToken): Promise<PasswordResetToken>;
@@ -1679,6 +1702,8 @@ export class MemStorage implements IStorage {
   async reserveIdempotencyKey(_key: string, _userId: string, _endpoint: string): Promise<any> { return { claimed: true }; }
   async finalizeIdempotencyKey(_key: string, _userId: string, _endpoint: string, _status: number, _body: string): Promise<void> {}
   async releaseIdempotencyKey(_key: string, _userId: string, _endpoint: string): Promise<void> {}
+  async acquireSubscribeLock(_userId: string): Promise<boolean> { return true; }
+  async releaseSubscribeLock(_userId: string): Promise<void> {}
 
   async createTransfer(_data: InsertTransfer): Promise<Transfer> {
     throw new Error('MemStorage does not support transfer ledger');
@@ -1701,6 +1726,11 @@ export class MemStorage implements IStorage {
   async recordStripeWebhookEvent(_eventId: string, _type: string): Promise<boolean> { return true; }
   async createAchAuthorization(_data: InsertAchAuthorization): Promise<AchAuthorization> { throw new Error('MemStorage does not support ACH authorizations'); }
   async getLatestAchAuthorization(_userId: string): Promise<AchAuthorization | undefined> { return undefined; }
+  async upsertSubscription(_data: InsertSubscription): Promise<Subscription> { throw new Error('MemStorage does not support subscriptions'); }
+  async getLatestSubscriptionByUserId(_userId: string): Promise<Subscription | undefined> { return undefined; }
+  async getSubscriptionByStripeSubscriptionId(_stripeSubscriptionId: string): Promise<Subscription | undefined> { return undefined; }
+  async createSubscriptionConsent(_data: InsertSubscriptionConsent): Promise<SubscriptionConsent> { throw new Error('MemStorage does not support subscription consents'); }
+  async getLatestSubscriptionConsent(_userId: string): Promise<SubscriptionConsent | undefined> { return undefined; }
   async reserveRealStripeAchDebit(_args: any): Promise<RealAchGateResult> { throw new Error('MemStorage does not support real ACH gate'); }
   async setUserRealTransfersEnabled(_userId: string, _enabled: boolean, _adminUserId: string, _notes?: string): Promise<User | undefined> { return undefined; }
   async createRealTransferAuditLog(_data: InsertRealTransferAuditLog): Promise<RealTransferAuditLog> { throw new Error('MemStorage does not support audit logs'); }
@@ -2212,6 +2242,8 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(transfers).where(eq(transfers.userId, userId));
       await tx.delete(stripeAccounts).where(eq(stripeAccounts.userId, userId));
       await tx.delete(achAuthorizations).where(eq(achAuthorizations.userId, userId));
+      await tx.delete(subscriptions).where(eq(subscriptions.userId, userId));
+      await tx.delete(subscriptionConsents).where(eq(subscriptionConsents.userId, userId));
       await tx.delete(users).where(eq(users.id, userId));
     });
   }
@@ -2296,6 +2328,45 @@ export class DatabaseStorage implements IStorage {
       sql`DELETE FROM idempotency_keys
           WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}
           AND response_status = 0`
+    );
+  }
+
+  // Per-user subscribe lock — implemented as a reserved (never finalized) row
+  // in idempotency_keys so the (key, user, endpoint) unique index provides the
+  // atomicity. Distinct from the caller-supplied Idempotency-Key reservation:
+  // this one closes the race between two requests with DIFFERENT keys.
+  private static readonly SUBSCRIBE_LOCK_KEY = "user-subscribe-lock";
+  private static readonly SUBSCRIBE_LOCK_ENDPOINT = "/api/subscription/subscribe#user-lock";
+
+  async acquireSubscribeLock(userId: string): Promise<boolean> {
+    // A crashed request would leave its status=0 lock row behind forever;
+    // expire stale locks so the user is never permanently blocked. 2 minutes
+    // comfortably exceeds the Stripe round-trip.
+    await db.execute(
+      sql`DELETE FROM idempotency_keys
+          WHERE idempotency_key = ${DatabaseStorage.SUBSCRIBE_LOCK_KEY}
+            AND user_id = ${userId}
+            AND endpoint = ${DatabaseStorage.SUBSCRIBE_LOCK_ENDPOINT}
+            AND response_status = 0
+            AND created_at < NOW() - INTERVAL '2 minutes'`
+    );
+    const inserted: any = await db.execute(
+      sql`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body)
+          VALUES (gen_random_uuid(), ${DatabaseStorage.SUBSCRIBE_LOCK_KEY}, ${userId}, ${DatabaseStorage.SUBSCRIBE_LOCK_ENDPOINT}, 0, '')
+          ON CONFLICT (idempotency_key, user_id, endpoint) DO NOTHING
+          RETURNING id`
+    );
+    const rows = (inserted?.rows ?? inserted ?? []) as any[];
+    return rows.length > 0;
+  }
+
+  async releaseSubscribeLock(userId: string): Promise<void> {
+    await db.execute(
+      sql`DELETE FROM idempotency_keys
+          WHERE idempotency_key = ${DatabaseStorage.SUBSCRIBE_LOCK_KEY}
+            AND user_id = ${userId}
+            AND endpoint = ${DatabaseStorage.SUBSCRIBE_LOCK_ENDPOINT}
+            AND response_status = 0`
     );
   }
 
@@ -2508,6 +2579,68 @@ export class DatabaseStorage implements IStorage {
       .from(achAuthorizations)
       .where(eq(achAuthorizations.userId, userId))
       .orderBy(desc(achAuthorizations.createdAt))
+      .limit(1);
+    return result;
+  }
+
+  // ----- Subscriptions (Stripe Billing) -----
+
+  async upsertSubscription(data: InsertSubscription): Promise<Subscription> {
+    // Single race-free write path shared by the subscribe route and the
+    // webhook handler. Whichever arrives first inserts; the other updates.
+    const [result] = await db
+      .insert(subscriptions)
+      .values(data)
+      .onConflictDoUpdate({
+        target: subscriptions.stripeSubscriptionId,
+        set: {
+          plan: data.plan ?? "debt",
+          stripeCustomerId: data.stripeCustomerId,
+          stripePriceId: data.stripePriceId,
+          status: data.status ?? "incomplete",
+          currentPeriodStart: data.currentPeriodStart ?? null,
+          currentPeriodEnd: data.currentPeriodEnd ?? null,
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
+          canceledAt: data.canceledAt ?? null,
+          latestInvoiceId: data.latestInvoiceId ?? null,
+          lastPaymentError: data.lastPaymentError ?? null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async getLatestSubscriptionByUserId(userId: string): Promise<Subscription | undefined> {
+    const [result] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(1);
+    return result;
+  }
+
+  async getSubscriptionByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription | undefined> {
+    const [result] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId))
+      .limit(1);
+    return result;
+  }
+
+  async createSubscriptionConsent(data: InsertSubscriptionConsent): Promise<SubscriptionConsent> {
+    const [result] = await db.insert(subscriptionConsents).values(data).returning();
+    return result;
+  }
+
+  async getLatestSubscriptionConsent(userId: string): Promise<SubscriptionConsent | undefined> {
+    const [result] = await db
+      .select()
+      .from(subscriptionConsents)
+      .where(eq(subscriptionConsents.userId, userId))
+      .orderBy(desc(subscriptionConsents.createdAt))
       .limit(1);
     return result;
   }

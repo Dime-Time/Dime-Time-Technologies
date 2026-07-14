@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useSecurity } from "@/hooks/useSecurity";
 import { useAuth } from "@/hooks/useAuth";
+import { useFlag } from "@/hooks/useFlag";
 import { BetaModeBanner, ComplianceDisclaimer } from "@/components/BetaModeBanner";
 import { hasPinSet, isBiometricEnabled, setBiometricEnabled } from "@/lib/securityStore";
 import { 
@@ -35,7 +36,8 @@ import {
   ChevronRight,
   ShieldCheck,
   FileText,
-  Info
+  Info,
+  Sparkles
 } from "lucide-react";
 import {
   Dialog,
@@ -173,6 +175,15 @@ export default function Settings() {
     queryKey: ["/api/round-up-settings"],
   });
 
+  // Premium gate: when subscriptions are live, round-up automation requires
+  // an active plan. Flag OFF → no query, no banner, everything unlocked.
+  const subscriptionsEnabled = useFlag("ENABLE_SUBSCRIPTIONS");
+  const { data: subscriptionState } = useQuery<{ entitled: boolean }>({
+    queryKey: ["/api/subscription"],
+    enabled: subscriptionsEnabled,
+  });
+  const needsSubscription = subscriptionsEnabled && subscriptionState?.entitled === false;
+
   // Update round-up settings mutation
   const updateRoundUpSettings = useMutation({
     mutationFn: async (settings: Partial<RoundUpSettings>) => {
@@ -181,14 +192,26 @@ export default function Settings() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
-      if (!response.ok) throw new Error("Failed to update settings");
+      if (!response.ok) {
+        const err = new Error("Failed to update settings") as Error & { status?: number };
+        err.status = response.status;
+        throw err;
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/round-up-settings"] });
       toast({ title: "Settings updated successfully" });
     },
-    onError: () => {
+    onError: (err: Error & { status?: number }) => {
+      if (err.status === 402) {
+        toast({
+          title: "Subscription required",
+          description: "Round-up automation is part of the Dime Time Debt plan.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Failed to update settings", variant: "destructive" });
     },
   });
@@ -356,6 +379,27 @@ export default function Settings() {
 
         {/* ROUND-UPS */}
         <Section title="Round-Ups">
+          {needsSubscription && (
+            <div className="p-4 border-b border-slate-100 bg-purple-50/60" data-testid="banner-subscription-required">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-dime-purple/10 text-dime-purple flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900 text-sm">Unlock round-up automation</p>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Automatic round-ups and debt payments are part of the Dime Time
+                    Debt plan. Debt tracking stays free.
+                  </p>
+                  <Link href="/subscription">
+                    <Button size="sm" className="bg-dime-purple hover:bg-dime-accent text-white press-scale" data-testid="button-view-plan">
+                      View Plan
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
           <Row>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">

@@ -35,6 +35,7 @@ import Banking from "@/pages/banking";
 import BankSetupFlow from "@/components/BankSetupFlow";
 import QRCodePage from "@/pages/qr";
 import Settings from "@/pages/settings";
+import Subscription from "@/pages/subscription";
 import Notifications from "@/pages/notifications";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
@@ -231,6 +232,14 @@ function AppContent() {
       <Route path="/notifications">
         {effectivelyAuthenticated ? (
           <AuthenticatedLayout><Notifications /></AuthenticatedLayout>
+        ) : (
+          UnauthenticatedRoot
+        )}
+      </Route>
+
+      <Route path="/subscription">
+        {effectivelyAuthenticated ? (
+          <AuthenticatedLayout><Subscription /></AuthenticatedLayout>
         ) : (
           UnauthenticatedRoot
         )}

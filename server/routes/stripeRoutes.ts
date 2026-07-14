@@ -31,6 +31,10 @@ import {
   resolveStripeSecretKey,
   verifyStripeWebhook,
 } from "../services/stripeService";
+import {
+  retrieveStripeSubscription,
+  subscriptionRowFromStripe,
+} from "../services/subscriptionService";
 
 const MAX_DEBT_PAYMENT_DOLLARS = 500;
 
@@ -785,6 +789,80 @@ export function registerStripeWebhook(app: Express): void {
               type: event.type,
               disputeStatus: outcome,
             });
+          }
+        } else if (
+          event.type === "customer.subscription.created" ||
+          event.type === "customer.subscription.updated" ||
+          event.type === "customer.subscription.deleted"
+        ) {
+          // Subscription lifecycle (gated: ignore when ENABLE_SUBSCRIPTIONS
+          // is off so webhook noise can't write rows for a disabled feature).
+          // The event payload IS the subscription object — upsert it keyed on
+          // the Stripe subscription id (same write path as the subscribe
+          // route, so delivery order can't race).
+          if (!isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+            stripeLog(correlationId, "webhook_noop_acknowledged", {
+              eventId: event.id, type: event.type, reason: "subscriptions_flag_off",
+            });
+          } else {
+            const sub = event.data.object as any;
+            const userId =
+              (sub.metadata?.dimeTimeUserId as string | undefined) ||
+              (await storage.getSubscriptionByStripeSubscriptionId(sub.id))?.userId;
+            if (!userId) {
+              stripeLog(correlationId, "webhook_subscription_user_miss", {
+                severity: "WARN", eventId: event.id, stripeSubscriptionId: sub.id,
+              });
+            } else {
+              const row = await storage.upsertSubscription(subscriptionRowFromStripe(sub, userId));
+              stripeLog(correlationId, "subscription_upserted", {
+                eventId: event.id, type: event.type,
+                stripeSubscriptionId: sub.id, status: row.status,
+              });
+            }
+          }
+        } else if (
+          event.type === "invoice.paid" ||
+          event.type === "invoice.payment_failed"
+        ) {
+          // Invoice outcomes drive entitlement (ACH settles days later):
+          // re-fetch the subscription from Stripe for its authoritative
+          // post-invoice status rather than trusting event ordering.
+          if (!isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+            stripeLog(correlationId, "webhook_noop_acknowledged", {
+              eventId: event.id, type: event.type, reason: "subscriptions_flag_off",
+            });
+          } else {
+            const invoice = event.data.object as any;
+            // Stripe API versions 2025+ ("basil") moved invoice.subscription to
+            // invoice.parent.subscription_details.subscription — read both so a
+            // dashboard endpoint pinned to a newer version still resolves it.
+            const rawInvoiceSub =
+              invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+            const subId =
+              typeof rawInvoiceSub === "string" ? rawInvoiceSub : rawInvoiceSub?.id;
+            if (!subId) {
+              // Not a subscription invoice (e.g. one-off) — nothing to do.
+              stripeLog(correlationId, "webhook_noop_acknowledged", {
+                eventId: event.id, type: event.type, reason: "no_subscription_on_invoice",
+              });
+            } else {
+              const fresh = await retrieveStripeSubscription(subId);
+              const userId =
+                (fresh?.metadata?.dimeTimeUserId as string | undefined) ||
+                (await storage.getSubscriptionByStripeSubscriptionId(subId))?.userId;
+              if (!fresh || !userId) {
+                stripeLog(correlationId, "webhook_subscription_user_miss", {
+                  severity: "WARN", eventId: event.id, stripeSubscriptionId: subId,
+                });
+              } else {
+                const row = await storage.upsertSubscription(subscriptionRowFromStripe(fresh, userId));
+                stripeLog(correlationId, "subscription_upserted", {
+                  eventId: event.id, type: event.type,
+                  stripeSubscriptionId: subId, status: row.status,
+                });
+              }
+            }
           }
         } else if (
           event.type === "setup_intent.succeeded" ||

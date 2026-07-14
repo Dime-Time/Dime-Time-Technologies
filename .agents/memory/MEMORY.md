@@ -20,6 +20,7 @@
 - [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — bank-connect 502s "not registered" until founder submits FC registration in live Stripe dashboard.
 - [Forced white-text theme](forced-white-text-theme.md) — index.css forces white text + remaps bg-white→lavender; readable inputs need a scoped opt-out (.dt-marketing / .dt-auth).
 - [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab deliberately deleted post go/no-go; verdict logic lives in shared/stripeVerdict.ts; don't re-add.
+- [Subscription billing](subscription-billing.md) — $2.99/mo Stripe Billing; incomplete+past_due ARE entitled (ACH lag); consent row precedes Stripe calls; founder prod-enable checklist inside.
 - [Sentry config](sentry-config.md) — DSN-gated dynamic import (no SDK without DSN); test-enforced PII redaction incl. /verify-email & /reset-password must never carry query strings.
 - [Internal admin surface](internal-admin.md) — ADMIN_USER_IDS fails closed; GET-only reads strip raw payloads; Real Money tab is UI over audited allowlist endpoints.
 - [Plaid billing contract](plaid-billing-contract.md) — founder on ~$1,064/mo Plaid committed plan pre-revenue, fell behind; goal = downgrade to pay-as-you-go before production reapplication.
