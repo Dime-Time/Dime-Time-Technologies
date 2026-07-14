@@ -27,6 +27,14 @@ to add more real providers (Method, etc.) with no redesign.
   from `getLiabilityProvider()`. Rest of app only touches that factory and
   `NormalizedLiability` — never a concrete provider. Do NOT special-case a provider.
 
+- **Plaid's prior rejection was about ACH/money movement, not Liabilities** (founder,
+  2026-07-14: rejection email concerned ACH transfers; Plaid kept emailing for more
+  compliance info). **Why:** money movement carries a far higher compliance bar than
+  read-only liability data. **How to apply:** the reapplication should request
+  Liabilities (read-only debt import) ONLY and explicitly not request Transfer/ACH —
+  Stripe handles all money movement. Frame it that way in the application and with
+  the Plaid rep (Melanie).
+
 - **Client-connect providers use `linkFlow` + `LinkRequiredError`.** A provider that
   needs a browser handshake (Plaid Link) sets an optional `linkFlow` (`createLinkToken`
   + `completeLink`) on the provider and throws `LinkRequiredError` (code `link_required`)
