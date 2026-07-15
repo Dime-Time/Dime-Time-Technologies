@@ -9,8 +9,9 @@ Tim shared his full debt story on 2026-07-14 (in chat). Only this public-safe ar
 
 **The arc:**
 - Left the Navy in August 2007 — directly into the Great Recession.
-- UNLV MBA Jan 2017 → June 2020 (graduated into the pandemic). "Dime Time" name predates the app — it was his Amazon toy store's name during grad school. Formal business plan authored May–June 2018 (docx metadata verified: created 2018-05-22, author Tim Carlisle) — names Plaid, a debt-allocation patent idea, and round-ups-to-debt eight years before launch.
-- Post-MBA fork: offers from Walmart e-commerce (Bethlehem, PA) and General Atomics (aerospace); took General Atomics ~Apr–Aug/Sep 2020, back to Vegas Sept 2020, moved to Dallas Dec 2021.
+- UNLV grad school Jan 2017 → June 2023 (CORRECTED 2026-07-15; earlier "June 2020" was wrong — that was mid-program). ~18 months business coursework + ~18 months MIS. Failed GMAT twice (~500 vs the 525 veteran threshold) and the GRE; an advisor rerouted him to the MIS program (test requirement waived). KEY STORY BEAT: failing the entrance exams pushed him into the tech degree that later made the solo AI-assisted build possible.
+- "Dime Time" name predates the app — it was his Amazon toy store's name during grad school. Formal business plan authored May–June 2018 (docx metadata verified: created 2018-05-22, author Tim Carlisle) — names Plaid, a debt-allocation patent idea, and round-ups-to-debt eight years before launch.
+- 2020 fork (mid-program, pandemic): offers from Walmart e-commerce (Bethlehem, PA) and General Atomics (aerospace); took General Atomics ~Apr–Aug/Sep 2020, back to Vegas Sept 2020, moved to Dallas Dec 2021, finished the MIS half of the degree along the way.
 - ~18 years of a repeating cycle: get stable → pay cards down → layoff/economic shock (recession, restaurant venture collapse, pandemic) → balance climbs again. Paid his debt off at least four times.
 - Key emotional beat (his words): he eventually "stopped caring because it seems pointless" — classic debt fatigue.
 - Product thesis in one line: Dime Time is built for the person who stopped caring — round-ups chip away automatically when willpower is gone.
