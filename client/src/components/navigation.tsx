@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Logo } from "@/components/logo";
+import { CircleLogo } from "@/components/logo";
 import { useAuth } from "@/hooks/useAuth";
 
 export function Navigation() {
@@ -40,9 +40,7 @@ export function Navigation() {
           <div className="flex justify-between items-center h-14 min-h-[56px]">
             {/* Brand / Logo */}
             <div className="flex items-center justify-center space-x-3">
-              <div className="mt-1">
-                <Logo size={32} clean={true} />
-              </div>
+              <CircleLogo size={36} />
               <span className="text-xl font-bold text-slate-900 tracking-tight">
                 Dime Time
               </span>
