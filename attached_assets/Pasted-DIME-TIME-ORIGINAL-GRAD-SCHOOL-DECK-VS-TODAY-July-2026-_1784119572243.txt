@@ -1,0 +1,179 @@
+DIME TIME — ORIGINAL GRAD-SCHOOL DECK VS. TODAY
+July 2026
+
+THE CORE IDEA — UNCHANGED
+
+Original concept:
+“Round up purchases to pay down debt. Get out of debt, one dime at a time.”
+
+Today:
+That same core concept is now a functioning fintech application available on the Apple App Store.
+
+The product evolved. The central mission did not.
+
+⸻
+
+WHAT THE ORIGINAL DECK GOT RIGHT
+
+1. Round-ups directed toward debt
+
+The original presentation described using spare change from everyday purchases to help users reduce debt.
+
+That is the core mechanism ultimately built into Dime Time.
+
+2. Plaid as the bank-linking partner
+
+The original deck identified Plaid as the infrastructure provider that could connect Dime Time with users’ financial accounts.
+
+Years later, Plaid was integrated into the actual product.
+
+3. Subscription-based monetization
+
+The original business model anticipated recurring subscription revenue.
+
+Dime Time’s current planned pricing begins at $2.99 per month for debt-payment round-ups.
+
+4. The market thesis
+
+The original deck cited approximately $14.3 trillion in U.S. household debt in 2020 and argued that the problem would continue growing.
+
+By 2026, total U.S. household debt is materially higher. The underlying consumer problem became larger while Dime Time was being developed.
+
+⸻
+
+WHAT CHANGED
+
+1. Financial-data sales were abandoned
+
+Original plan:
+Generate revenue by selling financial data through a data marketplace.
+
+Current position:
+Dime Time does not sell user financial data.
+
+That model was abandoned because it conflicted with the company’s privacy principles, consumer trust requirements, platform expectations, and the long-term brand Dime Time intends to build.
+
+2. The sweep-account architecture changed
+
+Original plan:
+Place accumulated round-ups into an investment or sweep account associated with JPMorgan Chase and potentially generate interest before transferring the funds.
+
+Current architecture:
+Dime Time maintains a round-up ledger and executes scheduled ACH transfers using Stripe infrastructure.
+
+The behavioral concept survived, but the underlying payment mechanics became more practical and operationally realistic.
+
+3. The development strategy changed completely
+
+Original plan:
+Raise approximately $500,000 in pre-seed capital, hire a development agency, and produce an MVP within approximately 90–180 days.
+
+What happened:
+The company did not receive the anticipated funding.
+
+Several years later, the founder began building the product independently with AI-assisted development tools and third-party fintech infrastructure.
+
+The result is:
+
+* A live iOS application
+* A functioning backend
+* Real bank-linking infrastructure
+* Production ACH money movement
+* Approximately 35,000 lines of code
+* More than 1,000 development commits
+* A provisional patent filing
+* Early registered users
+
+The original plan depended on outside capital to begin.
+
+The actual company was built through founder execution.
+
+4. The team structure changed
+
+Original deck:
+Founder, developer, and legal support.
+
+Today:
+The product has primarily been built and directed by a solo founder using AI-assisted development, external APIs, professional services, and specialized infrastructure partners.
+
+5. Pricing changed
+
+Original plan:
+Charge approximately $1 per month.
+
+The original deck also criticized Qoins for charging $2.99 per month.
+
+Today:
+Dime Time’s planned entry-level debt round-up subscription is also $2.99 per month.
+
+The market ultimately validated a higher subscription price than the original deck anticipated.
+
+⸻
+
+EVEN THE BRAND COLOR EVOLVED RATHER THAN DISAPPEARED
+
+Original presentation color:
+#B0B8FF — soft periwinkle
+
+Current Dime Time purple:
+#918EF4 — deeper and more saturated
+
+The modern brand is recognizably connected to the original visual identity.
+
+⸻
+
+THE ONE-LINE STORY
+
+The original deck presented an idea that never received the funding required to build it. The current company is that same idea, independently executed with AI-assisted development until it became a real fintech product.
+
+Nothing fundamental changed.
+
+Everything became real.
+
+⸻
+
+HOW THIS SHOULD APPEAR ON THE WEBSITE
+
+Create a website section titled:
+
+From Graduate-School Idea to Live Fintech
+
+The section should visually compare the original presentation with the current company.
+
+Suggested structure:
+
+THEN
+
+* Graduate-school concept
+* Static PowerPoint
+* $500,000 funding requirement
+* Development-agency proposal
+* Theoretical Plaid integration
+* Proposed sweep account
+* Proposed $1 subscription
+* No live users
+* No money movement
+
+NOW
+
+* Live Apple App Store product
+* Founder-built platform
+* Plaid integration
+* Stripe ACH infrastructure
+* Production money movement
+* Subscription model
+* Early users
+* Provisional patent
+* Working fintech architecture
+
+Include selected images from the original PowerPoint beside current application screenshots.
+
+Potential website headline:
+
+The vision stayed the same. The execution became real.
+
+Potential supporting copy:
+
+Dime Time began as a graduate-school presentation describing a simple idea: round up everyday purchases and apply the spare change toward debt. The concept did not receive outside funding, but it survived. Years later, the original founder used AI-assisted development and modern fintech infrastructure to turn that presentation into a live application capable of moving real money.
+
+The original deck should remain available as a historical artifact, clearly labeled as an early-stage concept containing outdated projections and business-model assumptions.
