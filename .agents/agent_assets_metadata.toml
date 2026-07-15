@@ -414,3 +414,15 @@ id = "HtqeKysJrJxf4xu-1fYPn"
 uri = "file://GO_LIVE_RUNBOOK.md"
 type = "text"
 title = "Dime Time — Go-Live Runbook ($1 Test)"
+
+[[outputs]]
+id = "DVONa60HVtBDfJZZYNkIr"
+uri = "file://attached_assets/timeline-deck-slides/dime-time-timeline-deck.pptx"
+type = "slides"
+title = "Dime Time Timeline Deck (import into Google Slides)"
+
+[[outputs]]
+id = "-VI2tVVNZbeiGCNRjyc9d"
+uri = "file://attached_assets/timeline-deck-slides/dime-time-timeline-deck.pdf"
+type = "pdf"
+title = "Timeline Deck — PDF preview"
