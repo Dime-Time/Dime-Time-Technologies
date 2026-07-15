@@ -1,0 +1,232 @@
+DIME TIME — LONG-TERM PRODUCT VISION & STRATEGIC ROADMAP
+(Founder Vision — July 2026)
+
+PURPOSE
+
+Dime Time's mission is to help millions of people improve their financial lives through automation. The core philosophy remains the same:
+
+"Every purchase becomes an opportunity to build a stronger financial future."
+
+The long-term vision is to evolve Dime Time from a debt-payoff application into a complete financial ecosystem.
+
+------------------------------------------------------------
+PHASE 1 — CORE PRODUCT (CURRENT)
+------------------------------------------------------------
+
+✅ Round up debit card purchases
+✅ Automatically apply spare change toward debt
+✅ Plaid bank connections
+✅ Stripe ACH transfers
+✅ Live on the Apple App Store
+✅ Subscription-based business model
+
+Goal:
+Become the easiest and most automated way to pay off debt.
+
+------------------------------------------------------------
+PHASE 2 — CRYPTO EXPANSION
+------------------------------------------------------------
+
+Allow users to choose where their round-ups go.
+
+Options:
+
+• 100% Debt
+• 100% Bitcoin
+• Split between Debt + Bitcoin
+
+Future exchange integrations:
+
+• Coinbase API
+• Kraken API
+• Crypto.com API
+
+Users choose their preferred exchange while Dime Time manages automated round-up investing.
+
+------------------------------------------------------------
+PHASE 3 — MULTI-DESTINATION ROUND UPS
+------------------------------------------------------------
+
+Expand beyond a single destination.
+
+Examples:
+
+• 50% Debt
+• 30% Bitcoin
+• 20% Savings
+
+or
+
+• 40% Debt
+• 30% Bitcoin
+• 30% Emergency Fund
+
+Allow users complete flexibility over how every round-up is allocated.
+
+------------------------------------------------------------
+PHASE 4 — DIME TIME WALLET
+------------------------------------------------------------
+
+Integrate wallet functionality (potentially through Sila or another compliant wallet provider).
+
+Features:
+
+• Digital wallet
+• Store funds
+• Receive funds
+• Hold balances
+• View wallet history
+• Wallet integrated directly into the Dime Time dashboard
+
+This becomes the financial hub inside the application.
+
+------------------------------------------------------------
+PHASE 5 — PEER-TO-PEER PAYMENTS
+------------------------------------------------------------
+
+Allow users to send money instantly between Dime Time wallets.
+
+Examples:
+
+• Send $5
+• Send $20
+• Pay a friend back
+• Split dinner
+• Birthday gifts
+
+Similar experience to:
+
+• Venmo
+• Cash App
+• Zelle
+
+Potential revenue:
+
+• Small transaction fees where appropriate
+• Premium transfer options
+• Additional subscription value
+
+------------------------------------------------------------
+PHASE 6 — DIME TIME TOKEN (LONG-TERM EXPLORATION)
+------------------------------------------------------------
+
+Explore whether a blockchain-based Dime Time token could add value to the ecosystem.
+
+Conceptual goals include:
+
+• Utility within the Dime Time platform
+• Wallet support
+• Customer ownership and engagement
+• Potential future exchange listings if all technical, legal, and regulatory requirements are met
+
+This would require extensive legal and regulatory planning before implementation.
+
+------------------------------------------------------------
+PHASE 7 — FINANCIAL INTELLIGENCE
+------------------------------------------------------------
+
+Use customer-permissioned financial data to create personalized insights.
+
+Examples:
+
+• Debt payoff projections
+• Interest saved
+• Spending trends
+• Financial health scores
+• AI-powered recommendations
+• Personalized budgeting
+
+Give users a complete picture of their financial progress.
+
+------------------------------------------------------------
+PHASE 8 — DIME TIME LENDING
+------------------------------------------------------------
+
+Once enough customer history exists, explore consumer lending products.
+
+Example:
+
+Customer has:
+
+• 720 credit score
+• 18 months of successful Dime Time history
+• Excellent payment behavior
+
+Dime Time could present refinancing opportunities.
+
+Example:
+
+Current credit card:
+
+26% APR
+
+Potential refinance:
+
+10–12% APR
+
+Goal:
+
+Reduce interest costs while simplifying debt repayment.
+
+This would require appropriate lending partnerships and regulatory compliance.
+
+------------------------------------------------------------
+PHASE 9 — CREDIT PRODUCTS
+------------------------------------------------------------
+
+Eventually explore:
+
+• Dime Time Credit Card
+• Balance transfers
+• Rewards tied to debt reduction
+• Smart payment automation
+
+Create a credit product aligned with Dime Time's financial wellness mission.
+
+------------------------------------------------------------
+PHASE 10 — GLOBAL EXPANSION
+------------------------------------------------------------
+
+After proving success in the United States:
+
+Potential markets:
+
+• Canada
+• United Kingdom
+• Australia
+• Europe
+
+Expand country by country while adapting to local banking and regulatory requirements.
+
+------------------------------------------------------------
+LONG-TERM BUSINESS MODEL
+------------------------------------------------------------
+
+Potential revenue streams:
+
+• Monthly subscriptions
+• Crypto integrations
+• Wallet services
+• Peer-to-peer transfers
+• Lending partnerships
+• Credit products
+• Premium financial tools
+• International expansion
+
+------------------------------------------------------------
+LONG-TERM OBJECTIVE
+------------------------------------------------------------
+
+Build Dime Time into one of the world's leading financial wellness platforms.
+
+The vision is to create a company that helps millions of people:
+
+• Eliminate debt
+• Build wealth
+• Invest automatically
+• Move money seamlessly
+• Make smarter financial decisions
+
+If successfully executed over the next 3–5 years with millions of active users, recurring subscription revenue, strong customer retention, and a mature product ecosystem, Dime Time could become a strategic acquisition candidate for major fintech companies, payment networks, or financial institutions—or continue operating independently as a scaled global fintech platform.
+
+The focus remains execution: build one exceptional product at a time, earn customer trust, and expand deliberately as each new capability proves its value.
