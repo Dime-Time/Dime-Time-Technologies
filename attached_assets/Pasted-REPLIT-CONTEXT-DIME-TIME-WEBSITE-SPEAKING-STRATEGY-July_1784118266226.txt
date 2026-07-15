@@ -1,0 +1,176 @@
+REPLIT CONTEXT — DIME TIME WEBSITE + SPEAKING STRATEGY
+(July 2026)
+
+I'm uploading my ORIGINAL Dime Time PowerPoint presentation along with this message.
+
+The PowerPoint represents the original vision for Dime Time from several years ago. Since then, the company has evolved dramatically.
+
+=========================
+ORIGINAL DECK PURPOSE
+=========================
+
+Please review the attached PowerPoint as historical context only.
+
+It tells the story of where Dime Time started:
+- The original value proposition
+- Early business model
+- Initial market research
+- Original competitor analysis
+- Initial go-to-market strategy
+
+It is NOT representative of the current company.
+
+Today we have significantly more traction.
+
+=========================
+CURRENT COMPANY STATUS
+=========================
+
+Current milestones include:
+
+• Live on the Apple App Store
+• Production ACH transfers working through Stripe
+• Plaid Financial Connections integrated
+• Mercury business banking
+• Patent application filed
+• Approximately 35,000 lines of code
+• Over 1,000 Git commits during roughly 11 months of development
+• Early registered users
+• Working fintech infrastructure instead of a prototype
+• Timeline presentation showing the complete build story
+
+The original deck sold an idea.
+
+The current company sells execution.
+
+=========================
+WEBSITE IDEA
+=========================
+
+One of the biggest opportunities I see is documenting my founder journey publicly.
+
+I expect to begin speaking at universities (SMU, TCU, and hopefully others) this fall.
+
+Instead of treating those presentations as one-time events, I want every presentation to become permanent content for the Dime Time website.
+
+=========================
+NEW WEBSITE SECTION
+=========================
+
+Create a new navigation section called:
+
+SPEAKING
+
+or
+
+Founder Journey
+
+Each speaking engagement should have its own page.
+
+Each page should contain:
+
+• University logo
+• School name
+• Presentation title
+• Date
+• Embedded presentation video
+• Downloadable slide deck
+• Photo gallery
+• Audience Q&A
+• Key takeaways
+• Professor information (if appropriate)
+• Student testimonials (if available)
+• Press or LinkedIn posts related to the event
+
+Example:
+
+SMU
+Building a Fintech Startup While Working Full-Time
+
+120 attendees
+
+45-minute keynote
+
+20-minute Q&A
+
+Presentation video
+
+Download slides
+
+Gallery
+
+Questions from students
+
+=========================
+CONTENT STRATEGY
+=========================
+
+Every presentation should generate multiple pieces of content.
+
+One presentation becomes:
+
+• Full YouTube video
+• Website article
+• LinkedIn post
+• Multiple LinkedIn clips
+• TikTok videos
+• Instagram Reels
+• Photo gallery
+• Quotes
+• Future recruiting material
+• Investor updates
+• University outreach material
+
+Instead of disappearing after one day, every event permanently expands the Dime Time story.
+
+=========================
+VIDEO RECORDING
+=========================
+
+Every speaking event should be professionally documented.
+
+Ideal setup:
+
+• 4K camera (or modern iPhone)
+• Tripod
+• External microphone or lav mic
+• Full uninterrupted recording
+• Photos before, during, and after
+• Audience Q&A recorded
+• Student interactions
+• Faculty interactions
+
+The goal is to build a growing media library over the next several years.
+
+=========================
+ORIGINAL POWERPOINT
+=========================
+
+I'd also like the website to preserve the original Dime Time PowerPoint as part of the founder story.
+
+For example:
+
+"The Original Vision"
+
+Visitors could see:
+
+2019–2020:
+Original investor presentation
+
+2025–2026:
+Timeline deck
+
+Today:
+Live fintech application
+
+I think this tells a compelling story showing the evolution from an idea to a functioning company.
+
+=========================
+REQUEST
+=========================
+
+Please review the attached ORIGINAL PowerPoint and suggest how we can integrate both the historical deck and the newer timeline deck into the Dime Time website.
+
+I want the website to tell a chronological founder story that demonstrates the progression from concept to live fintech platform.
+
+The objective is that investors, university students, professors, potential employees, and future partners can see the entire journey—not just where Dime Time is today, but how it got here.
