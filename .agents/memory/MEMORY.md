@@ -28,3 +28,4 @@
 - [Founder launch narrative](founder-launch-narrative.md) — approved public arc of Tim's debt story (Navy→2007 recession→debt-fatigue→built the app he needed) for launch post/pitch; private chapters stay private.
 - [GEO guides & crawler files](geo-guides.md) — AI crawlers don't run JS: SEO/GEO content must be static HTML via Express routes; SPA catch-all was swallowing robots.txt/sitemap; audit public/ before static-mounting.
 - Master milestone timeline for Tim's presentations: attached_assets/dime-time-milestone-timeline.txt (2026-07-14, fact-checked; $3.99/$4.99 tiers are planned-only, not built).
+- Tim's daily journals saved as attached_assets/founder-journal-YYYY-MM-DD.txt (first: 2026-07-14, the day his $1 ACH settled) — personal source material for launch story/presentations; don't copy figures into memory.
