@@ -171,8 +171,6 @@ bullets(s, [
     ("Day 11: iPhone app development begins.", False),
     ("A first iOS app (\u201cDime Time Technologies\u201d) starts taking shape — ~60 commits of work that won't survive the year.", False),
 ])
-tf = box(s, 0.75, 6.5, 11.8, 0.6)
-para(tf, "Tip for the live talk: drop an early app screenshot here — primitive beginnings make the finished product hit harder.", 13, DEEP, first=True)
 
 # ---------- 5. MONTH 2 / SEPT 19 ----------
 s = slide(WHITE)
