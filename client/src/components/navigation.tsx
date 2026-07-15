@@ -39,8 +39,8 @@ export function Navigation() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 min-h-[56px]">
             {/* Brand / Logo */}
-            <div className="flex items-center justify-center space-x-3">
-              <CircleLogo size={36} />
+            <div className="flex items-center pl-1 space-x-3.5">
+              <CircleLogo size={44} className="shadow-sm" />
               <span className="text-xl font-bold text-slate-900 tracking-tight">
                 Dime Time
               </span>

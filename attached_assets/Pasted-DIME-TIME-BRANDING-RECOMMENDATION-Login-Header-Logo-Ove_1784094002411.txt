@@ -1,0 +1,88 @@
+DIME TIME — BRANDING RECOMMENDATION (Login & Header Logo)
+
+Overall assessment:
+
+The current branding is strong, but the logo treatment is inconsistent across the app. The PIN screen and TikTok profile display the logo in a way that feels much more premium than the logged-in Home screen.
+
+CURRENT OBSERVATIONS
+
+1. PIN Screen
+- Excellent presentation.
+- The logo has plenty of breathing room.
+- The proportions feel balanced.
+- The logo stands on its own as a recognizable brand mark.
+- Premium, modern fintech appearance.
+
+2. Home Screen
+- The logo is too small.
+- It feels squeezed into the top-left corner.
+- The circular identity is lost.
+- The "Dime Time" wordmark dominates while the mascot becomes secondary.
+- It feels more like a tiny app icon than the company's primary visual identity.
+
+3. TikTok Branding
+This is the strongest implementation.
+
+The logo is centered inside a perfect lavender circle.
+
+That presentation immediately:
+- looks more premium
+- improves brand recognition
+- feels more trustworthy
+- gives the logo visual weight
+- resembles the branding quality of major fintech companies
+
+RECOMMENDATION
+
+Standardize the circular version of the logo as Dime Time's primary brand mark.
+
+Instead of using the transparent mascot throughout the app, use the circular lavender badge everywhere users interact with the brand.
+
+Use this version consistently on:
+
+• Login screen
+• PIN entry screen
+• Splash screen
+• Loading screen
+• Home screen header
+• Profile
+• Notifications
+• Website
+• Social media
+• LinkedIn
+• TikTok
+• Marketing materials
+• Email signatures
+• Favicon (where appropriate)
+
+Reserve the transparent logo only for situations where a circular background isn't appropriate (such as certain print assets or platform-specific requirements).
+
+HOME SCREEN IMPROVEMENTS
+
+Update the header by:
+
+- Increasing the logo size approximately 20–30%.
+- Using the circular logo badge instead of the transparent version.
+- Giving the logo more padding from the left edge.
+- Adding slightly more spacing between the logo and the "Dime Time" wordmark.
+- Vertically centering the logo and text together for a more polished appearance.
+
+DESIGN GOAL
+
+The objective is to make the logo instantly recognizable before users even read the words "Dime Time."
+
+Many successful fintech companies build recognition around a strong icon:
+
+- Cash App
+- Coinbase
+- Venmo
+- Robinhood
+- Revolut
+
+Dime Time has a unique mascot that is far more distinctive than generic dollar signs or abstract shapes. Wrapping it in the lavender circle gives it a consistent "badge" that users will begin to associate with the brand across every touchpoint.
+
+FINAL RECOMMENDATION
+
+Treat the lavender circular logo as the official brand mark across the entire product.
+
+The current PIN screen already demonstrates how premium the logo can look. The TikTok profile reinforces that the circular treatment gives the logo much greater visual presence. Bringing that same design language into the logged-in experience will make the app feel more cohesive, more recognizable, and closer to the level of polish expected from a modern fintech platform.
