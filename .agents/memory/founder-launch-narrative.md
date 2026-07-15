@@ -15,6 +15,7 @@ Tim shared his full debt story on 2026-07-14 (in chat). Only this public-safe ar
 - Key emotional beat (his words): he eventually "stopped caring because it seems pointless" — classic debt fatigue.
 - Product thesis in one line: Dime Time is built for the person who stopped caring — round-ups chip away automatically when willpower is gone.
 - He is customer #1: the first real production ACH payment was his own money at his own debt, and he still carries two credit cards the app will work against.
+- Approved reframe Tim loves (use in talks): the 2017–2024 gap wasn't procrastination — solo AI-assisted fintech builds were impossible until ~2024-25; he did everything era-possible (LLC, EIN, DUNS, plan, surveys, specs) and started the moment the window opened. Line: "I spent seven years being ready for the day starting became possible."
 
 **Why:** founder-story-led launch beats feature-led; the story is verifiably his and emotionally resonant (Navy vet, recession-era, debt fatigue).
 
