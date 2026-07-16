@@ -10,6 +10,7 @@ export interface SendEmailParams {
   subject: string;
   html: string;
   text: string;
+  replyTo?: string;
 }
 
 export interface SendEmailResult {
@@ -65,6 +66,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       subject: params.subject,
       html: params.html,
       text: params.text,
+      ...(params.replyTo ? { replyTo: params.replyTo } : {}),
     });
 
     if (error) {
@@ -155,6 +157,70 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     subject: "Reset your Dime Time password",
     html,
     text,
+  });
+}
+
+export interface ContactNotificationEmailParams {
+  name: string;
+  email: string;
+  message: string;
+  source: string;
+  submittedAt: Date;
+}
+
+/**
+ * Notify the founder inbox that a new contact/feedback submission arrived.
+ * Sent to tim@dime-time.com — the Resend account owner's address — so this
+ * delivers even before the dime-time.com domain is verified in Resend.
+ * Reply-To is set to the submitter so replies go straight to them.
+ */
+export async function sendContactNotificationEmail(params: ContactNotificationEmailParams): Promise<SendEmailResult> {
+  const sourceLabel = params.source === "in_app" ? "In-app feedback" : "Marketing site contact form";
+  const when = params.submittedAt.toISOString();
+  // Defense-in-depth: never allow CR/LF or oversized values into the
+  // subject line, and only set Reply-To when the address looks like a
+  // plain email (Resend also validates server-side; this avoids relying
+  // on it exclusively).
+  const safeName = params.name.replace(/[\r\n]+/g, " ").trim().slice(0, 80) || "Unknown";
+  const replyTo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(params.email) && params.email.length <= 254
+    ? params.email
+    : undefined;
+
+  const text = [
+    `New ${sourceLabel.toLowerCase()} submission`,
+    "",
+    `From: ${params.name} <${params.email}>`,
+    `Source: ${sourceLabel}`,
+    `Received: ${when}`,
+    "",
+    "Message:",
+    params.message,
+    "",
+    "Reply to this email to respond directly.",
+  ].join("\n");
+
+  const html = `
+<!doctype html>
+<html>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f7fb; padding: 24px; color: #111;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
+      <tr><td>
+        <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">New message from ${escapeHtml(params.name)}</h1>
+        <p style="margin: 0 0 4px; font-size: 14px; color: #666;">${escapeHtml(sourceLabel)} &middot; ${escapeHtml(when)}</p>
+        <p style="margin: 0 0 16px; font-size: 14px; color: #666;">From: <strong style="color: #111;">${escapeHtml(params.name)}</strong> &lt;${escapeHtml(params.email)}&gt;</p>
+        <div style="margin: 0 0 24px; padding: 16px; background: #f7f7fb; border-radius: 12px; font-size: 15px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(params.message)}</div>
+        <p style="margin: 0; font-size: 13px; color: #888;">Reply to this email to respond directly to ${escapeHtml(params.name)}.</p>
+      </td></tr>
+    </table>
+  </body>
+</html>`.trim();
+
+  return sendEmail({
+    to: "tim@dime-time.com",
+    subject: `Dime Time contact: ${safeName}`,
+    html,
+    text,
+    ...(replyTo ? { replyTo } : {}),
   });
 }
 

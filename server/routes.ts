@@ -42,7 +42,7 @@ import { roundUpSplitService } from "./services/roundUpSplitService";
 import { calculateRoundUp } from "../client/src/lib/calculations";
 import multer from "multer";
 import { randomBytes } from "crypto";
-import { sendPasswordResetEmail, sendVerificationEmail } from "./services/emailService";
+import { sendPasswordResetEmail, sendVerificationEmail, sendContactNotificationEmail } from "./services/emailService";
 import { getFlags } from "./lib/flags";
 import { withCanonicalStatus } from "@shared/transactionStatus";
 
@@ -734,6 +734,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!message) {
           return res.status(400).json({ message: "Message is required" });
         }
+        if (message.length > 5000) {
+          return res.status(400).json({ message: "Message is too long (5,000 character limit)." });
+        }
         const displayName =
           [authedUser.firstName, authedUser.lastName].filter(Boolean).join(" ").trim() ||
           authedUser.email;
@@ -753,11 +756,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Captcha verification failed. Please try again." });
         }
         const { turnstileToken: _omit, source: _clientSource, userId: _clientUserId, ...payload } = req.body ?? {};
-        const validatedData = insertContactSubmissionSchema.parse(payload);
+        const validatedData = insertContactSubmissionSchema
+          .extend({
+            name: z.string().trim().min(1).max(100),
+            email: z.string().trim().email().max(254),
+            message: z.string().trim().min(1).max(5000),
+          })
+          .parse(payload);
         toInsert = { ...validatedData, source: "marketing" as const };
       }
 
       const submission = await storage.createContactSubmission(toInsert);
+
+      // Fire-and-forget founder notification: the submission is already
+      // saved, so a failed notification email must never fail the request.
+      sendContactNotificationEmail({
+        name: toInsert.name,
+        email: toInsert.email,
+        message: toInsert.message,
+        source: toInsert.source,
+        submittedAt: new Date(),
+      })
+        .then((result) => {
+          console.log(JSON.stringify({
+            event: "contact_notification_sent",
+            submissionId: submission.id,
+            provider: result.provider,
+            ok: result.ok,
+          }));
+        })
+        .catch((err) => {
+          console.error(JSON.stringify({
+            event: "contact_notification_failed",
+            submissionId: submission.id,
+            error: err instanceof Error ? err.message : String(err),
+          }));
+        });
+
       res.json({ success: true, submission });
     } catch (error) {
       if (error instanceof z.ZodError) {
