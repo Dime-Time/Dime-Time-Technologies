@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home,
@@ -19,6 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 export function Navigation() {
   const [location] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => setMenuOpen(false);
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
   const isActive = (href: string) =>
@@ -126,7 +129,7 @@ export function Navigation() {
               </div>
 
               {/* Mobile menu trigger */}
-              <Sheet>
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
@@ -147,6 +150,7 @@ export function Navigation() {
                         <Link
                           key={item.href}
                           href={item.href}
+                          onClick={closeMenu}
                           className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                             active
                               ? "bg-accent text-dime-accent font-semibold"
@@ -162,6 +166,7 @@ export function Navigation() {
                     <div className="border-t border-border pt-4 mt-4">
                       <Link
                         href="/notifications"
+                        onClick={closeMenu}
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                           location === "/notifications"
                             ? "bg-accent text-dime-accent font-semibold"
@@ -174,6 +179,7 @@ export function Navigation() {
 
                       <Link
                         href="/settings"
+                        onClick={closeMenu}
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                           location === "/settings"
                             ? "bg-accent text-dime-accent font-semibold"
@@ -186,6 +192,7 @@ export function Navigation() {
 
                       <Link
                         href="/qr"
+                        onClick={closeMenu}
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                           location === "/qr"
                             ? "bg-accent text-dime-accent font-semibold"
@@ -199,6 +206,7 @@ export function Navigation() {
                       {isAdmin && (
                         <Link
                           href="/admin"
+                          onClick={closeMenu}
                           className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                             location === "/admin"
                               ? "bg-accent text-dime-accent font-semibold"
