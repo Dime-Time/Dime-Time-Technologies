@@ -45,6 +45,7 @@ integrations = ["javascript_log_in_with_replit:1.0.0"]
 [userenv]
 
 [userenv.shared]
+EMAIL_FROM = "Dime Time <noreply@dime-time.com>"
 
 [userenv.development]
 VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51Tb9PzPZOgMsSXBjAoH02yCOIMODtxjgLraSajbcrDDbzcwqs3Ee9suyiwRjmDbqofcYX6p9Xj2gX5ImaIoKkXnr00283eQFwa"
