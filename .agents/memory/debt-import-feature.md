@@ -5,10 +5,11 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
-## Status update 2026-07-18 (later): production flip STAGED — awaiting republish
-- `PLAID_ENV=production` set in PRODUCTION env scope only (dev stays sandbox). Takes effect when founder republishes. Boot validation fails fast in prod if the production secret ever goes missing.
+## Status update 2026-07-18 (later): production Plaid LIVE
+- Republished 2026-07-18; prod boot log confirms "Plaid service initialized in production environment" + EnvValidation ok. Real bank linking live in the App Store app (server-side — iOS app always calls dime-time.com, no App Store update needed for server changes).
+- `PLAID_ENV=production` set in PRODUCTION env scope only (dev stays sandbox). Boot validation fails fast in prod if the production secret ever goes missing.
 - Production code guard: `PLAID_REDIRECT_URI` is only attached in production if it starts with https://dime-time.com; otherwise skipped with a warning (an unregistered redirect_uri would break ALL production bank linking). Non-OAuth banks link fine without it; OAuth banks (Chase) need client-side resume handling first (not built).
-- Prod still intentionally lacks `ENABLE_DEBT_IMPORT`/`DEBT_IMPORT_PROVIDER` — debt import stays off in prod until Plaid grants Liabilities.
+- SURPRISE: prod boot log shows `ENABLE_DEBT_IMPORT="1"` + `DEBT_IMPORT_PROVIDER=plaid` even though NEITHER appears in any viewEnvVars scope — they live in deployment-pane config or a hidden secret (viewEnvVars secret list is known-incomplete). So debt import IS mounted in prod and errors with INVALID_PRODUCT until Plaid grants Liabilities. Founder advised to request Liabilities (fastest fix — works with zero republish once granted) rather than hunt down the flag.
 
 ## Status update 2026-07-18: prod secret VERIFIED; Liabilities NOT enabled
 - `PLAID_SECRET_PRODUCTION` set (global Secret) and verified live against production.plaid.com. Code selects it only when `PLAID_ENV=production` (no fallback — unconfigured + explicit boot error if missing); sandbox keeps using `PLAID_SECRET`. Same pattern as Stripe live/test keys.
