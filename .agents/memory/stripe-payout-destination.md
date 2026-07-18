@@ -14,4 +14,6 @@ description: Where Stripe payouts actually land — Stripe Balance storage accou
 
 **How to apply:** If founder reports missing bank deposits from Stripe, check payouts for the `fa_` destination pattern first. Fix is founder-run in Dashboard: Settings → Bank accounts and currencies → link Mercury, pay out balance, set as default. (Reading the storage balance: GET /v2/money_management/financial_accounts with `Stripe-Version: 2025-05-28.preview` and Bearer auth.)
 
-**Open item:** As of 2026-07-17 Tim had not yet linked Mercury — until he does, ALL user payment money accumulates inside Stripe Balance instead of reaching the business bank account.
+**RESOLVED 2026-07-18:** Root cause was the Dashboard "Payout destinations" setting = "Transfer all revenue to your financial account" (Mercury ••7228 via Column N.A. was ALREADY linked as default payout bank the whole time). Founder flipped it to "Transfer all revenue to your payout bank account" and manually paid out the stranded $0.99 (outbound transfer processing, ETA 2026-07-20, descriptor "DIME TIME LLC"). Future revenue now flows Stripe → Mercury automatically.
+
+**Lesson:** when Stripe payouts show the `fa_` destination pattern, check the Payout destinations radio setting first — the bank can be linked and default yet still bypassed. Note founder has multiple Mercury accounts (payout bank is ••7228; the checking he screenshots is ••1941) — deposits land in ••7228.
