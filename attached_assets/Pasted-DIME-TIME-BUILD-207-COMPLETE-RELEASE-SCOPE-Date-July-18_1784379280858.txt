@@ -1,0 +1,755 @@
+DIME TIME — BUILD 207 COMPLETE RELEASE SCOPE
+Date: July 18, 2026
+
+APP CONTEXT
+
+Dime Time is a live consumer fintech app:
+
+- App Store version: v1.0.4, build 206
+- Next iOS build must be 207 or higher
+- iOS: Capacitor
+- Frontend: React + TypeScript
+- Backend: Express/Node + PostgreSQL/Drizzle
+- Production domain: https://dime-time.com
+- Plaid Production is LIVE
+- Enabled Plaid products: Transactions, Auth, Identity
+- Plaid Liabilities is NOT enabled yet
+- Stripe ACH is LIVE and proven with one settled $1 real payment
+- Real transfers remain protected by the per-user allowlist
+- Only Tim’s account is approved
+- First transfer limit: $1
+- Daily transfer limit: $5
+
+PRIMARY RELEASE GOAL
+
+Treat build 207 as the “Production Bank-Linking Reliability Release.”
+
+Keep the release focused on:
+
+1. Plaid OAuth support
+2. Screen-slide/navigation repair
+3. Round-up funding-account selection
+4. Plaid Liabilities feature gating
+5. ACH status and error clarity
+6. Regression testing
+7. Small fixes already merged after build 206
+
+Do not expand this release into:
+
+- A large redesign
+- A major architecture rewrite
+- New crypto features
+- Multi-provider ACH
+- Unnecessary animations
+- Unrelated feature development
+
+
+================================================================
+PRIORITY 1 — PLAID OAUTH SUPPORT
+MUST BE COMPLETED BEFORE BUILD 207 SUBMISSION
+================================================================
+
+PROBLEM
+
+Plaid Production bank linking works, but OAuth institutions such as Chase may
+send users to the bank’s website or mobile app for authentication.
+
+The current iOS app cannot reliably complete the return from the bank back into
+Plaid Link. This will be one of the biggest gaps encountered by real users.
+
+IMPORTANT PLAID REQUIREMENTS
+
+Plaid OAuth on iOS must use an HTTPS Universal Link.
+
+Do not use a custom URI scheme as the Plaid redirect URI.
+
+The implementation should include all of the following:
+
+A. PLAID DASHBOARD CONFIGURATION
+
+- Create and register an allowed HTTPS redirect URI.
+- Use a controlled dime-time.com URL, for example:
+
+  https://dime-time.com/plaid/oauth
+
+- Confirm the exact production URI is registered in the Plaid Dashboard.
+- Do not include query parameters in the registered redirect URI.
+- Confirm OAuth access/approval status in the Plaid Dashboard.
+
+B. SERVER-SIDE LINK TOKEN CREATION
+
+Update every applicable Plaid /link/token/create call to include the exact
+production redirect_uri.
+
+This includes:
+
+- Normal initial bank linking
+- Update mode
+- Account-repair/re-authentication flows
+- Any other endpoint that creates a Link token for iOS or webview use
+
+The redirect_uri must exactly match the URI registered with Plaid.
+
+Continue using a unique, internal user identifier for:
+
+- user.client_user_id
+
+Do not place email addresses, secrets, access tokens, or sensitive personal
+information in redirect URLs.
+
+C. APPLE APP SITE ASSOCIATION FILE
+
+Host a valid static Apple association file at:
+
+https://dime-time.com/.well-known/apple-app-site-association
+
+Requirements:
+
+- Must be served through HTTPS
+- Must not redirect
+- Must be valid JSON
+- Must not include a .json filename extension
+- Must include the correct Apple Team/Application Identifier Prefix
+- Must include bundle identifier com.dimetime.mobile
+- Must authorize the exact Plaid OAuth return path
+- Must be served with an appropriate JSON content type
+
+D. IOS ASSOCIATED DOMAINS
+
+Add the Associated Domains entitlement to the native iOS project.
+
+The entitlement should include:
+
+applinks:dime-time.com
+
+Confirm the entitlement is present in the signed/archive build, not merely in
+an unused local configuration file.
+
+E. UNIVERSAL LINK RETURN HANDLING
+
+Implement native iOS/Capacitor handling for the Universal Link that returns from
+the financial institution.
+
+The app must:
+
+- Detect the Plaid OAuth return URL
+- Preserve or recover the correct Plaid Link session
+- Resume the same Link flow
+- Pass Plaid the complete received redirect URI, including the OAuth state
+- Avoid adding, removing, or modifying Plaid’s returned state parameters
+- Prevent the redirect from opening an unrelated app screen
+- Handle cold-start and already-running-app scenarios
+- Handle users returning from the bank’s website or native banking app
+
+If the current implementation uses Plaid Link through a webview, ensure that
+Link is correctly reinitialized after OAuth using:
+
+- The same Link token used before the redirect
+- The full received redirect URI
+
+Do not generate an unrelated new Link session when resuming OAuth.
+
+F. OAUTH ERROR HANDLING
+
+Add clear handling for:
+
+- User cancels at the bank
+- User cancels in Plaid Link
+- Redirect URI mismatch
+- Missing or expired Link token
+- OAuth state mismatch
+- Bank authentication failure
+- App opened without a resumable session
+- Network interruption
+- User returns to the app twice
+- Duplicate callbacks
+
+Do not show a blank screen, endless spinner, or generic crash.
+
+Provide a safe retry option that does not create duplicate Plaid Items.
+
+G. OAUTH TESTING
+
+Test on a physical iPhone, not only the iOS simulator.
+
+Required scenarios:
+
+- A normal non-OAuth institution
+- Chase or another production OAuth institution
+- Plaid Sandbox OAuth institution where applicable
+- Bank website authentication
+- Bank app-to-app authentication where available
+- Dime Time closed before the callback
+- Dime Time already running before the callback
+- User cancels before authenticating
+- User cancels after leaving Dime Time
+- Invalid or expired Link session
+- Duplicate return callback
+- Successful public_token exchange
+- Correct Item/account storage
+- No duplicate connected institution after resume
+
+Do not consider OAuth complete merely because the app opens again.
+
+Success means:
+
+- The user returns to Dime Time
+- The original Plaid Link session resumes
+- Plaid reports success
+- The public token is exchanged once
+- The connected accounts appear correctly
+- No duplicate Item is created
+
+
+================================================================
+PRIORITY 2 — PLAID LIABILITIES FEATURE GATING
+SERVER-SIDE FIX — DEPLOY WITHOUT WAITING FOR APPLE
+================================================================
+
+CURRENT STATE
+
+Plaid Production currently has:
+
+- Transactions: enabled
+- Auth: enabled
+- Identity: enabled
+- Liabilities: NOT enabled
+
+The automatic debt-import button will error until Plaid grants Liabilities.
+
+REQUIRED ACTION
+
+Do not leave a known broken debt-import button exposed in production.
+
+Implement a server-controlled capability or feature flag such as:
+
+ENABLE_PLAID_LIABILITIES=false
+
+While false:
+
+- Do not call the Plaid Liabilities API
+- Disable or hide the automatic debt-import action
+- Do not show a generic server error
+- Show a user-friendly message such as:
+
+  “Automatic debt import is coming soon. You can add your debts manually now.”
+
+The server should return a specific capability/error state such as:
+
+PLAID_LIABILITIES_NOT_ENABLED
+
+The frontend should recognize that state and present the friendly message.
+
+When Plaid approves Liabilities:
+
+- Enable the feature server-side
+- Verify production API access
+- Test with an allowlisted/internal account
+- Turn on the capability
+- Do not require another App Store release unless the current frontend lacks the
+  required debt-import interface
+
+The server must remain the source of truth. Do not rely only on a hidden or
+disabled frontend button.
+
+
+================================================================
+PRIORITY 3 — SCREEN-SLIDE/NAVIGATION FIX
+MUST BE VERIFIED BEFORE BUILD 207
+================================================================
+
+PROBLEM
+
+The screen-slide behavior reported on July 16 is not working correctly.
+
+Tapping the affected navigation items should cause the expected screen
+transition, but the screen currently appears to stay in place.
+
+REQUIRED ACTION
+
+- Review the July 16 screenshots and existing intended transition behavior.
+- Confirm the requested direction before finalizing the implementation.
+- Tim described the destination screen as needing to slide to the right.
+- Correct the transition consistently across every affected navigation path.
+- Ensure the route actually changes and the interface does not merely animate.
+- Preserve the normal iOS back gesture.
+- Prevent duplicate screen stacking from rapid taps.
+- Prevent stale pages from appearing during the transition.
+- Ensure fixed headers, footers, and bottom navigation do not jump incorrectly.
+- Respect reduced-motion accessibility settings if animations are used.
+
+TEST:
+
+- Every affected dashboard navigation item
+- Bottom tabs
+- Settings navigation
+- Debt detail navigation
+- Bank-linking navigation
+- Forward navigation
+- Back navigation
+- iOS swipe-back gesture
+- Rapid repeated taps
+- Small and large supported iPhone sizes
+- Cold start and resumed app
+
+
+================================================================
+PRIORITY 4 — ROUND-UP FUNDING-ACCOUNT SELECTION
+MUST-HAVE BEFORE EXPANDING REAL-MONEY ACCESS
+================================================================
+
+GOAL
+
+Users with multiple connected bank accounts must be able to identify which
+eligible checking account will fund round-up ACH payments.
+
+FRONTEND REQUIREMENTS
+
+- Display eligible connected funding accounts.
+- Show institution name.
+- Show account name/type.
+- Show only masked identifying digits, such as the last four digits.
+- Clearly mark the currently selected funding account.
+- Allow the user to change the selected account deliberately.
+- Require confirmation when changing the funding source if appropriate.
+- Preserve the selection across sessions.
+- Show a clear empty state if no eligible account exists.
+- Explain when an account cannot be used for ACH funding.
+- Never display full account or routing numbers.
+
+SERVER REQUIREMENTS
+
+The server must store the selected funding-account identifier.
+
+The server must verify that:
+
+- The user is authenticated
+- The Plaid Item belongs to that user
+- The selected account belongs to that Plaid Item
+- The account is eligible for ACH debit
+- The stored Stripe PaymentMethod or bank-payment reference belongs to that user
+- The selection is active and not disconnected
+- A client cannot submit another user’s account identifier
+- A stale or removed account cannot be charged
+
+Do not trust an account ID supplied by the frontend without server-side
+ownership and eligibility validation.
+
+REAL-MONEY SAFETY REQUIREMENTS
+
+Do not weaken or remove:
+
+- ENABLE_REAL_TRANSFERS
+- Per-user allowlisting
+- $1 first-transfer limit
+- $5 daily cap
+- Idempotency protection
+- Mandate/authorization evidence
+- Webhook verification
+- Transfer ledger safeguards
+- Duplicate-charge protections
+
+Changing a funding account must not automatically initiate a payment.
+
+
+================================================================
+PRIORITY 5 — ACH STATUS AND USER-TRUST CLARITY
+STRONGLY RECOMMENDED
+================================================================
+
+ACH transfers are asynchronous. The interface must not imply that an ACH payment
+has settled merely because Stripe accepted the request.
+
+Use clear statuses such as:
+
+- Pending
+- Processing
+- Settled
+- Failed
+- Canceled
+- Returned
+
+REQUIREMENTS
+
+- Map Stripe webhook events to Dime Time’s internal transfer statuses.
+- Keep the database/server as the authoritative status source.
+- Explain that ACH payments can take multiple business days.
+- Show the amount, destination debt, funding account, initiation date, and status.
+- Clearly distinguish “submitted” from “settled.”
+- Do not credit a debt as fully paid from a merely pending ACH transaction unless
+  the interface explicitly labels the credit as pending.
+- Provide human-readable explanations for failures and returns.
+- Provide safe retry instructions.
+- Ensure retries use idempotency and cannot create duplicate debits.
+- Show a support path for failures that the user cannot correct.
+
+TEST:
+
+- Payment initiated
+- Payment processing
+- Payment settled
+- Payment failed
+- Payment canceled
+- ACH returned after appearing successful
+- Duplicate webhook delivery
+- Webhooks delivered out of order
+- User refreshes or closes the app during processing
+
+
+================================================================
+PRIORITY 6 — ONBOARDING AND BANK-LINKING CLARITY
+STRONGLY RECOMMENDED
+================================================================
+
+Explain in plain language:
+
+- Why Dime Time needs bank access
+- That Plaid securely connects the bank
+- What Transactions is used for
+- What Auth is used for
+- What Identity is used for
+- What happens after the bank is linked
+- That linking a bank does not authorize unrestricted transfers
+- That real payments remain subject to authorization and Dime Time’s safeguards
+- That automatic debt import is unavailable until Liabilities is enabled
+
+Do not claim that Dime Time can automatically import debts until production
+Liabilities access is enabled and verified.
+
+
+================================================================
+PRIORITY 7 — LOADING, EMPTY, AND ERROR STATES
+STRONGLY RECOMMENDED
+================================================================
+
+Review these areas:
+
+- Login
+- Signup
+- Dashboard
+- Bank linking
+- Connected accounts
+- Debt tracking
+- Add Debt
+- Round-up settings
+- Analytics
+- Payment submission
+- Transfer history
+- Settings
+
+Add or verify:
+
+- Loading indicators
+- Disabled buttons during submission
+- Protection against duplicate taps
+- Useful empty states
+- Human-readable errors
+- Retry actions where safe
+- No blank screens
+- No endless spinners
+- No raw Plaid, Stripe, SQL, stack trace, or server error text shown to users
+
+
+================================================================
+PRIORITY 8 — SMALL FIXES MERGED AFTER BUILD 206
+================================================================
+
+Include all fixes already merged since build 206, including the debt-chart
+correction.
+
+Before creating build 207, provide a concrete list containing:
+
+- Commit hash
+- Commit title
+- Files changed
+- User-visible behavior changed
+- Whether the change is frontend, backend, shared, or native iOS
+- Test performed
+- Risk level
+
+Do not describe this group only as “miscellaneous fixes.”
+
+Verify that the debt-chart correction:
+
+- Uses the correct debt balances
+- Handles zero balances
+- Handles deleted debts
+- Handles newly added debts
+- Does not double-count payments
+- Distinguishes pending payments from settled payments correctly
+- Displays properly on supported iPhone sizes
+
+
+================================================================
+PRIORITY 9 — VISUAL/MOBILE POLISH
+NICE-TO-HAVE; DO NOT DELAY CORE RELIABILITY WORK
+================================================================
+
+Review visual consistency across:
+
+- Login
+- Signup
+- Dashboard
+- Debt tracking
+- Round-up settings
+- Analytics
+- Settings
+
+Potential polish includes:
+
+- Cleaner spacing
+- Consistent typography
+- Clear card hierarchy
+- Consistent buttons
+- Appropriate touch-target sizes
+- Improved mobile layout
+- Loading skeletons where helpful
+- Empty states
+- More trustworthy fintech presentation
+
+Do not introduce a broad redesign or high-risk component rewrite merely to
+include additional polish in build 207.
+
+
+================================================================
+UPDATED APP STORE SCREENSHOTS
+================================================================
+
+After the final build 207 candidate is stable:
+
+- Capture screenshots from the actual release candidate.
+- Ensure screenshots match the current production design.
+- Do not show sandbox banks or obviously fake credentials.
+- Do not show broken or unavailable Liabilities functionality.
+- Do not imply that non-allowlisted public users can move real money.
+- Do not show private account information.
+- Ensure all displayed balances and account numbers are safe demo data.
+- Confirm screenshot sizes meet App Store Connect requirements.
+
+Screenshot updates are valuable but should not block a technically sound build
+unless the current screenshots materially misrepresent the app.
+
+
+================================================================
+SERVER-SIDE WORK THAT CAN DEPLOY BEFORE APPLE REVIEW
+================================================================
+
+These items should not wait for build 207 when they can be safely deployed and
+tested independently:
+
+1. Host the apple-app-site-association file.
+2. Register the Plaid OAuth redirect URI.
+3. Add redirect_uri to server-side Plaid Link-token creation.
+4. Preserve/recover Plaid Link OAuth session state securely.
+5. Add the Plaid Liabilities capability flag.
+6. Disable Liabilities API calls until production access is granted.
+7. Return a specific PLAID_LIABILITIES_NOT_ENABLED state.
+8. Store the selected round-up funding account.
+9. Validate funding-account ownership and eligibility.
+10. Improve ACH webhook-to-ledger status mapping.
+11. Add failure/return explanations exposed through safe API responses.
+12. Verify idempotent public-token exchange and transfer creation.
+
+Deploy server-side changes using backward-compatible behavior so build 206
+continues to operate safely while build 207 is being reviewed.
+
+
+================================================================
+WORK THAT REQUIRES OR MAY REQUIRE BUILD 207
+================================================================
+
+The following native changes require an App Store release:
+
+1. Associated Domains entitlement.
+2. Universal Link handling in the Capacitor/iOS project.
+3. Native Plaid callback/app-to-app OAuth handling.
+4. Any new or updated native Plaid Link SDK dependency.
+5. Native navigation behavior not delivered by the hosted React frontend.
+6. Any change to bundled Capacitor configuration or native iOS files.
+
+Pure server, hosted frontend, Plaid Dashboard, and App Store metadata changes do
+not inherently require a new binary, but verify the actual Dime Time deployment
+architecture before classifying each change.
+
+
+================================================================
+REQUIRED RELEASE REGRESSION TESTING
+================================================================
+
+Run tests against production-like configuration without weakening real-money
+safeguards.
+
+BANK LINKING
+
+- Existing non-OAuth institution
+- OAuth institution
+- Chase where available
+- Cancel from Plaid
+- Cancel from bank
+- OAuth return while app is open
+- OAuth return after app cold start
+- Duplicate callback
+- Expired session
+- Public-token exchange
+- No duplicate Plaid Item
+- Connected accounts display correctly
+
+FUNDING ACCOUNT
+
+- One checking account
+- Multiple accounts
+- Savings/unsupported account
+- Disconnected account
+- Account belonging to another user
+- Stale account identifier
+- Selected account persists
+- Changing account does not trigger payment
+
+ACH
+
+- Non-allowlisted user is blocked
+- Allowlisted user is permitted within limits
+- First transfer over $1 is blocked
+- Daily total over $5 is blocked
+- Duplicate submission is blocked
+- Pending status is correct
+- Settled status is correct
+- Failed status is correct
+- Returned ACH status is correct
+- Webhook replay is deduplicated
+- No secrets or full bank information are exposed
+
+GENERAL IOS
+
+- Fresh installation
+- Upgrade from build 206
+- Login
+- Signup
+- Logout/login
+- Session persistence
+- Dashboard
+- Add Debt
+- Debt chart
+- Round-up settings
+- Analytics
+- Settings
+- Account deletion
+- Navigation transitions
+- iOS back gesture
+- Background/resume
+- Poor network connection
+- Supported iPhone screen sizes
+
+
+================================================================
+IOS BUILD PIPELINE SAFETY
+================================================================
+
+Preserve the working release pipeline.
+
+- Build number must be 207 or higher.
+- Keep the existing authoritative build/version source unchanged.
+- Do not reintroduce the previous CodeMagic CFBundleVersion overwrite problem.
+- Verify bundle identifier:
+
+  com.dimetime.mobile
+
+- Verify the correct Apple signing team.
+- Verify production API/domain configuration.
+- Verify Associated Domains entitlement in the signed archive.
+- Verify no Plaid, Stripe, database, or server secrets are bundled in the app.
+- Verify the archive version and build number before upload.
+- Do not overwrite the known-good pipeline with a large configuration rewrite.
+
+
+================================================================
+BUILD 207 RELEASE PRIORITIES
+================================================================
+
+MUST-HAVE
+
+1. Plaid OAuth works end-to-end on a physical iPhone.
+2. Universal Links and Associated Domains work correctly.
+3. Liabilities debt import is safely hidden/disabled until enabled.
+4. Screen-slide/navigation defect is fixed.
+5. Round-up funding-account selection is implemented and server-validated.
+6. All post-build-206 fixes are identified and regression-tested.
+7. Real-money allowlist and transfer limits remain intact.
+8. Build pipeline and signed entitlements are verified.
+
+STRONGLY RECOMMENDED
+
+9. Clear ACH pending, processing, settled, failed, and returned statuses.
+10. Human-readable ACH failure and retry messaging.
+11. Bank-linking loading, cancel, and error states.
+12. Clear onboarding and authorization explanations.
+13. Upgrade testing from build 206 to build 207.
+
+NICE-TO-HAVE
+
+14. Broader typography and spacing polish.
+15. Additional card/layout refinements.
+16. Nonessential transitions or animations.
+17. Updated App Store screenshots.
+
+Nice-to-have work must not delay or destabilize the OAuth and money-safety work.
+
+
+================================================================
+REPLIT REQUIRED DELIVERABLES BEFORE SUBMISSION
+================================================================
+
+Please return the following before creating the final App Store upload:
+
+1. Exact files changed.
+2. Exact commit hashes included after build 206.
+3. Server-side changes already deployed.
+4. Native iOS changes requiring build 207.
+5. Final Plaid redirect URI.
+6. Confirmation that the redirect URI is registered in Plaid.
+7. Confirmation that apple-app-site-association is publicly reachable without a
+   redirect.
+8. Confirmation of the app’s Associated Domains entitlement.
+9. Physical-iPhone OAuth test results.
+10. Chase/OAuth test results.
+11. Funding-account ownership validation test results.
+12. Liabilities-disabled behavior test results.
+13. ACH safeguard regression-test results.
+14. Confirmation that no transfer limits or allowlist protections were removed.
+15. Final version and build number.
+16. Final git commit used for the uploaded archive.
+17. CodeMagic build/upload result.
+18. Any known issues intentionally deferred to build 208.
+
+STOP CONDITIONS
+
+Do not submit build 207 if:
+
+- OAuth returns to a browser but not Dime Time
+- The app opens but Plaid Link does not resume
+- OAuth creates duplicate Plaid Items
+- The Liabilities button still produces a known production error
+- Users can select an account belonging to someone else
+- A changed funding account bypasses server validation
+- Non-allowlisted users can reach real-money transfer execution
+- The $1 first-transfer or $5 daily limit is weakened
+- Duplicate transfer submissions are possible
+- ACH “submitted” is incorrectly presented as “settled”
+- The Associated Domains entitlement is missing from the signed archive
+- Build/version configuration damages the working CodeMagic pipeline
+
+FINAL RELEASE STANDARD
+
+Build 207 should be a focused, stable production bank-linking reliability
+release.
+
+The release is ready only when real users can:
+
+- Navigate the app correctly
+- Connect non-OAuth banks
+- Complete OAuth bank authentication
+- Return safely to Dime Time
+- Select an eligible round-up funding account
+- Understand ACH payment status
+- Avoid unavailable Liabilities functionality
+- Remain protected by all existing real-money safeguards
