@@ -20,6 +20,29 @@ function resolvePlaidEnvironment(): string {
   }
 }
 
+/**
+ * Plaid issues DIFFERENT secrets per environment. Sandbox testing uses
+ * PLAID_SECRET; production mode requires PLAID_SECRET_PRODUCTION (same
+ * pattern as STRIPE_SECRET_KEY / STRIPE_SECRET_KEY_TEST). No fallback:
+ * if PLAID_ENV=production and the production secret is missing, the
+ * service reports unconfigured rather than silently calling production
+ * with a sandbox secret.
+ */
+function resolvePlaidSecret(): string | undefined {
+  const env = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
+  if (env === 'production') {
+    if (!process.env.PLAID_SECRET_PRODUCTION) {
+      console.error(
+        '[PlaidService] PLAID_ENV=production but PLAID_SECRET_PRODUCTION is not set. ' +
+        'Plaid will be unavailable. Set the production secret from the Plaid dashboard (Team Settings → Keys).'
+      );
+      return undefined;
+    }
+    return process.env.PLAID_SECRET_PRODUCTION;
+  }
+  return process.env.PLAID_SECRET;
+}
+
 function maskToken(token: string): string {
   if (!token || token.length < 8) return '[masked]';
   return `${token.slice(0, 8)}...[masked]`;
@@ -47,17 +70,18 @@ class PlaidService {
   constructor() {
     this.environment = process.env.PLAID_ENV || 'sandbox';
     try {
+      const plaidSecret = resolvePlaidSecret();
       const configuration = new Configuration({
         basePath: resolvePlaidEnvironment(),
         baseOptions: {
           headers: {
             'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-            'PLAID-SECRET': process.env.PLAID_SECRET,
+            'PLAID-SECRET': plaidSecret,
           },
         },
       });
       this.client = new PlaidApi(configuration);
-      this.isConfigured = !!(process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET);
+      this.isConfigured = !!(process.env.PLAID_CLIENT_ID && plaidSecret);
       if (this.isConfigured) {
         console.log(`Plaid service initialized in ${this.environment} environment`);
       }
