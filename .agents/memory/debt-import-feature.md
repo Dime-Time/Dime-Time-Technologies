@@ -5,6 +5,11 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
+## Status update 2026-07-18 (later): production flip STAGED — awaiting republish
+- `PLAID_ENV=production` set in PRODUCTION env scope only (dev stays sandbox). Takes effect when founder republishes. Boot validation fails fast in prod if the production secret ever goes missing.
+- Production code guard: `PLAID_REDIRECT_URI` is only attached in production if it starts with https://dime-time.com; otherwise skipped with a warning (an unregistered redirect_uri would break ALL production bank linking). Non-OAuth banks link fine without it; OAuth banks (Chase) need client-side resume handling first (not built).
+- Prod still intentionally lacks `ENABLE_DEBT_IMPORT`/`DEBT_IMPORT_PROVIDER` — debt import stays off in prod until Plaid grants Liabilities.
+
 ## Status update 2026-07-18: prod secret VERIFIED; Liabilities NOT enabled
 - `PLAID_SECRET_PRODUCTION` set (global Secret) and verified live against production.plaid.com. Code selects it only when `PLAID_ENV=production` (no fallback — unconfigured + explicit boot error if missing); sandbox keeps using `PLAID_SECRET`. Same pattern as Stripe live/test keys.
 - Production product entitlements probed 2026-07-18 via `link/token/create`: **transactions ✅ auth ✅ identity ✅ liabilities ❌ (INVALID_PRODUCT)**. Core bank-linking/round-ups can go production; debt import blocked until founder requests Liabilities at dashboard.plaid.com/overview/request-products (or via rep Melanie). Re-probe before any prod flip.

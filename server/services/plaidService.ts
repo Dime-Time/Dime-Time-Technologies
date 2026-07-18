@@ -43,6 +43,32 @@ function resolvePlaidSecret(): string | undefined {
   return process.env.PLAID_SECRET;
 }
 
+/**
+ * PLAID_REDIRECT_URI is only attached when safe. In production, Plaid REJECTS
+ * link-token creation outright if the redirect_uri is not registered in the
+ * dashboard's Allowed redirect URIs — so a stale/wrong URI would break ALL
+ * bank linking. Production therefore only attaches dime-time.com URIs
+ * (anything registered for this app must live on the official domain).
+ * OAuth-bank support (Chase etc.) additionally requires client-side resume
+ * handling that is not implemented yet, so skipping the URI is safe: non-OAuth
+ * banks link fine without it.
+ */
+function resolvePlaidRedirectUri(): string | undefined {
+  const redirectUri = process.env.PLAID_REDIRECT_URI;
+  if (!redirectUri || redirectUri.includes('your-domain') || !redirectUri.startsWith('https://')) {
+    return undefined;
+  }
+  const env = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
+  if (env === 'production' && !redirectUri.startsWith('https://dime-time.com')) {
+    console.warn(
+      '[PlaidService] Ignoring PLAID_REDIRECT_URI in production: it is not a https://dime-time.com URL. ' +
+      'An unregistered redirect_uri would make Plaid Link fail for every bank.'
+    );
+    return undefined;
+  }
+  return redirectUri;
+}
+
 function plaidNotConfiguredMessage(): string {
   const env = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
   return env === 'production'
@@ -119,8 +145,8 @@ class PlaidService {
         language: 'en',
       };
 
-      const redirectUri = process.env.PLAID_REDIRECT_URI;
-      if (redirectUri && !redirectUri.includes('your-domain') && redirectUri.startsWith('https://')) {
+      const redirectUri = resolvePlaidRedirectUri();
+      if (redirectUri) {
         linkTokenRequest.redirect_uri = redirectUri;
       }
 
@@ -351,8 +377,8 @@ class PlaidService {
         language: 'en',
       };
 
-      const redirectUri = process.env.PLAID_REDIRECT_URI;
-      if (redirectUri && !redirectUri.includes('your-domain') && redirectUri.startsWith('https://')) {
+      const redirectUri = resolvePlaidRedirectUri();
+      if (redirectUri) {
         linkTokenRequest.redirect_uri = redirectUri;
       }
 
