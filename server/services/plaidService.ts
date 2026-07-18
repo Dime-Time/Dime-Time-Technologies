@@ -43,6 +43,13 @@ function resolvePlaidSecret(): string | undefined {
   return process.env.PLAID_SECRET;
 }
 
+function plaidNotConfiguredMessage(): string {
+  const env = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
+  return env === 'production'
+    ? 'Plaid service not configured. PLAID_ENV=production requires PLAID_CLIENT_ID and PLAID_SECRET_PRODUCTION environment variables.'
+    : 'Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.';
+}
+
 function maskToken(token: string): string {
   if (!token || token.length < 8) return '[masked]';
   return `${token.slice(0, 8)}...[masked]`;
@@ -100,7 +107,7 @@ class PlaidService {
 
   async createLinkToken(userId: string) {
     if (!this.isConfigured) {
-      throw new Error('Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.');
+      throw new Error(plaidNotConfiguredMessage());
     }
 
     try {
@@ -120,7 +127,7 @@ class PlaidService {
       const response = await this.getClient().linkTokenCreate(linkTokenRequest);
       return response.data.link_token;
     } catch (error) {
-      console.error('Error creating link token:', error);
+      console.error('Error creating link token:', this.redactPlaidError(error));
       throw error;
     }
   }
@@ -139,7 +146,7 @@ class PlaidService {
         itemId: response.data.item_id,
       };
     } catch (error) {
-      console.error('Error exchanging public token:', error);
+      console.error('Error exchanging public token:', this.redactPlaidError(error));
       throw error;
     }
   }
@@ -155,7 +162,7 @@ class PlaidService {
       });
       return response.data.accounts;
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      console.error('Error fetching accounts:', this.redactPlaidError(error));
       throw error;
     }
   }
@@ -173,7 +180,7 @@ class PlaidService {
       });
       return response.data.transactions;
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error fetching transactions:', this.redactPlaidError(error));
       throw error;
     }
   }
@@ -189,7 +196,7 @@ class PlaidService {
       });
       return response.data.accounts;
     } catch (error) {
-      console.error('Error fetching balance:', error);
+      console.error('Error fetching balance:', this.redactPlaidError(error));
       throw error;
     }
   }
@@ -208,7 +215,7 @@ class PlaidService {
         name: response.data.accounts.find((a: any) => a.account_id === n.account_id)?.name || 'Bank Account',
       }));
     } catch (error) {
-      console.error('Error fetching Plaid Auth:', error);
+      console.error('Error fetching Plaid Auth:', this.redactPlaidError(error));
       throw error;
     }
   }
@@ -333,7 +340,7 @@ class PlaidService {
    */
   async createLiabilitiesLinkToken(userId: string): Promise<string> {
     if (!this.isConfigured) {
-      throw new Error('Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.');
+      throw new Error(plaidNotConfiguredMessage());
     }
     try {
       const linkTokenRequest: any = {

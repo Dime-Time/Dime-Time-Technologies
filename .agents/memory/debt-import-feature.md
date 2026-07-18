@@ -5,14 +5,12 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
-## Status update 2026-07-17: Plaid production APPROVED (per founder)
-Founder reports Plaid production approval came through. Promotion remains config-only and founder-run. Scan on 2026-07-17 found the remaining gaps:
-- `PLAID_SECRET` is sandbox-scoped (verified: works on sandbox.plaid.com, rejected by production.plaid.com) — founder must swap in the production secret.
-- `PLAID_ENV` unset everywhere (defaults sandbox); needs `production` in prod env at flip time.
-- `PLAID_REDIRECT_URI` points at a non-dime-time.com https URL — must become a dime-time.com URI AND be registered in Plaid dashboard Allowed redirect URIs, or OAuth banks (Chase etc.) fail in production.
-- Prod env vars `ENABLE_DEBT_IMPORT` / `DEBT_IMPORT_PROVIDER` intentionally absent until the above are done.
+## Status update 2026-07-18: prod secret VERIFIED; Liabilities NOT enabled
+- `PLAID_SECRET_PRODUCTION` set (global Secret) and verified live against production.plaid.com. Code selects it only when `PLAID_ENV=production` (no fallback — unconfigured + explicit boot error if missing); sandbox keeps using `PLAID_SECRET`. Same pattern as Stripe live/test keys.
+- Production product entitlements probed 2026-07-18 via `link/token/create`: **transactions ✅ auth ✅ identity ✅ liabilities ❌ (INVALID_PRODUCT)**. Core bank-linking/round-ups can go production; debt import blocked until founder requests Liabilities at dashboard.plaid.com/overview/request-products (or via rep Melanie). Re-probe before any prod flip.
+- Remaining founder-run steps before flipping prod: Liabilities entitlement, `PLAID_ENV=production` + `ENABLE_DEBT_IMPORT`/`DEBT_IMPORT_PROVIDER` prod env vars, redirect-URI decision (below), billing downgrade check (plaid-billing-contract.md).
+- `PLAID_REDIRECT_URI` points at a non-dime-time.com https URL — must become a dime-time.com URI AND be registered in Plaid dashboard Allowed redirect URIs, or be left unset. An unregistered redirect_uri makes `linkTokenCreate` FAIL in production. Client (`PlaidLink.tsx`) has NO OAuth resume handling (`receivedRedirectUri`) yet, so OAuth banks (Chase) won't work either way — leaving it unset in prod is the safe launch posture.
 - `PLAID_WEBHOOK_SECRET` still unset (prod webhook route fails closed) — optional for pull-based debt import.
-Also verify approval scope includes Liabilities, and whether the billing downgrade (see plaid-billing-contract.md) resolved.
 
 Provider-agnostic "automatic debt import" pulls a user's liabilities (balances, APR,
 min payment) into the `debts` table. Ships with a SANDBOX provider AND a real Plaid

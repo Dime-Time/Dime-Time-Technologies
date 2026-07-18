@@ -1593,7 +1593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!plaidService.isServiceConfigured()) {
         return res.status(503).json({ 
-          message: "Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.",
+          message: "Plaid service not configured. Sandbox requires PLAID_CLIENT_ID and PLAID_SECRET; production (PLAID_ENV=production) requires PLAID_CLIENT_ID and PLAID_SECRET_PRODUCTION.",
           configured: false
         });
       }

@@ -36,6 +36,15 @@ export function validateProductionSecrets(): void {
     missing.push("PLAID_TOKEN_ENCRYPTION_KEY");
   }
 
+  // Plaid production mode requires its own secret (Plaid issues different
+  // secrets per environment). Fail boot hard rather than letting every Plaid
+  // feature 500 at runtime with only a console warning.
+  const plaidEnv = (process.env.PLAID_ENV || "sandbox").toLowerCase();
+  if (plaidEnv === "production") {
+    if (!process.env.PLAID_SECRET_PRODUCTION) missing.push("PLAID_SECRET_PRODUCTION");
+    if (!process.env.PLAID_CLIENT_ID) missing.push("PLAID_CLIENT_ID");
+  }
+
   const stripeAchEnabled = isFlagEnabled("ENABLE_STRIPE_ACH");
   if (stripeAchEnabled) {
     for (const key of [
