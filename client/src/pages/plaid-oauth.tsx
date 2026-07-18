@@ -73,10 +73,25 @@ export default function PlaidOauthPage() {
     [state],
   );
 
-  const onExit = useCallback(() => {
-    clearPlaidOauthState();
-    navigate(destination);
-  }, [navigate, destination]);
+  // Plaid Link calls onExit BOTH when the user cancels AND when Link fails to
+  // initialize (missing/expired/invalid resume state). Only a genuine user
+  // cancel should navigate away — init failures must show the calm recovery
+  // card instead of silently dumping the user on /banking (which renders the
+  // marketing page when the session is gone).
+  const onExit = useCallback(
+    (error: { error_message?: string } | null) => {
+      clearPlaidOauthState();
+      if (!state || error) {
+        setErrorMessage(
+          "We couldn't resume your bank connection. Please return to the app and try connecting again.",
+        );
+        setStatus("error");
+        return;
+      }
+      navigate(destination);
+    },
+    [state, navigate, destination],
+  );
 
   const { open, ready } = usePlaidLink({
     token: state?.linkToken ?? null,

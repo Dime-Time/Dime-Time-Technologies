@@ -1,0 +1,479 @@
+DIME TIME — NEXT STEPS AFTER BUILD 207 BUCKET A
+Date: July 18, 2026
+
+BUCKET A STATUS
+
+Code review: APPROVED
+
+Completed server/web work:
+
+1. Graceful Plaid Liabilities gating
+2. Plaid OAuth server/web preparation
+3. Round-up funding-account selection
+4. Server-side funding-account ownership validation
+5. ACH payment-status clarity
+6. Password-reset/email failure hardening
+7. Six passing password-reset regression tests
+8. Privacy cleanup of agent-memory notes
+
+IMPORTANT SAFETY CONFIRMATION
+
+The following were not changed:
+
+- Real-money feature flags
+- Per-user transfer allowlist
+- $1 first-transfer limit
+- $5 daily limit
+- Live secrets
+- Production database data
+
+Do not weaken or remove any of those safeguards during the remaining work.
+
+
+================================================================
+GOAL
+================================================================
+
+Complete the remaining founder configuration, deploy Bucket A, verify it in
+production, and then prepare the native iOS Bucket B work for App Store
+build 207 or higher.
+
+IMPORTANT DISTINCTION
+
+The server/web OAuth preparation is complete, but Plaid OAuth is not fully
+operational in the App Store app yet.
+
+Full OAuth completion still requires:
+
+1. Plaid Dashboard redirect-URI configuration
+2. PLAID_REDIRECT_URI production secret
+3. Republish
+4. Native iOS Associated Domains entitlement
+5. Native Universal Link handling
+6. Plaid OAuth resume handling inside the iOS app
+7. Physical-iPhone testing
+
+
+================================================================
+STEP 1 — REPORT THE EXACT PLAID REDIRECT URI
+================================================================
+
+Before changing configuration, report the exact redirect URI expected by the
+current implementation.
+
+Expected format:
+
+https://dime-time.com/plaid/oauth
+
+Confirm the actual code uses that exact URI.
+
+Check:
+
+- Exact scheme
+- Exact hostname
+- Exact path
+- No trailing-slash mismatch
+- No query parameters
+- No URL fragment
+- No localhost or development-domain reference
+
+Return the exact value Tim must:
+
+1. Add to the Plaid Dashboard allowed redirect URIs
+2. Store as the PLAID_REDIRECT_URI production secret
+
+Do not ask Tim to guess the value.
+
+
+================================================================
+STEP 2 — FOUNDER ACTION: PLAID DASHBOARD AND SECRET
+================================================================
+
+Tim will perform these founder-controlled actions:
+
+1. Open the Plaid Dashboard.
+2. Add the exact production redirect URI provided by Replit.
+3. Save the redirect URI.
+4. Set the production secret:
+
+   PLAID_REDIRECT_URI=<exact verified URI>
+
+5. Republish the application.
+
+Replit must not print or expose any secret values.
+
+After Republish, verify that production link-token creation receives the
+configured redirect URI without logging sensitive Link tokens.
+
+
+================================================================
+STEP 3 — VERIFY THE APPLE APP SITE ASSOCIATION FILE
+================================================================
+
+Verify this production URL:
+
+https://dime-time.com/.well-known/apple-app-site-association
+
+It must:
+
+- Return HTTP 200
+- Be available without authentication
+- Not redirect
+- Return valid JSON
+- Not require a .json extension
+- Use an appropriate JSON content type
+- Contain the correct Apple Team/Application Identifier Prefix
+- Contain bundle ID com.dimetime.mobile
+- Authorize the exact /plaid/oauth path
+- Contain no secrets or sensitive data
+
+Report:
+
+- HTTP status
+- Content-Type
+- Redirect status
+- Configured app identifier
+- Configured path/component match
+
+Do not claim the file is correct if the Apple Team ID or application identifier
+is still a placeholder.
+
+
+================================================================
+STEP 4 — VERIFY THE PLAID OAUTH RESUME PAGE
+================================================================
+
+Verify:
+
+https://dime-time.com/plaid/oauth
+
+The route must:
+
+- Be publicly reachable
+- Not require an existing page navigation history
+- Not redirect in a loop
+- Preserve Plaid’s returned OAuth state parameters
+- Resume the original Link session
+- Use the same Link token created before OAuth
+- Avoid creating a duplicate Plaid Item
+- Handle missing, expired, or invalid resume state gracefully
+- Show a calm user-facing recovery message instead of a raw error
+- Avoid displaying or logging Link tokens, access tokens, or personal data
+
+Test:
+
+1. Direct visit without OAuth state
+2. OAuth callback with missing state
+3. OAuth callback with invalid state
+4. Expired persisted Link session
+5. Duplicate callback
+6. Successful resume path in Sandbox where possible
+
+Return the result of each test.
+
+
+================================================================
+STEP 5 — RESEND EMAIL CONFIGURATION
+================================================================
+
+Tim will perform these founder-controlled actions:
+
+1. Verify dime-time.com DNS in Resend.
+2. Set EMAIL_FROM to an address using the verified domain.
+3. Republish.
+
+Before Republish, Replit should report the required EMAIL_FROM format without
+printing unrelated secrets.
+
+After Republish, test password reset using:
+
+1. An email address that belongs to an account
+2. An email address that does not belong to an account
+3. A simulated email-provider failure, using a safe test method
+
+SECURITY REQUIREMENT
+
+The public API response must not reveal whether the submitted email address is
+registered.
+
+Confirm:
+
+- Existing and nonexistent addresses receive indistinguishable public responses
+- No raw provider error reaches the frontend
+- No false success is shown when an email should have been delivered but sending
+  failed, except where a deliberately generic anti-enumeration response is used
+- The failure is logged safely for operators
+- Logs do not expose reset tokens
+- All six automated tests still pass
+
+Do not send real reset emails repeatedly during testing.
+
+
+================================================================
+STEP 6 — PLAID LIABILITIES REQUEST
+================================================================
+
+Tim will request Plaid Production access for Liabilities.
+
+Until Plaid confirms approval:
+
+- Keep Liabilities gating enabled
+- Do not call the production Liabilities endpoint
+- Do not expose a debt-import action that produces an error
+- Continue offering manual debt entry
+- Show the graceful “coming soon” explanation
+
+After approval:
+
+1. Confirm Liabilities appears enabled in the Plaid Dashboard.
+2. Test with Tim’s internal/allowlisted account.
+3. Confirm the API returns real production liability data.
+4. Confirm imported debts are not duplicated.
+5. Confirm balances, account types, and institution names map correctly.
+6. Only then enable the user-facing capability.
+
+Plaid approval alone is not sufficient; a successful production test is
+required before removing the gate.
+
+
+================================================================
+STEP 7 — PRODUCTION REGRESSION TESTS FOR BUCKET A
+================================================================
+
+After Republish, run the following tests.
+
+A. FUNDING-ACCOUNT SELECTION
+
+- User with one eligible checking account
+- User with multiple eligible accounts
+- Selection persists after logout/login
+- Selection persists after app restart
+- User changes the selected account
+- Unsupported account is rejected
+- Disconnected account is rejected
+- Account belonging to another user is rejected
+- Stale account identifier is rejected
+- No full bank or routing number is exposed
+
+B. UNLINKED SELECTED ACCOUNT
+
+Confirm that when the selected funding account is unlinked:
+
+- The pay button becomes unavailable
+- No silent fallback account is selected
+- No payment is created
+- The user is directed to Settings
+- The user receives a clear explanation
+- The server independently blocks the payment even if the client is bypassed
+
+C. ACH PAYMENT HISTORY
+
+Confirm Insights displays:
+
+- Funding institution
+- Masked last four digits
+- Destination debt
+- Amount
+- Initiation date
+- Accurate current status
+- Honest “submitted” or “processing” language
+- “Settled” only after settlement confirmation
+- ACH timing explanation of approximately 2–4 business days
+
+D. REAL-MONEY SAFEGUARDS
+
+Confirm:
+
+- Non-allowlisted user cannot execute a real transfer
+- Tim’s allowlisted account remains subject to limits
+- First transfer over $1 is blocked
+- Daily total over $5 is blocked
+- Duplicate submissions remain blocked
+- Feature flags are unchanged
+- Idempotency remains active
+- Webhook verification remains active
+- No test creates an unintended real payment
+
+Do not run additional real-money transactions without Tim’s explicit approval.
+
+
+================================================================
+STEP 8 — BUILD 207 BUCKET B: NATIVE IOS WORK
+================================================================
+
+After Bucket A is deployed and verified, prepare the native iOS work.
+
+A. ASSOCIATED DOMAINS
+
+Add the Associated Domains entitlement:
+
+applinks:dime-time.com
+
+Verify that it is:
+
+- Added to the correct iOS target
+- Included in the correct entitlements file
+- Referenced by the build configuration
+- Present in the signed archive
+- Compatible with com.dimetime.mobile
+
+B. UNIVERSAL LINK HANDLING
+
+Implement native/Capacitor handling for:
+
+https://dime-time.com/plaid/oauth
+
+The app must handle:
+
+- App already running
+- App in background
+- App completely closed
+- Duplicate callback
+- Missing state
+- Expired resume state
+- User cancellation
+- Network interruption
+
+The callback must resume the original Plaid Link session rather than starting
+an unrelated new bank-linking session.
+
+C. SCREEN-SLIDE/NAVIGATION FIX
+
+Fix the navigation issue reported July 16.
+
+Requirements:
+
+- Verify the intended direction against the screenshots
+- Tim described the destination screen as sliding to the right
+- Route must change correctly
+- Back navigation must work
+- iOS swipe-back must remain functional
+- Rapid taps must not create duplicate screen stacks
+- Fixed navigation elements must not jump
+- Test on supported iPhone sizes
+
+D. SMALL POST-BUILD-206 FIXES
+
+Include the already-merged fixes, including the debt-chart correction.
+
+Return an exact list containing:
+
+- Commit hash
+- Commit title
+- Files changed
+- User-visible behavior
+- Test performed
+- Risk level
+
+Do not describe them only as “miscellaneous fixes.”
+
+
+================================================================
+STEP 9 — PHYSICAL IPHONE OAUTH TESTING
+================================================================
+
+Do not approve the OAuth implementation based only on simulator testing.
+
+Test on a physical iPhone:
+
+1. Non-OAuth bank connection
+2. OAuth bank connection
+3. Chase where available
+4. Bank website authentication
+5. Bank app-to-app authentication where available
+6. Dime Time already open during callback
+7. Dime Time closed during callback
+8. User cancellation
+9. Expired Link session
+10. Duplicate callback
+11. Successful public-token exchange
+12. Connected accounts appear exactly once
+
+OAuth success requires all of the following:
+
+- User returns to Dime Time
+- Original Link session resumes
+- Plaid reports success
+- Public token is exchanged once
+- Connected accounts appear
+- No duplicate Plaid Item is created
+- No blank screen or endless spinner occurs
+
+
+================================================================
+STEP 10 — BUILD AND RELEASE VERIFICATION
+================================================================
+
+Preserve the known-working CodeMagic pipeline.
+
+Requirements:
+
+- Build number must be 207 or higher
+- Bundle ID must remain com.dimetime.mobile
+- Keep the existing authoritative Info.plist/build-number process
+- Do not reintroduce CFBundleVersion overwrites
+- Do not rewrite the pipeline unnecessarily
+- Confirm production API/domain configuration
+- Confirm no secrets are bundled
+- Confirm Associated Domains in the signed archive
+- Test a fresh installation
+- Test an upgrade from build 206
+- Confirm login/session persistence
+- Confirm bank linking
+- Confirm navigation
+- Confirm debt chart
+- Confirm funding-account selection
+- Confirm Insights payment history
+- Confirm Settings and account deletion
+
+Do not upload the App Store build until the physical-iPhone OAuth test passes.
+
+
+================================================================
+STOP CONDITIONS
+================================================================
+
+Stop and report the issue instead of submitting build 207 if:
+
+- The Plaid redirect URI differs between code, secret, and Dashboard
+- The AASA file redirects or contains a placeholder identifier
+- Universal Links do not open Dime Time
+- The app opens but Plaid Link does not resume
+- OAuth creates duplicate Plaid Items
+- The Liabilities button still produces a known error
+- A user can select another user’s account
+- An unlinked account causes silent fallback to another bank
+- A non-allowlisted user reaches real-money execution
+- The $1 first-transfer limit is weakened
+- The $5 daily limit is weakened
+- “Submitted” is incorrectly displayed as “settled”
+- Password-reset responses reveal account existence
+- Password-reset tokens appear in logs
+- Associated Domains is missing from the signed archive
+- CodeMagic build-number handling is damaged
+
+
+================================================================
+REQUIRED REPORT BACK TO TIM
+================================================================
+
+Return a concise report with:
+
+1. Exact Plaid redirect URI
+2. Plaid Dashboard action Tim must perform
+3. Exact production secret name Tim must set
+4. AASA verification result
+5. OAuth resume-page verification result
+6. Resend/DNS action Tim must perform
+7. EMAIL_FROM requirement
+8. Password-reset test results
+9. Bucket A production regression-test results
+10. Confirmation that real-money safeguards remain unchanged
+11. Remaining native Bucket B files and work
+12. Physical-iPhone OAuth test status
+13. Exact build number planned
+14. Exact git commit planned for the archive
+15. Any blocker that prevents build 207 submission
+
+Do not move real money, expose secrets, change production data, or weaken the
+existing allowlist and transfer limits while completing this work.
