@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["8WZHH537SU.com.dimetime.mobile"],
+        "appID": "8WZHH537SU.com.dimetime.mobile",
+        "paths": ["/plaid/oauth"],
+        "components": [
+          {
+            "/": "/plaid/oauth",
+            "comment": "Plaid Link OAuth return - opens the Dime Time app to resume bank connection"
+          }
+        ]
+      }
+    ]
+  }
+}

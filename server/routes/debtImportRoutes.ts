@@ -20,7 +20,12 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "../middleware/authHelper";
-import { getLiabilityProvider, LinkRequiredError } from "../services/debtImport";
+import {
+  getLiabilityProvider,
+  LinkRequiredError,
+  LiabilitiesNotEnabledError,
+  type LiabilityProvider,
+} from "../services/debtImport";
 
 function debtImportLog(correlationId: string, event: string, data?: Record<string, unknown>): void {
   console.log(
@@ -69,6 +74,46 @@ const disconnectLimiter = perUserLimiter(20, "disconnect");
 
 function errMessage(err: unknown): string {
   return (err instanceof Error ? err.message : String(err)).slice(0, 500);
+}
+
+/** Friendly user-facing copy while the Liabilities entitlement is pending. */
+const LIABILITIES_COMING_SOON_MESSAGE =
+  "Automatic debt import is coming soon. You can add your debts manually for now.";
+
+/**
+ * Cached provider capability: does our Plaid account have the Liabilities
+ * product yet? Checked by attempting a Liabilities Link-token create (free, no
+ * user impact) and cached process-wide — the entitlement is account-level, not
+ * user-level. TTL keeps it fresh so the feature lights up automatically (within
+ * ~10 minutes) once Plaid grants Liabilities, with NO flag flip or redeploy.
+ * Unknown/transient errors never mark the feature unavailable and are not cached.
+ */
+const LIABILITIES_CAPABILITY_TTL_MS = 10 * 60 * 1000;
+let liabilitiesCapability: { available: boolean; checkedAt: number } | null = null;
+
+function markLiabilitiesCapability(available: boolean): void {
+  liabilitiesCapability = { available, checkedAt: Date.now() };
+}
+
+async function isLiabilitiesAvailable(provider: LiabilityProvider, userId: string): Promise<boolean> {
+  // Only the Plaid provider has an upstream entitlement to probe.
+  if (provider.name !== "plaid" || !provider.linkFlow) return true;
+  const cached = liabilitiesCapability;
+  if (cached && Date.now() - cached.checkedAt < LIABILITIES_CAPABILITY_TTL_MS) {
+    return cached.available;
+  }
+  try {
+    await provider.linkFlow.createLinkToken(userId);
+    markLiabilitiesCapability(true);
+    return true;
+  } catch (err) {
+    if (err instanceof LiabilitiesNotEnabledError) {
+      markLiabilitiesCapability(false);
+      return false;
+    }
+    // Transient/unknown failure — don't hide the feature, don't cache.
+    return cached?.available ?? true;
+  }
 }
 
 /**
@@ -133,6 +178,33 @@ async function runImport(
         },
       };
     }
+    if (err instanceof LiabilitiesNotEnabledError) {
+      // Expected until Plaid grants the Liabilities entitlement — friendly
+      // "coming soon" instead of a generic failure. Still audited.
+      markLiabilitiesCapability(false);
+      await storage.createDebtImportAuditLog({
+        userId,
+        provider: provider.name,
+        action,
+        status: "error",
+        importedCount: 0,
+        updatedCount: 0,
+        message: "PLAID_LIABILITIES_NOT_ENABLED",
+        correlationId,
+      });
+      debtImportLog(correlationId, `debt_${action}_liabilities_not_enabled`, {
+        userId,
+        provider: provider.name,
+      });
+      return {
+        status: 503,
+        body: {
+          code: "PLAID_LIABILITIES_NOT_ENABLED",
+          message: LIABILITIES_COMING_SOON_MESSAGE,
+          correlationId,
+        },
+      };
+    }
     const message = errMessage(err);
     await storage.createDebtImportAuditLog({
       userId,
@@ -191,8 +263,21 @@ export function registerDebtImportRoutes(app: Express): void {
     }
     try {
       const linkToken = await provider.linkFlow.createLinkToken(userId);
+      if (provider.name === "plaid") markLiabilitiesCapability(true);
       return res.json({ linkToken, correlationId });
     } catch (err) {
+      if (err instanceof LiabilitiesNotEnabledError) {
+        markLiabilitiesCapability(false);
+        debtImportLog(correlationId, "debt_link_token_liabilities_not_enabled", {
+          userId,
+          provider: provider.name,
+        });
+        return res.status(503).json({
+          code: "PLAID_LIABILITIES_NOT_ENABLED",
+          message: LIABILITIES_COMING_SOON_MESSAGE,
+          correlationId,
+        });
+      }
       debtImportLog(correlationId, "debt_link_token_error", {
         userId,
         provider: provider.name,
@@ -284,6 +369,9 @@ export function registerDebtImportRoutes(app: Express): void {
       // True when the provider needs a client-side connect step and the user
       // isn't connected yet — the client uses this to launch the Link flow.
       requiresLink: !!provider.linkFlow && !connected,
+      // False while the upstream Liabilities entitlement is pending (e.g. Plaid
+      // production before approval) — the client shows "coming soon" up front.
+      liabilitiesAvailable: await isLiabilitiesAvailable(provider, userId),
       provider: provider.name,
       institutionName: conn?.institutionName ?? null,
       lastSyncAt: conn?.lastSyncAt ?? null,

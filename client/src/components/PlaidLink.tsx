@@ -3,6 +3,7 @@ import { usePlaidLink } from 'react-plaid-link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { savePlaidOauthState, clearPlaidOauthState } from '@/lib/plaidOauth';
 import { Loader2, CreditCard } from 'lucide-react';
 import { trackBankConnection, trackFeatureUsage, trackUserMilestone } from '../../lib/analytics';
 
@@ -18,6 +19,7 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
 
   const handleOnSuccess = useCallback(
     async (publicToken: string, metadata: any) => {
+      clearPlaidOauthState();
       setIsLoading(true);
       try {
         const response = await apiRequest('POST', '/api/plaid/exchange-token', { publicToken });
@@ -57,6 +59,7 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
 
   const handleOnExit = useCallback(() => {
     console.log('Plaid Link exited');
+    clearPlaidOauthState();
     onExit?.();
   }, [onExit]);
 
@@ -73,6 +76,9 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
 
       if (response.ok) {
         const data = await response.json();
+        // Persist for OAuth banks: if the bank redirects the page away and
+        // back to /plaid/oauth, that page resumes Link with this same token.
+        savePlaidOauthState(data.linkToken, 'bank');
         setLinkToken(data.linkToken);
       } else {
         throw new Error('Failed to create link token');

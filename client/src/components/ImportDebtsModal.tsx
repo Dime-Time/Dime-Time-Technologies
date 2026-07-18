@@ -6,18 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ShieldCheck, Loader2, CheckCircle2, AlertCircle, Landmark } from "lucide-react";
+import { savePlaidOauthState, clearPlaidOauthState } from "@/lib/plaidOauth";
+import { ShieldCheck, Loader2, CheckCircle2, AlertCircle, Landmark, Clock } from "lucide-react";
 
 interface ImportDebtsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Phase = "consent" | "linking" | "importing" | "complete" | "error";
+type Phase = "consent" | "linking" | "importing" | "complete" | "error" | "unavailable";
 
 interface ImportStatus {
   connected: boolean;
   requiresLink: boolean;
+  liabilitiesAvailable?: boolean;
   provider: string;
   institutionName?: string | null;
 }
@@ -32,6 +34,18 @@ function parseErrorMessage(err: unknown): string {
   } catch {
   }
   return raw || fallback;
+}
+
+/** Extract the machine-readable error code (e.g. PLAID_LIABILITIES_NOT_ENABLED) from an API error. */
+function parseErrorCode(err: unknown): string | null {
+  if (!(err instanceof Error)) return null;
+  const raw = err.message.replace(/^\d+:\s*/, "");
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.code === "string") return parsed.code;
+  } catch {
+  }
+  return null;
 }
 
 interface ImportResult {
@@ -106,6 +120,15 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
     });
   };
 
+  const handleFailure = (err: unknown) => {
+    if (parseErrorCode(err) === "PLAID_LIABILITIES_NOT_ENABLED") {
+      setPhase("unavailable");
+      return;
+    }
+    setErrorMessage(parseErrorMessage(err));
+    setPhase("error");
+  };
+
   const runImportDirect = async () => {
     setPhase("importing");
     try {
@@ -113,8 +136,7 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
       const data = await res.json();
       finishSuccess(data);
     } catch (err) {
-      setErrorMessage(parseErrorMessage(err));
-      setPhase("error");
+      handleFailure(err);
     }
   };
 
@@ -124,10 +146,12 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
       const res = await apiRequest("POST", "/api/debts/import/link-token", {});
       const data = await res.json();
       if (!data.linkToken) throw new Error("No link token returned");
+      // Persist for OAuth banks: /plaid/oauth resumes Link with this token
+      // after the bank redirects back.
+      savePlaidOauthState(data.linkToken, "debt_import");
       setLinkToken(data.linkToken); 
     } catch (err) {
-      setErrorMessage(parseErrorMessage(err));
-      setPhase("error");
+      handleFailure(err);
     }
   };
 
@@ -140,6 +164,7 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
   };
 
   const onPlaidSuccess = async (publicToken: string, metadata: any) => {
+    clearPlaidOauthState();
     setLinkToken(null);
     setPhase("importing");
     try {
@@ -151,12 +176,12 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
       const data = await res.json();
       finishSuccess(data, metadata?.institution?.name);
     } catch (err) {
-      setErrorMessage(parseErrorMessage(err));
-      setPhase("error");
+      handleFailure(err);
     }
   };
 
   const onPlaidExit = () => {
+    clearPlaidOauthState();
     setLinkToken(null);
     setPhase("consent");
   };
@@ -170,7 +195,28 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
             <PlaidLinkLauncher token={linkToken} onSuccess={onPlaidSuccess} onExit={onPlaidExit} />
           )}
 
-          {phase === "consent" && (
+          {(phase === "unavailable" || (phase === "consent" && status?.liabilitiesAvailable === false)) && (
+            <div className="space-y-6" data-testid="state-import-unavailable">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-dime-purple/10 rounded-full flex items-center justify-center mb-4">
+                  <Clock className="w-8 h-8 text-dime-purple" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Coming soon</h3>
+                <p className="text-slate-600 mt-2 font-medium px-4">
+                  Automatic debt import is coming soon. You can add your debts manually for now — everything else works the same.
+                </p>
+              </div>
+              <Button
+                className="w-full bg-dime-purple hover:bg-dime-purple/90 text-white font-bold h-12 text-lg shadow-sm press-scale rounded-xl"
+                onClick={() => handleOpenChange(false)}
+                data-testid="button-import-unavailable-close"
+              >
+                Got it
+              </Button>
+            </div>
+          )}
+
+          {phase === "consent" && status?.liabilitiesAvailable !== false && (
             <div className="space-y-6">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900">

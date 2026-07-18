@@ -56,12 +56,30 @@ export function StripeAchPayButton({ debt }: { debt: Debt }) {
     enabled,
   });
 
-  // Only ever target an ACTIVE, configured account. No fallback to a stale /
-  // inactive row — otherwise the simulation E2E could silently exercise the
-  // wrong account and mask a real linking problem.
-  const account = status?.configured
-    ? status.accounts?.find((a) => a.isActive) ?? null
+  // The user's chosen round-up funding account (server-validated selection).
+  const { data: funding } = useQuery<{ selectedId: string | null }>({
+    queryKey: ["/api/stripe/funding-account"],
+    enabled,
+  });
+
+  // Prefer the explicitly selected funding account. If the user picked one but
+  // it is no longer eligible (unlinked / deactivated), do NOT silently
+  // substitute another bank — that would debit an account the user never
+  // chose. Surface it and make them fix the selection in Settings instead.
+  // Only when NO selection exists do we fall back to the first ACTIVE, linked
+  // account. Never a stale / inactive row — otherwise the simulation E2E could
+  // silently exercise the wrong account and mask a real linking problem. (The
+  // server re-validates ownership + status on every debit anyway.)
+  const activeAccounts = status?.configured
+    ? status.accounts?.filter((a) => a.isActive && a.status === "linked") ?? []
+    : [];
+  const selectedId = funding?.selectedId ?? null;
+  const selectedAccount = selectedId
+    ? activeAccounts.find((a) => a.id === selectedId) ?? null
     : null;
+  const selectedUnavailable =
+    Boolean(selectedId) && !selectedAccount && Boolean(status?.configured);
+  const account = selectedId ? selectedAccount : activeAccounts[0] ?? null;
 
   const rawAmount = parseFloat(debt.minimumPayment);
   const amount = Math.round(
@@ -127,7 +145,11 @@ export function StripeAchPayButton({ debt }: { debt: Debt }) {
         ) : (
           <Landmark className="w-4 h-4 mr-2" />
         )}
-        {account ? "Pay with linked bank (beta)" : "Connect a bank to pay (beta)"}
+        {account
+          ? "Pay with linked bank (beta)"
+          : selectedUnavailable
+            ? "Selected bank unavailable — update in Settings"
+            : "Connect a bank to pay (beta)"}
       </Button>
 
       <AlertDialog open={open} onOpenChange={(o) => !payMutation.isPending && setOpen(o)}>

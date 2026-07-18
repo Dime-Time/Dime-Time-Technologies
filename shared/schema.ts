@@ -130,6 +130,10 @@ export const roundUpSettings = pgTable("round_up_settings", {
   isEnabled: boolean("is_enabled").default(true).notNull(),
   sourceAccountId: varchar("source_account_id"), // Bank account ID for pulling round-ups (e.g., JP Morgan Chase checking)
   targetDebtId: varchar("target_debt_id"), // Debt account to pay (e.g., Carmax car loan)
+  // Which Stripe-linked bank account (stripe_accounts.id) FUNDS round-up ACH
+  // payments. Set ONLY via the dedicated validated endpoint (ownership +
+  // eligibility checked server-side) — never via the generic settings routes.
+  fundingStripeAccountId: varchar("funding_stripe_account_id"),
   multiplier: decimal("multiplier", { precision: 3, scale: 2 }).default('1.00').notNull(), // 1.00 = normal, 2.00 = double round-ups
   autoApplyThreshold: decimal("auto_apply_threshold", { precision: 10, scale: 2 }).default('25.00').notNull(),
   cryptoEnabled: boolean("crypto_enabled").default(false).notNull(),
@@ -269,6 +273,9 @@ export const transfers = pgTable("transfers", {
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   stripeChargeId: text("stripe_charge_id"),
   provider: text("provider"), // 'plaid' | 'mercury' | 'stripe' — set when a provider is selected
+  // Which stripe_accounts row funded this debit (masked label shown in the
+  // transfer history). Nullable — Plaid/Mercury rows and legacy rows omit it.
+  stripeAccountId: varchar("stripe_account_id"),
   debtId: varchar("debt_id"),
   correlationId: varchar("correlation_id").notNull(),
   idempotencyKey: text("idempotency_key"),

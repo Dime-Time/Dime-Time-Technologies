@@ -28,6 +28,7 @@ interface TransferRow {
   amount: string;
   status: TransactionStatus;
   debtId: string | null;
+  fundingAccount: { institutionName: string | null; last4: string | null } | null;
   errorCode: string | null;
   errorMessage: string | null;
   createdAt: string;
@@ -354,6 +355,21 @@ export default function Insights() {
                       (t.status === "failed" || t.status === "requires_action") && !errorDetail
                         ? describeTransactionStatus(t.status, "transfer")
                         : null;
+                    // Submitted ≠ settled: while a transfer is in flight, say so
+                    // explicitly (ACH takes multiple business days) so a user
+                    // never mistakes "we sent it" for "it cleared".
+                    const inFlightNote =
+                      t.status === "pending" || t.status === "processing"
+                        ? describeTransactionStatus(t.status, "transfer")
+                        : null;
+                    const destinationDebt = t.debtId
+                      ? debts.find((d) => d.id === t.debtId)?.name ?? null
+                      : null;
+                    const fundingLabel = t.fundingAccount
+                      ? `${t.fundingAccount.institutionName || "Linked bank"}${
+                          t.fundingAccount.last4 ? ` ••${t.fundingAccount.last4}` : ""
+                        }`
+                      : null;
                     return (
                       <li
                         key={t.id}
@@ -369,6 +385,24 @@ export default function Insights() {
                         <div className="text-xs text-slate-500 capitalize">
                           {t.type.replace(/_/g, " ")} • {formatDate(t.createdAt)}
                         </div>
+                        {(destinationDebt || fundingLabel) && (
+                          <div
+                            className="text-xs text-slate-500 mt-0.5"
+                            data-testid={`transfer-detail-${t.id}`}
+                          >
+                            {fundingLabel && <>From {fundingLabel}</>}
+                            {fundingLabel && destinationDebt && " → "}
+                            {destinationDebt && <>toward {destinationDebt}</>}
+                          </div>
+                        )}
+                        {inFlightNote && (
+                          <div
+                            className="mt-2 rounded bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600"
+                            data-testid={`transfer-inflight-${t.id}`}
+                          >
+                            {inFlightNote}
+                          </div>
+                        )}
                         {errorDetail && (
                           <div
                             className="mt-2 rounded bg-red-50 px-2.5 py-1.5 text-xs text-red-900"

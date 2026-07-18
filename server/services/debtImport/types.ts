@@ -74,3 +74,22 @@ export class LinkRequiredError extends Error {
     this.name = "LinkRequiredError";
   }
 }
+
+/**
+ * Thrown when the provider account does not have the Liabilities product
+ * entitlement yet (e.g. Plaid production before Liabilities approval — error
+ * codes INVALID_PRODUCT / INVALID_PRODUCTS / PRODUCTS_NOT_SUPPORTED). Routes map
+ * this to HTTP 503 { code: "PLAID_LIABILITIES_NOT_ENABLED" } so the client can
+ * show a friendly "coming soon" state instead of a generic server error. Once
+ * the entitlement is granted upstream this error simply stops occurring — no
+ * flag flip or redeploy required.
+ */
+export class LiabilitiesNotEnabledError extends Error {
+  readonly code = "PLAID_LIABILITIES_NOT_ENABLED";
+  constructor(
+    message = "Automatic debt import is coming soon. You can add your debts manually for now.",
+  ) {
+    super(message);
+    this.name = "LiabilitiesNotEnabledError";
+  }
+}

@@ -40,6 +40,7 @@ import Notifications from "@/pages/notifications";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import PlaidOauthPage from "@/pages/plaid-oauth";
 import Signup from "@/pages/signup";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -271,6 +272,10 @@ function AppContent() {
 
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+
+      {/* Plaid OAuth return: banks redirect here after the user authorizes.
+          Must render for any auth state — the page itself resumes Link. */}
+      <Route path="/plaid/oauth" component={PlaidOauthPage} />
 
       <Route path="/bank-setup">
         {effectivelyAuthenticated ? (

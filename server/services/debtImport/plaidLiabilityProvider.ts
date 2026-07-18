@@ -1,5 +1,5 @@
 import type { LiabilityProvider, NormalizedLiability } from "./types";
-import { LinkRequiredError } from "./types";
+import { LinkRequiredError, LiabilitiesNotEnabledError } from "./types";
 import { plaidService } from "../plaidService";
 import { encryptToken, decryptToken } from "../encryptionService";
 import { storage } from "../../storage";
@@ -33,6 +33,23 @@ const REAUTH_ERROR_CODES = new Set(["ITEM_LOGIN_REQUIRED", "PENDING_EXPIRATION",
 function isReauthRequired(err: any): boolean {
   const code = err?.response?.data?.error_code;
   return typeof code === "string" && REAUTH_ERROR_CODES.has(code);
+}
+
+/**
+ * Plaid error codes that mean our Plaid account (or this item) does not have the
+ * Liabilities product enabled. In production this is expected until Plaid grants
+ * the Liabilities entitlement; we surface it as LiabilitiesNotEnabledError so the
+ * client shows "coming soon" instead of a generic failure.
+ */
+const LIABILITIES_NOT_ENABLED_CODES = new Set([
+  "INVALID_PRODUCT",
+  "INVALID_PRODUCTS",
+  "PRODUCTS_NOT_SUPPORTED",
+]);
+
+function isLiabilitiesNotEnabled(err: any): boolean {
+  const code = err?.response?.data?.error_code;
+  return typeof code === "string" && LIABILITIES_NOT_ENABLED_CODES.has(code);
 }
 
 function num(v: unknown, fallback = 0): number {
@@ -140,7 +157,14 @@ export const plaidLiabilityProvider: LiabilityProvider = {
 
   linkFlow: {
     async createLinkToken(userId: string): Promise<string> {
-      return plaidService.createLiabilitiesLinkToken(userId);
+      try {
+        return await plaidService.createLiabilitiesLinkToken(userId);
+      } catch (err) {
+        if (isLiabilitiesNotEnabled(err)) {
+          throw new LiabilitiesNotEnabledError();
+        }
+        throw err;
+      }
     },
 
     async completeLink(userId: string, publicToken: string, institutionName?: string) {
@@ -181,6 +205,9 @@ export const plaidLiabilityProvider: LiabilityProvider = {
         throw new LinkRequiredError(
           "Your bank connection needs attention. Please reconnect to refresh your debts.",
         );
+      }
+      if (isLiabilitiesNotEnabled(err)) {
+        throw new LiabilitiesNotEnabledError();
       }
       throw err;
     }

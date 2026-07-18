@@ -263,6 +263,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // the real files — otherwise the Vite dev middleware / prod SPA catch-all
   // swallows these paths and returns index.html instead.
   const publicDir = path.resolve(process.cwd(), "public");
+
+  // ── Apple App Site Association (Plaid OAuth universal links) ────────
+  // Lets iOS open the Dime Time app for https://dime-time.com/plaid/oauth
+  // after a bank's OAuth flow. Registered BEFORE the static mount because
+  // the file has no extension, so express.static would serve it as
+  // application/octet-stream — Apple requires application/json with no
+  // redirects. Also served at the legacy root path for older CDN behavior.
+  const aasaPath = path.join(publicDir, ".well-known", "apple-app-site-association");
+  const serveAasa = (_req: Request, res: Response) => {
+    res.type("application/json");
+    res.sendFile(aasaPath);
+  };
+  app.get("/.well-known/apple-app-site-association", serveAasa);
+  app.get("/apple-app-site-association", serveAasa);
+
   app.use(express.static(publicDir, { index: false }));
 
   // ── GEO guide pages: pre-rendered, crawler-readable static HTML ──────
@@ -1061,6 +1076,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const transfers = await storage.getTransfersByUserId(userId);
+      // Resolve each transfer's funding account into a MASKED label
+      // (institution + last4 only) — never account/routing numbers. Older
+      // rows predate the `stripeAccountId` column; fall back to the id
+      // recorded in rawRequest at debit time. Lookups are restricted to
+      // THIS user's accounts, so a foreign id can never resolve to a label.
+      const stripeAccounts = await storage.getStripeAccountsByUserId(userId);
+      const accountLabelById = new Map(
+        stripeAccounts.map((a) => [
+          a.id,
+          { institutionName: a.institutionName, last4: a.last4 },
+        ]),
+      );
+      const fundingAccountFor = (t: typeof transfers[number]) => {
+        let accountId: string | null = t.stripeAccountId ?? null;
+        if (!accountId && t.rawRequest) {
+          try {
+            const raw = JSON.parse(t.rawRequest);
+            if (typeof raw?.stripeAccountId === "string") accountId = raw.stripeAccountId;
+          } catch {
+            /* legacy rows may have non-JSON rawRequest — no label */
+          }
+        }
+        return (accountId && accountLabelById.get(accountId)) || null;
+      };
       // Strip provider IDs / raw payloads — those are operational logs,
       // not user-facing data. Only expose the fields a status surface
       // actually needs.
@@ -1076,6 +1115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: t.amount,
         status: t.status,
         debtId: t.debtId,
+        fundingAccount: fundingAccountFor(t),
         errorCode: t.errorCode ?? null,
         errorMessage: t.errorMessage ?? null,
         createdAt: t.createdAt,
@@ -1226,6 +1266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isEnabled: false,
         sourceAccountId: null,
         targetDebtId: null,
+        fundingStripeAccountId: null,
         multiplier: "1.00",
         autoApplyThreshold: "25.00",
         cryptoEnabled: false,
@@ -1249,8 +1290,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body?.isEnabled === true && !(await hasRoundUpAutomationAccess(userId))) {
         return res.status(402).json(SUBSCRIPTION_REQUIRED_RESPONSE);
       }
+      // The funding account may ONLY be set via PUT /api/stripe/funding-account,
+      // which validates ownership + eligibility. Strip it here so this generic
+      // route can never smuggle in an unvalidated account id.
+      const { fundingStripeAccountId: _ignoredFundingAccount, ...settingsBody } = req.body ?? {};
       const settings = await storage.createOrUpdateRoundUpSettings({
-        ...req.body,
+        ...settingsBody,
         userId,
       });
       res.json(settings);

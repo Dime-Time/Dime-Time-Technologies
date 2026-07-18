@@ -649,6 +649,7 @@ export class MemStorage implements IStorage {
       isEnabled: true,
       sourceAccountId: null, // User needs to select their bank account
       targetDebtId: null, // User needs to select their target debt
+      fundingStripeAccountId: null,
       multiplier: "1.00",
       autoApplyThreshold: "25.00",
       cryptoEnabled: true,
@@ -1316,6 +1317,7 @@ export class MemStorage implements IStorage {
         isEnabled: settings.isEnabled ?? true,
         sourceAccountId: settings.sourceAccountId ?? null,
         targetDebtId: settings.targetDebtId ?? null,
+        fundingStripeAccountId: settings.fundingStripeAccountId ?? null,
         multiplier: settings.multiplier ?? "1.00",
         autoApplyThreshold: settings.autoApplyThreshold ?? "25.00",
         cryptoEnabled: settings.cryptoEnabled ?? false,
@@ -2806,6 +2808,7 @@ export class DatabaseStorage implements IStorage {
         amount: amount.toFixed(2),
         status: "created",
         provider: "stripe",
+        stripeAccountId,
         debtId: debtId || null,
         correlationId,
         idempotencyKey,

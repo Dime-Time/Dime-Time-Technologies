@@ -158,6 +158,104 @@ export function registerStripeRoutes(app: Express): void {
     });
   });
 
+  // ── Round-up funding-account selection ─────────────────────────────
+  // Which linked bank account funds round-up ACH payments. The selection is
+  // stored server-side (round_up_settings.funding_stripe_account_id) and can
+  // ONLY be set here, after ownership + eligibility validation. Selecting an
+  // account NEVER initiates a payment.
+  app.get("/api/stripe/funding-account", async (req: Request, res: Response) => {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const [accounts, settings] = await Promise.all([
+      storage.getStripeAccountsByUserId(userId),
+      storage.getRoundUpSettings(userId),
+    ]);
+    const selectedId = settings?.fundingStripeAccountId ?? null;
+    return res.json({
+      configured: isStripeAchEnabled(),
+      selectedId,
+      accounts: accounts.map((a) => {
+        const linked = a.isActive && a.status === "linked";
+        const eligible = linked && !!a.stripePaymentMethodEnc;
+        return {
+          id: a.id,
+          institutionName: a.institutionName,
+          last4: a.last4,
+          eligible,
+          ineligibleReason: eligible
+            ? null
+            : !linked
+              ? "This account is no longer linked."
+              : "This account can't be used for bank payments yet. Please re-link it.",
+          selected: a.id === selectedId,
+        };
+      }),
+    });
+  });
+
+  app.put("/api/stripe/funding-account", async (req: Request, res: Response) => {
+    const correlationId = randomUUID();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+      const parsed = z
+        .object({ stripeAccountId: z.string().min(1).nullable() })
+        .safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid request", correlationId });
+      }
+      const { stripeAccountId } = parsed.data;
+
+      if (stripeAccountId !== null) {
+        // NEVER trust a client-supplied account id: verify it exists, belongs
+        // to this user, is still linked, and has debit credentials on file.
+        const account = await storage.getStripeAccountById(stripeAccountId);
+        if (!account || account.userId !== userId) {
+          return res.status(404).json({ message: "Bank account not found", correlationId });
+        }
+        if (!account.isActive || account.status !== "linked") {
+          return res.status(422).json({
+            message: "That account is no longer linked. Reconnect it or choose another account.",
+            correlationId,
+          });
+        }
+        if (!account.stripePaymentMethodEnc) {
+          return res.status(422).json({
+            message: "That account can't be used for bank payments yet. Please re-link it.",
+            correlationId,
+          });
+        }
+      }
+
+      // Don't let this write create an ENABLED settings row for a user who
+      // never turned round-ups on (isEnabled defaults true at the DB level).
+      const existing = await storage.getRoundUpSettings(userId);
+      const settings = await storage.createOrUpdateRoundUpSettings({
+        userId,
+        fundingStripeAccountId: stripeAccountId,
+        ...(existing ? {} : { isEnabled: false }),
+      });
+
+      stripeLog(correlationId, "funding_account_selected", {
+        userId,
+        stripeAccountId,
+        cleared: stripeAccountId === null,
+      });
+      return res.json({
+        success: true,
+        selectedId: settings.fundingStripeAccountId ?? null,
+        correlationId,
+      });
+    } catch (err: any) {
+      stripeLog(correlationId, "funding_account_select_failed", {
+        severity: "ERROR",
+        error: err?.message,
+      });
+      return res.status(500).json({ message: "Internal server error", correlationId });
+    }
+  });
+
   // Begin Financial Connections — returns a client_secret the browser feeds
   // into Stripe.js to render the connect modal.
   app.post("/api/stripe/financial-connections/session", fcSessionLimiter, async (req: Request, res: Response) => {
@@ -351,6 +449,16 @@ export function registerStripeRoutes(app: Express): void {
         return res.status(404).json(body);
       }
 
+      // A stale or disconnected account must never be charged — even in
+      // simulation mode, so the two paths stay behaviorally identical.
+      if (!stripeAccount.isActive || stripeAccount.status !== "linked") {
+        const body = {
+          message: "This bank account is no longer linked. Reconnect it or choose another account.",
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
+        return res.status(422).json(body);
+      }
+
       const paymentMethodId = await storage.getStripePaymentMethodId(stripeAccountId);
       if (!paymentMethodId) {
         const body = {
@@ -379,6 +487,7 @@ export function registerStripeRoutes(app: Express): void {
           amount: amount.toFixed(2),
           status: "simulated",
           provider: "stripe",
+          stripeAccountId,
           debtId: debtId || null,
           correlationId,
           idempotencyKey,

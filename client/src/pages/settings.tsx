@@ -14,6 +14,7 @@ import { useSecurity } from "@/hooks/useSecurity";
 import { useAuth } from "@/hooks/useAuth";
 import { useFlag } from "@/hooks/useFlag";
 import { BetaModeBanner, ComplianceDisclaimer } from "@/components/BetaModeBanner";
+import { FundingAccountSelector } from "@/components/FundingAccountSelector";
 import { hasPinSet, isBiometricEnabled, setBiometricEnabled } from "@/lib/securityStore";
 import { 
   Bell, 
@@ -453,7 +454,11 @@ export default function Settings() {
               </div>
             </div>
           </Row>
-          
+
+          <Row>
+            <FundingAccountSelector />
+          </Row>
+
           <Row>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
