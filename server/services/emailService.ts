@@ -20,6 +20,31 @@ export interface SendEmailResult {
   error?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Provider health gate.
+//
+// Purpose: lets unauthenticated, non-enumerating routes (forgot-password)
+// return the SAME outage response for every request — before any user lookup
+// — once the email provider is known to be failing. Without this, a send
+// failure could only be surfaced for accounts that exist, turning a provider
+// outage into an account-enumeration side channel.
+//
+// Semantics: any transactional send failure marks the service degraded for
+// EMAIL_DEGRADED_WINDOW_MS; any successful send clears it immediately.
+// In-process only (resets on restart) — deliberate: it is a UX/privacy gate,
+// not a durable circuit breaker.
+// ---------------------------------------------------------------------------
+export const EMAIL_DEGRADED_WINDOW_MS = 10 * 60 * 1000;
+let lastSendFailureAt: number | null = null;
+
+export function isEmailServiceDegraded(now: number = Date.now()): boolean {
+  return lastSendFailureAt !== null && now - lastSendFailureAt < EMAIL_DEGRADED_WINDOW_MS;
+}
+
+export function recordEmailSendOutcome(ok: boolean, now: number = Date.now()): void {
+  lastSendFailureAt = ok ? null : now;
+}
+
 /**
  * Send a transactional email.
  *
@@ -33,6 +58,14 @@ export interface SendEmailResult {
  * domain, which works without DNS setup.
  */
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
+  const result = await sendEmailInternal(params);
+  // Feed the provider health gate on EVERY transactional send so
+  // non-enumerating routes can report outages without a user lookup.
+  recordEmailSendOutcome(result.ok);
+  return result;
+}
+
+async function sendEmailInternal(params: SendEmailParams): Promise<SendEmailResult> {
   if (!resend) {
     // Production must never run without a real email provider. Failing
     // closed prevents shipping reset emails to /dev/null and prevents

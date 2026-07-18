@@ -42,7 +42,8 @@ import { roundUpSplitService } from "./services/roundUpSplitService";
 import { calculateRoundUp } from "../client/src/lib/calculations";
 import multer from "multer";
 import { randomBytes } from "crypto";
-import { sendPasswordResetEmail, sendVerificationEmail, sendContactNotificationEmail } from "./services/emailService";
+import { sendPasswordResetEmail, sendVerificationEmail, sendContactNotificationEmail, isEmailServiceDegraded } from "./services/emailService";
+import { decideForgotPasswordResponse } from "./lib/passwordResetContract";
 import { getFlags } from "./lib/flags";
 import { withCanonicalStatus } from "@shared/transactionStatus";
 
@@ -452,22 +453,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email is required" });
       }
 
-      // Single generic outage message, used for EVERY 503 on this route.
-      // SECURITY (non-enumerating contract): availability errors must never
-      // depend on whether the account exists, so the misconfiguration check
-      // below runs BEFORE the user lookup and returns the same 503 for all
-      // requests. The message never confirms or denies an account.
-      const EMAIL_OUTAGE_MESSAGE =
-        "We couldn't send the reset email right now. Please try again in a few minutes.";
-      if (
+      // SECURITY (non-enumeration): the response is decided ENTIRELY here,
+      // BEFORE the user lookup, from input validity + email-service health.
+      // See decideForgotPasswordResponse — it cannot observe account
+      // existence by construction. Individual send failures below feed the
+      // provider health gate, so subsequent requests (any email) get the
+      // same 503; no response ever depends on whether the account exists.
+      const misconfigured =
         process.env.NODE_ENV === "production" &&
-        (!process.env.RESEND_API_KEY || !process.env.PUBLIC_APP_URL)
-      ) {
+        (!process.env.RESEND_API_KEY || !process.env.PUBLIC_APP_URL);
+      if (misconfigured) {
         console.error(JSON.stringify({
           event: "password_reset_misconfigured",
           message: "RESEND_API_KEY and PUBLIC_APP_URL must be set in production",
         }));
-        return res.status(503).json({ message: EMAIL_OUTAGE_MESSAGE });
+      }
+      const decision = decideForgotPasswordResponse({
+        emailProvided: true,
+        misconfigured,
+        degraded: isEmailServiceDegraded(),
+      });
+      if (decision.status !== 200) {
+        return res.status(decision.status).json(decision.body);
       }
 
       const user = await storage.getUserByEmail(email);
@@ -510,31 +517,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           expiresInMinutes: PASSWORD_RESET_TOKEN_TTL_MINUTES,
         });
 
+        // A failed send is NOT surfaced on THIS response — doing so would
+        // 503 only for accounts that exist (enumeration side channel). The
+        // failure was recorded by the provider health gate inside sendEmail,
+        // so every subsequent request — known or unknown email — receives
+        // the generic 503 until the provider recovers.
         console.log(JSON.stringify({
           event: "password_reset_requested",
           userId: user.id,
           provider: sendResult.provider,
           ok: sendResult.ok,
         }));
-
-        // Surface provider outages instead of silently claiming success —
-        // otherwise the user waits on an email that will never arrive. Same
-        // generic message as the misconfiguration path; it never confirms
-        // that an account exists.
-        if (!sendResult.ok) {
-          return res.status(503).json({ message: EMAIL_OUTAGE_MESSAGE });
-        }
       } else {
         console.log(JSON.stringify({
           event: "password_reset_requested_unknown_email",
         }));
       }
 
-      // Always succeed regardless of whether the email exists.
-      res.json({
-        success: true,
-        message: "If an account exists for that email, a reset link has been sent.",
-      });
+      // Identical generic success regardless of whether the email exists.
+      res.status(decision.status).json(decision.body);
     } catch (error) {
       console.error("Forgot password error:", error instanceof Error ? error.message : "unknown");
       res.status(500).json({ message: "Unable to process request" });
