@@ -1,19 +1,16 @@
 ---
-name: Plaid paid contract burn risk
-description: Founder is on a ~$1,064/month Plaid committed plan pre-revenue; downgrade to pay-as-you-go is the goal before reapplying for production.
+name: Plaid plan downgrade before prod reapplication
+description: The Plaid plan should be downgraded to pay-as-you-go before the production/Liabilities reapplication; factor plan status into any burn or timeline discussion.
 ---
 
-# Plaid billing contract (discovered 2026-07-11)
+# Plaid billing plan (operational lesson)
 
-- Founder signed a **12-month Plaid "Growth" contract** with a **~$1,064/month minimum** (~$12k+/yr committed), while the company is pre-revenue (~15 users, debt import not yet live in prod).
-- Key leverage: he is paying for production access while the **Liabilities production entitlement was rejected** — "paying for what we can't use" is the negotiation anchor.
-- 2026-07-11: gave him a restructure email (pay-as-you-go / pause / stretch, in that order) and advised NOT to pay month 2 before the conversation.
+- The project was on a committed Plaid plan while pre-revenue and before debt import was live in production. The agreed goal is to switch to Plaid's pay-as-you-go tier before reapplying for production access.
+- Delinquency with Plaid could jeopardize the **production + Liabilities reapplication** (the previous application was rejected — see debt-import-feature.md).
 
-**Why this matters:**
-- Plaid offers $0/month pay-as-you-go; a committed-minimum contract at this stage is almost certainly the wrong plan and dwarfs all other burn (~$150/mo everything else combined).
-- Delinquency with Plaid could jeopardize the **production + Liabilities reapplication** (previous application was rejected — see debt-import-feature.md).
+**Why:** a committed-minimum plan at pre-revenue stage is the wrong tier and dominates operating costs; billing standing affects Plaid's approval decisions.
 
 **How to apply:**
-- Advice given: screenshot Plaid billing page, proactively email Plaid to request a switch to pay-as-you-go and negotiate the outstanding balance; hold cash until that conversation happens.
-- When discussing burn, runway, loans, or the Plaid reapplication, factor this contract in and check whether the downgrade happened.
-- Related founder-cost caution: he was advised NOT to buy additional non-hyphen domains (dimetime.com etc.) and to verify he isn't paying for AWS or GoDaddy hosting (app is hosted on Replit; GoDaddy should be domains only).
+- When discussing burn, runway, or the Plaid reapplication, first check whether the downgrade to pay-as-you-go has happened — don't assume either way.
+- Billing/negotiation specifics are founder-run; the agent's role is to flag the dependency, not to store or restate contract figures. Personal financial details live in the founder's own documents, not in memory.
+- Related cost caution: hosting is Replit-only; the domain registrar should be domains-only (no paid hosting add-ons), and no additional domain purchases are needed (dime-time.com is canonical).

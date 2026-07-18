@@ -24,10 +24,7 @@
 - [Subscription billing](subscription-billing.md) — $2.99/mo Stripe Billing; incomplete+past_due ARE entitled (ACH lag); consent row precedes Stripe calls; founder prod-enable checklist inside.
 - [Sentry config](sentry-config.md) — DSN-gated dynamic import (no SDK without DSN); test-enforced PII redaction incl. /verify-email & /reset-password must never carry query strings.
 - [Internal admin surface](internal-admin.md) — ADMIN_USER_IDS fails closed; GET-only reads strip raw payloads; Real Money tab is UI over audited allowlist endpoints.
-- [Plaid billing contract](plaid-billing-contract.md) — founder on ~$1,064/mo Plaid committed plan pre-revenue; goal = downgrade to pay-as-you-go before production reapplication.
-- Founder profile (day job, income, goals) provided by Tim in attached_assets/Pasted-FOUNDER-PROFILE-TIM-CARLISLE*.txt — use it for runway/quit-timeline planning; don't copy figures into memory.
-- [Founder launch narrative](founder-launch-narrative.md) — approved public arc of Tim's debt story (Navy→2007 recession→debt-fatigue→built the app he needed) for launch post/pitch; private chapters stay private.
-- [GEO guides & crawler files](geo-guides.md) — AI crawlers don't run JS: SEO/GEO content must be static HTML via Express routes; SPA catch-all was swallowing robots.txt/sitemap; audit public/ before static-mounting.
-- [Slide deck generation](deck-generation.md) — python-pptx decks in attached_assets/<name>-slides/; verify via soffice+pdftoppm render; no emoji (tofu), no partner logos; timeline fact anchors inside.
-- Master milestone timeline for Tim's presentations: attached_assets/dime-time-milestone-timeline.txt (2026-07-14, fact-checked; $3.99/$4.99 tiers are planned-only, not built).
-- Tim's daily journals saved as attached_assets/founder-journal-YYYY-MM-DD.txt (first: 2026-07-14, the day his $1 ACH settled) — personal source material for launch story/presentations; don't copy figures into memory.
+- [Plaid plan downgrade](plaid-billing-contract.md) — downgrade Plaid to pay-as-you-go before prod reapplication; billing standing affects approval; specifics are founder-run, never stored.
+- [Founder narrative sourcing](founder-narrative-sourcing.md) — launch-story/pitch source material lives in attached_assets (user-owned), never in memory; use it on request, copy nothing into memory.
+- [GEO guides & crawler files](geo-guides.md) — AI crawlers don't run JS: SEO/GEO content must be static HTML via Express routes; audit public/ before static-mounting.
+- [Slide deck generation](deck-generation.md) — python-pptx decks in attached_assets/<name>-slides/; verify via soffice+pdftoppm render; no emoji (tofu), no partner logos.
