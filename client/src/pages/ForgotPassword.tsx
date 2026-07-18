@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { getApiUrl } from "@/lib/queryClient";
+import { apiRequest, getApiErrorMessage } from "@/lib/queryClient";
 import { LogoWithText } from "@/components/logo";
 
 export default function ForgotPassword() {
@@ -14,25 +14,19 @@ export default function ForgotPassword() {
 
   const mutation = useMutation({
     mutationFn: async (payload: { email: string }) => {
-      const response = await fetch(getApiUrl("/api/auth/forgot-password"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.message || "Unable to send reset link");
-      }
+      const response = await apiRequest("POST", "/api/auth/forgot-password", payload);
       return response.json();
     },
     onSuccess: () => {
       setSubmitted(true);
     },
-    onError: (err: Error) => {
+    onError: (err: unknown) => {
       toast({
         title: "Couldn't send reset link",
-        description: err.message,
+        description: getApiErrorMessage(
+          err,
+          "We couldn't send the reset email right now. Please try again in a few minutes.",
+        ),
         variant: "destructive",
       });
     },

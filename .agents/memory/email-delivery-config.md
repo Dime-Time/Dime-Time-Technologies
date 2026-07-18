@@ -51,9 +51,9 @@ the server's JSON `message` so toasts never show a raw `503: {json}` blob; the
 **Contact-form notifications (added 2026-07-16):** contact/feedback submissions
 previously only landed in `contact_submissions` — nobody was notified, and real
 beta signups sat unseen for months. Now every submission also fire-and-forgets a
-notification email to tim@dime-time.com (the Resend account-owner address, which
-delivers even while the domain is unverified), with Reply-To set to the
-submitter. A failed notification never fails the request (submission is already
+notification email to the founder's business contact address (see replit.md;
+it is the Resend account-owner address, which delivers even while the domain
+is unverified), with Reply-To set to the submitter. A failed notification never fails the request (submission is already
 saved); result is logged as `contact_notification_sent`/`_failed`. Lesson: any
 "store a message" feature needs a delivery path to a human, or verify the owner
 actually checks the table.

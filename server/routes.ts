@@ -442,13 +442,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Password reset — request link
-  // Always returns a generic 200 so attackers can't enumerate which emails
-  // are registered. Rate-limited via authLimiter.
+  // Non-enumerating contract: success is a generic 200 and email-service
+  // outages are a generic 503 — neither response ever depends on whether the
+  // account exists. Rate-limited via authLimiter.
   app.post("/api/auth/forgot-password", authLimiter, async (req: Request, res: Response) => {
     try {
       const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Single generic outage message, used for EVERY 503 on this route.
+      // SECURITY (non-enumerating contract): availability errors must never
+      // depend on whether the account exists, so the misconfiguration check
+      // below runs BEFORE the user lookup and returns the same 503 for all
+      // requests. The message never confirms or denies an account.
+      const EMAIL_OUTAGE_MESSAGE =
+        "We couldn't send the reset email right now. Please try again in a few minutes.";
+      if (
+        process.env.NODE_ENV === "production" &&
+        (!process.env.RESEND_API_KEY || !process.env.PUBLIC_APP_URL)
+      ) {
+        console.error(JSON.stringify({
+          event: "password_reset_misconfigured",
+          message: "RESEND_API_KEY and PUBLIC_APP_URL must be set in production",
+        }));
+        return res.status(503).json({ message: EMAIL_OUTAGE_MESSAGE });
       }
 
       const user = await storage.getUserByEmail(email);
@@ -461,17 +480,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // production we REQUIRE PUBLIC_APP_URL to be configured.
         let baseUrl: string | undefined = process.env.PUBLIC_APP_URL;
         if (!baseUrl) {
-          if (process.env.NODE_ENV === "production") {
-            console.error(JSON.stringify({
-              event: "password_reset_misconfigured",
-              message: "PUBLIC_APP_URL must be set in production",
-            }));
-            return res.json({
-              success: true,
-              message: "If an account exists for that email, a reset link has been sent.",
-            });
-          }
-          // Dev only: synthesize from the request. Safe because dev hosts
+          // Production missing PUBLIC_APP_URL is already handled by the
+          // upfront non-enumerating 503 above — this branch is dev-only.
+          // Dev: synthesize from the request. Safe because dev hosts
           // aren't reachable from the public internet.
           const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
           const host = req.get("host");
@@ -505,6 +516,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: sendResult.provider,
           ok: sendResult.ok,
         }));
+
+        // Surface provider outages instead of silently claiming success —
+        // otherwise the user waits on an email that will never arrive. Same
+        // generic message as the misconfiguration path; it never confirms
+        // that an account exists.
+        if (!sendResult.ok) {
+          return res.status(503).json({ message: EMAIL_OUTAGE_MESSAGE });
+        }
       } else {
         console.log(JSON.stringify({
           event: "password_reset_requested_unknown_email",
