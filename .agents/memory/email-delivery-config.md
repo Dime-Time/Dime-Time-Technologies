@@ -34,14 +34,17 @@ assumed it was fixed — but other users (unverified domain) and/or the missing
 `PUBLIC_APP_URL` kept it broken. Verify the whole loop with a NON-owner email
 before declaring done.
 
-**Status as of 2026-07-08:** key + `PUBLIC_APP_URL` are live in prod (owner-inbox
-delivery verified end-to-end: send → inbox (spam folder) → link → verified). Domain
-is still UNVERIFIED in Resend (probe: 403 `validation_error` sending from
-noreply@dime-time.com), so non-owner recipients get a friendly 503 — founder must
-add Resend's DNS records, then set `EMAIL_FROM`, then republish. Shared-sender mail
-lands in spam; domain verification also fixes inbox placement. Probe delivery
-safely by sending to Resend's `delivered@resend.dev` sink (never a real address);
-note the API key is send-only restricted (GET /domains returns 401).
+**Status as of 2026-07-18:** FULLY CONFIGURED. Domain `dime-time.com` is VERIFIED
+in Resend (us-east-1), `EMAIL_FROM="Dime Time <noreply@dime-time.com>"` (shared env
+var), key + `PUBLIC_APP_URL` live in prod. Test send from the verified sender
+succeeded end-to-end. Remaining prod pickup happens at Republish.
+
+**Gotcha — send-only API key lies about domains:** the stored `RESEND_API_KEY` is
+restricted to sending. `GET /domains` with it returns an EMPTY list (not an error),
+and `POST /domains` returns 401 `restricted_api_key`. Never conclude "domain not
+registered" from an empty list with this key — check the Resend dashboard (or do a
+real test send from the domain sender) instead. Probe delivery safely via Resend's
+`delivered@resend.dev` sink when you don't want to hit a real inbox.
 
 **Client UX:** `getApiErrorMessage()` in `client/src/lib/queryClient.ts` unwraps
 the server's JSON `message` so toasts never show a raw `503: {json}` blob; the
