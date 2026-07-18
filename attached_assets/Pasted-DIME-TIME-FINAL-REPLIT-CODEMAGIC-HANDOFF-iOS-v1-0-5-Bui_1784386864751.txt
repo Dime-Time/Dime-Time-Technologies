@@ -1,0 +1,852 @@
+DIME TIME — FINAL REPLIT/CODEMAGIC HANDOFF
+iOS v1.0.5 — Build 207
+Date: July 18, 2026
+
+APP DETAILS
+
+App: Dime Time
+Apple App Store ID: 6755106723
+Current live version: v1.0.4, build 206
+New version: v1.0.5, build 207
+Bundle ID: com.dimetime.mobile
+Apple Team ID: 8WZHH537SU
+Production domain: https://dime-time.com
+
+IMPORTANT DOMAIN RULE
+
+The domain is always:
+
+dime-time.com
+
+The hyphen is required everywhere.
+
+
+================================================================
+RELEASE GOAL
+================================================================
+
+Build 207 is the production bank-linking reliability release.
+
+The headline change is support for returning users to Dime Time after they
+authenticate with an OAuth bank such as Chase.
+
+Before this release, a user could authenticate at the bank and become stranded
+in Safari instead of returning to Dime Time.
+
+Build 207 combines:
+
+1. Plaid OAuth Universal Links
+2. OAuth session-resume handling
+3. Friendly interrupted-connection recovery
+4. Slide-out menu/navigation correction
+5. Round-up funding-account selection
+6. Plaid Liabilities graceful gating
+7. Honest ACH payment statuses
+8. Debt-chart corrections
+9. Contact-form and email-delivery fixes
+10. Password-reset security and failure handling
+11. Stripe payout-routing configuration correction
+12. CI safeguards for entitlements and build numbers
+
+
+================================================================
+COMPLETED PLAID OAUTH IMPLEMENTATION
+================================================================
+
+The following three components are complete and designed to work together.
+
+A. SERVER: APPLE APP SITE ASSOCIATION
+
+Production URL:
+
+https://dime-time.com/.well-known/apple-app-site-association
+
+Verified properties:
+
+- HTTP 200
+- Valid JSON
+- No redirect
+- Correct content type
+- Application identifier:
+
+  8WZHH537SU.com.dimetime.mobile
+
+- Authorized path:
+
+  /plaid/oauth
+
+B. IOS: ASSOCIATED DOMAINS
+
+Associated Domains entitlement:
+
+applinks:dime-time.com
+
+Implementation:
+
+- Added through App.entitlements
+- Connected to the correct Xcode target/project
+- Intended to be included in the signed application
+- Codemagic will fail the build if the signed app does not contain the
+  entitlement
+
+C. WEB/CAPACITOR: UNIVERSAL-LINK HANDLING
+
+The app now:
+
+- Listens for the incoming Universal Link
+- Recognizes https://dime-time.com/plaid/oauth
+- Navigates to the correct route inside Dime Time
+- Rebuilds the exact redirect URL expected by Plaid
+- Works around the native WebView reporting the wrong internal origin
+- Preserves Plaid’s OAuth state information
+- Resumes the original Plaid Link session
+- Avoids silently dropping users onto the marketing homepage
+
+If the stored Link session is missing or expired, users now see:
+
+“Connection interrupted”
+
+The recovery interface provides a safe way to retry or return to the app.
+
+Only a genuine user cancellation should navigate away normally.
+
+
+================================================================
+EXACT PLAID CONFIGURATION
+================================================================
+
+PLAID DASHBOARD REDIRECT URI
+
+The exact allowed redirect URI is:
+
+https://dime-time.com/plaid/oauth
+
+Requirements:
+
+- HTTPS
+- No trailing slash
+- No query parameters
+- No fragment
+- No extra spaces
+- Exact hostname and path
+
+Plaid Dashboard location:
+
+Team Settings > API > Allowed redirect URIs
+
+PRODUCTION SECRET
+
+The production environment must contain:
+
+PLAID_REDIRECT_URI=https://dime-time.com/plaid/oauth
+
+Before starting the final build, confirm:
+
+- The URI is registered in Plaid
+- The production secret is present
+- The values match exactly
+- The production server uses that value during Link-token creation
+- No Link tokens, access tokens, or secrets are printed in logs
+
+
+================================================================
+OTHER FEATURES AND FIXES INCLUDED
+================================================================
+
+1. SLIDE-OUT MENU/NAVIGATION FIX
+
+Previously:
+
+- The route changed after a menu item was tapped
+- The slide-out menu remained open
+- The open menu covered the destination page
+- This made the screen appear not to move
+
+Now:
+
+- Tapping a navigation item changes the route
+- The slide-out menu closes automatically
+- The destination page becomes visible
+- Founder confirmed that this matches the July 16 bug report
+
+2. PLAID LIABILITIES GATING
+
+Plaid Production currently has:
+
+- Transactions
+- Auth
+- Identity
+
+Liabilities is not yet enabled.
+
+Until Liabilities is approved:
+
+- Automatic debt import must not call an unavailable API
+- Users see a calm explanation
+- Manual debt entry remains available
+- No confusing raw error is shown
+
+Do not remove the gate merely because the Plaid request has been submitted.
+
+Only remove or enable the gate after:
+
+- Plaid confirms production access
+- A controlled production test succeeds
+- Debt-import mapping and duplicate protection are verified
+
+3. ROUND-UP FUNDING-ACCOUNT SELECTION
+
+Users can select which eligible linked bank account funds their round-ups.
+
+Location:
+
+Settings > Funding account selector
+
+Server safeguards:
+
+- Confirms the user is authenticated
+- Confirms the account belongs to that user
+- Confirms the account is still linked
+- Confirms the account is eligible
+- Rejects stale or foreign account identifiers
+
+If the selected account becomes disconnected:
+
+- The app must not silently fall back to another bank
+- The pay button becomes unavailable
+- The user is told to select or reconnect an account in Settings
+- The server independently blocks payment execution
+
+4. ACH PAYMENT-STATUS CLARITY
+
+Each transfer records its funding account.
+
+Insights/payment history displays:
+
+- Funding institution
+- Masked last four digits
+- Debt paid
+- Amount
+- Date
+- Current payment status
+
+Status wording must distinguish:
+
+- Submitted
+- Processing
+- Settled
+- Failed
+- Canceled
+- Returned
+
+Do not describe a transfer as settled merely because Stripe accepted the
+PaymentIntent.
+
+User-facing copy explains that ACH settlement generally takes approximately
+2–4 business days.
+
+5. DEBT-CHART CORRECTIONS
+
+Included since build 206:
+
+- Debt-chart accuracy corrections
+- Demo-account data alignment
+
+Confirm the chart:
+
+- Does not double-count payments
+- Handles pending versus settled payments correctly
+- Handles zero balances
+- Handles deleted debts
+- Handles newly created debts
+- Displays correctly on supported iPhone sizes
+
+6. EMAIL AND CONTACT-FORM FIXES
+
+Included:
+
+- Contact-form delivery fixes
+- Production email-delivery improvements
+- Calm user-facing failure messages
+- No raw Resend/provider error blobs
+
+7. PASSWORD-RESET SECURITY
+
+If the email provider is down or misconfigured:
+
+- Users receive a calm message
+- No raw provider response is shown
+- The API never reveals whether the submitted email address belongs to an
+  account
+- Reset tokens are never exposed in logs
+- Existing and nonexistent addresses receive indistinguishable public behavior
+
+Regression suite:
+
+- Six automated tests
+- All tests passing
+
+8. STRIPE PAYOUT ROUTING
+
+The payout-routing configuration was corrected so funds route to the intended
+destination.
+
+This was a configuration-side change.
+
+Before App Store submission, report:
+
+- What configuration was changed
+- Which environment was changed
+- How it was verified
+- Whether any additional real transfer was required
+- Whether the change affects ACH collection, Stripe payouts, or both
+
+Do not run another real-money test without founder authorization.
+
+
+================================================================
+VERSION AND BUILD CONFIGURATION
+================================================================
+
+NEW RELEASE
+
+Marketing version:
+
+1.0.5
+
+Build number:
+
+207
+
+Verified changes:
+
+- Info.plist marketing version: 1.0.5
+- Info.plist CFBundleVersion: 207
+- Xcode configuration values aligned
+- CURRENT_PROJECT_VERSION aligned to 207
+- npm run build completed
+- npx cap sync ios completed
+- Updated web code confirmed in the iOS bundle
+
+LOCKED VERSION RULE
+
+Info.plist remains the authoritative source for the release version and build
+number consumed by CI.
+
+Codemagic must:
+
+- Read the version from Info.plist
+- Read the build number from Info.plist
+- Verify them
+- Never overwrite them in the built product
+
+Do not reintroduce the previous CFBundleVersion overwrite problem.
+
+
+================================================================
+NEW CODEMAGIC SAFETY CHECKS
+================================================================
+
+1. ASSOCIATED DOMAINS CHECK
+
+The build must fail if the signed app is missing:
+
+applinks:dime-time.com
+
+If Codemagic reports that the entitlement is missing immediately after the
+Apple capability is enabled:
+
+- Treat the failure as the safeguard working
+- Confirm Associated Domains was enabled for the correct App ID
+- Refresh or regenerate the provisioning profile if necessary
+- Confirm Codemagic is using the refreshed profile
+- Re-run the build
+
+Do not bypass or remove the entitlement check.
+
+2. BUILD-NUMBER CHECK
+
+Current guard value:
+
+LAST_ACCEPTED_BY_APPLE=206
+
+Build 207 must be strictly greater than 206.
+
+IMPORTANT UPDATE TIMING
+
+Do not change LAST_ACCEPTED_BY_APPLE to 207 before uploading build 207.
+
+Change it from 206 to 207 only after:
+
+- Apple successfully processes build 207
+- Build 207 appears as an available build in TestFlight/App Store Connect
+
+It is not necessary to wait for App Review approval, but a CodeMagic upload
+finishing by itself is not sufficient.
+
+After build 207 becomes available in TestFlight/App Store Connect:
+
+- Update both applicable LAST_ACCEPTED_BY_APPLE references from 206 to 207
+- Commit the update
+- Confirm the next permitted build number is 208 or higher
+
+Do not reuse build number 207 for a later upload.
+
+
+================================================================
+FOUNDER CHECKLIST — PERFORM IN THIS ORDER
+================================================================
+
+STEP 1 — PLAID CONFIGURATION
+
+[ ] Add this exact URI to Plaid Allowed redirect URIs:
+
+    https://dime-time.com/plaid/oauth
+
+[ ] Confirm the production secret is set:
+
+    PLAID_REDIRECT_URI=https://dime-time.com/plaid/oauth
+
+[ ] Confirm Bucket A has been Republished.
+
+STEP 2 — APPLE DEVELOPER PORTAL
+
+Go to:
+
+developer.apple.com
+> Certificates, Identifiers & Profiles
+> Identifiers
+> com.dimetime.mobile
+
+Then:
+
+[ ] Enable Associated Domains
+[ ] Save the App ID configuration
+
+This step must happen before the CodeMagic build.
+
+STEP 3 — CODEMAGIC
+
+[ ] Trigger the normal iOS build
+[ ] Confirm version 1.0.5
+[ ] Confirm build number 207
+[ ] Confirm bundle ID com.dimetime.mobile
+[ ] Confirm signing uses Team ID 8WZHH537SU
+[ ] Confirm the entitlement safety check passes
+[ ] Confirm the build-number safety check passes
+[ ] Confirm upload processing completes
+[ ] Confirm build 207 appears in TestFlight/App Store Connect
+
+If signing fails after enabling Associated Domains:
+
+- Refresh the provisioning profile
+- Confirm the profile supports Associated Domains
+- Confirm CodeMagic is using the refreshed profile
+- Re-run without removing the entitlement
+
+STEP 4 — TESTFLIGHT ON A PHYSICAL IPHONE
+
+[ ] Install build 207 from TestFlight
+[ ] Do not rely only on a simulator
+[ ] Complete the required tests below
+[ ] Do not submit to App Review until all critical tests pass
+
+STEP 5 — UPDATE THE BUILD GUARD
+
+Only after build 207 appears in TestFlight/App Store Connect:
+
+[ ] Update LAST_ACCEPTED_BY_APPLE from 206 to 207
+[ ] Update both lines/references in codemagic.yaml
+[ ] Commit the guard update
+[ ] Confirm the next build must be 208 or higher
+
+STEP 6 — APP STORE CONNECT
+
+[ ] Create App Store version 1.0.5
+[ ] Attach build 207
+[ ] Add “What’s New” notes
+[ ] Review screenshots and metadata
+[ ] Confirm privacy declarations remain accurate
+[ ] Submit for App Review
+
+
+================================================================
+REQUIRED PHYSICAL-IPHONE TEST PLAN
+================================================================
+
+A. UNIVERSAL LINK BASIC TEST
+
+From a tappable link outside Dime Time, open:
+
+https://dime-time.com/plaid/oauth
+
+Confirm:
+
+- The link opens Dime Time
+- It does not remain stranded in Safari
+- The correct in-app recovery route appears when no session exists
+- The app does not open an unrelated page
+- No blank screen appears
+
+Test when Dime Time is:
+
+- Already open
+- In the background
+- Completely closed
+
+B. PLAID NON-OAUTH BANK
+
+[ ] Open Dime Time
+[ ] Select Connect Bank
+[ ] Connect a non-OAuth institution
+[ ] Confirm normal Plaid success
+[ ] Confirm accounts appear once
+[ ] Confirm no existing non-OAuth behavior regressed
+
+C. PLAID OAUTH BANK — CHASE IS THE KEY TEST
+
+[ ] Open Connect Bank
+[ ] Select Chase or another production OAuth institution
+[ ] Leave Dime Time for the bank authentication flow
+[ ] Complete authentication
+[ ] Confirm the user returns inside Dime Time
+[ ] Confirm the original Plaid Link session resumes
+[ ] Confirm Plaid reaches success
+[ ] Confirm the public token is exchanged once
+[ ] Confirm connected accounts appear once
+[ ] Confirm no duplicate Plaid Item is created
+[ ] Confirm the user is not stranded in Safari
+
+If Chase requires its native app, test app-to-app return when possible.
+
+D. OAUTH INTERRUPTION TESTS
+
+Test:
+
+- User cancels in Plaid
+- User cancels at the bank
+- User returns with missing session state
+- User returns with expired session state
+- User triggers the same callback twice
+- App loses network during return
+- App is killed before callback
+- App is already running during callback
+
+Expected behavior:
+
+- Calm recovery interface
+- No blank screen
+- No endless spinner
+- No marketing-homepage bounce for an actual error
+- No duplicate Item
+- No duplicate token exchange
+- Safe retry option
+
+E. NAVIGATION TEST
+
+[ ] Open the slide-out menu
+[ ] Tap every menu link
+[ ] Confirm the route changes
+[ ] Confirm the menu closes
+[ ] Confirm the destination page is visible
+[ ] Confirm rapid taps do not stack duplicate screens
+[ ] Confirm back navigation works
+[ ] Confirm iOS back/swipe behavior remains usable
+
+F. FUNDING-ACCOUNT TEST
+
+[ ] Open Settings
+[ ] Select a funding account
+[ ] Confirm the selection persists
+[ ] Change the selection
+[ ] Confirm the new selection persists
+[ ] Confirm unsupported accounts cannot be selected
+[ ] Confirm full account numbers are never shown
+
+If practical in a safe test environment:
+
+[ ] Disconnect the selected account
+[ ] Confirm the pay button becomes unavailable
+[ ] Confirm no silent fallback occurs
+[ ] Confirm the user is directed to Settings
+[ ] Confirm the server blocks any bypass attempt
+
+G. PAYMENT-HISTORY TEST
+
+Confirm Insights shows:
+
+[ ] Funding institution
+[ ] Masked last four digits
+[ ] Destination debt
+[ ] Payment amount
+[ ] Initiation date
+[ ] Honest current status
+[ ] ACH settlement-time explanation
+
+Do not initiate a new real-money payment solely for this UI test without founder
+authorization. Use existing safe data where possible.
+
+H. GENERAL REGRESSION
+
+Test:
+
+- Fresh installation
+- Upgrade from build 206
+- Login
+- Signup
+- Logout and login
+- Session persistence
+- Password reset
+- Dashboard
+- Add Debt
+- Debt chart
+- Round-up settings
+- Insights
+- Settings
+- Contact form
+- Account deletion
+- Background/resume
+- Poor network conditions
+
+
+================================================================
+EMBEDDED-BANK-LOGIN RISK
+================================================================
+
+Known risk:
+
+Some OAuth institutions may reject or behave differently inside embedded
+webviews.
+
+The implementation must not be approved solely because:
+
+- The Universal Link opens Dime Time
+- Sandbox works
+- The simulator works
+- A non-OAuth bank works
+
+The release requires a successful physical-device OAuth test.
+
+If Chase or another OAuth bank blocks authentication:
+
+- Capture the exact screen and error
+- Record whether the flow used Safari, an embedded browser, or the Chase app
+- Record whether Dime Time received the Universal Link
+- Record whether the Plaid session resumed
+- Do not weaken security settings
+- Do not submit for App Review until the cause is understood
+
+
+================================================================
+APP STORE “WHAT’S NEW” TEXT
+================================================================
+
+Suggested text:
+
+Smoother bank connections: logging in at your bank now returns you straight to
+Dime Time. This update also closes the menu automatically after you choose a
+page and includes clearer payment status updates and reliability improvements.
+
+Do not claim:
+
+- Automatic debt import is available before Plaid Liabilities approval
+- Every bank is supported
+- ACH payments settle instantly
+- Public real-money transfers are broadly enabled
+
+
+================================================================
+APP STORE CONNECT CHECKS
+================================================================
+
+Before submission:
+
+- Confirm version is 1.0.5
+- Confirm attached build is 207
+- Confirm the build finished Apple processing
+- Confirm export-compliance answers are accurate
+- Confirm privacy disclosures remain accurate
+- Confirm screenshots match current behavior
+- Do not show unavailable Liabilities functionality
+- Do not imply unrestricted public real-money access
+- Confirm Support URL works
+- Confirm Privacy Policy URL works
+- Confirm Terms URL works
+- Confirm demo/reviewer credentials work if supplied
+- Confirm account deletion remains available
+- Confirm review notes explain any relevant bank-linking behavior
+- Confirm no development URL, sandbox bank, or test secret is present
+
+
+================================================================
+RECOMMENDED APP REVIEW NOTES
+================================================================
+
+Provide concise reviewer notes such as:
+
+Version 1.0.5 improves bank-connection reliability, including support for
+returning to Dime Time after authentication with institutions that use an
+external OAuth login flow.
+
+Real-money transfers remain protected by Dime Time’s controlled rollout
+safeguards and are not broadly enabled for public users. Reviewers can evaluate
+the app without initiating a real payment.
+
+Include valid demo credentials and exact navigation instructions if Apple needs
+them.
+
+Do not include live bank credentials, secret keys, or private financial data.
+
+
+================================================================
+ROLLBACK AND INCIDENT READINESS
+================================================================
+
+Before submission, confirm:
+
+- Build 206 remains the live App Store version until 207 is released
+- Server changes remain backward-compatible with build 206
+- Liabilities remains gated
+- OAuth failures produce recovery UI
+- Funding-account failures block payment rather than selecting another account
+- Operational logs can identify OAuth failures without exposing tokens
+- Existing server kill switches remain available
+- No rollback requires disabling money-movement safeguards
+
+If a serious server-side regression appears:
+
+- Use the existing safe server rollback/deployment procedure
+- Preserve database compatibility
+- Do not remove security validations to restore functionality
+- Do not alter real-money flags without founder authorization
+
+
+================================================================
+DO-NOT-TOUCH RULES
+================================================================
+
+1. Never add server.url to capacitor.config.ts.
+   It breaks the established cold-start architecture.
+
+2. Info.plist remains the version/build source consumed by CI.
+   Codemagic may verify but must not overwrite the built product’s version.
+
+3. Do not change real-money feature flags.
+
+4. Do not remove the per-user allowlist.
+
+5. Do not weaken:
+
+   - $1 first-transfer limit
+   - $5 daily limit
+   - Idempotency
+   - Webhook verification
+   - Mandate evidence
+   - Funding-account ownership validation
+   - Duplicate-transfer protection
+
+6. Do not expose:
+
+   - Plaid secrets
+   - Plaid access tokens
+
+   - Plaid Link tokens
+   - Stripe secret keys
+   - Database credentials
+   - Full bank account numbers
+   - Password-reset tokens
+
+7. Do not use dime-time.com without the hyphen.
+
+8. Do not reuse build 207.
+
+9. The next build after 207 must be 208 or higher.
+
+10. Do not run a real payment without explicit founder authorization.
+
+
+================================================================
+STOP CONDITIONS
+================================================================
+
+Do not submit build 207 if:
+
+- Associated Domains is not enabled in the Apple Developer portal
+- The provisioning profile lacks Associated Domains support
+- The signed app lacks applinks:dime-time.com
+- The AASA file is unavailable, redirects, or contains the wrong identifier
+- The Plaid Dashboard redirect URI is missing
+- PLAID_REDIRECT_URI is missing or mismatched
+- The Universal Link fails to open Dime Time
+- OAuth opens Dime Time but does not resume the original Plaid session
+- Chase/OAuth leaves the user stranded in Safari
+- OAuth creates duplicate Plaid Items
+- OAuth exchanges the public token more than once
+- Missing/expired sessions still produce a blank screen or silent redirect
+- The slide-out menu continues covering destination pages
+- A disconnected funding account silently falls back to another account
+- Another user’s funding account can be selected
+- ACH “submitted” is displayed as “settled”
+- Password-reset behavior reveals whether an account exists
+- Any secret or token is exposed
+- Real-money safeguards changed
+- Build/version values are inconsistent
+- CodeMagic overwrites the release version
+- Upgrade testing from build 206 fails
+
+
+================================================================
+REQUIRED FINAL REPORT TO FOUNDER
+================================================================
+
+Return the following after the CodeMagic/TestFlight run:
+
+1. Git commit used for build 207
+2. Marketing version
+3. Build number
+4. Bundle ID
+5. Apple Team ID
+6. CodeMagic build result
+7. Apple upload-processing result
+8. TestFlight availability
+9. Signed Associated Domains entitlement verification
+10. AASA production verification
+11. Plaid Dashboard redirect-URI confirmation
+12. PLAID_REDIRECT_URI configuration confirmation without exposing secrets
+13. Physical-iPhone Universal Link result
+14. Physical-iPhone Chase/OAuth result
+15. Non-OAuth bank-linking result
+16. OAuth cold-start result
+17. OAuth already-running-app result
+18. Duplicate-callback result
+19. Navigation/menu result
+20. Funding-account-selection result
+21. ACH status-display result
+22. Password-reset regression result
+23. Confirmation that all real-money safeguards remain unchanged
+24. Confirmation that LAST_ACCEPTED_BY_APPLE was updated only after build 207
+    became available in TestFlight/App Store Connect
+25. Any known issue deferred to build 208
+26. Final go/no-go recommendation for App Store submission
+
+
+================================================================
+FINAL GO/NO-GO STANDARD
+================================================================
+
+GO only when:
+
+- Build 207 is available in TestFlight
+- The signed entitlement is present
+- Universal Links open Dime Time
+- Chase or another meaningful OAuth test succeeds on a real iPhone
+- The original Plaid session resumes
+- No duplicate Item or exchange occurs
+- Navigation closes correctly
+- Funding-account safety works
+- ACH statuses remain accurate
+- Real-money safeguards are unchanged
+- Upgrade from build 206 succeeds
+
+If any critical requirement fails, return NO-GO with the exact failing step,
+evidence, suspected cause, and safest next action.
