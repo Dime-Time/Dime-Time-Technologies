@@ -1,0 +1,264 @@
+DIME TIME — FINAL PRE-REPUBLISH CHECKLIST
+Date: July 18, 2026
+
+STATUS
+
+Build 207 Bucket A code is complete and approved.
+
+Completed:
+
+- Plaid OAuth server/web preparation
+- Apple App Site Association file
+- Plaid OAuth resume page
+- Missing/expired OAuth-session recovery message
+- Graceful Plaid Liabilities gating
+- Round-up funding-account selection
+- Server-side account ownership validation
+- ACH payment-status clarity
+- Password-reset security and error handling
+- Automated password-reset regression tests
+
+IMPORTANT
+
+There is one required configuration item missing from the founder checklist:
+
+The production PLAID_REDIRECT_URI secret must be set before Republish.
+
+Adding the redirect URI to the Plaid Dashboard does not automatically configure
+the Dime Time server.
+
+
+================================================================
+STEP 1 — REGISTER THE PLAID REDIRECT URI
+================================================================
+
+In the Plaid Dashboard, go to:
+
+Team Settings > API > Allowed redirect URIs
+
+Add this exact URI:
+
+https://dime-time.com/plaid/oauth
+
+Requirements:
+
+- Use HTTPS
+- No trailing slash
+- No query parameters
+- No extra spaces or characters
+- Exact hostname: dime-time.com
+- Exact path: /plaid/oauth
+
+
+================================================================
+STEP 2 — SET THE PRODUCTION PLAID SECRET
+================================================================
+
+Set this production secret before Republish:
+
+PLAID_REDIRECT_URI=https://dime-time.com/plaid/oauth
+
+Confirm:
+
+- The secret name is exactly PLAID_REDIRECT_URI
+- The value exactly matches the Plaid Dashboard entry
+- There is no trailing slash
+- There are no quotation marks in the stored value
+- There are no leading or trailing spaces
+- The secret is set in the production deployment environment
+
+Do not print or expose unrelated secrets.
+
+The server’s production validation should continue rejecting redirect URIs that
+do not begin with:
+
+https://dime-time.com
+
+
+================================================================
+STEP 3 — COMPLETE RESEND CONFIGURATION
+================================================================
+
+Before Republish, complete the email-delivery setup:
+
+1. Verify dime-time.com in Resend.
+2. Confirm all required DNS records are accepted.
+3. Set EMAIL_FROM to an approved sending address using the verified domain.
+
+Example format:
+
+EMAIL_FROM=Dime Time <support@dime-time.com>
+
+Use the actual address approved in Resend.
+
+Confirm:
+
+- EMAIL_FROM uses the verified dime-time.com domain
+- Password-reset emails use this sender
+- Contact-form notifications use the correct production configuration
+- No raw provider errors are shown to users
+- Password-reset responses do not reveal whether an account exists
+
+
+================================================================
+STEP 4 — REPUBLISH ONCE
+================================================================
+
+After completing the Plaid and Resend configuration, Republish the application.
+
+This Republish should put the following into production together:
+
+- Apple App Site Association file
+- /plaid/oauth resume page
+- “Connection interrupted” recovery card
+- Link-token persistence
+- Plaid Liabilities graceful gating
+- Round-up funding-account selection
+- Funding-account ownership validation
+- ACH payment-history improvements
+- Password-reset/email failure handling
+- All other approved Bucket A changes
+
+Do not change:
+
+- Real-money feature flags
+- Per-user allowlist
+- $1 first-transfer limit
+- $5 daily limit
+- Live payment safeguards
+- Production database data
+
+
+================================================================
+STEP 5 — VERIFY PRODUCTION AFTER REPUBLISH
+================================================================
+
+A. VERIFY THE AASA FILE
+
+Open:
+
+https://dime-time.com/.well-known/apple-app-site-association
+
+Confirm:
+
+- HTTP 200
+- No redirect
+- Publicly accessible
+- Valid JSON
+- Correct content type
+- Application identifier:
+
+  8WZHH537SU.com.dimetime.mobile
+
+- Authorized path:
+
+  /plaid/oauth
+
+Do not continue to native OAuth signoff if the production file is missing,
+redirecting, invalid, or still serving the older build.
+
+B. VERIFY THE OAUTH RESUME PAGE
+
+Open:
+
+https://dime-time.com/plaid/oauth
+
+Confirm:
+
+- Missing session information shows the calm “Connection interrupted” card
+- Expired session information shows the recovery card
+- The page provides a button back to the app
+- Only a genuine cancellation navigates away
+- No user is silently dropped onto the marketing homepage
+- No raw error details, Link tokens, or personal information are displayed
+- The successful OAuth path remains intact
+
+C. VERIFY PLAID LINK-TOKEN CREATION
+
+Confirm production link-token creation:
+
+- Uses PLAID_REDIRECT_URI
+- Uses exactly https://dime-time.com/plaid/oauth
+- Does not use localhost or a development URL
+- Does not alter the URI with a trailing slash
+- Preserves secure Link-session persistence
+- Does not expose or log Link tokens
+
+D. VERIFY PASSWORD RESET
+
+Test safely with:
+
+- An existing account email
+- A nonexistent account email
+- A controlled email-provider failure
+
+Confirm:
+
+- Public responses do not reveal whether an account exists
+- Users do not see raw Resend/provider errors
+- No false success is displayed where the interface promises delivery
+- Reset tokens are not logged
+- All six automated regression tests still pass
+
+
+================================================================
+STEP 6 — BEGIN POST-REPUBLISH WORK
+================================================================
+
+After the production Republish and verification succeed, proceed with:
+
+1. Bucket A production regression testing
+2. Native iOS Bucket B
+3. Associated Domains entitlement
+4. Native Universal Link reception
+5. Plaid OAuth session resume inside the iOS app
+6. Screen-slide/navigation correction
+7. Physical-iPhone OAuth testing
+8. Build 207 or higher through CodeMagic
+9. App Store submission preparation
+
+
+================================================================
+CURRENT STATUS
+================================================================
+
+- Bucket A code: COMPLETE AND APPROVED
+- AASA development verification: PASSED
+- Production AASA deployment: WAITING FOR REPUBLISH
+- OAuth recovery bug: FIXED AND REVIEWED
+- Plaid Dashboard redirect URI: FOUNDER ACTION PENDING
+- PLAID_REDIRECT_URI secret: MUST BE SET BEFORE REPUBLISH
+- Resend domain verification: PENDING
+- EMAIL_FROM configuration: PENDING
+- Production Republish: PENDING
+- Production regression testing: BLOCKED BY REPUBLISH
+- Native Bucket B: BLOCKED BY REPUBLISH AND VERIFICATION
+- Physical-iPhone OAuth signoff: NOT READY
+- App Store build 207 submission: NOT READY
+
+
+================================================================
+STOP CONDITIONS
+================================================================
+
+Do not begin final physical-iPhone OAuth signoff if:
+
+- The Plaid Dashboard URI is not registered
+- PLAID_REDIRECT_URI is missing
+- The secret and Dashboard values do not match exactly
+- The AASA file is not live in production
+- The AASA file does not contain 8WZHH537SU.com.dimetime.mobile
+- The OAuth resume page still drops users onto the marketing homepage
+- Resend domain verification is incomplete
+- EMAIL_FROM is not configured
+- The Republish has not completed successfully
+
+Do not upload build 207 until:
+
+- Dashboard configuration is live
+- Production secret is set
+- Bucket A is republished
+- Production endpoints are verified
+- Native Bucket B is complete
+- OAuth passes on a physical iPhone
+- Existing real-money safeguards are confirmed unchanged
