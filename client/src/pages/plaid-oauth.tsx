@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { Capacitor } from "@capacitor/core";
 import { usePlaidLink } from "react-plaid-link";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -93,9 +94,21 @@ export default function PlaidOauthPage() {
     [state, navigate, destination],
   );
 
+  // On the web, the browser is literally at https://dime-time.com/plaid/oauth?...
+  // so window.location.href IS the redirect URI Plaid expects. Inside the native
+  // app the WebView origin is capacitor://localhost — the universal link that
+  // brought us here carried the real https URL, whose pathname+search wouter
+  // preserved, so we reconstruct the exact https redirect URI from those.
+  const receivedRedirectUri =
+    typeof window === "undefined"
+      ? undefined
+      : Capacitor.isNativePlatform()
+        ? `https://dime-time.com${window.location.pathname}${window.location.search}`
+        : window.location.href;
+
   const { open, ready } = usePlaidLink({
     token: state?.linkToken ?? null,
-    receivedRedirectUri: typeof window !== "undefined" ? window.location.href : undefined,
+    receivedRedirectUri,
     onSuccess,
     onExit,
   });

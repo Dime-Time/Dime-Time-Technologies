@@ -3,6 +3,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { initSentry } from "./lib/sentry";
+import { initUniversalLinks } from "./lib/universalLinks";
 import App from "./App";
 import "./index.css";
 
@@ -11,6 +12,11 @@ import "./index.css";
 // is never imported — this is just a tiny shim. Fire-and-forget: the dynamic
 // import resolves shortly after first paint.
 void initSentry();
+
+// Native iOS universal links (https://dime-time.com/plaid/oauth etc.).
+// Registered once at module scope — no-op on web. Handles running,
+// backgrounded, AND cold-start deliveries of the OAuth return link.
+initUniversalLinks();
 
 const container = document.getElementById("root");
 

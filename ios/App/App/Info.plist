@@ -19,7 +19,7 @@
         <key>CFBundleShortVersionString</key>
         <string>1.0.4</string>
         <key>CFBundleVersion</key>
-        <string>206</string>
+        <string>207</string>
         <key>LSRequiresIPhoneOS</key>
         <true/>
         <key>UILaunchStoryboardName</key>
@@ -132,10 +132,8 @@
         <key>UIRequiresFullScreen</key>
         <false/>
         
-        <!-- Universal Links - uncomment when domain association is configured -->
-        <!-- <key>com.apple.developer.associated-domains</key>
-        <array>
-            <string>applinks:dimetime.app</string>
-        </array> -->
+        <!-- Universal Links are configured via App.entitlements
+             (com.apple.developer.associated-domains = applinks:dime-time.com),
+             NOT here — entitlements never belong in Info.plist. -->
 </dict>
 </plist>

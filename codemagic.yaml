@@ -154,6 +154,16 @@ workflows:
           fi
           echo "    Build number gate passed: $IPA_BUILD_NUMBER > $LAST_ACCEPTED_BY_APPLE"
 
+          echo "=== Verifying Associated Domains entitlement in the signed app ==="
+          SIGNED_ENTITLEMENTS=$(codesign -d --entitlements :- "$WORK_DIR/Payload/App.app" 2>/dev/null || true)
+          if ! echo "$SIGNED_ENTITLEMENTS" | grep -q "applinks:dime-time.com"; then
+            echo "FATAL: applinks:dime-time.com is missing from the signed entitlements."
+            echo "       Universal links (Plaid OAuth return) will NOT work in this build."
+            echo "       Check that Associated Domains is enabled on the App ID and the provisioning profile was regenerated."
+            exit 1
+          fi
+          echo "    Associated Domains entitlement present: applinks:dime-time.com"
+
       - name: Upload IPA to App Store Connect (TestFlight, Apple ID)
         script: |
           set -e

@@ -29,3 +29,4 @@
 - [GEO guides & crawler files](geo-guides.md) — AI crawlers don't run JS: SEO/GEO content must be static HTML via Express routes; audit public/ before static-mounting.
 - [Slide deck generation](deck-generation.md) — python-pptx decks in attached_assets/<name>-slides/; verify via soffice+pdftoppm render; no emoji (tofu), no partner logos.
 - [Plaid OAuth resume page](plaid-oauth-resume.md) — react-plaid-link fires onExit on init failure too; never navigate unconditionally in onExit — show the recovery card unless it's a real user cancel.
+- [iOS universal links](ios-universal-links.md) — AASA + App.entitlements + client listener must stay in lockstep; native redirect URI is rebuilt from pathname+search, never window.location.href.

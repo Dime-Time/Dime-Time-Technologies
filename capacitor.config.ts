@@ -29,8 +29,8 @@ const config: CapacitorConfig = {
      *
      * Bump this every time you ship a new TestFlight build —
      * Apple requires CFBundleVersion to be strictly greater than
-     * the previously uploaded value. Last uploaded was 200; this
-     * build is 203.
+     * the previously uploaded value. Last accepted was 206; this
+     * build is 207.
      *
      * Source of truth: ios/App/App/Info.plist (CFBundleVersion).
      * Keep this constant in sync with that value.
@@ -40,7 +40,7 @@ const config: CapacitorConfig = {
      *   - npx cap sync ios
      *   - run Codemagic iOS build → TestFlight
      */
-    buildNumber: '203',
+    buildNumber: '207',
   },
 
   server: {

@@ -206,6 +206,10 @@ var FLAG_DEFINITIONS = {
   ENABLE_DEBT_IMPORT: {
     defaultValue: false,
     description: "Gate the automatic debt-import feature (connect a liability provider and pull in debts). OFF means the /api/debts/import routes are not mounted and the client Import Debts UI is hidden. Uses the sandbox provider until a real liability-data provider (Plaid Liabilities / Method) is approved."
+  },
+  ENABLE_SUBSCRIPTIONS: {
+    defaultValue: false,
+    description: "Gate the Stripe Billing subscription feature (Dime Time Debt $2.99/mo). OFF means /api/subscription routes are not mounted, no premium gating is applied anywhere (today's behavior is unchanged), and all subscription UI is hidden. Requires ENABLE_STRIPE_ACH \u2014 the server refuses to boot if SUBSCRIPTIONS is on while STRIPE_ACH is off."
   }
 };
 var FLAG_NAMES = Object.keys(FLAG_DEFINITIONS);
@@ -255,6 +259,11 @@ function validateProductionSecrets() {
   if (!process.env.PLAID_TOKEN_ENCRYPTION_KEY) {
     missing.push("PLAID_TOKEN_ENCRYPTION_KEY");
   }
+  const plaidEnv = (process.env.PLAID_ENV || "sandbox").toLowerCase();
+  if (plaidEnv === "production") {
+    if (!process.env.PLAID_SECRET_PRODUCTION) missing.push("PLAID_SECRET_PRODUCTION");
+    if (!process.env.PLAID_CLIENT_ID) missing.push("PLAID_CLIENT_ID");
+  }
   const stripeAchEnabled = isFlagEnabled("ENABLE_STRIPE_ACH");
   if (stripeAchEnabled) {
     for (const key of [
@@ -301,11 +310,13 @@ function validateProductionSecrets() {
 }
 
 // server/index.ts
-import express3 from "express";
+import express4 from "express";
 import cors from "cors";
 
 // server/routes.ts
+import express2 from "express";
 import { createServer } from "http";
+import path from "path";
 
 // shared/schema.ts
 var schema_exports = {};
@@ -349,6 +360,8 @@ __export(schema_exports, {
   insertRoundUpCollectionSchema: () => insertRoundUpCollectionSchema,
   insertRoundUpSettingsSchema: () => insertRoundUpSettingsSchema,
   insertStripeAccountSchema: () => insertStripeAccountSchema,
+  insertSubscriptionConsentSchema: () => insertSubscriptionConsentSchema,
+  insertSubscriptionSchema: () => insertSubscriptionSchema,
   insertSweepAccountSchema: () => insertSweepAccountSchema,
   insertSweepDepositSchema: () => insertSweepDepositSchema,
   insertTransactionSchema: () => insertTransactionSchema,
@@ -368,6 +381,8 @@ __export(schema_exports, {
   sessions: () => sessions,
   stripeAccounts: () => stripeAccounts,
   stripeWebhookEvents: () => stripeWebhookEvents,
+  subscriptionConsents: () => subscriptionConsents,
+  subscriptions: () => subscriptions,
   sweepAccounts: () => sweepAccounts,
   sweepDeposits: () => sweepDeposits,
   transactions: () => transactions,
@@ -508,6 +523,10 @@ var roundUpSettings = pgTable("round_up_settings", {
   // Bank account ID for pulling round-ups (e.g., JP Morgan Chase checking)
   targetDebtId: varchar("target_debt_id"),
   // Debt account to pay (e.g., Carmax car loan)
+  // Which Stripe-linked bank account (stripe_accounts.id) FUNDS round-up ACH
+  // payments. Set ONLY via the dedicated validated endpoint (ownership +
+  // eligibility checked server-side) — never via the generic settings routes.
+  fundingStripeAccountId: varchar("funding_stripe_account_id"),
   multiplier: decimal("multiplier", { precision: 3, scale: 2 }).default("1.00").notNull(),
   // 1.00 = normal, 2.00 = double round-ups
   autoApplyThreshold: decimal("auto_apply_threshold", { precision: 10, scale: 2 }).default("25.00").notNull(),
@@ -647,6 +666,9 @@ var transfers = pgTable("transfers", {
   stripeChargeId: text("stripe_charge_id"),
   provider: text("provider"),
   // 'plaid' | 'mercury' | 'stripe' — set when a provider is selected
+  // Which stripe_accounts row funded this debit (masked label shown in the
+  // transfer history). Nullable — Plaid/Mercury rows and legacy rows omit it.
+  stripeAccountId: varchar("stripe_account_id"),
   debtId: varchar("debt_id"),
   correlationId: varchar("correlation_id").notNull(),
   idempotencyKey: text("idempotency_key"),
@@ -730,6 +752,51 @@ var achAuthorizations = pgTable("ach_authorizations", {
   userIdx: index("ach_auth_user_idx").on(table.userId)
 }));
 var insertAchAuthorizationSchema = createInsertSchema(achAuthorizations).omit({
+  id: true,
+  createdAt: true
+});
+var subscriptions = pgTable("subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  plan: text("plan").notNull().default("debt"),
+  // PlanId from shared/subscriptionPlans.ts
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+  stripePriceId: text("stripe_price_id").notNull(),
+  // Stripe subscription status verbatim (see shared/subscriptionPlans.ts):
+  // incomplete | incomplete_expired | trialing | active | past_due |
+  // canceled | unpaid | paused
+  status: text("status").notNull().default("incomplete"),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
+  canceledAt: timestamp("canceled_at"),
+  latestInvoiceId: text("latest_invoice_id"),
+  lastPaymentError: text("last_payment_error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  userIdx: index("subscriptions_user_idx").on(table.userId)
+}));
+var insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+var subscriptionConsents = pgTable("subscription_consents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  plan: text("plan").notNull(),
+  priceCentsAtConsent: integer("price_cents_at_consent").notNull(),
+  version: text("version").notNull(),
+  text: text("text").notNull(),
+  ipAddress: text("ip_address").notNull(),
+  userAgent: text("user_agent").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userIdx: index("subscription_consents_user_idx").on(table.userId)
+}));
+var insertSubscriptionConsentSchema = createInsertSchema(subscriptionConsents).omit({
   id: true,
   createdAt: true
 });
@@ -1135,7 +1202,7 @@ var db = drizzle({ client: pool, schema: schema_exports });
 
 // server/storage.ts
 import { eq, desc, and, sql as sql2, inArray, gte } from "drizzle-orm";
-var DatabaseStorage = class {
+var DatabaseStorage = class _DatabaseStorage {
   // User methods
   async getUser(id) {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -1532,6 +1599,8 @@ var DatabaseStorage = class {
       await tx.delete(transfers).where(eq(transfers.userId, userId));
       await tx.delete(stripeAccounts).where(eq(stripeAccounts.userId, userId));
       await tx.delete(achAuthorizations).where(eq(achAuthorizations.userId, userId));
+      await tx.delete(subscriptions).where(eq(subscriptions.userId, userId));
+      await tx.delete(subscriptionConsents).where(eq(subscriptionConsents.userId, userId));
       await tx.delete(users).where(eq(users.id, userId));
     });
   }
@@ -1591,6 +1660,39 @@ var DatabaseStorage = class {
       sql2`DELETE FROM idempotency_keys
           WHERE idempotency_key = ${key} AND user_id = ${userId} AND endpoint = ${endpoint}
           AND response_status = 0`
+    );
+  }
+  // Per-user subscribe lock — implemented as a reserved (never finalized) row
+  // in idempotency_keys so the (key, user, endpoint) unique index provides the
+  // atomicity. Distinct from the caller-supplied Idempotency-Key reservation:
+  // this one closes the race between two requests with DIFFERENT keys.
+  static SUBSCRIBE_LOCK_KEY = "user-subscribe-lock";
+  static SUBSCRIBE_LOCK_ENDPOINT = "/api/subscription/subscribe#user-lock";
+  async acquireSubscribeLock(userId) {
+    await db.execute(
+      sql2`DELETE FROM idempotency_keys
+          WHERE idempotency_key = ${_DatabaseStorage.SUBSCRIBE_LOCK_KEY}
+            AND user_id = ${userId}
+            AND endpoint = ${_DatabaseStorage.SUBSCRIBE_LOCK_ENDPOINT}
+            AND response_status = 0
+            AND created_at < NOW() - INTERVAL '2 minutes'`
+    );
+    const inserted = await db.execute(
+      sql2`INSERT INTO idempotency_keys (id, idempotency_key, user_id, endpoint, response_status, response_body)
+          VALUES (gen_random_uuid(), ${_DatabaseStorage.SUBSCRIBE_LOCK_KEY}, ${userId}, ${_DatabaseStorage.SUBSCRIBE_LOCK_ENDPOINT}, 0, '')
+          ON CONFLICT (idempotency_key, user_id, endpoint) DO NOTHING
+          RETURNING id`
+    );
+    const rows = inserted?.rows ?? inserted ?? [];
+    return rows.length > 0;
+  }
+  async releaseSubscribeLock(userId) {
+    await db.execute(
+      sql2`DELETE FROM idempotency_keys
+          WHERE idempotency_key = ${_DatabaseStorage.SUBSCRIBE_LOCK_KEY}
+            AND user_id = ${userId}
+            AND endpoint = ${_DatabaseStorage.SUBSCRIBE_LOCK_ENDPOINT}
+            AND response_status = 0`
     );
   }
   // Transfer ledger methods
@@ -1741,6 +1843,42 @@ var DatabaseStorage = class {
     const [result] = await db.select().from(achAuthorizations).where(eq(achAuthorizations.userId, userId)).orderBy(desc(achAuthorizations.createdAt)).limit(1);
     return result;
   }
+  // ----- Subscriptions (Stripe Billing) -----
+  async upsertSubscription(data) {
+    const [result] = await db.insert(subscriptions).values(data).onConflictDoUpdate({
+      target: subscriptions.stripeSubscriptionId,
+      set: {
+        plan: data.plan ?? "debt",
+        stripeCustomerId: data.stripeCustomerId,
+        stripePriceId: data.stripePriceId,
+        status: data.status ?? "incomplete",
+        currentPeriodStart: data.currentPeriodStart ?? null,
+        currentPeriodEnd: data.currentPeriodEnd ?? null,
+        cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
+        canceledAt: data.canceledAt ?? null,
+        latestInvoiceId: data.latestInvoiceId ?? null,
+        lastPaymentError: data.lastPaymentError ?? null,
+        updatedAt: /* @__PURE__ */ new Date()
+      }
+    }).returning();
+    return result;
+  }
+  async getLatestSubscriptionByUserId(userId) {
+    const [result] = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).orderBy(desc(subscriptions.createdAt)).limit(1);
+    return result;
+  }
+  async getSubscriptionByStripeSubscriptionId(stripeSubscriptionId) {
+    const [result] = await db.select().from(subscriptions).where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).limit(1);
+    return result;
+  }
+  async createSubscriptionConsent(data) {
+    const [result] = await db.insert(subscriptionConsents).values(data).returning();
+    return result;
+  }
+  async getLatestSubscriptionConsent(userId) {
+    const [result] = await db.select().from(subscriptionConsents).where(eq(subscriptionConsents.userId, userId)).orderBy(desc(subscriptionConsents.createdAt)).limit(1);
+    return result;
+  }
   // ----- Real-money ACH rollout gate (allowlist + conservative limits) -----
   //
   // Race-safe: takes a per-user advisory lock for the duration of the
@@ -1881,6 +2019,7 @@ var DatabaseStorage = class {
         amount: amount.toFixed(2),
         status: "created",
         provider: "stripe",
+        stripeAccountId,
         debtId: debtId || null,
         correlationId,
         idempotencyKey,
@@ -2051,8 +2190,8 @@ var dimeTokenService = new DimeTokenService();
 // server/routes.ts
 import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
 import bcrypt from "bcrypt";
-import rateLimit3 from "express-rate-limit";
-import { z as z7 } from "zod";
+import rateLimit4 from "express-rate-limit";
+import { z as z8 } from "zod";
 
 // server/services/plaidService.ts
 import {
@@ -2076,6 +2215,37 @@ function resolvePlaidEnvironment() {
       return PlaidEnvironments.sandbox;
   }
 }
+function resolvePlaidSecret() {
+  const env = (process.env.PLAID_ENV || "sandbox").toLowerCase();
+  if (env === "production") {
+    if (!process.env.PLAID_SECRET_PRODUCTION) {
+      console.error(
+        "[PlaidService] PLAID_ENV=production but PLAID_SECRET_PRODUCTION is not set. Plaid will be unavailable. Set the production secret from the Plaid dashboard (Team Settings \u2192 Keys)."
+      );
+      return void 0;
+    }
+    return process.env.PLAID_SECRET_PRODUCTION;
+  }
+  return process.env.PLAID_SECRET;
+}
+function resolvePlaidRedirectUri() {
+  const redirectUri = process.env.PLAID_REDIRECT_URI;
+  if (!redirectUri || redirectUri.includes("your-domain") || !redirectUri.startsWith("https://")) {
+    return void 0;
+  }
+  const env = (process.env.PLAID_ENV || "sandbox").toLowerCase();
+  if (env === "production" && !redirectUri.startsWith("https://dime-time.com")) {
+    console.warn(
+      "[PlaidService] Ignoring PLAID_REDIRECT_URI in production: it is not a https://dime-time.com URL. An unregistered redirect_uri would make Plaid Link fail for every bank."
+    );
+    return void 0;
+  }
+  return redirectUri;
+}
+function plaidNotConfiguredMessage() {
+  const env = (process.env.PLAID_ENV || "sandbox").toLowerCase();
+  return env === "production" ? "Plaid service not configured. PLAID_ENV=production requires PLAID_CLIENT_ID and PLAID_SECRET_PRODUCTION environment variables." : "Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.";
+}
 function maskToken(token) {
   if (!token || token.length < 8) return "[masked]";
   return `${token.slice(0, 8)}...[masked]`;
@@ -2098,17 +2268,18 @@ var PlaidService = class {
   constructor() {
     this.environment = process.env.PLAID_ENV || "sandbox";
     try {
+      const plaidSecret = resolvePlaidSecret();
       const configuration = new Configuration({
         basePath: resolvePlaidEnvironment(),
         baseOptions: {
           headers: {
             "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
-            "PLAID-SECRET": process.env.PLAID_SECRET
+            "PLAID-SECRET": plaidSecret
           }
         }
       });
       this.client = new PlaidApi(configuration);
-      this.isConfigured = !!(process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET);
+      this.isConfigured = !!(process.env.PLAID_CLIENT_ID && plaidSecret);
       if (this.isConfigured) {
         console.log(`Plaid service initialized in ${this.environment} environment`);
       }
@@ -2125,7 +2296,7 @@ var PlaidService = class {
   }
   async createLinkToken(userId) {
     if (!this.isConfigured) {
-      throw new Error("Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.");
+      throw new Error(plaidNotConfiguredMessage());
     }
     try {
       const linkTokenRequest = {
@@ -2135,14 +2306,14 @@ var PlaidService = class {
         country_codes: [CountryCode.Us],
         language: "en"
       };
-      const redirectUri = process.env.PLAID_REDIRECT_URI;
-      if (redirectUri && !redirectUri.includes("your-domain") && redirectUri.startsWith("https://")) {
+      const redirectUri = resolvePlaidRedirectUri();
+      if (redirectUri) {
         linkTokenRequest.redirect_uri = redirectUri;
       }
       const response = await this.getClient().linkTokenCreate(linkTokenRequest);
       return response.data.link_token;
     } catch (error) {
-      console.error("Error creating link token:", error);
+      console.error("Error creating link token:", this.redactPlaidError(error));
       throw error;
     }
   }
@@ -2159,7 +2330,7 @@ var PlaidService = class {
         itemId: response.data.item_id
       };
     } catch (error) {
-      console.error("Error exchanging public token:", error);
+      console.error("Error exchanging public token:", this.redactPlaidError(error));
       throw error;
     }
   }
@@ -2173,7 +2344,7 @@ var PlaidService = class {
       });
       return response.data.accounts;
     } catch (error) {
-      console.error("Error fetching accounts:", error);
+      console.error("Error fetching accounts:", this.redactPlaidError(error));
       throw error;
     }
   }
@@ -2189,7 +2360,7 @@ var PlaidService = class {
       });
       return response.data.transactions;
     } catch (error) {
-      console.error("Error fetching transactions:", error);
+      console.error("Error fetching transactions:", this.redactPlaidError(error));
       throw error;
     }
   }
@@ -2203,7 +2374,7 @@ var PlaidService = class {
       });
       return response.data.accounts;
     } catch (error) {
-      console.error("Error fetching balance:", error);
+      console.error("Error fetching balance:", this.redactPlaidError(error));
       throw error;
     }
   }
@@ -2221,7 +2392,7 @@ var PlaidService = class {
         name: response.data.accounts.find((a) => a.account_id === n.account_id)?.name || "Bank Account"
       }));
     } catch (error) {
-      console.error("Error fetching Plaid Auth:", error);
+      console.error("Error fetching Plaid Auth:", this.redactPlaidError(error));
       throw error;
     }
   }
@@ -2323,7 +2494,7 @@ var PlaidService = class {
    */
   async createLiabilitiesLinkToken(userId) {
     if (!this.isConfigured) {
-      throw new Error("Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.");
+      throw new Error(plaidNotConfiguredMessage());
     }
     try {
       const linkTokenRequest = {
@@ -2333,8 +2504,8 @@ var PlaidService = class {
         country_codes: [CountryCode.Us],
         language: "en"
       };
-      const redirectUri = process.env.PLAID_REDIRECT_URI;
-      if (redirectUri && !redirectUri.includes("your-domain") && redirectUri.startsWith("https://")) {
+      const redirectUri = resolvePlaidRedirectUri();
+      if (redirectUri) {
         linkTokenRequest.redirect_uri = redirectUri;
       }
       const response = await this.getClient().linkTokenCreate(linkTokenRequest);
@@ -4335,6 +4506,183 @@ async function verifyStripeWebhook(rawBody, signature) {
   return stripe.webhooks.constructEvent(rawBody, signature, secret);
 }
 
+// shared/subscriptionPlans.ts
+var PLAN_CATALOG = {
+  debt: {
+    id: "debt",
+    name: "Dime Time Debt",
+    priceCents: 299,
+    stripeLookupKey: "dime_time_debt_299_monthly",
+    interval: "month",
+    blurb: "Automate your spare change into real debt payments. Round-ups are collected automatically and applied toward the debts you choose.",
+    features: [
+      "Automatic round-up collection on every purchase",
+      "Round-up multipliers (2x, 3x) to accelerate payoff",
+      "Automatic application of round-ups to your debts",
+      "Everything in the free plan: debt tracking & payoff projections"
+    ]
+  }
+};
+var DEFAULT_PLAN_ID = "debt";
+var ENTITLED_SUBSCRIPTION_STATUSES = /* @__PURE__ */ new Set([
+  "active",
+  "trialing",
+  "incomplete",
+  "past_due"
+]);
+function isSubscriptionEntitled(status) {
+  if (!status) return false;
+  return ENTITLED_SUBSCRIPTION_STATUSES.has(status);
+}
+var TERMINAL_SUBSCRIPTION_STATUSES = /* @__PURE__ */ new Set([
+  "canceled",
+  "incomplete_expired",
+  "unpaid"
+]);
+function isSubscriptionTerminal(status) {
+  if (!status) return true;
+  return TERMINAL_SUBSCRIPTION_STATUSES.has(status);
+}
+
+// server/services/subscriptionService.ts
+var cachedPriceIds = /* @__PURE__ */ new Map();
+async function ensurePlanPrice(planId) {
+  const cached3 = cachedPriceIds.get(planId);
+  if (cached3) return cached3;
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  const plan = PLAN_CATALOG[planId];
+  const existing = await stripe.prices.list({
+    lookup_keys: [plan.stripeLookupKey],
+    active: true,
+    limit: 1
+  });
+  if (existing.data.length > 0) {
+    cachedPriceIds.set(planId, existing.data[0].id);
+    return existing.data[0].id;
+  }
+  const product = await stripe.products.create(
+    {
+      name: plan.name,
+      metadata: { dimeTimePlanId: plan.id }
+    },
+    { idempotencyKey: `dt_sub_product_${plan.stripeLookupKey}` }
+  );
+  const price = await stripe.prices.create(
+    {
+      product: product.id,
+      unit_amount: plan.priceCents,
+      currency: "usd",
+      recurring: { interval: plan.interval },
+      lookup_key: plan.stripeLookupKey,
+      transfer_lookup_key: true
+    },
+    { idempotencyKey: `dt_sub_price_${plan.stripeLookupKey}` }
+  );
+  cachedPriceIds.set(planId, price.id);
+  return price.id;
+}
+async function createRecurringAchMandate(args) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  if (!args.mandateIpAddress || !args.mandateUserAgent) {
+    throw new Error("Recurring ACH mandate requires a real customer IP and user agent");
+  }
+  const si = await stripe.setupIntents.create(
+    {
+      customer: args.customerId,
+      payment_method: args.paymentMethodId,
+      payment_method_types: ["us_bank_account"],
+      confirm: true,
+      mandate_data: {
+        customer_acceptance: {
+          type: "online",
+          online: {
+            ip_address: args.mandateIpAddress,
+            user_agent: args.mandateUserAgent
+          }
+        }
+      }
+    },
+    { idempotencyKey: `${args.idempotencyKey}_si` }
+  );
+  if (si.status !== "succeeded") {
+    throw new Error(`SetupIntent did not succeed (status=${si.status})`);
+  }
+  await stripe.customers.update(args.customerId, {
+    invoice_settings: { default_payment_method: args.paymentMethodId }
+  });
+  return { setupIntentId: si.id, status: si.status };
+}
+async function createPlanSubscription(args) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  return stripe.subscriptions.create(
+    {
+      customer: args.customerId,
+      items: [{ price: args.priceId }],
+      default_payment_method: args.paymentMethodId,
+      collection_method: "charge_automatically",
+      payment_behavior: "allow_incomplete",
+      payment_settings: {
+        payment_method_types: ["us_bank_account"],
+        save_default_payment_method: "off"
+      },
+      // dimeTimeUserId lets the webhook create/repair the local row even if
+      // it arrives before our own DB write (upsert keyed on subscription id).
+      metadata: { dimeTimeUserId: args.userId, dimeTimePlanId: args.planId },
+      expand: ["latest_invoice.payment_intent"]
+    },
+    { idempotencyKey: args.idempotencyKey }
+  );
+}
+async function setCancelAtPeriodEnd(stripeSubscriptionId, cancel) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  return stripe.subscriptions.update(stripeSubscriptionId, {
+    cancel_at_period_end: cancel
+  });
+}
+async function cancelSubscriptionImmediately(stripeSubscriptionId) {
+  const stripe = await getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  await stripe.subscriptions.cancel(stripeSubscriptionId);
+}
+async function retrieveStripeSubscription(stripeSubscriptionId) {
+  const stripe = await getStripe();
+  if (!stripe) return null;
+  try {
+    return await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  } catch {
+    return null;
+  }
+}
+function tsFromUnix(seconds) {
+  return typeof seconds === "number" ? new Date(seconds * 1e3) : null;
+}
+function subscriptionRowFromStripe(sub, userId) {
+  const item = sub.items?.data?.[0];
+  const latestInvoice = sub.latest_invoice;
+  const paymentError = typeof latestInvoice === "object" && latestInvoice?.payment_intent?.last_payment_error ? String(latestInvoice.payment_intent.last_payment_error.message || latestInvoice.payment_intent.last_payment_error.code) : null;
+  return {
+    userId,
+    plan: sub.metadata?.dimeTimePlanId || "debt",
+    stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
+    stripeSubscriptionId: sub.id,
+    stripePriceId: item?.price?.id ?? "",
+    status: sub.status,
+    // Stripe API versions 2025+ ("basil") moved the period fields from the
+    // subscription onto its items — tolerate both shapes so a dashboard
+    // webhook endpoint pinned to a newer version can't upsert null periods.
+    currentPeriodStart: tsFromUnix(sub.current_period_start ?? item?.current_period_start),
+    currentPeriodEnd: tsFromUnix(sub.current_period_end ?? item?.current_period_end),
+    cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+    canceledAt: tsFromUnix(sub.canceled_at),
+    latestInvoiceId: typeof latestInvoice === "string" ? latestInvoice : latestInvoice?.id ?? null,
+    lastPaymentError: paymentError
+  };
+}
+
 // server/routes/stripeRoutes.ts
 var MAX_DEBT_PAYMENT_DOLLARS2 = 500;
 var REAL_FIRST_TRANSFER_MAX_DOLLARS = 1;
@@ -4416,6 +4764,83 @@ function registerStripeRoutes(app2) {
         createdAt: a.createdAt
       }))
     });
+  });
+  app2.get("/api/stripe/funding-account", async (req, res) => {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const [accounts, settings] = await Promise.all([
+      storage.getStripeAccountsByUserId(userId),
+      storage.getRoundUpSettings(userId)
+    ]);
+    const selectedId = settings?.fundingStripeAccountId ?? null;
+    return res.json({
+      configured: isStripeAchEnabled(),
+      selectedId,
+      accounts: accounts.map((a) => {
+        const linked = a.isActive && a.status === "linked";
+        const eligible = linked && !!a.stripePaymentMethodEnc;
+        return {
+          id: a.id,
+          institutionName: a.institutionName,
+          last4: a.last4,
+          eligible,
+          ineligibleReason: eligible ? null : !linked ? "This account is no longer linked." : "This account can't be used for bank payments yet. Please re-link it.",
+          selected: a.id === selectedId
+        };
+      })
+    });
+  });
+  app2.put("/api/stripe/funding-account", async (req, res) => {
+    const correlationId = randomUUID3();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const parsed = z4.object({ stripeAccountId: z4.string().min(1).nullable() }).safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid request", correlationId });
+      }
+      const { stripeAccountId } = parsed.data;
+      if (stripeAccountId !== null) {
+        const account = await storage.getStripeAccountById(stripeAccountId);
+        if (!account || account.userId !== userId) {
+          return res.status(404).json({ message: "Bank account not found", correlationId });
+        }
+        if (!account.isActive || account.status !== "linked") {
+          return res.status(422).json({
+            message: "That account is no longer linked. Reconnect it or choose another account.",
+            correlationId
+          });
+        }
+        if (!account.stripePaymentMethodEnc) {
+          return res.status(422).json({
+            message: "That account can't be used for bank payments yet. Please re-link it.",
+            correlationId
+          });
+        }
+      }
+      const existing = await storage.getRoundUpSettings(userId);
+      const settings = await storage.createOrUpdateRoundUpSettings({
+        userId,
+        fundingStripeAccountId: stripeAccountId,
+        ...existing ? {} : { isEnabled: false }
+      });
+      stripeLog(correlationId, "funding_account_selected", {
+        userId,
+        stripeAccountId,
+        cleared: stripeAccountId === null
+      });
+      return res.json({
+        success: true,
+        selectedId: settings.fundingStripeAccountId ?? null,
+        correlationId
+      });
+    } catch (err) {
+      stripeLog(correlationId, "funding_account_select_failed", {
+        severity: "ERROR",
+        error: err?.message
+      });
+      return res.status(500).json({ message: "Internal server error", correlationId });
+    }
   });
   app2.post("/api/stripe/financial-connections/session", fcSessionLimiter, async (req, res) => {
     const correlationId = randomUUID3();
@@ -4569,6 +4994,13 @@ function registerStripeRoutes(app2) {
         await finalizeIdempotency(idempotencyKey, userId, endpoint, 404, body);
         return res.status(404).json(body);
       }
+      if (!stripeAccount.isActive || stripeAccount.status !== "linked") {
+        const body = {
+          message: "This bank account is no longer linked. Reconnect it or choose another account."
+        };
+        await finalizeIdempotency(idempotencyKey, userId, endpoint, 422, body);
+        return res.status(422).json(body);
+      }
       const paymentMethodId = await storage.getStripePaymentMethodId(stripeAccountId);
       if (!paymentMethodId) {
         const body = {
@@ -4586,6 +5018,7 @@ function registerStripeRoutes(app2) {
           amount: amount.toFixed(2),
           status: "simulated",
           provider: "stripe",
+          stripeAccountId,
           debtId: debtId || null,
           correlationId,
           idempotencyKey,
@@ -4920,6 +5353,69 @@ function registerStripeWebhook(app2) {
               disputeStatus: outcome
             });
           }
+        } else if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
+          if (!isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+            stripeLog(correlationId, "webhook_noop_acknowledged", {
+              eventId: event.id,
+              type: event.type,
+              reason: "subscriptions_flag_off"
+            });
+          } else {
+            const sub = event.data.object;
+            const userId = sub.metadata?.dimeTimeUserId || (await storage.getSubscriptionByStripeSubscriptionId(sub.id))?.userId;
+            if (!userId) {
+              stripeLog(correlationId, "webhook_subscription_user_miss", {
+                severity: "WARN",
+                eventId: event.id,
+                stripeSubscriptionId: sub.id
+              });
+            } else {
+              const row = await storage.upsertSubscription(subscriptionRowFromStripe(sub, userId));
+              stripeLog(correlationId, "subscription_upserted", {
+                eventId: event.id,
+                type: event.type,
+                stripeSubscriptionId: sub.id,
+                status: row.status
+              });
+            }
+          }
+        } else if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
+          if (!isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+            stripeLog(correlationId, "webhook_noop_acknowledged", {
+              eventId: event.id,
+              type: event.type,
+              reason: "subscriptions_flag_off"
+            });
+          } else {
+            const invoice = event.data.object;
+            const rawInvoiceSub = invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+            const subId = typeof rawInvoiceSub === "string" ? rawInvoiceSub : rawInvoiceSub?.id;
+            if (!subId) {
+              stripeLog(correlationId, "webhook_noop_acknowledged", {
+                eventId: event.id,
+                type: event.type,
+                reason: "no_subscription_on_invoice"
+              });
+            } else {
+              const fresh = await retrieveStripeSubscription(subId);
+              const userId = fresh?.metadata?.dimeTimeUserId || (await storage.getSubscriptionByStripeSubscriptionId(subId))?.userId;
+              if (!fresh || !userId) {
+                stripeLog(correlationId, "webhook_subscription_user_miss", {
+                  severity: "WARN",
+                  eventId: event.id,
+                  stripeSubscriptionId: subId
+                });
+              } else {
+                const row = await storage.upsertSubscription(subscriptionRowFromStripe(fresh, userId));
+                stripeLog(correlationId, "subscription_upserted", {
+                  eventId: event.id,
+                  type: event.type,
+                  stripeSubscriptionId: subId,
+                  status: row.status
+                });
+              }
+            }
+          }
         } else if (event.type === "setup_intent.succeeded" || event.type === "payment_method.attached") {
           stripeLog(correlationId, "webhook_noop_acknowledged", {
             eventId: event.id,
@@ -5020,6 +5516,13 @@ var LinkRequiredError = class extends Error {
     this.name = "LinkRequiredError";
   }
 };
+var LiabilitiesNotEnabledError = class extends Error {
+  code = "PLAID_LIABILITIES_NOT_ENABLED";
+  constructor(message = "Automatic debt import is coming soon. You can add your debts manually for now.") {
+    super(message);
+    this.name = "LiabilitiesNotEnabledError";
+  }
+};
 
 // server/services/debtImport/plaidLiabilityProvider.ts
 var PROVIDER = "plaid";
@@ -5027,6 +5530,15 @@ var REAUTH_ERROR_CODES = /* @__PURE__ */ new Set(["ITEM_LOGIN_REQUIRED", "PENDIN
 function isReauthRequired(err) {
   const code = err?.response?.data?.error_code;
   return typeof code === "string" && REAUTH_ERROR_CODES.has(code);
+}
+var LIABILITIES_NOT_ENABLED_CODES = /* @__PURE__ */ new Set([
+  "INVALID_PRODUCT",
+  "INVALID_PRODUCTS",
+  "PRODUCTS_NOT_SUPPORTED"
+]);
+function isLiabilitiesNotEnabled(err) {
+  const code = err?.response?.data?.error_code;
+  return typeof code === "string" && LIABILITIES_NOT_ENABLED_CODES.has(code);
 }
 function num(v, fallback = 0) {
   const n = typeof v === "number" ? v : Number(v);
@@ -5112,7 +5624,14 @@ var plaidLiabilityProvider = {
   name: PROVIDER,
   linkFlow: {
     async createLinkToken(userId) {
-      return plaidService.createLiabilitiesLinkToken(userId);
+      try {
+        return await plaidService.createLiabilitiesLinkToken(userId);
+      } catch (err) {
+        if (isLiabilitiesNotEnabled(err)) {
+          throw new LiabilitiesNotEnabledError();
+        }
+        throw err;
+      }
     },
     async completeLink(userId, publicToken, institutionName) {
       const { accessToken, itemId } = await plaidService.exchangePublicToken(publicToken);
@@ -5150,6 +5669,9 @@ var plaidLiabilityProvider = {
         throw new LinkRequiredError(
           "Your bank connection needs attention. Please reconnect to refresh your debts."
         );
+      }
+      if (isLiabilitiesNotEnabled(err)) {
+        throw new LiabilitiesNotEnabledError();
       }
       throw err;
     }
@@ -5213,6 +5735,30 @@ var disconnectLimiter = perUserLimiter(20, "disconnect");
 function errMessage(err) {
   return (err instanceof Error ? err.message : String(err)).slice(0, 500);
 }
+var LIABILITIES_COMING_SOON_MESSAGE = "Automatic debt import is coming soon. You can add your debts manually for now.";
+var LIABILITIES_CAPABILITY_TTL_MS = 10 * 60 * 1e3;
+var liabilitiesCapability = null;
+function markLiabilitiesCapability(available) {
+  liabilitiesCapability = { available, checkedAt: Date.now() };
+}
+async function isLiabilitiesAvailable(provider, userId) {
+  if (provider.name !== "plaid" || !provider.linkFlow) return true;
+  const cached3 = liabilitiesCapability;
+  if (cached3 && Date.now() - cached3.checkedAt < LIABILITIES_CAPABILITY_TTL_MS) {
+    return cached3.available;
+  }
+  try {
+    await provider.linkFlow.createLinkToken(userId);
+    markLiabilitiesCapability(true);
+    return true;
+  } catch (err) {
+    if (err instanceof LiabilitiesNotEnabledError) {
+      markLiabilitiesCapability(false);
+      return false;
+    }
+    return cached3?.available ?? true;
+  }
+}
 async function runImport(userId, action, correlationId) {
   const provider = getLiabilityProvider();
   try {
@@ -5262,6 +5808,31 @@ async function runImport(userId, action, correlationId) {
         body: {
           code: "link_required",
           message: "Connect your account to import your debts.",
+          correlationId
+        }
+      };
+    }
+    if (err instanceof LiabilitiesNotEnabledError) {
+      markLiabilitiesCapability(false);
+      await storage.createDebtImportAuditLog({
+        userId,
+        provider: provider.name,
+        action,
+        status: "error",
+        importedCount: 0,
+        updatedCount: 0,
+        message: "PLAID_LIABILITIES_NOT_ENABLED",
+        correlationId
+      });
+      debtImportLog(correlationId, `debt_${action}_liabilities_not_enabled`, {
+        userId,
+        provider: provider.name
+      });
+      return {
+        status: 503,
+        body: {
+          code: "PLAID_LIABILITIES_NOT_ENABLED",
+          message: LIABILITIES_COMING_SOON_MESSAGE,
           correlationId
         }
       };
@@ -5319,8 +5890,21 @@ function registerDebtImportRoutes(app2) {
     }
     try {
       const linkToken = await provider.linkFlow.createLinkToken(userId);
+      if (provider.name === "plaid") markLiabilitiesCapability(true);
       return res.json({ linkToken, correlationId });
     } catch (err) {
+      if (err instanceof LiabilitiesNotEnabledError) {
+        markLiabilitiesCapability(false);
+        debtImportLog(correlationId, "debt_link_token_liabilities_not_enabled", {
+          userId,
+          provider: provider.name
+        });
+        return res.status(503).json({
+          code: "PLAID_LIABILITIES_NOT_ENABLED",
+          message: LIABILITIES_COMING_SOON_MESSAGE,
+          correlationId
+        });
+      }
       debtImportLog(correlationId, "debt_link_token_error", {
         userId,
         provider: provider.name,
@@ -5405,6 +5989,9 @@ function registerDebtImportRoutes(app2) {
       // True when the provider needs a client-side connect step and the user
       // isn't connected yet — the client uses this to launch the Link flow.
       requiresLink: !!provider.linkFlow && !connected,
+      // False while the upstream Liabilities entitlement is pending (e.g. Plaid
+      // production before approval) — the client shows "coming soon" up front.
+      liabilitiesAvailable: await isLiabilitiesAvailable(provider, userId),
       provider: provider.name,
       institutionName: conn?.institutionName ?? null,
       lastSyncAt: conn?.lastSyncAt ?? null
@@ -5442,11 +6029,285 @@ function registerDebtImportRoutes(app2) {
   });
 }
 
-// server/routes/adminRoutes.ts
+// server/routes/subscriptionRoutes.ts
+import rateLimit3, { ipKeyGenerator as ipKeyGenerator3 } from "express-rate-limit";
+import { randomUUID as randomUUID5 } from "crypto";
 import { z as z6 } from "zod";
-var realTransfersToggleSchema = z6.object({
-  enabled: z6.boolean(),
-  notes: z6.string().max(500).optional()
+
+// shared/subscriptionAuthorization.ts
+var SUBSCRIPTION_CONSENT_VERSION = "2026-07-14.v1";
+var SUBSCRIPTION_CONSENT_TEXT = "By selecting \u201CSubscribe\u201D, you agree to the Dime Time Terms of Service and authorize Dime Time to electronically debit your linked bank account via the ACH network for the recurring monthly subscription fee shown above, on or about the same day each month, beginning today, and, if necessary, to electronically credit your account to correct any erroneous debit. This authorization remains in effect until you cancel your subscription in the app or contact us at tim@dime-time.com. Canceling stops future charges at the end of your current billing period; fees already charged are non-refundable except as required by law. You agree that ACH transactions you authorize comply with applicable U.S. law. Dime Time is a financial technology platform and is not a bank; banking services and payment infrastructure are provided through regulated financial partners.";
+
+// server/routes/subscriptionRoutes.ts
+var subscribeSchema = z6.object({
+  // Explicit re-statement that the user checked the consent box. The
+  // authoritative evidence row is written server-side with server-observed
+  // IP/UA — the client can't forge those.
+  consentAccepted: z6.literal(true),
+  // Optional: pick a specific linked bank account; defaults to the first
+  // active linked one.
+  stripeAccountId: z6.string().min(1).optional()
+});
+function clientIp2(req) {
+  const fwd = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
+  return req.ip || fwd || req.socket?.remoteAddress || "unknown";
+}
+function subLog(correlationId, event, data) {
+  setCorrelationTag(correlationId);
+  console.log(JSON.stringify({
+    ts: (/* @__PURE__ */ new Date()).toISOString(),
+    service: "SubscriptionRoutes",
+    correlationId,
+    event,
+    ...data
+  }));
+}
+var subscribeLimiter = rateLimit3({
+  windowMs: 60 * 1e3,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const uid = getUserIdFromRequest(req);
+    return uid ? `u:${uid}` : `ip:${ipKeyGenerator3(req.ip ?? "")}`;
+  },
+  message: { message: "Too many subscription attempts. Try again in a minute." }
+});
+function registerSubscriptionRoutes(app2) {
+  app2.get("/api/subscription", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const [subscription, accounts] = await Promise.all([
+        storage.getLatestSubscriptionByUserId(userId),
+        storage.getStripeAccountsByUserId(userId)
+      ]);
+      const linkedAccounts = accounts.filter((a) => a.isActive && a.status === "linked");
+      return res.json({
+        plan: PLAN_CATALOG[DEFAULT_PLAN_ID],
+        subscription: subscription ?? null,
+        entitled: isSubscriptionEntitled(subscription?.status),
+        bankLinked: linkedAccounts.length > 0,
+        bankAccounts: linkedAccounts.map((a) => ({
+          id: a.id,
+          institutionName: a.institutionName,
+          last4: a.last4
+        })),
+        consent: {
+          text: SUBSCRIPTION_CONSENT_TEXT,
+          version: SUBSCRIPTION_CONSENT_VERSION
+        }
+      });
+    } catch (error) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.post("/api/subscription/subscribe", subscribeLimiter, async (req, res) => {
+    const correlationId = randomUUID5();
+    const userId = getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    if (!isStripeAchEnabled()) {
+      return res.status(503).json({ message: "Billing is not available right now" });
+    }
+    const idempotencyKey = req.headers["idempotency-key"];
+    if (!idempotencyKey || idempotencyKey.length < 8 || idempotencyKey.length > 128) {
+      return res.status(400).json({
+        message: "Idempotency-Key header (8-128 chars) is required",
+        correlationId
+      });
+    }
+    const endpoint = "/api/subscription/subscribe";
+    const reservation = await storage.reserveIdempotencyKey(idempotencyKey, userId, endpoint);
+    if (!reservation.claimed) {
+      if (reservation.inFlight) {
+        subLog(correlationId, "idempotency_in_flight", { endpoint, idempotencyKey, severity: "WARN" });
+        return res.status(409).json({
+          message: "A request with this Idempotency-Key is already being processed. Retry shortly.",
+          correlationId
+        });
+      }
+      const cached3 = reservation.cached;
+      subLog(correlationId, "idempotency_hit", { endpoint, idempotencyKey });
+      let parsed = {};
+      try {
+        parsed = cached3.body ? JSON.parse(cached3.body) : {};
+      } catch {
+        parsed = { raw: cached3.body };
+      }
+      return res.status(cached3.status).json({ ...parsed, _idempotencyReplay: true });
+    }
+    const lockAcquired = await storage.acquireSubscribeLock(userId);
+    if (!lockAcquired) {
+      await storage.releaseIdempotencyKey(idempotencyKey, userId, endpoint);
+      subLog(correlationId, "subscribe_lock_busy", { userId, severity: "WARN" });
+      return res.status(409).json({
+        message: "A subscription request is already in progress. Retry shortly.",
+        code: "subscribe_in_progress",
+        correlationId
+      });
+    }
+    try {
+      const parsedBody = subscribeSchema.safeParse(req.body);
+      if (!parsedBody.success) {
+        await storage.releaseIdempotencyKey(idempotencyKey, userId, endpoint);
+        return res.status(400).json({
+          message: "You must accept the subscription authorization to subscribe.",
+          correlationId
+        });
+      }
+      const existing = await storage.getLatestSubscriptionByUserId(userId);
+      if (existing && !isSubscriptionTerminal(existing.status)) {
+        await storage.releaseIdempotencyKey(idempotencyKey, userId, endpoint);
+        return res.status(409).json({
+          message: "You already have a subscription.",
+          code: "already_subscribed",
+          correlationId
+        });
+      }
+      const accounts = await storage.getStripeAccountsByUserId(userId);
+      const account = parsedBody.data.stripeAccountId ? accounts.find((a) => a.id === parsedBody.data.stripeAccountId) : accounts.find((a) => a.isActive && a.status === "linked");
+      if (!account || !account.isActive || account.status !== "linked") {
+        await storage.releaseIdempotencyKey(idempotencyKey, userId, endpoint);
+        return res.status(400).json({
+          message: "Link a bank account before subscribing.",
+          code: "bank_account_required",
+          correlationId
+        });
+      }
+      const paymentMethodId = await storage.getStripePaymentMethodId(account.id);
+      if (!paymentMethodId) {
+        await storage.releaseIdempotencyKey(idempotencyKey, userId, endpoint);
+        return res.status(400).json({
+          message: "Your linked bank account is missing a payment method. Re-link and try again.",
+          code: "bank_account_required",
+          correlationId
+        });
+      }
+      subLog(correlationId, "subscribe_start", {
+        userId,
+        stripeAccountId: account.id,
+        plan: DEFAULT_PLAN_ID
+      });
+      const consent = await storage.createSubscriptionConsent({
+        userId,
+        plan: DEFAULT_PLAN_ID,
+        priceCentsAtConsent: PLAN_CATALOG[DEFAULT_PLAN_ID].priceCents,
+        version: SUBSCRIPTION_CONSENT_VERSION,
+        text: SUBSCRIPTION_CONSENT_TEXT,
+        ipAddress: clientIp2(req),
+        userAgent: req.headers["user-agent"] || "unknown"
+      });
+      subLog(correlationId, "consent_recorded", { consentId: consent.id });
+      const priceId = await ensurePlanPrice(DEFAULT_PLAN_ID);
+      const mandate = await createRecurringAchMandate({
+        customerId: account.stripeCustomerId,
+        paymentMethodId,
+        mandateIpAddress: consent.ipAddress,
+        mandateUserAgent: consent.userAgent,
+        idempotencyKey
+      });
+      subLog(correlationId, "mandate_ready", { setupIntentId: mandate.setupIntentId });
+      const stripeSub = await createPlanSubscription({
+        customerId: account.stripeCustomerId,
+        paymentMethodId,
+        planId: DEFAULT_PLAN_ID,
+        priceId,
+        userId,
+        idempotencyKey
+      });
+      const row = await storage.upsertSubscription(subscriptionRowFromStripe(stripeSub, userId));
+      subLog(correlationId, "subscribe_complete", {
+        subscriptionId: row.id,
+        stripeSubscriptionId: row.stripeSubscriptionId,
+        status: row.status
+      });
+      const body = {
+        subscription: row,
+        entitled: isSubscriptionEntitled(row.status),
+        correlationId
+      };
+      await storage.finalizeIdempotencyKey(idempotencyKey, userId, endpoint, 201, JSON.stringify(body));
+      return res.status(201).json(body);
+    } catch (err) {
+      subLog(correlationId, "subscribe_failed", { severity: "ERROR", error: err?.message });
+      try {
+        await storage.releaseIdempotencyKey(idempotencyKey, userId, endpoint);
+      } catch {
+      }
+      return res.status(502).json({
+        message: "We couldn't start your subscription. No charge was made \u2014 please try again.",
+        correlationId
+      });
+    } finally {
+      try {
+        await storage.releaseSubscribeLock(userId);
+      } catch {
+      }
+    }
+  });
+  app2.post("/api/subscription/cancel", async (req, res) => {
+    const correlationId = randomUUID5();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const sub = await storage.getLatestSubscriptionByUserId(userId);
+      if (!sub || isSubscriptionTerminal(sub.status)) {
+        return res.status(404).json({ message: "No active subscription to cancel." });
+      }
+      if (sub.cancelAtPeriodEnd) {
+        return res.json({ subscription: sub, correlationId });
+      }
+      const updated = await setCancelAtPeriodEnd(sub.stripeSubscriptionId, true);
+      const row = await storage.upsertSubscription(subscriptionRowFromStripe(updated, userId));
+      subLog(correlationId, "subscription_cancel_scheduled", {
+        userId,
+        stripeSubscriptionId: sub.stripeSubscriptionId
+      });
+      return res.json({ subscription: row, correlationId });
+    } catch (err) {
+      subLog(correlationId, "subscription_cancel_failed", { severity: "ERROR", error: err?.message });
+      return res.status(502).json({ message: "Failed to cancel subscription. Please try again.", correlationId });
+    }
+  });
+  app2.post("/api/subscription/reactivate", async (req, res) => {
+    const correlationId = randomUUID5();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const sub = await storage.getLatestSubscriptionByUserId(userId);
+      if (!sub || isSubscriptionTerminal(sub.status) || !sub.cancelAtPeriodEnd) {
+        return res.status(404).json({ message: "No cancellation to undo." });
+      }
+      const updated = await setCancelAtPeriodEnd(sub.stripeSubscriptionId, false);
+      const row = await storage.upsertSubscription(subscriptionRowFromStripe(updated, userId));
+      subLog(correlationId, "subscription_reactivated", {
+        userId,
+        stripeSubscriptionId: sub.stripeSubscriptionId
+      });
+      return res.json({ subscription: row, correlationId });
+    } catch (err) {
+      subLog(correlationId, "subscription_reactivate_failed", { severity: "ERROR", error: err?.message });
+      return res.status(502).json({ message: "Failed to resume subscription. Please try again.", correlationId });
+    }
+  });
+}
+
+// server/lib/subscriptionGate.ts
+async function hasRoundUpAutomationAccess(userId) {
+  if (!isFlagEnabled("ENABLE_SUBSCRIPTIONS")) return true;
+  const sub = await storage.getLatestSubscriptionByUserId(userId);
+  return isSubscriptionEntitled(sub?.status);
+}
+var SUBSCRIPTION_REQUIRED_RESPONSE = {
+  message: "An active Dime Time subscription is required for round-up automation.",
+  code: "subscription_required"
+};
+
+// server/routes/adminRoutes.ts
+import { z as z7 } from "zod";
+var realTransfersToggleSchema = z7.object({
+  enabled: z7.boolean(),
+  notes: z7.string().max(500).optional()
 });
 function publicUserRealTransferStatus(u) {
   return {
@@ -6778,7 +7639,20 @@ import { Resend } from "resend";
 var RESEND_API_KEY = process.env.RESEND_API_KEY;
 var EMAIL_FROM = process.env.EMAIL_FROM || "Dime Time <onboarding@resend.dev>";
 var resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+var EMAIL_DEGRADED_WINDOW_MS = 10 * 60 * 1e3;
+var lastSendFailureAt = null;
+function isEmailServiceDegraded(now = Date.now()) {
+  return lastSendFailureAt !== null && now - lastSendFailureAt < EMAIL_DEGRADED_WINDOW_MS;
+}
+function recordEmailSendOutcome(ok, now = Date.now()) {
+  lastSendFailureAt = ok ? null : now;
+}
 async function sendEmail(params) {
+  const result = await sendEmailInternal(params);
+  recordEmailSendOutcome(result.ok);
+  return result;
+}
+async function sendEmailInternal(params) {
   if (!resend) {
     if (process.env.NODE_ENV === "production") {
       console.error(JSON.stringify({
@@ -6803,7 +7677,8 @@ async function sendEmail(params) {
       to: params.to,
       subject: params.subject,
       html: params.html,
-      text: params.text
+      text: params.text,
+      ...params.replyTo ? { replyTo: params.replyTo } : {}
     });
     if (error) {
       console.error(JSON.stringify({
@@ -6876,6 +7751,46 @@ async function sendPasswordResetEmail(params) {
     text: text2
   });
 }
+async function sendContactNotificationEmail(params) {
+  const sourceLabel = params.source === "in_app" ? "In-app feedback" : "Marketing site contact form";
+  const when = params.submittedAt.toISOString();
+  const safeName = params.name.replace(/[\r\n]+/g, " ").trim().slice(0, 80) || "Unknown";
+  const replyTo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(params.email) && params.email.length <= 254 ? params.email : void 0;
+  const text2 = [
+    `New ${sourceLabel.toLowerCase()} submission`,
+    "",
+    `From: ${params.name} <${params.email}>`,
+    `Source: ${sourceLabel}`,
+    `Received: ${when}`,
+    "",
+    "Message:",
+    params.message,
+    "",
+    "Reply to this email to respond directly."
+  ].join("\n");
+  const html = `
+<!doctype html>
+<html>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f7fb; padding: 24px; color: #111;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px;">
+      <tr><td>
+        <h1 style="color: #918EF4; margin: 0 0 8px; font-size: 22px;">New message from ${escapeHtml(params.name)}</h1>
+        <p style="margin: 0 0 4px; font-size: 14px; color: #666;">${escapeHtml(sourceLabel)} &middot; ${escapeHtml(when)}</p>
+        <p style="margin: 0 0 16px; font-size: 14px; color: #666;">From: <strong style="color: #111;">${escapeHtml(params.name)}</strong> &lt;${escapeHtml(params.email)}&gt;</p>
+        <div style="margin: 0 0 24px; padding: 16px; background: #f7f7fb; border-radius: 12px; font-size: 15px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(params.message)}</div>
+        <p style="margin: 0; font-size: 13px; color: #888;">Reply to this email to respond directly to ${escapeHtml(params.name)}.</p>
+      </td></tr>
+    </table>
+  </body>
+</html>`.trim();
+  return sendEmail({
+    to: "tim@dime-time.com",
+    subject: `Dime Time contact: ${safeName}`,
+    html,
+    text: text2,
+    ...replyTo ? { replyTo } : {}
+  });
+}
 async function sendVerificationEmail(params) {
   const greeting = params.firstName ? `Hi ${params.firstName},` : "Hi,";
   const hours = Math.round(params.expiresInMinutes / 60);
@@ -6922,6 +7837,22 @@ async function sendVerificationEmail(params) {
     html,
     text: text2
   });
+}
+
+// server/lib/passwordResetContract.ts
+var FORGOT_PASSWORD_GENERIC_SUCCESS = {
+  success: true,
+  message: "If an account exists for that email, a reset link has been sent."
+};
+var EMAIL_OUTAGE_MESSAGE = "We couldn't send the reset email right now. Please try again in a few minutes.";
+function decideForgotPasswordResponse(input) {
+  if (!input.emailProvided) {
+    return { status: 400, body: { message: "Email is required" } };
+  }
+  if (input.misconfigured || input.degraded) {
+    return { status: 503, body: { message: EMAIL_OUTAGE_MESSAGE } };
+  }
+  return { status: 200, body: { ...FORGOT_PASSWORD_GENERIC_SUCCESS } };
 }
 
 // shared/transactionStatus.ts
@@ -7092,7 +8023,31 @@ function generateAuthToken(userId) {
   return Buffer.from(`${payload}:${signature}`).toString("base64");
 }
 async function registerRoutes(app2) {
-  const authLimiter = rateLimit3({
+  const publicDir = path.resolve(process.cwd(), "public");
+  const aasaPath = path.join(publicDir, ".well-known", "apple-app-site-association");
+  const serveAasa = (_req, res) => {
+    res.type("application/json");
+    res.sendFile(aasaPath);
+  };
+  app2.get("/.well-known/apple-app-site-association", serveAasa);
+  app2.get("/apple-app-site-association", serveAasa);
+  app2.use(express2.static(publicDir, { index: false }));
+  const guidesDir = path.resolve(process.cwd(), "server", "guides");
+  const guideFiles = {
+    "_style.css": "_style.css",
+    "round-up-apps-for-debt": "round-up-apps-for-debt.html",
+    "how-to-pay-off-credit-card-debt": "how-to-pay-off-credit-card-debt.html",
+    "spare-change-debt-or-savings": "spare-change-debt-or-savings.html"
+  };
+  app2.get("/guides", (_req, res) => {
+    res.sendFile(path.join(guidesDir, "index.html"));
+  });
+  app2.get("/guides/:slug", (req, res, next) => {
+    const file = guideFiles[req.params.slug.replace(/\.html$/, "")];
+    if (!file) return next();
+    res.sendFile(path.join(guidesDir, file));
+  });
+  const authLimiter = rateLimit4({
     windowMs: 15 * 60 * 1e3,
     max: 10,
     message: { message: "Too many attempts. Please try again in 15 minutes." },
@@ -7100,7 +8055,7 @@ async function registerRoutes(app2) {
     legacyHeaders: false,
     validate: { xForwardedForHeader: false }
   });
-  const contactLimiter = rateLimit3({
+  const contactLimiter = rateLimit4({
     windowMs: 60 * 1e3,
     max: 5,
     message: { message: "Too many messages. Please try again in a minute." },
@@ -7214,20 +8169,25 @@ async function registerRoutes(app2) {
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
+      const misconfigured = process.env.NODE_ENV === "production" && (!process.env.RESEND_API_KEY || !process.env.PUBLIC_APP_URL);
+      if (misconfigured) {
+        console.error(JSON.stringify({
+          event: "password_reset_misconfigured",
+          message: "RESEND_API_KEY and PUBLIC_APP_URL must be set in production"
+        }));
+      }
+      const decision = decideForgotPasswordResponse({
+        emailProvided: true,
+        misconfigured,
+        degraded: isEmailServiceDegraded()
+      });
+      if (decision.status !== 200) {
+        return res.status(decision.status).json(decision.body);
+      }
       const user = await storage.getUserByEmail(email);
       if (user) {
         let baseUrl = process.env.PUBLIC_APP_URL;
         if (!baseUrl) {
-          if (process.env.NODE_ENV === "production") {
-            console.error(JSON.stringify({
-              event: "password_reset_misconfigured",
-              message: "PUBLIC_APP_URL must be set in production"
-            }));
-            return res.json({
-              success: true,
-              message: "If an account exists for that email, a reset link has been sent."
-            });
-          }
           const proto = req.headers["x-forwarded-proto"] || req.protocol;
           const host = req.get("host");
           baseUrl = `${proto}://${host}`;
@@ -7258,10 +8218,7 @@ async function registerRoutes(app2) {
           event: "password_reset_requested_unknown_email"
         }));
       }
-      res.json({
-        success: true,
-        message: "If an account exists for that email, a reset link has been sent."
-      });
+      res.status(decision.status).json(decision.body);
     } catch (error) {
       console.error("Forgot password error:", error instanceof Error ? error.message : "unknown");
       res.status(500).json({ message: "Unable to process request" });
@@ -7386,6 +8343,22 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+      if (isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+        try {
+          const sub = await storage.getLatestSubscriptionByUserId(userId);
+          if (sub && !isSubscriptionTerminal(sub.status)) {
+            await cancelSubscriptionImmediately(sub.stripeSubscriptionId);
+          }
+        } catch (cancelErr) {
+          console.error(JSON.stringify({
+            service: "Server",
+            event: "account_delete_subscription_cancel_failed",
+            severity: "ERROR",
+            userId,
+            error: cancelErr instanceof Error ? cancelErr.message : String(cancelErr)
+          }));
+        }
+      }
       await storage.deleteUserAccount(userId);
       req.session.destroy((err) => {
         if (err) console.error("Session destroy error during account deletion");
@@ -7410,6 +8383,9 @@ async function registerRoutes(app2) {
         if (!message) {
           return res.status(400).json({ message: "Message is required" });
         }
+        if (message.length > 5e3) {
+          return res.status(400).json({ message: "Message is too long (5,000 character limit)." });
+        }
         const displayName = [authedUser.firstName, authedUser.lastName].filter(Boolean).join(" ").trim() || authedUser.email;
         toInsert = {
           name: displayName,
@@ -7425,13 +8401,37 @@ async function registerRoutes(app2) {
           return res.status(400).json({ message: "Captcha verification failed. Please try again." });
         }
         const { turnstileToken: _omit, source: _clientSource, userId: _clientUserId, ...payload } = req.body ?? {};
-        const validatedData = insertContactSubmissionSchema.parse(payload);
+        const validatedData = insertContactSubmissionSchema.extend({
+          name: z8.string().trim().min(1).max(100),
+          email: z8.string().trim().email().max(254),
+          message: z8.string().trim().min(1).max(5e3)
+        }).parse(payload);
         toInsert = { ...validatedData, source: "marketing" };
       }
       const submission = await storage.createContactSubmission(toInsert);
+      sendContactNotificationEmail({
+        name: toInsert.name,
+        email: toInsert.email,
+        message: toInsert.message,
+        source: toInsert.source,
+        submittedAt: /* @__PURE__ */ new Date()
+      }).then((result) => {
+        console.log(JSON.stringify({
+          event: "contact_notification_sent",
+          submissionId: submission.id,
+          provider: result.provider,
+          ok: result.ok
+        }));
+      }).catch((err) => {
+        console.error(JSON.stringify({
+          event: "contact_notification_failed",
+          submissionId: submission.id,
+          error: err instanceof Error ? err.message : String(err)
+        }));
+      });
       res.json({ success: true, submission });
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid form data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -7481,7 +8481,7 @@ async function registerRoutes(app2) {
       const debt = await storage.createDebt(validatedData);
       res.status(201).json(debt);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -7497,13 +8497,13 @@ async function registerRoutes(app2) {
       if (!debt || debt.userId !== userId) {
         return res.status(404).json({ message: "Debt not found" });
       }
-      const editSchema = z7.object({
-        name: z7.string().trim().min(1).optional(),
-        currentBalance: z7.string().optional(),
-        interestRate: z7.string().optional(),
-        minimumPayment: z7.string().optional(),
-        dueDate: z7.number().int().min(1).max(31).optional(),
-        accountNumber: z7.string().optional()
+      const editSchema = z8.object({
+        name: z8.string().trim().min(1).optional(),
+        currentBalance: z8.string().optional(),
+        interestRate: z8.string().optional(),
+        minimumPayment: z8.string().optional(),
+        dueDate: z8.number().int().min(1).max(31).optional(),
+        accountNumber: z8.string().optional()
       }).refine(
         (d) => d.currentBalance === void 0 || parseFloat(d.currentBalance) > 0 && parseFloat(d.currentBalance) <= 9999999999e-2,
         { message: "Current balance must be between 0.01 and 99,999,999.99", path: ["currentBalance"] }
@@ -7538,7 +8538,7 @@ async function registerRoutes(app2) {
       const updated = await storage.updateDebt(req.params.id, updates);
       res.json(updated);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -7594,7 +8594,7 @@ async function registerRoutes(app2) {
         roundUpAmount: totalRoundUp.toFixed(2)
       });
       const transaction = await storage.createTransaction(validatedData);
-      if (totalRoundUp > 0 && roundUpSettingsData?.isEnabled) {
+      if (totalRoundUp > 0 && roundUpSettingsData?.isEnabled && await hasRoundUpAutomationAccess(userId)) {
         try {
           console.log(`\u{1F504} Processing split round-up: $${totalRoundUp.toFixed(2)}`);
           const splitResult = await roundUpSplitService.processRoundUpSplit(
@@ -7619,7 +8619,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(transaction);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -7632,12 +8632,31 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const transfers2 = await storage.getTransfersByUserId(userId);
+      const stripeAccounts2 = await storage.getStripeAccountsByUserId(userId);
+      const accountLabelById = new Map(
+        stripeAccounts2.map((a) => [
+          a.id,
+          { institutionName: a.institutionName, last4: a.last4 }
+        ])
+      );
+      const fundingAccountFor = (t) => {
+        let accountId = t.stripeAccountId ?? null;
+        if (!accountId && t.rawRequest) {
+          try {
+            const raw = JSON.parse(t.rawRequest);
+            if (typeof raw?.stripeAccountId === "string") accountId = raw.stripeAccountId;
+          } catch {
+          }
+        }
+        return accountId && accountLabelById.get(accountId) || null;
+      };
       const safe = transfers2.map((t) => ({
         id: t.id,
         type: t.type,
         amount: t.amount,
         status: t.status,
         debtId: t.debtId,
+        fundingAccount: fundingAccountFor(t),
         errorCode: t.errorCode ?? null,
         errorMessage: t.errorMessage ?? null,
         createdAt: t.createdAt,
@@ -7698,7 +8717,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(payment);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid payment data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -7755,6 +8774,7 @@ async function registerRoutes(app2) {
         isEnabled: false,
         sourceAccountId: null,
         targetDebtId: null,
+        fundingStripeAccountId: null,
         multiplier: "1.00",
         autoApplyThreshold: "25.00",
         cryptoEnabled: false,
@@ -7771,8 +8791,12 @@ async function registerRoutes(app2) {
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+      if (req.body?.isEnabled === true && !await hasRoundUpAutomationAccess(userId)) {
+        return res.status(402).json(SUBSCRIPTION_REQUIRED_RESPONSE);
+      }
+      const { fundingStripeAccountId: _ignoredFundingAccount, ...settingsBody } = req.body ?? {};
       const settings = await storage.createOrUpdateRoundUpSettings({
-        ...req.body,
+        ...settingsBody,
         userId
       });
       res.json(settings);
@@ -7785,6 +8809,9 @@ async function registerRoutes(app2) {
       const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
+      }
+      if (!await hasRoundUpAutomationAccess(userId)) {
+        return res.status(402).json(SUBSCRIPTION_REQUIRED_RESPONSE);
       }
       const { sourceAccountId, targetDebtId, cryptoEnabled, cryptoPercentage } = req.body;
       let validatedCryptoPercentage = "0.00";
@@ -7816,6 +8843,9 @@ async function registerRoutes(app2) {
       const userId = getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
+      }
+      if (!await hasRoundUpAutomationAccess(userId)) {
+        return res.status(402).json(SUBSCRIPTION_REQUIRED_RESPONSE);
       }
       const { debtId, amount } = req.body;
       if (!debtId || !amount) {
@@ -7970,7 +9000,7 @@ async function registerRoutes(app2) {
         res.status(201).json(demoResponse);
       }
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid crypto purchase data", errors: error.errors });
       }
       console.error("Error creating crypto purchase:", error);
@@ -8023,7 +9053,7 @@ async function registerRoutes(app2) {
       }
       if (!plaidService.isServiceConfigured()) {
         return res.status(503).json({
-          message: "Plaid service not configured. Please provide PLAID_CLIENT_ID and PLAID_SECRET environment variables.",
+          message: "Plaid service not configured. Sandbox requires PLAID_CLIENT_ID and PLAID_SECRET; production (PLAID_ENV=production) requires PLAID_CLIENT_ID and PLAID_SECRET_PRODUCTION.",
           configured: false
         });
       }
@@ -8535,6 +9565,19 @@ async function registerRoutes(app2) {
       provider: (process.env.DEBT_IMPORT_PROVIDER || "sandbox").trim().toLowerCase()
     }));
   }
+  if (isFlagEnabled("ENABLE_SUBSCRIPTIONS")) {
+    if (!isFlagEnabled("ENABLE_STRIPE_ACH")) {
+      throw new Error(
+        "ENABLE_SUBSCRIPTIONS requires ENABLE_STRIPE_ACH: subscriptions bill via Stripe ACH and cannot function without the Stripe code paths. Enable ENABLE_STRIPE_ACH or disable ENABLE_SUBSCRIPTIONS."
+      );
+    }
+    registerSubscriptionRoutes(app2);
+    console.log(JSON.stringify({
+      service: "Server",
+      event: "subscription_routes_mounted",
+      flag: "ENABLE_SUBSCRIPTIONS"
+    }));
+  }
   registerAdminRoutes(app2);
   app2.use(notificationRoutes);
   const httpServer = createServer(app2);
@@ -8542,15 +9585,15 @@ async function registerRoutes(app2) {
 }
 
 // server/vite.ts
-import express2 from "express";
+import express3 from "express";
 import fs from "fs";
-import path2 from "path";
+import path3 from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 
 // vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import path2 from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 var SENTRY_DSN_FOR_CLIENT = process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN || "";
 var sentryUploadEnabled = process.env.NODE_ENV === "production" && !!process.env.SENTRY_AUTH_TOKEN && !!process.env.SENTRY_ORG && !!process.env.SENTRY_PROJECT;
@@ -8592,7 +9635,7 @@ var vite_config_default = defineConfig({
     )
   },
   // The frontend lives in the /client directory
-  root: path.resolve(import.meta.dirname, "client"),
+  root: path2.resolve(import.meta.dirname, "client"),
   // ⭐ FIXED BUILD OUTPUT — works on Replit AND Codemagic
   build: {
     outDir: "../dist/public",
@@ -8605,9 +9648,9 @@ var vite_config_default = defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets")
+      "@": path2.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path2.resolve(import.meta.dirname, "shared"),
+      "@assets": path2.resolve(import.meta.dirname, "attached_assets")
     }
   },
   server: {
@@ -8653,7 +9696,7 @@ async function setupVite(app2, server) {
   app2.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path2.resolve(
+      const clientTemplate = path3.resolve(
         import.meta.dirname,
         "..",
         "client",
@@ -8673,15 +9716,15 @@ async function setupVite(app2, server) {
   });
 }
 function serveStatic(app2) {
-  const distPath = path2.resolve(import.meta.dirname, "public");
+  const distPath = path3.resolve(import.meta.dirname, "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-  app2.use(express2.static(distPath));
+  app2.use(express3.static(distPath));
   app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(distPath, "index.html"));
+    res.sendFile(path3.resolve(distPath, "index.html"));
   });
 }
 
@@ -8800,7 +9843,7 @@ async function setupAuth(app2) {
 }
 
 // server/index.ts
-var app = express3();
+var app = express4();
 app.use((req, res, next) => {
   if (req.path.endsWith(".map")) {
     return res.status(404).end();
@@ -8878,8 +9921,8 @@ app.use((req, res, next) => {
     next();
   }
 });
-var jsonParser = express3.json();
-var urlencodedParser = express3.urlencoded({ extended: false });
+var jsonParser = express4.json();
+var urlencodedParser = express4.urlencoded({ extended: false });
 app.use((req, res, next) => {
   if (req.path === "/webhooks/stripe") return next();
   return jsonParser(req, res, next);
@@ -8890,7 +9933,7 @@ app.use((req, res, next) => {
 });
 app.use((req, res, next) => {
   const start = Date.now();
-  const path3 = req.path;
+  const path4 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json.bind(res);
   res.json = function(bodyJson) {
@@ -8899,8 +9942,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path3.startsWith("/api")) {
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+    if (path4.startsWith("/api")) {
+      let logLine = `${req.method} ${path4} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         try {
           logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
@@ -8957,14 +10000,14 @@ app.use((req, res, next) => {
       console.log("Setting up Vite for development...");
       await setupVite(app, server);
     } else {
-      const path3 = await import("path");
+      const path4 = await import("path");
       const fs2 = await import("fs");
-      const distPath = path3.default.resolve(process.cwd(), "server-dist", "public");
+      const distPath = path4.default.resolve(process.cwd(), "server-dist", "public");
       console.log("Production static path:", distPath);
-      const indexHtmlPath = path3.default.resolve(distPath, "index.html");
+      const indexHtmlPath = path4.default.resolve(distPath, "index.html");
       if (fs2.default.existsSync(indexHtmlPath)) {
         console.log("Found static files at:", distPath);
-        app.use(express3.static(distPath));
+        app.use(express4.static(distPath));
         app.use("*", (_req, res) => {
           res.sendFile(indexHtmlPath);
         });
