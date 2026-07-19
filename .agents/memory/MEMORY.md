@@ -30,4 +30,4 @@
 - [Slide deck generation](deck-generation.md) — python-pptx decks in attached_assets/<name>-slides/; verify via soffice+pdftoppm render; no emoji (tofu), no partner logos.
 - [Plaid OAuth resume page](plaid-oauth-resume.md) — react-plaid-link fires onExit on init failure too; never navigate unconditionally in onExit — show the recovery card unless it's a real user cancel.
 - [iOS universal links](ios-universal-links.md) — AASA + App.entitlements + client listener must stay in lockstep; native redirect URI is rebuilt from pathname+search, never window.location.href.
-- Founder AI dossier (July 2026) in attached_assets/Pasted--AI-HANDOFF-DOSSIER-*.txt — comms prefs mirrored in replit.md; personal sections reference-only, never copy into memory.
+- Founder PII policy: dossier/journal/profile files deleted 2026-07-19 before sharing project with engineers/investors. Comms prefs live in replit.md. Never store founder personal/family/financial details in project files.

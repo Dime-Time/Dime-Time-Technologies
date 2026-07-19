@@ -14,7 +14,7 @@ Detailed operational runbooks and subsystem specs live in `.agents/memory/` — 
 - Communication style (per Tim's AI dossier, July 2026): direct, evidence-based, structured; include numbers, timelines, and decision frameworks; challenge assumptions respectfully; distinguish facts from speculation; no empty encouragement, flattery, or buzzwords
 - Substantial content (specs, plans, checklists, handoffs) goes in plain-text copy/paste boxes — Tim cross-checks outputs between ChatGPT and Replit
 - Known founder blind spot he wants flagged: optimizing instead of launching; push toward shipping when perfection-seeking delays release
-- Full dossier: attached_assets/Pasted--AI-HANDOFF-DOSSIER-Tim-Carlisle-Version--1784469171807_1784469171808.txt (personal sections stay private; reference, don't copy)
+- Founder's AI dossier file was deleted from the project 2026-07-19 (project being shared with engineers/investors); the communication rules above are the surviving extract. Never re-add personal dossier/journal/profile files to the repo.
 
 ## Canonical Project Rules (locked — do not drift)
 
