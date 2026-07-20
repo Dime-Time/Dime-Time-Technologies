@@ -1,0 +1,522 @@
+DIME TIME — GOOGLE PLAY SUBMISSION HANDOFF
+Date: July 20, 2026
+Founder: Tim Carlisle
+
+CURRENT STATUS
+
+Tim has completed the immediate Apple work and is taking a break before beginning
+the Google Play submission process.
+
+APPLE STATUS
+
+- App: Dime Time Mobile
+- Apple App Store ID: 6755106723
+- Current public version: 1.0.4/build 206
+- Submitted version: 1.0.5/build 207
+- Status: Waiting for Review
+- Updated iPhone screenshots uploaded
+- Updated iPad screenshots uploaded/being confirmed
+- Crypto screenshots intentionally excluded
+- Bundle ID: com.dimetime.mobile
+- Production domain: https://dime-time.com
+
+Do not modify or remove the Apple submission from review unless Tim explicitly
+requests it.
+
+
+================================================================
+NEXT PROJECT: GOOGLE PLAY
+================================================================
+
+GOAL
+
+Prepare Dime Time for its first Google Play submission using the existing
+React/TypeScript + Capacitor codebase.
+
+The process should include:
+
+1. Google Play Developer account setup and verification
+2. Android project audit
+3. Android package-name verification
+4. Production Android App Bundle generation
+5. Google Play App Signing
+6. Internal testing release
+7. Store listing preparation
+8. Data Safety questionnaire
+9. Financial-features declarations
+10. Content rating
+11. Privacy and compliance review
+12. Production-submission readiness audit
+
+Do not begin irreversible account, signing, or production-release actions
+without Tim.
+
+
+================================================================
+PHASE 1 — READ-ONLY AND PREPARATION WORK
+================================================================
+
+Replit may prepare a report covering:
+
+- Whether the repository already contains an android/ directory
+- Current Capacitor Android configuration
+- Current Android application/package ID
+- Android versionName and versionCode
+- Minimum and target Android SDK versions
+- Gradle and Android Gradle Plugin versions
+- Capacitor Android version
+- Required native plugins
+- Whether all plugins support Android
+- Existing adaptive icon and splash-screen assets
+- Current Android permissions
+- Current deep-link/app-link configuration
+- Current production API configuration
+- Whether the Android app can build an .aab
+- Known Android-specific blockers
+
+Return findings before making major changes.
+
+
+================================================================
+ANDROID PACKAGE NAME
+================================================================
+
+Do not guess or silently change the Android package name.
+
+First report the package/application ID currently configured.
+
+The iOS bundle ID is:
+
+com.dimetime.mobile
+
+If Android already uses the same identifier, preserve it unless there is a
+verified conflict.
+
+Changing an Android package name after publishing creates a different Play Store
+application, so this decision must be treated as permanent.
+
+
+================================================================
+GOOGLE PLAY DEVELOPER ACCOUNT
+================================================================
+
+Tim will create or verify the Google Play Developer account.
+
+Founder-controlled steps may include:
+
+- Signing into the correct Google account
+- Paying the developer registration fee
+- Completing identity verification
+- Providing organization information
+- Adding Dime Time LLC contact information
+- Completing any required business verification
+- Accepting Google Play agreements
+- Configuring account security and two-factor authentication
+
+Replit must not request:
+
+- Google passwords
+- Two-factor authentication codes
+- Government identification
+- Credit-card information
+- Private verification documents
+
+Tim will handle those directly in Google Play Console.
+
+
+================================================================
+RECOMMENDED RELEASE SEQUENCE
+================================================================
+
+Do not attempt a direct public-production release first.
+
+Use this sequence:
+
+1. Build audit
+2. Local/CI Android build
+3. Signed Android App Bundle
+4. Google Play internal testing
+5. Physical Android-device testing
+6. Closed testing if required by Google
+7. Compliance and listing review
+8. Production submission
+
+Google may impose testing requirements based on the Play developer account type
+and age. Report the exact Play Console requirement shown to Tim rather than
+assuming.
+
+
+================================================================
+ANDROID BUILD ARTIFACT
+================================================================
+
+Google Play production submissions should use an Android App Bundle:
+
+.aab
+
+Do not submit an APK as the primary production artifact unless Google
+specifically requires one for a limited testing purpose.
+
+Before generating the bundle, verify:
+
+- Correct package name
+- Correct versionName
+- Correct versionCode
+- Production API endpoint
+- No development URL
+- No sandbox-only settings
+- No secrets bundled in the app
+- Release build is not debuggable
+- Signing configuration is secure
+- App Links/deep links work
+- Plaid bank linking works on Android
+- Stripe payment flows remain protected
+- Account deletion remains available
+- Privacy Policy and Terms open correctly
+
+
+================================================================
+SIGNING SAFETY
+================================================================
+
+Google Play signing credentials are critical long-term assets.
+
+Before creating or configuring signing:
+
+- Explain whether Google Play App Signing will be used
+- Explain the difference between the upload key and app-signing key
+- Identify where the upload key will be stored
+- Ensure the key is backed up securely
+- Never commit a keystore to GitHub
+- Never commit passwords to source control
+- Never print signing passwords in logs
+- Never ask Tim to paste signing secrets into chat
+
+Add keystore files and local signing-property files to .gitignore before they
+are created or used.
+
+Do not rotate, replace, or delete a signing key without explicit founder
+authorization.
+
+
+================================================================
+ANDROID APP LINKS AND PLAID OAUTH
+================================================================
+
+Build 207 added iOS Universal Links for Plaid OAuth.
+
+Android requires a separate review.
+
+Audit:
+
+- Android package registration in the Plaid Dashboard
+- android_package_name in Plaid link-token creation
+- Android App Links
+- intent filters
+- https://dime-time.com association
+- /.well-known/assetlinks.json if required
+- Return from a bank website
+- Return from a bank’s Android app
+- Cold-start return
+- Background-app return
+- Duplicate callback handling
+- Original Plaid Link-session resume
+
+Do not assume the iOS Universal Link implementation automatically makes Android
+OAuth work.
+
+Do not modify the working iOS OAuth flow while adding Android support.
+
+
+================================================================
+ANDROID PERMISSION AUDIT
+================================================================
+
+Report every Android permission requested by the final manifest.
+
+For each permission, provide:
+
+- Permission name
+- Which dependency requests it
+- Why Dime Time needs it
+- Whether it is required
+- Whether it triggers a Play Console declaration
+- Whether it can be safely removed
+
+Pay particular attention to:
+
+- Internet/network state
+- Notifications
+- Camera
+- Photos/media
+- Location
+- Contacts
+- Advertising ID
+- Biometrics
+- Storage
+- Phone/SMS
+- Financial-data access
+
+Use the minimum necessary permissions.
+
+Do not add sensitive permissions merely because a library supports them.
+
+
+================================================================
+GOOGLE PLAY DATA SAFETY
+================================================================
+
+Prepare an evidence-based Data Safety worksheet using the actual codebase,
+privacy policy, SDKs, and server behavior.
+
+Review data categories such as:
+
+- Name
+- Email address
+- User identifiers
+- Authentication information
+- Financial information
+- Bank-account information
+- Purchase and transaction history
+- Debt information
+- App activity
+- Diagnostics
+- Device identifiers
+- Support/contact-form information
+
+For every category, report:
+
+- Whether it is collected
+- Whether it is shared
+- Purpose
+- Whether collection is required or optional
+- Whether data is encrypted in transit
+- Whether users can request deletion
+- Retention/deletion behavior
+
+Do not guess the Data Safety answers.
+
+Google Play declarations must match:
+
+- Actual code
+- Production SDK behavior
+- Privacy Policy
+- Server storage
+- Account-deletion behavior
+
+Flag any mismatch before submission.
+
+
+================================================================
+FINANCIAL-FEATURES AND POLICY REVIEW
+================================================================
+
+Dime Time is a consumer fintech app involving:
+
+- Debt tracking
+- Purchase round-ups
+- ACH bank payments
+- Bank linking
+- Financial analytics
+- Optional crypto views
+
+Prepare the relevant Google Play financial-feature declarations.
+
+Accurately distinguish:
+
+- Debt-management tools
+- Bank-account aggregation
+- ACH payment initiation
+- Financial education/analytics
+- Simulated or disabled crypto functionality
+
+Do not claim:
+
+- Dime Time is a bank
+- Dime Time is a lender
+- Deposits are FDIC-insured unless legally and factually applicable
+- ACH settles instantly
+- Automatic debt import is live before Plaid Liabilities approval
+- Crypto trades are live when they are simulated
+- Public real-money transfers are broadly enabled
+
+Flag any Google Play policy requiring legal or compliance documentation.
+
+
+================================================================
+STORE LISTING ASSETS
+================================================================
+
+Prepare an asset checklist for:
+
+- App name
+- Short description
+- Full description
+- App icon
+- Feature graphic
+- Phone screenshots
+- 7-inch tablet screenshots if needed
+- 10-inch/large-tablet screenshots if needed
+- Privacy Policy URL
+- Support/contact URL
+- Category
+- Tags
+- Content rating
+- Release notes
+
+Canonical information:
+
+- Product/company: Dime Time
+- Domain: https://dime-time.com
+- Brand color: #918EF4
+- Slogan: “Get out of debt, one dime at a time with Dime Time!”
+
+Do not use:
+
+- Unapproved bank, Plaid, Stripe, Coinbase, or partner logos
+- Crypto Demo Mode screenshots
+- Beta-mode screenshots
+- Private financial information
+- Admin interfaces
+- Claims unsupported by current production functionality
+
+
+================================================================
+SCREENSHOTS
+================================================================
+
+The Apple screenshot set may help guide the Android listing, but do not blindly
+reuse iPhone/iPad screenshots in Google Play.
+
+Android screenshots should:
+
+- Show the actual Android build
+- Match the Android interface
+- Use safe demo data
+- Contain no private information
+- Avoid Crypto Demo Mode
+- Avoid Beta Mode banners
+- Accurately represent enabled functionality
+- Meet the exact dimensions and aspect ratios accepted by Play Console
+
+Recommended product story:
+
+1. Dashboard
+2. Debt Management
+3. Transactions/Round-ups
+4. Financial Insights
+5. Banking or Settings
+6. Login only if a stronger feature screen is unavailable
+
+
+================================================================
+INTERNAL TESTING PLAN
+================================================================
+
+Before production submission, test the signed Play build on at least one
+physical Android device.
+
+Required tests:
+
+- Fresh installation
+- Upgrade behavior when applicable
+- Signup
+- Login
+- Logout/login
+- Password reset
+- Session persistence
+- Dashboard
+- Add Debt
+- Edit/delete debt
+- Debt chart
+- Transactions
+- Round-ups
+- Funding-account selection
+- Bank linking
+- Plaid OAuth bank return
+- Non-OAuth bank
+- Navigation
+- Back button/gesture
+- Notifications if enabled
+- Privacy Policy
+- Terms
+- Contact form
+- Account deletion
+- Background/resume
+- Poor network behavior
+- Multiple screen sizes
+
+No real-money payment should be initiated without Tim’s explicit approval.
+
+
+================================================================
+REAL-MONEY SAFETY
+================================================================
+
+Do not change:
+
+- ENABLE_REAL_TRANSFERS
+- ENABLE_STRIPE_ACH
+- ENABLE_AUTO_ROUNDUP_SWEEPS
+- Per-user allowlist
+- $1 first-transfer limit
+- $5 daily limit
+- One-transfer-per-day protection
+- Idempotency safeguards
+- Webhook verification
+- Mandate evidence
+- Duplicate-payment protections
+- Funding-account ownership validation
+
+Android launch must not silently broaden access to real-money transfers.
+
+Public users remain blocked unless Tim individually approves them.
+
+
+================================================================
+LOCKED PROJECT RULES
+================================================================
+
+- Domain is dime-time.com with the hyphen.
+- Do not introduce server.url into capacitor.config.ts.
+- Do not change the working iOS project while preparing Android.
+- Do not overwrite version numbers through CI.
+- Do not expose live secrets.
+- Do not commit keystores.
+- Do not modify production financial data.
+- Do not enable Plaid Liabilities before approval and verification.
+- Do not run a live transfer without explicit founder authorization.
+- Preserve all existing Apple build-207 work.
+
+
+================================================================
+FIRST REPORT REQUIRED FROM REPLIT
+================================================================
+
+Before implementing major Android changes, return:
+
+1. Whether the android/ project exists
+2. Current Android package ID
+3. Current versionName
+4. Current versionCode
+5. Current Capacitor Android version
+6. Current minimum and target Android SDK
+7. Gradle and Android Gradle Plugin versions
+8. Whether the Android project builds today
+9. Exact build command
+10. Current Android permissions
+11. Plugins requiring Android review
+12. Plaid Android/OAuth readiness
+13. Current Android App Links status
+14. Icon and splash-screen readiness
+15. Whether an .aab can be generated
+16. Current signing status without exposing secrets
+17. Google Play policy/declaration work required
+18. Data Safety categories identified from code
+19. Known blockers
+20. Recommended phased implementation plan
+21. Estimated risk for each phase
+22. GO/NO-GO recommendation for beginning Android work
+
+Do not make founder-controlled Google Play account decisions or create signing
+credentials until Tim returns and explicitly authorizes the next step.
