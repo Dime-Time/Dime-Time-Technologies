@@ -426,3 +426,9 @@ id = "-VI2tVVNZbeiGCNRjyc9d"
 uri = "file://attached_assets/timeline-deck-slides/dime-time-timeline-deck.pdf"
 type = "pdf"
 title = "Timeline Deck — PDF preview"
+
+[[outputs]]
+id = "kxo_zEYcTwwpy0mMGlqKo"
+uri = "file://attached_assets/Dime-Time-App-Store-Screenshots.zip"
+type = "unspecified"
+title = "App Store Screenshots — iPhone 6.9\" + iPad 13\" (build 207)"

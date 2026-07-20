@@ -1,0 +1,669 @@
+DIME TIME — APP STORE SCREENSHOT PREPARATION
+Version 1.0.5 / Build 207
+Date: July 20, 2026
+
+CONTEXT
+
+Dime Time’s App Store screenshots are visually outdated. They show the original
+design, while the current app has been substantially redesigned.
+
+We need new screenshots for:
+
+1. iPhone
+2. iPad
+
+The screenshots will accompany App Store version 1.0.5/build 207 and should
+accurately represent the build-207 interface.
+
+APP DETAILS
+
+- App: Dime Time
+- App Store ID: 6755106723
+- Bundle ID: com.dimetime.mobile
+- Apple Team ID: 8WZHH537SU
+- Current live version: 1.0.4/build 206
+- Next version: 1.0.5/build 207
+- Production domain: https://dime-time.com
+- Repository: Dime-Time/Dime-Time-Mobile
+- Stack: React/TypeScript + Capacitor iOS + Express/PostgreSQL
+- Domain always includes the hyphen: dime-time.com
+
+
+================================================================
+GOAL FOR REPLIT
+================================================================
+
+Prepare a safe, exact screenshot workflow so Tim can run the current build-207
+interface in Xcode’s iPhone and iPad simulators.
+
+Do not create or submit another build yet.
+
+First, help Tim obtain accurate screenshots of the current interface.
+
+Replit should:
+
+1. Confirm all build-207 code is committed.
+2. Confirm the latest commit is pushed to GitHub.
+3. Report the exact branch and commit hash Tim should download.
+4. Confirm the repository contains the complete Capacitor iOS project.
+5. Confirm the exact Xcode workspace path.
+6. Provide any repository-specific local setup commands.
+7. Verify simulator builds do not require live financial secrets.
+8. Ensure screenshots can use safe demo data.
+9. Do not change real-money flags or production data.
+
+
+================================================================
+IMPORTANT CLARIFICATION
+================================================================
+
+Xcode does not need the repository to be “uploaded” through Xcode’s GitHub
+welcome screen.
+
+The project should be downloaded or cloned onto the Mac first. Then Tim should
+open the existing Capacitor workspace.
+
+Expected workspace:
+
+ios/App/App.xcworkspace
+
+Do not instruct Tim to open only:
+
+ios/App/App.xcodeproj
+
+The .xcworkspace is required because it includes the Capacitor/CocoaPods
+dependencies.
+
+
+================================================================
+STEP 1 — VERIFY THE GITHUB SOURCE
+================================================================
+
+Before Tim downloads anything, please confirm:
+
+- All current build-207 changes are committed
+- All current changes are pushed to GitHub
+- The correct branch is identified
+- The branch is not behind the current Replit workspace
+- No uncommitted screenshot-related changes are missing
+- Version is 1.0.5
+- Build number is 207
+- The iOS web bundle was generated from current frontend code
+- The following commands have completed successfully:
+
+  npm run build
+  npx cap sync ios
+
+Return:
+
+1. Repository URL
+2. Branch name
+3. Latest commit hash
+4. Whether the Replit workspace is clean
+5. Whether GitHub contains that commit
+6. Exact local commands Tim should run after downloading
+7. Exact Xcode workspace path
+
+
+================================================================
+STEP 2 — RECOMMENDED DOWNLOAD METHOD: GITHUB DESKTOP
+================================================================
+
+Tim should install GitHub Desktop:
+
+https://desktop.github.com/
+
+Then:
+
+1. Sign into the GitHub account with access to:
+
+   Dime-Time/Dime-Time-Mobile
+
+2. Select:
+
+   File > Clone Repository
+
+3. Select Dime-Time-Mobile.
+
+4. Save it locally, for example:
+
+   Documents/GitHub/Dime-Time-Mobile
+
+5. Open the downloaded repository folder.
+
+6. Open Terminal in that folder.
+
+7. Run the repository-specific setup commands.
+
+Expected commands:
+
+npm install
+npm run build
+npx cap sync ios
+npx cap open ios
+
+Replit should confirm whether these exact commands are correct for the current
+repository before Tim runs them.
+
+
+================================================================
+STEP 3 — BACKUP METHOD: DOWNLOAD ZIP
+================================================================
+
+If GitHub Desktop cannot authenticate:
+
+1. Sign into GitHub in Chrome.
+2. Open the private Dime Time repository.
+3. Select:
+
+   Code > Download ZIP
+
+4. Unzip the repository.
+5. Open Terminal.
+6. Type:
+
+   cd
+
+   followed by a space.
+
+7. Drag the unzipped Dime Time folder into Terminal.
+8. Press Return.
+9. Run:
+
+   npm install
+   npm run build
+   npx cap sync ios
+   npx cap open ios
+
+If the repository uses npm ci instead of npm install, Replit should tell Tim
+which command is correct.
+
+Do not ask Tim to paste a GitHub Personal Access Token into chat, Replit, Xcode,
+or a screenshot.
+
+
+================================================================
+STEP 4 — OPEN THE CORRECT XCODE WORKSPACE
+================================================================
+
+The preferred command is:
+
+npx cap open ios
+
+If opening manually, open:
+
+ios/App/App.xcworkspace
+
+Do not open only:
+
+ios/App/App.xcodeproj
+
+In Xcode:
+
+1. Wait for package/dependency resolution to finish.
+2. Select the App scheme.
+3. Select an iOS Simulator destination.
+4. Do not select “Any iOS Device.”
+5. Press the Play/Run button.
+
+For Simulator screenshots, App Store distribution signing should not normally
+be required.
+
+If Xcode asks for signing, first confirm that a simulator target—not a physical
+device—is selected.
+
+
+================================================================
+STEP 5 — INSTALL REQUIRED SIMULATORS
+================================================================
+
+If the necessary devices are unavailable:
+
+1. Open Xcode.
+2. Go to:
+
+   Xcode > Settings > Platforms
+
+3. Download an appropriate current iOS simulator runtime.
+4. Wait for installation to finish.
+5. Restart Xcode if the devices do not appear.
+
+Preferred simulators:
+
+IPHONE
+
+- iPhone 16 Pro Max
+
+Acceptable alternatives include another Pro Max/Plus simulator whose saved
+screenshots match Apple’s accepted 6.9-inch screenshot dimensions.
+
+IPAD
+
+- iPad Pro 13-inch (M4)
+
+Use portrait orientation unless the app is intentionally marketed in landscape.
+
+
+================================================================
+APPLE SCREENSHOT REQUIREMENTS
+================================================================
+
+Apple currently permits:
+
+- Minimum: 1 screenshot per required device class
+- Maximum: 10 screenshots
+- Formats: PNG, JPEG, or JPG
+- No alpha channel/transparency
+
+Apple automatically scales the highest-resolution screenshots down for smaller
+device sizes when the interface is the same.
+
+IPHONE 6.9-INCH ACCEPTED PORTRAIT SIZES
+
+Apple currently accepts these portrait dimensions for the 6.9-inch set:
+
+- 1260 × 2736
+- 1290 × 2796
+- 1320 × 2868
+
+The exact output depends on the selected Pro Max/Plus simulator.
+
+IPAD 13-INCH ACCEPTED PORTRAIT SIZES
+
+Apple accepts:
+
+- 2064 × 2752
+- 2048 × 2732
+
+The 13-inch iPad screenshot set is required when the app runs on iPad.
+
+Before uploading, verify each file’s pixel dimensions in Finder:
+
+1. Select the screenshot.
+2. Press Command-I.
+3. Review “Dimensions.”
+
+Do not resize or stretch screenshots unless necessary. Prefer direct simulator
+captures at an accepted size.
+
+
+================================================================
+STEP 6 — RUN THE CURRENT BUILD-207 INTERFACE
+================================================================
+
+The screenshots should represent the interface users will receive with version
+1.0.5/build 207.
+
+Do not capture the old build-206 App Store interface merely because it is the
+currently public binary.
+
+Recommended workflow:
+
+1. Run the build-207 source locally in Simulator.
+2. Confirm it matches the current design.
+3. Capture provisional iPhone and iPad screenshots.
+4. Build 207 through CodeMagic later.
+5. Install build 207 from TestFlight on a real iPhone.
+6. Confirm the screenshots still match the TestFlight build.
+7. Upload the confirmed screenshots to version 1.0.5 in App Store Connect.
+
+Do not upload screenshots that show functionality absent from build 207.
+
+
+================================================================
+DEMO DATA AND AUTHENTICATION
+================================================================
+
+Before Tim starts, please identify the safest screenshot account and method.
+
+The screenshot environment must:
+
+- Use safe demo data
+- Avoid real bank-account information
+- Avoid real transaction details
+- Avoid exposing Tim’s private information
+- Avoid triggering live ACH payments
+- Avoid changing production financial data
+- Avoid showing internal admin controls
+- Avoid relying on another person’s account
+
+If the simulator must connect to production for login, confirm the exact safe
+demo account and ensure it cannot initiate real transfers.
+
+Do not print the password in the report.
+
+If safe demo data cannot be used in the local simulator, stop and explain the
+safest available option.
+
+
+================================================================
+RECOMMENDED SCREENSHOT STORY
+================================================================
+
+Capture the same general product story on iPhone and iPad.
+
+Aim for approximately five or six strong screenshots per device class.
+
+SCREENSHOT 1 — DASHBOARD
+
+Show:
+
+- Current redesigned dashboard
+- Debt payoff progress
+- Total debt or savings summary
+- Clean light-theme presentation
+
+Avoid:
+
+- Private real balances
+- Broken loading states
+- Admin-only controls
+
+SCREENSHOT 2 — DEBT MANAGEMENT
+
+Show:
+
+- Current debts
+- Debt payoff progress
+- Add/manage debt functionality
+- Imported badges only if the feature is actually enabled and accurate
+
+Do not imply Plaid Liabilities is live before approval.
+
+SCREENSHOT 3 — ROUND-UPS
+
+Show:
+
+- Round-up totals
+- Round-up settings
+- Funding-account selection if the screen is polished
+- Masked account information only
+
+SCREENSHOT 4 — INSIGHTS
+
+Show:
+
+- Corrected debt chart
+- Analytics or progress insights
+- Payment history if populated with safe demo data
+- Honest ACH status wording
+
+SCREENSHOT 5 — BANK CONNECTIONS
+
+Show:
+
+- Polished connected-bank interface
+- Institution name
+- Account type
+- Last four digits only
+
+Do not show:
+
+- Full account numbers
+- Routing numbers
+- Plaid access tokens
+- Sandbox credentials
+
+SCREENSHOT 6 — SETTINGS
+
+Show:
+
+- Current Settings control-center design
+- Funding-account selector
+- Security/account controls
+- Privacy and Terms links where useful
+
+Do not show internal admin functions.
+
+
+================================================================
+CAPTURING THE SCREENSHOTS
+================================================================
+
+Use Simulator’s native screenshot command.
+
+In the Simulator application:
+
+File > Save Screen
+
+Keyboard shortcut where supported:
+
+Command-S
+
+This creates a screenshot at the simulator’s exact device resolution.
+
+Do not use:
+
+- Shift-Command-3
+- Shift-Command-4
+- Cropped desktop screenshots
+- Photos of the Mac screen
+- Browser screenshots with Safari controls
+- Screenshots containing Xcode windows
+
+Before every capture:
+
+- Set the simulator to portrait
+- Confirm the app fills the screen
+- Close open menus unless intentionally showing them
+- Wait for loading to finish
+- Remove error banners
+- Use consistent light/dark appearance
+- Check that the status bar is clean
+- Avoid unusually low battery indicators where possible
+- Ensure no keyboard obscures the interface
+- Ensure no debugging overlay appears
+
+
+================================================================
+FILE ORGANIZATION
+================================================================
+
+Create folders such as:
+
+Dime-Time-App-Store-Screenshots/
+  iPhone-6.9/
+  iPad-13/
+
+Suggested filenames:
+
+01-dashboard-iphone.png
+02-debts-iphone.png
+03-roundups-iphone.png
+04-insights-iphone.png
+05-bank-connections-iphone.png
+06-settings-iphone.png
+
+01-dashboard-ipad.png
+02-debts-ipad.png
+03-roundups-ipad.png
+04-insights-ipad.png
+05-bank-connections-ipad.png
+06-settings-ipad.png
+
+Do not include account names, email addresses, or secret values in filenames.
+
+
+================================================================
+PRIVACY AND ACCURACY REVIEW
+================================================================
+
+Before uploading, inspect every screenshot at full resolution.
+
+Reject and recapture any screenshot containing:
+
+- Full bank account number
+- Routing number
+- Real financial credentials
+- Plaid or Stripe token
+- Personal email address
+- Phone number
+- Home address
+- Password
+- Reset token
+- Admin control
+- Debug information
+- Raw API error
+- Sandbox watermark that misrepresents production
+- Another person’s financial data
+- Unsupported or unavailable functionality
+- A claim that ACH settled instantly
+- A claim that automatic debt import is live before Liabilities approval
+
+Screenshots must not imply:
+
+- Public users can move unrestricted real money
+- Plaid Liabilities is already approved
+- Every bank is supported
+- ACH payments settle instantly
+- Dime Time has partnerships that do not exist
+
+
+================================================================
+APP STORE CONNECT UPLOAD
+================================================================
+
+After the screenshots are confirmed against build 207:
+
+1. Open App Store Connect.
+2. Select Dime Time.
+3. Select iOS version 1.0.5.
+4. Open App Previews and Screenshots.
+5. Select the iPhone tab.
+6. Upload the iPhone 6.9-inch screenshots.
+7. Select the iPad tab.
+8. Upload the 13-inch iPad screenshots.
+9. Arrange them in the intended marketing order.
+10. Confirm App Store Connect accepts every file.
+11. Preview the product page presentation.
+
+If the interface is consistent across smaller devices, use Apple’s automatic
+scaling instead of manually creating every smaller size.
+
+
+================================================================
+XCODE/GITHUB TROUBLESHOOTING
+================================================================
+
+If the project does not appear in Xcode:
+
+- Confirm the repository was downloaded locally
+- Confirm the ZIP was fully extracted
+- Confirm ios/App/App.xcworkspace exists
+- Run npx cap sync ios
+- Open the .xcworkspace, not only the .xcodeproj
+
+If GitHub authentication fails:
+
+- Use GitHub Desktop
+- Sign out and back in
+- Confirm the account has repository access
+- Use Download ZIP as the safe fallback
+- Do not share a GitHub token in chat
+
+If npm install fails:
+
+- Return the complete error
+- Report Node and npm versions
+- Do not delete the lockfile
+- Do not use random force flags without reviewing the dependency problem
+
+If Xcode reports missing packages or pods:
+
+- Close Xcode
+- Run npx cap sync ios again
+- Reopen ios/App/App.xcworkspace
+- Return the exact error if it persists
+
+If signing fails:
+
+- Confirm a Simulator is selected
+- Do not modify App Store signing merely to run a simulator
+- Do not remove the Associated Domains entitlement
+
+If the simulator shows an old design:
+
+- Confirm npm run build succeeded
+- Confirm npx cap sync ios ran after the build
+- Confirm the latest commit was downloaded
+- Confirm Xcode is opening the correct local repository
+- Clean the Xcode build folder
+- Delete the old simulator installation of Dime Time
+- Re-run the app
+- Confirm the web assets inside the iOS bundle were refreshed
+
+If the simulator shows a blank screen:
+
+- Capture the Xcode console error
+- Confirm the frontend build exists
+- Confirm Capacitor synced the correct web directory
+- Confirm no forbidden server.url was introduced
+- Confirm production API access is available
+- Do not change the locked cold-start architecture without review
+
+
+================================================================
+LOCKED DIME TIME RULES
+================================================================
+
+Do not:
+
+- Add server.url to capacitor.config.ts
+- Change real-money feature flags
+- Remove the per-user allowlist
+- Weaken the $1 first-transfer limit
+- Weaken the $5 daily limit
+- Initiate a real payment
+- Expose live secrets
+- Modify production financial data
+- Change the bundle identifier
+- Change build 207 merely for screenshot generation
+- Reintroduce CI version overwrites
+
+Info.plist remains the version/build source consumed by CI.
+
+The domain remains dime-time.com with the hyphen.
+
+
+================================================================
+REQUIRED REPORT BACK TO TIM
+================================================================
+
+Before Tim proceeds, return:
+
+1. Exact GitHub repository URL
+2. Exact branch name
+3. Latest pushed commit hash
+4. Confirmation that the Replit workspace is clean
+5. Confirmation that GitHub contains all build-207 code
+6. Exact Xcode workspace path
+7. Exact local commands Tim should run
+8. Required Node/npm versions
+9. Whether npm install or npm ci should be used
+10. Safest demo account/data method
+11. Confirmation that screenshot mode cannot move real money
+12. Recommended iPhone simulator model
+13. Recommended iPad simulator model
+14. Expected screenshot dimensions for each
+15. Any known simulator-only limitation
+16. Any blocker Tim must resolve before downloading the project
+17. A simple GO/NO-GO recommendation for starting screenshot capture
+
+
+================================================================
+SUCCESS STANDARD
+================================================================
+
+This task is successful when Tim can:
+
+- Download the current build-207 source
+- Open the correct Capacitor workspace in Xcode
+- Run Dime Time in an iPhone simulator
+- Run Dime Time in a 13-inch iPad simulator
+- See the current redesigned interface
+- Capture clean, accepted-resolution screenshots
+- Verify there is no private financial information
+- Upload accurate iPhone and iPad screenshots to App Store Connect
+
+Do not proceed to the final App Store submission until the screenshots have also
+been compared against the actual TestFlight build 207.
