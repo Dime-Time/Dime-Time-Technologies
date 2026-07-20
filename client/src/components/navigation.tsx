@@ -227,7 +227,7 @@ export function Navigation() {
       </nav>
 
       {/* Bottom Navigation (mobile) – respects home indicator via safe-area-bottom */}
-      <nav className="safe-area-bottom md:hidden fixed bottom-0 left-0 right-0 border-t border-border px-1 z-50 bg-card/95 backdrop-blur-sm">
+      <nav className="safe-area-bottom md:hidden fixed bottom-0 left-0 right-0 border-t border-border px-1 z-50 bg-card">
         <div className="flex justify-around items-center max-w-screen-xl mx-auto">
           {[...navItems, { href: "/settings", label: "Settings", icon: Settings }].map((item) => {
             const Icon = item.icon;

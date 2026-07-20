@@ -1,0 +1,515 @@
+DIME TIME — APP STORE SCREENSHOT VISUAL REVIEW
+Version 1.0.5 / Build 207
+Date: July 20, 2026
+
+OVERALL RESULT
+
+The redesigned screenshots look dramatically better than the original App Store
+listing. The interface is clean, credible, consistent, and much more like a
+polished consumer fintech product.
+
+Do not upload all 12 screenshots exactly as delivered.
+
+Several are approved, two Crypto screenshots should be excluded, the iPad
+Activity screenshot should be excluded, and the authenticated iPhone
+screenshots should ideally be recaptured after correcting the bottom-navigation
+blur.
+
+
+================================================================
+FINAL SCREENSHOT DECISIONS
+================================================================
+
+IPAD
+
+1. 01-dashboard-ipad.png
+   DECISION: KEEP — USE AS THE LEAD SCREENSHOT
+
+   Strengths:
+
+   - Strong product overview
+   - Clean redesigned interface
+   - Communicates debt-payoff progress
+   - Shows round-up balance and monthly impact
+   - Shows transactions, debts, and quick actions
+   - Best overall iPad product story
+
+   Minor issue:
+
+   - A missing-character/tofu box appears before “DAILY TIP.”
+   - Replace the unsupported character with an existing supported SVG/icon
+     component if this can be done safely.
+   - Confirm the box does not appear in the TestFlight build.
+
+2. 02-insights-ipad.png
+   DECISION: KEEP
+
+   Strengths:
+
+   - Excellent financial metrics
+   - Clear debt-reduction chart
+   - Strong spending-category presentation
+   - Communicates the value of Dime Time
+   - Appropriate second screenshot
+
+3. 03-activity-ipad.png
+   DECISION: DROP — DO NOT UPLOAD
+
+   Problems:
+
+   - Begins midway down the Insights page
+   - Sticky navigation overlays blurred content at the top
+   - Looks like a capture or rendering error
+   - Lacks a clean page heading and context
+   - Contains missing-character/tofu boxes in Optimization Tips
+   - Is largely redundant with the stronger Insights screenshot
+
+   Do not spend time recapturing this unless a clean replacement is needed.
+
+4. 04-roundups-ipad.png
+   DECISION: KEEP
+
+   Note:
+
+   - The visible page title is “Transactions.”
+   - Treat and label this internally as the Transactions/Round-ups screenshot.
+
+   Strengths:
+
+   - Clearly explains purchases and spare-change savings
+   - Shows total saved, monthly saved, and purchase count
+   - Demonstrates how individual transactions generate round-ups
+   - Uses safe demo transactions
+   - Strong App Store feature screenshot
+
+5. 05-crypto-ipad-REVIEW-FLAG.png
+   DECISION: DROP — DO NOT UPLOAD
+
+   Reasons:
+
+   - Prominently says “Demo Mode”
+   - Prominently says “simulated trades only”
+   - Portfolio is empty
+   - Total invested is $0
+   - Total purchases is 0
+   - Adds avoidable App Review and marketing risk
+   - Does not make the product look active or compelling
+   - Crypto is not the headline feature of build 207
+
+   Do not modify the app to hide honest demo disclosures. Simply exclude this
+   screenshot from the App Store listing.
+
+6. 06-login-ipad.png
+   DECISION: KEEP AS THE FINAL IPAD SCREENSHOT
+
+   Strengths:
+
+   - Clean Dime Time branding
+   - Strong brand color
+   - No private information
+   - Works as a closing screenshot
+
+   It is less valuable than a feature screen, so keep it last.
+
+
+================================================================
+IPHONE
+================================================================
+
+1. 01-dashboard-iphone.png
+   DECISION: KEEP, BUT PREFERABLY RECAPTURE
+
+   Strengths:
+
+   - Strong lead screenshot
+   - Clearly communicates monthly debt impact
+   - Shows total debt, round-up balance, progress, and projected debt-free date
+   - Visually polished
+
+   Issue:
+
+   - The fixed bottom-navigation area shows blurred page content underneath it.
+   - The blur resembles accidental redaction or a rendering defect.
+
+2. 02-debts-iphone.png
+   DECISION: KEEP, BUT PREFERABLY RECAPTURE
+
+   Strengths:
+
+   - Strong debt-management story
+   - Shows total debt, progress, minimum payment, and monthly payoff amount
+   - Demonstrates Import, Add Manual, and Make Payment functions
+   - Uses masked account digits
+
+   Issue:
+
+   - The bottom-navigation area contains distracting blurred content.
+
+   Confirm:
+
+   - The Import button gracefully explains that automatic debt import is
+     unavailable while Plaid Liabilities remains pending.
+   - It must not produce a raw error.
+
+3. 03-roundups-iphone.png
+   DECISION: KEEP, BUT PREFERABLY RECAPTURE
+
+   Note:
+
+   - The visible page title is “Transactions.”
+   - Treat and label this internally as Transactions/Round-ups.
+
+   Strengths:
+
+   - Strong explanation of the core round-up feature
+   - Shows total saved and monthly savings
+   - Demonstrates the relationship between purchases and generated round-ups
+   - Uses safe demo transactions
+
+   Issue:
+
+   - The bottom-navigation area contains distracting blurred content.
+
+4. 04-insights-iphone.png
+   DECISION: KEEP, BUT PREFERABLY RECAPTURE
+
+   Strengths:
+
+   - Strong financial metrics
+   - Clear debt-reduction graph
+   - Excellent demonstration of long-term value
+   - Good fourth screenshot
+
+   Issue:
+
+   - The bottom-navigation area contains distracting blurred content.
+
+5. 05-crypto-iphone-REVIEW-FLAG.png
+   DECISION: DROP — DO NOT UPLOAD
+
+   Reasons:
+
+   - Prominently says “Demo Mode”
+   - Says “simulated trades only”
+   - Shows inactive status
+   - Shows $0 invested
+   - Shows zero completed orders
+   - Adds avoidable App Review risk
+   - Weakens the product story
+   - Crypto is not the focus of version 1.0.5/build 207
+
+6. 06-login-iphone.png
+   DECISION: KEEP AS THE FINAL IPHONE SCREENSHOT
+
+   Strengths:
+
+   - Clean and attractive branding
+   - Strong use of the official Dime Time color
+   - No private information
+   - Works well as a final screenshot
+
+
+================================================================
+REQUIRED IPHONE BOTTOM-NAVIGATION REVIEW
+================================================================
+
+PROBLEM
+
+All authenticated iPhone screenshots show blurred page content beneath or
+behind the fixed bottom-navigation bar.
+
+Affected screenshots:
+
+- Dashboard
+- Debt Management
+- Transactions
+- Insights
+- Crypto
+
+The navigation icons and labels remain visible, but the blurred content
+underneath resembles:
+
+- Accidental censorship
+- A screenshot-rendering problem
+- A CSS stacking problem
+- Content continuing beneath an insufficiently opaque navigation background
+
+REQUIRED ACTION
+
+Inspect the mobile bottom-navigation implementation.
+
+Determine whether the blur is caused by:
+
+- backdrop-filter
+- backdrop-blur
+- A translucent background
+- Incorrect z-index
+- Incorrect bottom padding
+- Page content scrolling beneath the fixed navigation
+- Screenshot-tool rendering differences
+- An actual build-207 UI behavior
+
+Preferred correction:
+
+- Give the bottom navigation a fully opaque background using the correct Dime
+  Time surface color.
+- Ensure page content does not remain visibly readable or heavily blurred
+  beneath the navigation.
+- Preserve the navigation’s existing icons, labels, active state, and layout.
+- Preserve safe-area padding.
+- Ensure content is not hidden behind the navigation.
+- Do not redesign the navigation.
+- Do not introduce a large visual change into build 207.
+
+After correcting:
+
+1. Rebuild the current interface.
+2. Recapture these four authenticated iPhone screenshots:
+
+   - Dashboard
+   - Debt Management
+   - Transactions
+   - Financial Insights
+
+3. Keep the exact accepted size:
+
+   1290 × 2796
+
+4. Verify PNG, RGB, and no alpha channel.
+5. Confirm the bottom navigation looks clean and intentional.
+6. Compare the result to the actual TestFlight build.
+
+If the blur exists only in the screenshot-rendering tool and not in TestFlight:
+
+- Do not change production CSS solely based on an inaccurate renderer.
+- Correct the capture method instead.
+- Return evidence comparing the renderer with TestFlight.
+
+If the blur exists in TestFlight:
+
+- Fix it as a real UI issue.
+- Rebuild/sync before the final build-207 archive if build 207 has not yet been
+  uploaded.
+- If Apple has already accepted build 207 for processing, report whether a new
+  build number is required before changing the bundled frontend.
+
+
+================================================================
+MISSING-CHARACTER / TOFU ICON REVIEW
+================================================================
+
+Observed issues:
+
+- iPad Dashboard: unsupported/missing character before “DAILY TIP”
+- iPad Activity: unsupported/missing characters before:
+  - “Boost Your Round-ups”
+  - “High-Interest First”
+
+These appear as empty square boxes.
+
+REQUIRED ACTION
+
+Inspect the affected text/icon implementation.
+
+Determine whether the source uses:
+
+- Emoji
+- Unicode characters
+- Unsupported font glyphs
+- Icon fonts that are unavailable in the capture environment
+- A screenshot-renderer font limitation
+
+Preferred correction:
+
+- Replace unsupported glyphs with existing project SVG/Lucide icons.
+- Do not rely on emoji rendering for important visual elements.
+- Keep the text unchanged.
+- Confirm the same supported icon renders on web, iPhone, and iPad.
+
+At minimum:
+
+- Fix or verify the DAILY TIP icon before using the Dashboard screenshot.
+- Drop the Activity screenshot regardless, because its framing is weak.
+
+If the missing squares occur only in the screenshot renderer:
+
+- Correct the renderer or remove the unsupported icon from the screenshot output.
+- Confirm they do not appear in TestFlight.
+
+
+================================================================
+FINAL APP STORE UPLOAD ORDER
+================================================================
+
+IPHONE — FIVE SCREENSHOTS
+
+1. Dashboard
+2. Debt Management
+3. Transactions/Round-ups
+4. Financial Insights
+5. Login
+
+Files after final recapture/review:
+
+1. 01-dashboard-iphone.png
+2. 02-debts-iphone.png
+3. 03-roundups-iphone.png
+4. 04-insights-iphone.png
+5. 06-login-iphone.png
+
+Do not upload:
+
+- 05-crypto-iphone-REVIEW-FLAG.png
+
+
+IPAD — FOUR SCREENSHOTS
+
+1. Dashboard
+2. Financial Insights
+3. Transactions/Round-ups
+4. Login
+
+Files:
+
+1. 01-dashboard-ipad.png
+2. 02-insights-ipad.png
+3. 04-roundups-ipad.png
+4. 06-login-ipad.png
+
+Do not upload:
+
+- 03-activity-ipad.png
+- 05-crypto-ipad-REVIEW-FLAG.png
+
+It is acceptable for the iPhone and iPad sets to contain different numbers of
+screenshots. Four strong iPad screenshots are better than adding a weak fifth.
+
+
+================================================================
+FINAL PRIVACY REVIEW
+================================================================
+
+Before approval, verify each selected screenshot contains:
+
+- Demo data only
+- No email address
+- No phone number
+- No full bank account number
+- No routing number
+- No real bank credentials
+- No Plaid token
+- No Stripe token
+- No admin interface
+- No live financial transaction belonging to a real person
+
+“Welcome back, Tim” shows only a first name and is not a major privacy problem,
+but a generic demo name may be used if Replit can change screenshot-only demo
+data without affecting production behavior.
+
+Do not modify production user data solely for screenshot generation.
+
+
+================================================================
+ACCURACY REVIEW AGAINST TESTFLIGHT
+================================================================
+
+Because these images were captured from the build-207 workspace rather than an
+actual iOS simulator, compare every selected screenshot to build 207 in
+TestFlight.
+
+Verify:
+
+- Typography matches
+- Card spacing matches
+- Safe-area spacing matches
+- Header position matches
+- Bottom navigation matches
+- iPad responsive layout matches
+- No content is hidden behind native bars
+- No unsupported-character boxes appear
+- The screenshots do not show features absent from TestFlight
+- The screenshots do not materially stretch, compress, or rearrange the UI
+
+Status-bar-free screenshots are not the primary concern.
+
+The important requirement is that the screenshots accurately represent the
+shipping application.
+
+
+================================================================
+DO-NOT-TOUCH RULES
+================================================================
+
+Do not:
+
+- Add server.url to capacitor.config.ts
+- Change real-money flags
+- Change the per-user allowlist
+- Weaken the $1 first-transfer limit
+- Weaken the $5 daily limit
+- Move real money
+- Remove honest Demo Mode disclosures from the actual Crypto feature
+- Enable Plaid Liabilities before approval and production testing
+- Use real customer financial information
+- Modify live production data for screenshots
+- Change the Dime Time domain
+- Reintroduce version overwrites into CodeMagic
+
+The domain remains:
+
+https://dime-time.com
+
+
+================================================================
+REQUIRED REPORT BACK
+================================================================
+
+Return:
+
+1. Whether the iPhone bottom blur is a real app behavior or screenshot-tool issue
+2. Root cause of the bottom blur
+3. Whether production CSS was changed
+4. Before/after comparison result
+5. Confirmation that the four iPhone screenshots were recaptured
+6. Confirmation of 1290 × 2796 dimensions
+7. Confirmation of RGB with no alpha channel
+8. Root cause of the missing-character boxes
+9. Whether the iPad Dashboard DAILY TIP icon was corrected
+10. Confirmation that Crypto screenshots were excluded
+11. Confirmation that iPad Activity was excluded
+12. Final iPhone screenshot filenames and order
+13. Final iPad screenshot filenames and order
+14. TestFlight comparison result
+15. GO/NO-GO recommendation for App Store screenshot upload
+
+
+================================================================
+FINAL DECISION
+================================================================
+
+CURRENT STATUS:
+
+- iPad Dashboard: CONDITIONAL GO
+- iPad Insights: GO
+- iPad Activity: NO-GO
+- iPad Transactions/Round-ups: GO
+- iPad Crypto: NO-GO
+- iPad Login: GO
+- iPhone Dashboard: CONDITIONAL GO
+- iPhone Debts: CONDITIONAL GO
+- iPhone Transactions/Round-ups: CONDITIONAL GO
+- iPhone Insights: CONDITIONAL GO
+- iPhone Crypto: NO-GO
+- iPhone Login: GO
+
+Overall screenshot set:
+
+CONDITIONAL GO
+
+Final GO requires:
+
+- Review/correction of the iPhone bottom-navigation blur
+- Review/correction of the iPad Dashboard missing-character icon
+- Removal of both Crypto screenshots
+- Removal of the iPad Activity screenshot
+- Comparison against the actual TestFlight build 207

@@ -11,7 +11,8 @@ import {
   Award,
   PieChart,
   BarChart3,
-  ArrowRight
+  ArrowRight,
+  Lightbulb
 } from "lucide-react";
 import type { Transaction, Debt, Payment } from "@shared/schema";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -438,7 +439,7 @@ export default function Insights() {
               <div className="space-y-4">
                 <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
                   <p className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
-                    <span>💡</span> Boost Your Round-ups
+                    <Lightbulb className="w-3.5 h-3.5 text-dime-purple" /> Boost Your Round-ups
                   </p>
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Consider rounding up to the nearest $5 instead of $1 to significantly accelerate your debt payoff timeline.
@@ -446,7 +447,7 @@ export default function Insights() {
                 </div>
                 <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
                   <p className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
-                    <span>🎯</span> High-Interest First
+                    <Target className="w-3.5 h-3.5 text-dime-purple" /> High-Interest First
                   </p>
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Make sure extra payments target your highest interest rate debt first to save the most money over time.

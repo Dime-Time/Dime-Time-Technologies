@@ -24,7 +24,8 @@ import {
   Settings,
   Lock,
   ChevronRight,
-  PieChart
+  PieChart,
+  Lightbulb
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Transaction, Debt } from "@shared/schema";
@@ -482,7 +483,7 @@ export default function Dashboard() {
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl pointer-events-none"></div>
             <div className="relative z-10">
               <h3 className="text-sm font-bold text-dime-lilac mb-2 tracking-wide uppercase flex items-center gap-2">
-                <span className="text-base">💡</span> Daily Tip
+                <Lightbulb className="w-4 h-4" /> Daily Tip
               </h3>
               <p className="text-sm text-slate-200 leading-relaxed mb-5">
                 Small increases to your round-ups may help you reduce debt significantly faster over the long term.

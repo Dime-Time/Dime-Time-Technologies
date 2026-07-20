@@ -432,3 +432,9 @@ id = "kxo_zEYcTwwpy0mMGlqKo"
 uri = "file://attached_assets/Dime-Time-App-Store-Screenshots.zip"
 type = "unspecified"
 title = "App Store Screenshots — iPhone 6.9\" + iPad 13\" (build 207)"
+
+[[outputs]]
+id = "LhvagvzgMmrutykF6DJl8"
+uri = "file://attached_assets/Dime-Time-App-Store-Screenshots-FINAL.zip"
+type = "unspecified"
+title = "FINAL App Store Screenshots — 5 iPhone + 4 iPad (reviewer-approved set)"
