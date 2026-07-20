@@ -1,0 +1,512 @@
+====================================================================
+DIME TIME v1.0.5 (BUILD 207)
+FINAL CROSS-CHECK + RELEASE RECOMMENDATIONS
+Prepared for Replit Engineering
+Date: July 19, 2026
+====================================================================
+
+OVERALL ASSESSMENT
+
+The release plan is approximately 85–90% complete. The overall sequence
+is solid, but several production-grade validation steps should be added
+before submitting Build 207 to Apple.
+
+The largest remaining technical risk is ensuring Plaid OAuth functions
+correctly during real-world Chase (or other OAuth institution) flows,
+especially if any portion of the authentication process transitions
+between a Capacitor WebView and native iOS.
+
+====================================================================
+1. ADDITIONAL RELEASE STEPS
+====================================================================
+
+A. Provisioning Profile Verification
+
+After enabling the Associated Domains capability inside the Apple
+Developer Portal:
+
+• Regenerate or refresh the App Store distribution provisioning profile.
+• Ensure Codemagic downloads the updated profile.
+• Do NOT assume existing cached signing assets contain the entitlement.
+
+Verify ALL THREE layers:
+
+1. Xcode target contains:
+   com.apple.developer.associated-domains
+
+2. Provisioning profile authorizes the entitlement.
+
+3. Final signed IPA contains:
+
+   applinks:dime-time.com
+
+Checking App.entitlements alone is NOT sufficient.
+
+The final signed archive should be inspected before release.
+
+------------------------------------------------------------
+
+B. Verify Signed IPA
+
+Confirm the exported IPA contains:
+
+• Version 1.0.5
+• Build 207
+• Associated Domains entitlement
+• applinks:dime-time.com
+
+The verification should inspect the SIGNED application,
+not merely the source files.
+
+------------------------------------------------------------
+
+C. App Store Connect Processing
+
+After uploading Build 207:
+
+Confirm:
+
+• Build processed successfully
+• No entitlement warnings
+• No provisioning warnings
+• Build appears inside TestFlight
+• Version = 1.0.5
+• Build = 207
+
+------------------------------------------------------------
+
+D. Clean Install Testing
+
+Current testing plan should include BOTH:
+
+1. Fresh installation of Build 207
+2. Upgrade from Live Build 206
+
+Reason:
+
+Universal Links sometimes behave differently on:
+
+• Clean installs
+• Upgrade installs
+
+Both paths should pass.
+
+------------------------------------------------------------
+
+E. Verify Plaid Redirect URI
+
+Do NOT only verify:
+
+PLAID_REDIRECT_URI environment variable
+
+Also verify the backend actually includes:
+
+https://dime-time.com/plaid/oauth
+
+inside EVERY production:
+
+/link/token/create
+
+request.
+
+Specifically verify:
+
+• Initial Link
+• Update Mode
+• Re-authentication
+• Item Repair
+• Liabilities flows
+
+Having the environment variable set does not prove every Link token
+includes the redirect URI.
+
+------------------------------------------------------------
+
+F. Full Regression Pass
+
+Before freezing Build 207 verify:
+
+Authentication
+
+✓ Existing user login
+✓ New user registration
+✓ Logout
+✓ Login again
+
+Plaid
+
+✓ Existing Item remains connected
+✓ Non-OAuth institution
+✓ OAuth institution
+✓ OAuth cancellation
+✓ OAuth retry
+✓ Expired Link token
+✓ Update Mode
+
+App Lifecycle
+
+✓ Cold launch
+✓ Warm launch
+✓ App killed during OAuth
+✓ App backgrounded
+✓ App resumed
+
+Navigation
+
+✓ Every bottom tab
+✓ Password reset
+✓ Navigation fix
+✓ Dashboard loading
+
+Payments
+
+✓ No unintended ACH initiation
+✓ Existing payment authorization unchanged
+
+Once all tests pass:
+
+Freeze Build 207.
+
+Any code changes require:
+
+Build 208
+
+====================================================================
+2. UNIVERSAL LINK GOTCHAS
+====================================================================
+
+A. Apple CDN Caching
+
+Even if:
+
+https://dime-time.com/.well-known/apple-app-site-association
+
+returns:
+
+HTTP 200
+
+Apple's CDN may temporarily cache older information.
+
+Recommended approach:
+
+• Enable capability
+• Refresh provisioning profile
+• Build new IPA
+• Install fresh build
+• Allow propagation if necessary
+• Retest
+
+------------------------------------------------------------
+
+B. AASA Location
+
+Preferred location:
+
+https://dime-time.com/.well-known/apple-app-site-association
+
+No .json extension.
+
+------------------------------------------------------------
+
+C. Content-Type
+
+Verify response headers:
+
+Content-Type:
+application/json
+
+Ensure:
+
+• No redirects
+• No authentication
+• No HTML responses
+• No CDN interference
+• No geographic filtering
+
+------------------------------------------------------------
+
+D. Path Matching
+
+Confirm the AASA file correctly allows:
+
+/plaid/oauth
+
+including OAuth query parameters.
+
+The rebuilt pathname + search implementation appears correct.
+
+------------------------------------------------------------
+
+E. Universal Link Testing Sources
+
+Do NOT only test from Safari.
+
+Also test:
+
+✓ Messages
+✓ Mail
+✓ Notes
+✓ External webpage
+✓ Plaid OAuth callback
+
+------------------------------------------------------------
+
+F. Scope of Claimed Paths
+
+Avoid claiming every path on:
+
+dime-time.com
+
+if unnecessary.
+
+Prefer only application routes such as:
+
+/plaid/oauth
+/reset-password/*
+/app/*
+
+Unknown routes should fail safely.
+
+------------------------------------------------------------
+
+G. Cold Start Race Conditions
+
+Verify:
+
+✓ App terminated
+✓ Logged in
+✓ Logged out
+✓ Backgrounded
+✓ Foregrounded
+✓ OAuth callback during startup
+
+Ensure callback URLs are retained until the router is ready.
+
+------------------------------------------------------------
+
+H. Duplicate Callback Handling
+
+Multiple callback events should NEVER:
+
+• Create duplicate Plaid Items
+• Exchange tokens twice
+• Duplicate imports
+• Duplicate ACH activity
+
+OAuth processing should remain idempotent.
+
+------------------------------------------------------------
+
+I. WebView Risk
+
+Current highest functional risk.
+
+If any portion of Plaid Link executes inside a Capacitor WebView:
+
+Verify end-to-end success for:
+
+• Chase OAuth
+• Public Token exchange
+• Item creation
+• Debt import
+• App relaunch
+
+Successful authentication alone is NOT enough.
+
+The complete Plaid lifecycle must succeed.
+
+====================================================================
+3. UPDATED GO / NO-GO STANDARD
+====================================================================
+
+GO ONLY IF ALL OF THE FOLLOWING PASS
+
+Signing
+
+✓ Associated Domains enabled
+✓ Updated provisioning profile
+✓ Signed IPA contains entitlement
+
+Distribution
+
+✓ Build processed successfully
+✓ No signing warnings
+
+Universal Links
+
+✓ Clean install
+✓ Upgrade install
+✓ Cold launch
+✓ Warm launch
+✓ Logged out callback
+✓ Invalid links fail safely
+
+Plaid
+
+✓ Redirect URI confirmed
+✓ Chase OAuth passes
+✓ Cancellation works
+✓ Retry works
+✓ Duplicate callback safe
+✓ Existing users unaffected
+
+Fintech Safety
+
+✓ No unintended payments
+✓ Existing ACH authorizations preserved
+✓ Existing Plaid Items preserved
+✓ Payment idempotency intact
+
+UX
+
+✓ Dashboard loads
+✓ Navigation fixed
+✓ Password reset works
+✓ Login/logout works
+✓ No crashes
+
+Submission
+
+✓ Screenshots updated
+✓ Review account functional
+✓ Review notes updated
+✓ Build 207 selected
+
+====================================================================
+4. UPDATED RELEASE ORDER
+====================================================================
+
+STEP 1
+
+Confirm redirect URI exists in Plaid Dashboard.
+
+STEP 2
+
+Verify every production Link Token includes:
+
+https://dime-time.com/plaid/oauth
+
+STEP 3
+
+Enable Associated Domains on:
+
+com.dimetime.mobile
+
+STEP 4
+
+Refresh / regenerate App Store provisioning profile.
+
+STEP 5
+
+Trigger Codemagic Build 207.
+
+STEP 6
+
+Inspect the final signed IPA.
+
+Confirm:
+
+✓ Version 1.0.5
+✓ Build 207
+✓ Associated Domains entitlement
+✓ applinks:dime-time.com
+
+STEP 7
+
+Verify App Store Connect processing.
+
+STEP 8
+
+Test fresh installation.
+
+STEP 9
+
+Test upgrade from Build 206.
+
+STEP 10
+
+Complete:
+
+✓ Universal Links
+✓ Cold start
+✓ Warm start
+✓ Logged-out callback
+✓ Chase OAuth
+✓ OAuth cancellation
+✓ OAuth retry
+✓ Existing-user regression
+✓ Navigation regression
+✓ Password reset
+✓ ACH safety
+
+STEP 11
+
+Freeze Build 207.
+
+No further code changes.
+
+Any modifications require:
+
+Build 208.
+
+STEP 12
+
+After TestFlight acceptance:
+
+Update:
+
+LAST_ACCEPTED_BY_APPLE
+
+from:
+
+206
+
+to:
+
+207
+
+at BOTH locations inside codemagic.yaml.
+
+STEP 13
+
+Create App Store version:
+
+1.0.5
+
+Upload:
+
+• Updated screenshots
+• Updated release notes
+• Updated review notes
+
+Select:
+
+Build 207
+
+Submit for App Review.
+
+====================================================================
+BOTTOM LINE
+====================================================================
+
+Current readiness: ~85–90%
+
+The release plan is fundamentally correct.
+
+The primary improvements are:
+
+• Refresh provisioning profile after enabling Associated Domains.
+• Verify entitlements in the final signed IPA.
+• Confirm redirect_uri is present in every production Link Token request.
+• Test both clean-install and upgrade scenarios.
+• Expand OAuth validation to include:
+  - Item creation
+  - Persistence
+  - Duplicate callback handling
+  - Cancellation
+  - Cold-start recovery
+  - Existing-user regression
+• Treat any Chase OAuth failure as a hard NO-GO for release.
+
+If all expanded validation passes successfully, Build 207 should be considered production-ready for App Store submission.
+====================================================================

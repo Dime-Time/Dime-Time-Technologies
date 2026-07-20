@@ -31,3 +31,10 @@ any of the three pieces and OAuth banks (Chase etc.) strand users in Safari.
 - Universal-link listeners live at module scope (main.tsx → universalLinks.ts),
   not in a React effect — avoids duplicate listeners; duplicate OAuth callbacks
   are dropped when already on /plaid/oauth.
+- The AASA deliberately claims ONLY `/plaid/oauth` (narrow scope). A generic
+  https://dime-time.com link will NOT open the app — that is by design, not a
+  bug. Device testing must use a `/plaid/oauth` link (e.g. pasted into Notes or
+  Messages), and from multiple sources, not just Safari.
+- Plaid public tokens are single-use at Plaid's end, so a duplicate
+  exchange-token call cannot create a duplicate Item; the client double-guard
+  (submitted ref + skip-if-already-on-page) is the first line, Plaid the second.

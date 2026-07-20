@@ -49,16 +49,24 @@ function resolvePlaidSecret(): string | undefined {
  * dashboard's Allowed redirect URIs — so a stale/wrong URI would break ALL
  * bank linking. Production therefore only attaches dime-time.com URIs
  * (anything registered for this app must live on the official domain).
- * OAuth-bank support (Chase etc.) additionally requires client-side resume
- * handling that is not implemented yet, so skipping the URI is safe: non-OAuth
- * banks link fine without it.
+ * As of v1.0.5 (build 207) the client-side OAuth resume path IS implemented
+ * (universal links + /plaid/oauth resume page), so omitting the URI degrades
+ * OAuth banks (Chase etc.) — non-OAuth banks still link fine without it.
+ * Every omission in production is logged loudly so a missing/malformed secret
+ * can never silently disable OAuth bank linking.
  */
 function resolvePlaidRedirectUri(): string | undefined {
   const redirectUri = process.env.PLAID_REDIRECT_URI;
+  const env = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
   if (!redirectUri || redirectUri.includes('your-domain') || !redirectUri.startsWith('https://')) {
+    if (env === 'production') {
+      console.warn(
+        '[PlaidService] PLAID_REDIRECT_URI is missing or malformed in production — ' +
+        'link tokens will be created WITHOUT redirect_uri. OAuth banks (Chase etc.) will fail to link.'
+      );
+    }
     return undefined;
   }
-  const env = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
   if (env === 'production' && !redirectUri.startsWith('https://dime-time.com')) {
     console.warn(
       '[PlaidService] Ignoring PLAID_REDIRECT_URI in production: it is not a https://dime-time.com URL. ' +
