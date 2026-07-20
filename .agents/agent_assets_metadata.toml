@@ -438,3 +438,9 @@ id = "LhvagvzgMmrutykF6DJl8"
 uri = "file://attached_assets/Dime-Time-App-Store-Screenshots-FINAL.zip"
 type = "unspecified"
 title = "FINAL App Store Screenshots — 5 iPhone + 4 iPad (reviewer-approved set)"
+
+[[outputs]]
+id = "KBi80m1wL2wXmdwkZR70f"
+uri = "file://attached_assets/Dime-Time-Screenshots-iPhone-6.5.zip"
+type = "unspecified"
+title = "iPhone screenshots resized for the 6.5-inch slot (1284×2778)"
