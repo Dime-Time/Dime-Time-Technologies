@@ -45,6 +45,7 @@ interface DashboardSummary {
   progressPercentage: number;
   debtFreeDate: string;
   debtsCount: number;
+  paidOffCount?: number;
 }
 
 const EMPTY_SUMMARY: DashboardSummary = {
@@ -220,7 +221,13 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-900 mb-1">Total Progress</p>
-                  <p className="text-xs text-slate-500 max-w-[140px] leading-relaxed">You're making steady strides towards becoming debt-free.</p>
+                  {(activeSummary.paidOffCount ?? 0) > 0 ? (
+                    <p className="text-xs font-medium text-green-600" data-testid="text-dashboard-paid-off-count">
+                      🏆 {activeSummary.paidOffCount} debt{activeSummary.paidOffCount === 1 ? "" : "s"} paid off
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500 max-w-[140px] leading-relaxed">You're making steady strides towards becoming debt-free.</p>
+                  )}
                 </div>
               </div>
             </div>

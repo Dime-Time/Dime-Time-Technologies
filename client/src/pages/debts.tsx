@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -18,7 +19,7 @@ import { DebtHistoryModal } from "@/components/DebtHistoryModal";
 import { ImportDebtsModal } from "@/components/ImportDebtsModal";
 import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
-import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download, Pencil, Trash2, Zap, LayoutList } from "lucide-react";
+import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download, Pencil, Trash2, Zap, LayoutList, PartyPopper, Archive, Trophy } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,7 +39,16 @@ type DashboardSummary = {
   progressPercentage: number;
   debtFreeDate: string;
   debtsCount: number;
+  paidOffCount?: number;
 };
+
+const isPaidOff = (debt: Debt) => parseFloat(debt.currentBalance) <= 0;
+
+function fireConfetti() {
+  const defaults = { origin: { y: 0.6 }, colors: ["#918EF4", "#22c55e", "#facc15", "#f472b6"] };
+  confetti({ ...defaults, particleCount: 80, spread: 70 });
+  setTimeout(() => confetti({ ...defaults, particleCount: 60, spread: 100, startVelocity: 45 }), 250);
+}
 
 export default function Debts() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -68,6 +78,22 @@ export default function Debts() {
   });
 
   const roundUpBalance = summary ? parseFloat(summary.totalRoundUps) : 0;
+
+  // Fire confetti when a debt transitions from a positive balance to $0
+  const prevBalancesRef = useRef<Record<string, number> | null>(null);
+  useEffect(() => {
+    if (debts.length === 0) return;
+    const prev = prevBalancesRef.current;
+    if (prev) {
+      const justPaidOff = debts.some(
+        (d) => isPaidOff(d) && prev[d.id] !== undefined && prev[d.id] > 0
+      );
+      if (justPaidOff) fireConfetti();
+    }
+    prevBalancesRef.current = Object.fromEntries(
+      debts.map((d) => [d.id, parseFloat(d.currentBalance)])
+    );
+  }, [debts]);
 
   const deleteDebtMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -100,6 +126,7 @@ export default function Debts() {
   const totalOriginalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.originalBalance), 0);
   const totalMinimumPayments = debts.reduce((sum, debt) => sum + parseFloat(debt.minimumPayment), 0);
   const overallProgress = totalOriginalDebt > 0 ? ((totalOriginalDebt - totalDebt) / totalOriginalDebt) * 100 : 0;
+  const paidOffCount = debts.filter(isPaidOff).length;
 
   const realThisMonthPayments = payments
     .filter(payment => {
@@ -176,6 +203,12 @@ export default function Debts() {
               <TrendingDown className="w-3.5 h-3.5" /> Progress
             </div>
             <p className="text-2xl md:text-3xl font-bold text-dime-purple tabular-nums">{overallProgress.toFixed(1)}%</p>
+            {paidOffCount > 0 && (
+              <p className="text-xs font-bold text-green-600 mt-2 flex items-center gap-1" data-testid="text-paid-off-count">
+                <Trophy className="w-3 h-3" />
+                {paidOffCount} debt{paidOffCount === 1 ? "" : "s"} paid off 🎉
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -238,18 +271,28 @@ export default function Debts() {
           </Card>
         ) : (
           debts.map((debt, index) => {
+            const paidOff = isPaidOff(debt);
             const progress = calculateDebtProgress(debt.originalBalance, debt.currentBalance);
             const monthsLeft = estimatePayoffMonths(debt.currentBalance, parseFloat(debt.minimumPayment));
             const debtPayments = payments.filter(p => p.debtId === debt.id);
             const totalPaid = parseFloat(debt.originalBalance) - parseFloat(debt.currentBalance);
             
             return (
-              <Card key={debt.id} className="overflow-hidden shadow-card border-0 ring-1 ring-slate-200 animate-fade-in-up transition-shadow hover:shadow-card-hover" style={{ animationDelay: `${index * 0.1}s` }}>
-                <CardHeader className="bg-slate-50/80 border-b border-slate-100 pb-5">
+              <Card key={debt.id} className={`overflow-hidden shadow-card border-0 ring-1 animate-fade-in-up transition-shadow hover:shadow-card-hover ${paidOff ? "ring-green-300 shadow-green-100" : "ring-slate-200"}`} style={{ animationDelay: `${index * 0.1}s` }}>
+                <CardHeader className={`border-b border-slate-100 pb-5 ${paidOff ? "bg-green-50/80" : "bg-slate-50/80"}`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-xl font-bold text-slate-900 tracking-tight">{debt.name}</CardTitle>
+                        {paidOff && (
+                          <Badge
+                            className="bg-green-600 text-white hover:bg-green-600"
+                            data-testid={`badge-paid-off-${debt.id}`}
+                          >
+                            <PartyPopper className="w-3 h-3 mr-1" />
+                            Paid Off
+                          </Badge>
+                        )}
                         {debt.source === "imported" && (
                           <Badge
                             variant="secondary"
@@ -268,14 +311,46 @@ export default function Debts() {
                     </div>
                     <div className="sm:text-right">
                       <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Current Balance</div>
-                      <div className="text-3xl font-bold text-slate-900 tabular-nums leading-none">
+                      <div className={`text-3xl font-bold tabular-nums leading-none ${paidOff ? "text-green-600" : "text-slate-900"}`}>
                         {formatCurrency(debt.currentBalance)}
                       </div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                        of {formatCurrency(debt.originalBalance)}
+                      </p>
                     </div>
                   </div>
                 </CardHeader>
                 
                 <CardContent className="p-6">
+                  {paidOff && (
+                    <div
+                      className="mb-6 rounded-xl border border-green-200 bg-green-50/50 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in"
+                      data-testid={`banner-paid-off-${debt.id}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="bg-green-100 p-2.5 rounded-full">
+                          <Trophy className="w-6 h-6 text-green-600 shrink-0" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-green-900">
+                            Congratulations — you paid off {debt.name}! 🎉
+                          </p>
+                          <p className="text-sm font-medium text-green-700/80">
+                            You knocked out {formatCurrency(debt.originalBalance)} of debt. Archive it to celebrate the win.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        className="bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm press-scale px-6"
+                        disabled={deleteDebtMutation.isPending}
+                        onClick={() => deleteDebtMutation.mutate(debt.id)}
+                        data-testid={`button-archive-debt-${debt.id}`}
+                      >
+                        <Archive className="w-4 h-4 mr-2" />
+                        {deleteDebtMutation.isPending ? "Archiving..." : "Archive this debt"}
+                      </Button>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                     <div className="bg-slate-50 rounded-xl p-4">
                       <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">APR</h4>
@@ -310,14 +385,16 @@ export default function Debts() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
-                    <Button 
-                      className="bg-dime-purple hover:bg-dime-purple/90 text-white font-semibold shadow-sm press-scale px-6"
-                      onClick={() => openPaymentModal(debt.id)}
-                      data-testid={`button-make-payment-${debt.id}`}
-                    >
-                      Make Payment
-                    </Button>
-                    <StripeAchPayButton debt={debt} />
+                    {!paidOff && (
+                      <Button 
+                        className="bg-dime-purple hover:bg-dime-purple/90 text-white font-semibold shadow-sm press-scale px-6"
+                        onClick={() => openPaymentModal(debt.id)}
+                        data-testid={`button-make-payment-${debt.id}`}
+                      >
+                        Make Payment
+                      </Button>
+                    )}
+                    {!paidOff && <StripeAchPayButton debt={debt} />}
                     <Button
                       variant="outline"
                       className="bg-white font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900"
@@ -380,9 +457,11 @@ export default function Debts() {
                   )}
 
                   {/* One-Tap Accelerated Payment - Add some top margin to separate it */}
-                  <div className="mt-6">
-                    <AcceleratedPayment debt={debt} />
-                  </div>
+                  {!paidOff && (
+                    <div className="mt-6">
+                      <AcceleratedPayment debt={debt} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

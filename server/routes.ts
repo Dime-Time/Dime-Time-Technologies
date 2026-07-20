@@ -1470,6 +1470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         progressPercentage,
         debtFreeDate: debtFreeDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
         debtsCount: debts.length,
+        paidOffCount: debts.filter(d => parseFloat(d.currentBalance) <= 0).length,
       };
 
       res.json(summary);
