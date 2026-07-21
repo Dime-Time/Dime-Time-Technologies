@@ -1,0 +1,97 @@
+================================================================
+DIME TIME UNIVERSITY DECK — FINAL TIMELINE CORRECTION
+Date: July 21, 2026
+================================================================
+
+DECISION
+
+Remove “2014–2025” from Slide 11.
+
+The approved historical reference intentionally leaves the early
+classroom and concept-development period undated. Unless the founder
+personally verifies that Dime Time’s classroom-era development began
+in 2014, the presentation should not assign that date.
+
+The “2014–2025” range could also incorrectly imply that Dime Time was
+under continuous development for eleven years.
+
+================================================================
+REQUIRED SLIDE 11 CHANGE
+================================================================
+
+REMOVE:
+
+2014–2025
+
+REPLACE WITH:
+
+EARLY FOUNDATION
+
+Recommended complete milestone heading:
+
+EARLY FOUNDATION
+Classroom concept and initial prototype
+
+Supporting content may say:
+
+- Entrepreneurship and business-school work helped shape the Dime Time
+  concept, brand and early presentation.
+- An initial prototype helped make the concept tangible.
+- MBA and Management Information Systems education helped connect
+  business strategy with system design.
+
+Do not assign a year or date to this milestone.
+
+================================================================
+SPEAKER NOTES
+================================================================
+
+The speaker notes may explain that the early concept developed during
+Tim Carlisle’s academic journey.
+
+Do not state or imply:
+- That the project began in 2014
+- That Dime Time was continuously developed from 2014 through 2025
+- That an exact classroom origin date has been verified
+- That the early prototype was the production application
+
+Suggested speaker-note language:
+
+“Dime Time’s early foundation developed during my academic journey.
+Entrepreneurship coursework helped me structure the problem, customer
+value proposition, brand and business model. The original prototype
+was not the product that exists today—it was a learning tool that made
+the idea tangible and allowed me to begin testing and communicating
+the concept.”
+
+================================================================
+FINAL VERIFICATION
+================================================================
+
+After making the correction:
+
+1. Re-render Slide 11.
+2. Confirm “2014–2025” appears zero times in:
+   - The PowerPoint
+   - The PDF
+   - Speaker notes
+   - Outline
+   - Change log
+3. Confirm Slide 11 displays:
+   “EARLY FOUNDATION — Classroom concept and initial prototype”
+4. Confirm the historical timeline remains visually balanced.
+5. Confirm no other dates were changed.
+6. Confirm the deck still contains exactly 21 slides.
+7. Confirm all speaker notes remain attached.
+8. Confirm the updated PowerPoint still imports cleanly into Google
+   Slides.
+9. Update the change log to record this correction.
+10. Return the revised PowerPoint and PDF.
+
+Do not modify the locked investor pitch decks.
+
+FINAL STATUS AFTER CORRECTION:
+
+Once Slide 11 is corrected and visually re-verified, the university
+speaking deck may be considered FINAL-ACCEPTED and LOCKED.
+================================================================

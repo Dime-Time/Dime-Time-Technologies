@@ -1,0 +1,140 @@
+UNIVERSITY SPEAKING DECK — FINAL DELIVERY CONFIRMATION
+Date: July 21, 2026
+
+DECK TITLE:
+"FROM SOMMELIER TO FINTECH FOUNDER"
+
+FINAL STATUS:
+APPROVED AND READY FOR USE
+
+SLIDE COUNT:
+21 slides confirmed
+- 18 core slides
+- Appendix A
+- Appendix B
+- Appendix C
+
+The 21-slide count was confirmed in both:
+1. The presentation generator
+2. The exported PDF page count
+
+VISUAL QUALITY CONTROL:
+All 21 slides were rendered as images and individually inspected.
+
+Corrections completed:
+- Cover title wrapping fixed
+- Appendix C word-break fixed
+- Slide 8 title adjusted to 28 pt
+- Slide 12 sub-labels adjusted to 14 pt
+- Missing 20-minute speaker-note cue added to slide 12
+
+All corrected slides were re-rendered and re-verified.
+
+FINAL FILES:
+Location: attached_assets/university-deck-slides/
+
+1. dime-time-university-founder-journey.pptx
+   - Fully editable
+   - Speaker notes included on all 21 slides
+
+2. dime-time-university-founder-journey.pdf
+   - Final presentation PDF
+   - Confirmed 21 pages
+
+3. dime-time-university-founder-journey-outline.txt
+   - Slide-by-slide content
+   - 20-minute timing plan
+   - 45-minute timing plan
+   - 60-minute timing plan
+
+4. dime-time-university-founder-journey-sources.txt
+   - Sources for all external statistics
+   - Includes New York Fed Q1 2026 data
+   - Includes Pew Research Center 2025 data
+
+5. dime-time-university-founder-journey-changelog.txt
+   - Complete revision and change history
+
+GOOGLE SLIDES IMPORT INSTRUCTIONS:
+1. Go to drive.google.com
+2. Select New
+3. Select File upload
+4. Upload dime-time-university-founder-journey.pptx
+5. Double-click the uploaded PowerPoint
+6. Open it in Google Slides
+7. Select File
+8. Select Save as Google Slides
+
+The presentation will then be fully editable in Google Slides.
+
+Speaker notes should import automatically.
+To view them:
+View → Show speaker notes
+
+FONT:
+The deck uses Poppins.
+
+Poppins is available through Google Fonts and should render natively in Google Slides without font substitution.
+
+PRESENTATION TIMING:
+
+20-MINUTE VERSION:
+Use slides:
+1, 2, 4, 5, 6, 10, 11, 12, 14, 16, 17, 18
+
+The relevant timing cues are included in the speaker notes.
+
+45-MINUTE VERSION:
+Use all 18 core slides.
+
+60-MINUTE CLASS VERSION:
+Use all 21 slides, including the three appendix slides.
+
+Slide 20 includes eight discussion prompts.
+
+Reserve approximately 15–20 minutes for questions and discussion.
+
+FACT-COMPLIANCE REVIEW:
+PASS
+
+Confirmed:
+- Education wording is accurate
+- Historical dates were reviewed
+- Dime Time v1.0.5 build 207 is referenced correctly
+- "PROVEN IN CONTROLLED LIVE TEST" language is used
+- Public money transfers are clearly marked as not enabled
+- No invented user metrics
+- No invented revenue
+- No invented traction
+- Coinbase appears only as a planned future integration
+- Mercury is described only as Dime Time’s business bank
+- Mercury is not described as a technical integration
+- The $150,000 roadmap item appears only as the final roadmap milestone
+- No unauthorized partner logos are used
+- A partner disclaimer appears on slide 9
+
+SLIDE 11 DATE DECISION:
+Keep "2014–2025" for the idea and classroom-development era.
+
+RATIONALE:
+- 2014 appears in the established Dime Time milestone record
+- The historical timeline deck already uses 2014
+- The date shows that Dime Time developed over an extended period
+- It strengthens the persistence and founder-journey narrative
+- It is particularly relevant for university and classroom audiences
+
+FINAL DECISION:
+Do not remove 2014 from slide 11.
+
+FINAL APPROVAL:
+The university speaking deck is approved for:
+- University guest lectures
+- Entrepreneurship courses
+- MBA programs
+- Fintech programs
+- Innovation centers
+- Startup incubators
+- Accelerator presentations
+- Founder-story presentations
+
+No additional factual corrections are required at this time.
