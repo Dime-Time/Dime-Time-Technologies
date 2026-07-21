@@ -60,6 +60,57 @@ def footer(s, n, light):
     text(s, 11.8, 6.95, 1.1, 0.35, [(f"{n} / 13", 11, FAINT if not light else RGBColor(0xE3, 0xE2, 0xFC), False, 0)], align=PP_ALIGN.RIGHT)
 
 
+SHOTS = os.path.join(os.path.dirname(__file__), "..", "Dime-Time-App-Store-Screenshots-FINAL", "iPhone-6.9")
+
+
+def phone(s, x, y, h, png):
+    """Dark rounded device frame + screenshot inset. Aspect 1290x2796."""
+    w = h * 1290 / 2796
+    pad = 0.07
+    fr = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x - pad), Inches(y - pad),
+                            Inches(w + 2 * pad), Inches(h + 2 * pad))
+    fr.fill.solid(); fr.fill.fore_color.rgb = RGBColor(0x14, 0x12, 0x28)
+    fr.line.fill.background(); fr.shadow.inherit = False
+    fr.adjustments[0] = 0.09
+    s.shapes.add_picture(png, Inches(x), Inches(y), width=Inches(w), height=Inches(h))
+    return w
+
+
+# ---------- SLIDE 03 — SOLUTION ----------
+s = slide(LAVENDER)
+text(s, 0.68, 0.62, 8, 0.4, [(spaced("THE SOLUTION"), 12, WHITE, True, 0)])
+text(s, 0.62, 1.0, 9.0, 0.9, [("Automated Debt Reduction", 34, WHITE, True, 0)])
+sol_bullets = [
+    "Every purchase rounds up automatically",
+    "Spare change is applied to your financial goals",
+    "No behavior change required",
+    "Works passively in the background",
+]
+text(s, 0.95, 2.3, 7.6, 3.4, [("\u2022  " + b, 17, WHITE, False, 20) for b in sol_bullets])
+phone(s, 9.85, 1.35, 5.35, os.path.join(SHOTS, "01-dashboard-iphone.png"))
+footer(s, "03", light=True)
+
+# ---------- SLIDE 05 — PRODUCT ----------
+s = slide(DARKBG)
+text(s, 0.68, 0.62, 8, 0.4, [(spaced("THE PRODUCT"), 12, LAVENDER, True, 0)])
+text(s, 0.62, 1.0, 11.5, 0.9, [("Live Product — Real Financial Movement", 32, WHITE, True, 0)])
+shots = [
+    ("01-dashboard-iphone.png", "Live dashboard"),
+    ("02-debts-iphone.png", "Debt tracking"),
+    ("03-roundups-iphone.png", "Round-ups"),
+    ("04-insights-iphone.png", "Insights"),
+]
+ph_h = 3.85
+ph_w = ph_h * 1290 / 2796
+gap = (13.333 - 2 * 1.15 - 4 * ph_w) / 3
+x = 1.15
+for png, label in shots:
+    phone(s, x, 2.0, ph_h, os.path.join(SHOTS, png))
+    text(s, x - 0.45, 6.0, ph_w + 0.9, 0.4, [(label, 14, WHITE, True, 0)], align=PP_ALIGN.CENTER)
+    x += ph_w + gap
+text(s, 2.0, 6.55, 9.3, 0.35, [("As shipped in v1.0.5 — live on the App Store, July 2026", 12, FAINT, False, 0)], align=PP_ALIGN.CENTER)
+footer(s, "05", light=False)
+
 # ---------- SLIDE 09 — DEFENSIBILITY ----------
 s = slide(LAVENDER)
 text(s, 0.68, 0.62, 8, 0.4, [(spaced("DEFENSIBILITY"), 12, WHITE, True, 0)])

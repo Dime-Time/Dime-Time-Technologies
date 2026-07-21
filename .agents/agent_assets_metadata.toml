@@ -95,7 +95,7 @@ title = "Slide Image 4 — Dashboard"
 id = "xTE8CD_vKQE8yZUYjCwEK"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pdf"
 type = "pdf"
-title = "Pitch Deck (13 slides, updated)"
+title = "Pitch Deck (12 slides, PDF)"
 
 [[outputs]]
 id = "PwY0MiFJPlJyLEQq1ZP3J"
@@ -173,7 +173,7 @@ title = "Slide 13 — Company Info"
 id = "Gv57Vsp4aKd2piUxhlMEw"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pptx"
 type = "slides"
-title = "Pitch Deck .pptx"
+title = "Pitch Deck (12 slides, PPTX)"
 
 [[outputs]]
 id = "EjV56LOgTpf9aZFgnL9Ua"
@@ -203,13 +203,13 @@ title = "IP Appendix — 3 slides (PDF)"
 id = "Lyhaidm3PTbBaa589o63A"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck-with-ip.pptx"
 type = "slides"
-title = "Full Pitch Deck + IP Appendix — 16 slides (PowerPoint)"
+title = "Pitch Deck + IP Appendix (15 slides, PPTX)"
 
 [[outputs]]
 id = "BK-MZR9aaU0LbiMcQYOKC"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck-with-ip.pdf"
 type = "pdf"
-title = "Pitch Deck with IP Appendix (16 slides)"
+title = "Pitch Deck + IP Appendix (15 slides, PDF)"
 
 [[outputs]]
 id = "Zts5fV5VCe2gOII1ArIOU"
