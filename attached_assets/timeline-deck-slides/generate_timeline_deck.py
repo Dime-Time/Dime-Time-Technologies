@@ -286,7 +286,7 @@ for i, (big, small) in enumerate(steps):
         para(tf2, "→", 24, DARK, bold=True, align=PP_ALIGN.CENTER, first=True)
     x += bw2 + gap2
 tf = box(s, 0.75, 5.0, 11.8, 1.9)
-para(tf, "July 7–8: initiated  •  July 13–14: settled  •  July 20: $0.99 payout confirmed in Mercury", 18, DEEP, bold=True, first=True, space_after=10)
+para(tf, "July 7–8: initiated  •  July 13–14: settled  •  July 21: $0.99 payout confirmed in Mercury", 18, DEEP, bold=True, first=True, space_after=10)
 para(tf, "Also this month: v1.0.5 approved & live on the App Store, Google Play account opened, admin money controls, automatic debt import built.", 16, DARK, space_after=10)
 para(tf, "The machine works — proven bank-to-bank with real money, 351 days after the first commit.", 18, DARK, bold=True)
 

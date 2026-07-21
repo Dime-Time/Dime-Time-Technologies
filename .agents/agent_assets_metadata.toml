@@ -419,13 +419,13 @@ title = "Dime Time — Go-Live Runbook ($1 Test)"
 id = "DVONa60HVtBDfJZZYNkIr"
 uri = "file://attached_assets/timeline-deck-slides/dime-time-timeline-deck.pptx"
 type = "slides"
-title = "Timeline Deck .pptx"
+title = "Dime Time Timeline Deck (.pptx — upload this to Google Slides)"
 
 [[outputs]]
 id = "-VI2tVVNZbeiGCNRjyc9d"
 uri = "file://attached_assets/timeline-deck-slides/dime-time-timeline-deck.pdf"
 type = "pdf"
-title = "12-Month Timeline Deck (17 slides, updated)"
+title = "Timeline Deck PDF (preview/print copy)"
 
 [[outputs]]
 id = "kxo_zEYcTwwpy0mMGlqKo"
