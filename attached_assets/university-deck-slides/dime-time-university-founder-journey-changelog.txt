@@ -1,67 +1,70 @@
 ================================================================
 DIME TIME — UNIVERSITY SPEAKING DECK
 Final Change Log
-Deck: dime-time-university-founder-journey.pptx (21 slides)
+Deck: dime-time-university-founder-journey.pptx (14 slides)
 Prepared: July 21, 2026
 ================================================================
 
-WHAT WAS BUILT
-- New, standalone university speaking deck created from scratch
-  per UNIVERSITY-DECK-BRIEF.txt. No locked investor pitch deck
-  or timeline deck files were modified or reused.
-- 21 slides total: 18 core + 3 optional appendix slides
-  (terminology, discussion questions, verified status).
-- 16:9 widescreen; all text native and editable (verified via
-  embedded-font check on the exported PDF); no transitions,
-  no rasterized text — clean Google Slides import.
-- Speaker notes embedded on all 21 slides (~1-2 minutes each)
-  with [20-MIN VERSION], [45-60 MIN], [PAUSE HERE] and
-  [DO NOT OVERSTATE] markers.
-- Two real App Store screenshots used on Slide 6 (dashboard,
-  round-ups). Official logo only; no partner logos.
+REVISION 2 — TRIM + TIMELINE CORRECTION (July 21, 2026)
 
-CHANGES MADE DURING BUILD & REVIEW
-1. Cover title resized 42pt → 32pt (within the brief's 28-36pt
-   title range) to prevent a line-wrap collision with the
-   subtitle. Found during full-slide visual inspection.
-2. Appendix C "PLANNED" column widened and "Coinbase / Bitcoin"
-   respaced to eliminate an awkward mid-word break. Found
-   during visual inspection.
-3. Slide 8 title bumped 27pt → 28pt to meet the brief's title
-   minimum. Found in independent review.
-4. Slide 12 flow-chip sub-labels bumped 12pt → 14pt to meet the
-   brief's caption minimum. Found in independent review.
-5. Slide 12 speaker notes: added the missing [20-MIN VERSION]
-   cue (slide is part of the 20-minute cut). Found in
-   independent review.
+1. DECK TRIMMED 21 → 14 SLIDES (founder request: "21 slides is
+   too much for a classroom presentation").
+   Removed (7): What Hospitality Taught Me, From Idea to
+   System, Building Without an Engineering Background, The
+   Technology, What Did Not Happen Overnight, Appendix A
+   (Terminology), Appendix C (Verified Status).
+   Kept (14): Cover, Who I Am, Classroom Foundation, Problem,
+   Solution, Safety Before Scale, HISTORICAL TIMELINE
+   (milestones), One Dollar, Setbacks, AI Role, Lessons,
+   What Comes Next, Closing, Discussion-Questions appendix.
+   All milestones preserved on the timeline and one-dollar
+   slides. Page numbers renumbered 01/14-14/14.
 
-EDITORIAL DECISIONS (flagged for founder awareness)
-- Timeline (Slide 11) shows "2014-2025" for the idea/classroom
-  era. The brief marked this era "date not specified," but 2014
-  is founder-provided in the project's milestone timeline and
-  already appears in the locked historical timeline deck. Easy
-  to remove if you prefer no year on this deck.
-- Aug 3, 2025 (first commit) added to the timeline from the
-  verified milestone record — it strengthens the "11 months to
-  launch" arc.
-- Patent is intentionally absent from slide text (no verified
-  filing date to show); it appears only in the sources file as
-  "patent pending."
-- Closing slide uses the brief-specified line "Get out of debt,
-  one dime at a time with Dime Time!" — the cover uses the
-  canonical quoted slogan.
+2. SLIDE 7 (TIMELINE) DATE CORRECTION per the final timeline
+   correction document: "2014-2025" REMOVED and replaced with
+   the undated milestone "EARLY FOUNDATION — Classroom concept
+   and initial prototype." Speaker notes rewritten to the
+   approved language: the early foundation developed during
+   the founder's academic journey; the original prototype was
+   a learning tool, not the production app. Verified:
+   "2014-2025" appears zero times in the PowerPoint, PDF,
+   speaker notes, outline, sources and this change log.
+   No other dates were changed.
 
-VERIFICATION PERFORMED
-- Slide count confirmed: 21 (asserted in the generator and
-  confirmed in the exported PDF page count).
-- Every slide rendered to image and visually inspected for
-  clipping, overlap, small text and contrast.
-- Facts cross-checked against the brief's FACTUAL RULES list
-  and the canonical project record (dates, version/build,
-  education phrasing, status labels).
-- Independent review pass: no factual or prohibition
-  violations found; minor items above were fixed.
-- Page numbering sequential 01/21 through 21/21.
+3. Partner-name disclaimer ("Partner names indicate service
+   relationships, not endorsements") moved to slide 12 (the
+   roadmap slide, which names Stripe, Plaid and Google Play)
+   because the former Technology slide that carried it was
+   removed.
+
+4. Cross-references to removed slides cleaned from remaining
+   speaker notes; the surviving appendix retitled from
+   "Appendix B" to "Appendix."
+
+5. Companion files (outline, sources, change log) rewritten to
+   match the 14-slide structure and new timing plans
+   (20-minute / 30-45-minute / full-class versions).
+
+REVISION 1 — ORIGINAL BUILD (July 21, 2026)
+
+- 21-slide deck created from scratch per UNIVERSITY-DECK-BRIEF:
+  16:9, native editable text, speaker notes on every slide with
+  [20-MIN VERSION]/[45-60 MIN]/[PAUSE HERE]/[DO NOT OVERSTATE]
+  markers, two real App Store screenshots, official logo only.
+- Cover title resized 42pt → 32pt (line-wrap collision fix).
+- Appendix C column respaced (word-break fix).
+- Independent review pass: PASS; applied minor fixes (slide-8
+  title to 28pt, one-dollar sub-labels to 14pt, added missing
+  20-minute note cue).
+
+VERIFICATION (current version)
+- Slide count confirmed: 14 (asserted in the generator and
+  confirmed in the exported 14-page PDF).
+- All 14 slides rendered to images and visually inspected.
+- Speaker notes confirmed present on all 14 slides.
+- "2014" confirmed absent from all slide text and notes.
+- Fonts embedded in the PDF; PowerPoint imports cleanly into
+  Google Slides (native text, standard shapes, Poppins font).
 
 FILES DELIVERED
 - dime-time-university-founder-journey.pptx  (editable, notes)

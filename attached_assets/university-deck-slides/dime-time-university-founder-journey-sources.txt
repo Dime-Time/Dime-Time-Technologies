@@ -1,12 +1,12 @@
 ================================================================
 DIME TIME — UNIVERSITY SPEAKING DECK
 Source List for All External Statistics
-Deck: dime-time-university-founder-journey.pptx
+Deck: dime-time-university-founder-journey.pptx (14 slides)
 Prepared: July 21, 2026
 ================================================================
 
 EXTERNAL STATISTICS USED IN THE DECK
-(all appear on Slide 5 — "Why Dime Time Needed to Exist" —
+(all appear on Slide 4 — "Why Dime Time Needed to Exist" —
 with on-slide citations at 14 pt)
 
 1. U.S. household debt: $18.8 trillion
@@ -64,4 +64,4 @@ loop and never uses "live in app" for public transfers.
 
 DISCLAIMER USED ON PARTNER MENTIONS
 "Partner names indicate service relationships, not
-endorsements." (Slide 9)
+endorsements." (Slide 12)
