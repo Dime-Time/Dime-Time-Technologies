@@ -444,3 +444,9 @@ id = "KBi80m1wL2wXmdwkZR70f"
 uri = "file://attached_assets/Dime-Time-Screenshots-iPhone-6.5.zip"
 type = "unspecified"
 title = "iPhone set — use for the iPhone tab (1284×2778)"
+
+[[outputs]]
+id = "Ez5PZiZowc74EddxBlaB-"
+uri = "file://attached_assets/dime-time-brand-icon-200.png"
+type = "image"
+title = "Dime Time brand icon — 200×200 for Stripe"
