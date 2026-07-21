@@ -1,0 +1,260 @@
+================================================================
+DIME TIME — NEXT INVESTOR MATERIALS RECOMMENDATION
+Date: July 21, 2026
+================================================================
+
+PITCH DECK DECISION
+
+Do not add anything else to the pitch deck right now.
+
+The approved 14-slide deck is complete and appropriately sized for
+Dime Time’s current pre-seed stage. Adding more slides before public
+traction exists would likely dilute the investment story.
+
+Keep the deck locked until verified traction metrics become available
+or the founder explicitly changes a locked fundraising term.
+
+================================================================
+BUILD THESE SUPPORTING MATERIALS OUTSIDE THE DECK
+================================================================
+
+Prepare a lightweight investor package containing:
+
+1. PRODUCT DEMO VIDEO
+   - Approximately 60–90 seconds
+   - Show the real Dime Time interface
+   - Demonstrate the core user journey
+   - Clearly distinguish live, feature-gated and planned features
+   - Do not expose private financial or account information
+
+2. DIRECT APP STORE LINK
+   - Link directly to the live Dime Time App Store listing
+   - Use in investor emails, the one-page summary and data room
+   - A QR code may be created for live presentations or printed
+     materials, but it does not need to be added to the locked deck
+
+3. ONE-PAGE INVESTOR SUMMARY
+   Include:
+   - The consumer-debt problem
+   - Dime Time’s solution
+   - Live App Store status
+   - Controlled bank-to-bank ACH proof
+   - Business model
+   - Market opportunity
+   - Founder background
+   - $150,000 post-money SAFE raise
+   - Use of funds
+   - Contact information
+
+4. PRIVATE DATA-ROOM INDEX
+   Organize the available diligence materials into clearly labeled
+   sections without exposing them publicly.
+
+5. CURRENT CAP TABLE
+   - Founder ownership
+   - Any outstanding equity
+   - SAFEs, notes, options or other commitments, if applicable
+   - Fully diluted ownership view
+   - Keep this private
+
+6. SAFE DOCUMENTATION
+   - Standard post-money SAFE template
+   - Proposed fundraising terms
+   - Do not invent or publish a valuation cap or discount before the
+     founder makes that decision with appropriate legal guidance
+
+7. PATENT DOCUMENTATION
+   - Provisional-patent filing receipt
+   - Non-confidential filing summary
+   - Relevant figures and workflow description
+   - Keep sensitive IP material in the private data room
+   - Always describe status as “patent pending,” never “patented”
+
+8. CORPORATE DOCUMENTS
+   - Formation documents for Dime Time Technologies LLC
+   - Ownership documentation
+   - Operating agreement
+   - Relevant registrations
+   - Keep EIN, D-U-N-S and founder identity documents private
+
+9. TWELVE-MONTH FINANCIAL MODEL
+   Include:
+   - $150,000 funding scenario
+   - Monthly operating expenses
+   - Founder compensation and operating runway
+   - Marketing and user-acquisition budget
+   - Contractor and engineering budget
+   - Compliance and infrastructure costs
+   - Subscription-revenue scenarios
+   - Cash runway
+   - Clearly label assumptions and projections
+
+10. SECURITY, COMPLIANCE AND FINANCIAL-RAILS SUMMARY
+    Explain at a high level:
+    - Plaid’s role
+    - Stripe ACH and Financial Connections
+    - Mercury as the business bank and payout destination
+    - User authorization and mandate evidence
+    - Feature flags and controlled rollout
+    - Founder allowlisting
+    - Transfer limits and duplicate-payment protection
+    - Webhook verification and transaction ledger
+    - Production real-money controls
+    - Privacy and security safeguards
+
+    Do not expose source code, secrets, credentials, bank data or
+    exploitable technical details.
+
+11. INVESTOR FAQ
+    Prepare concise answers for:
+    - Why will customers pay $2.99 per month?
+    - Why does this need to exist?
+    - Why will users trust Dime Time?
+    - How is Dime Time different from round-up, debt and budgeting
+      applications?
+    - What prevents a larger company from copying it?
+    - Why is a solo founder capable of executing?
+    - What approvals remain?
+    - How does Dime Time make money?
+    - What does $150,000 accomplish?
+    - What milestones lead to the next financing round?
+    - What are the major regulatory and operational risks?
+    - Why is now the right time?
+
+12. REDACTED EVIDENCE FOLDER
+    Include appropriately redacted proof of:
+    - $1.00 ACH transfer through Stripe
+    - $0.99 payout received in Mercury
+    - Apple App Store availability
+    - Stripe ACH account status
+    - Plaid production approval for approved products
+    - Provisional-patent filing
+    - Relevant third-party approval statuses
+
+    Remove:
+    - Account and routing numbers
+    - API keys and secrets
+    - Personal addresses
+    - Government identification
+    - EIN and unnecessary business identifiers
+    - Private bank balances
+    - Session identifiers
+    - Customer information
+
+================================================================
+DEFINE METRICS BEFORE PUBLIC LAUNCH
+================================================================
+
+Create exact reporting definitions now so future investor metrics
+remain consistent, auditable and defensible.
+
+ACTIVATED USER
+Suggested definition:
+A registered user who completes the required onboarding steps and
+successfully links an eligible bank account.
+
+LINKED ACCOUNT
+Suggested definition:
+A unique eligible financial account successfully connected and active,
+excluding deleted, disconnected, duplicate and sandbox accounts.
+
+PUBLIC USER
+Suggested definition:
+A genuine non-founder user with a production account. Exclude demo,
+reviewer, staff, test and sandbox accounts.
+
+PAYING SUBSCRIBER
+Suggested definition:
+A user with a successfully paid, currently active subscription. Do not
+count free trials, failed payments, complimentary access or canceled
+subscriptions.
+
+ACH PAYMENT
+Suggested definition:
+A unique production ACH payment that has been successfully initiated.
+Report processing, settled, failed and returned payments separately.
+
+SETTLED ACH VOLUME
+Suggested definition:
+The dollar value of production ACH payments that successfully settled,
+excluding failed, canceled, reversed and returned payments.
+
+DEBT REDUCED
+Suggested definition:
+The verified principal amount successfully applied to user debt through
+settled Dime Time-facilitated payments. Do not count pending transfers,
+interest avoided or projected savings unless reported separately.
+
+ACTIVATION RATE
+Suggested definition:
+Activated users divided by eligible completed registrations for the
+same defined cohort and reporting period.
+
+SUBSCRIPTION CONVERSION
+Suggested definition:
+New paying subscribers divided by eligible activated users for the same
+defined cohort and reporting period.
+
+RETENTION
+Suggested definition:
+The percentage of a defined activated-user or paying-subscriber cohort
+that remains active after a stated interval, such as 30, 60 or 90 days.
+
+CUSTOMER ACQUISITION COST
+Suggested definition:
+Attributable acquisition spending divided by newly acquired customers
+for a clearly defined period and channel. Report registered-user CAC
+and paying-customer CAC separately.
+
+MONTH-OVER-MONTH GROWTH
+Suggested definition:
+The percentage change in a specific metric from one complete calendar
+month to the next. Do not combine unlike metrics or use incomplete
+months without clearly labeling them.
+
+================================================================
+NEXT PITCH-DECK UPDATE
+================================================================
+
+Do not revise the deck merely because time has passed.
+
+Update it only when meaningful, verified evidence becomes available,
+including:
+
+- Public registered users
+- Activated users
+- Linked bank accounts
+- ACH-payment count
+- Settled ACH volume
+- Verified debt reduced
+- Paying subscribers
+- Monthly recurring revenue
+- Activation rate
+- Subscription-conversion rate
+- Retention
+- Customer acquisition cost by channel
+- Month-over-month growth
+
+Every future metric must:
+- Use a documented definition
+- Exclude founder, demo, reviewer, sandbox and test activity where
+  appropriate
+- Specify its reporting period
+- Distinguish initiated, processing, settled, failed and returned
+  transactions
+- Be traceable to supporting records
+- Never be fabricated, estimated or presented without context
+
+================================================================
+FINAL RECOMMENDATION
+================================================================
+
+Lock the approved pitch deck.
+
+Build the supporting investor package separately.
+
+Define the reporting methodology before public launch.
+
+Let genuine customer usage and financial activity determine the next
+deck revision.
+================================================================

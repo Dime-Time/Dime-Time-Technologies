@@ -1,0 +1,366 @@
+================================================================
+DIME TIME — CANONICAL PITCH DECK REFERENCE
+FOR REPLIT / ENGINEERING / AI CONTEXT
+Date: July 21, 2026
+Status: APPROVED MASTER REFERENCE
+================================================================
+
+This document supersedes all previous investor deck discussions.
+
+Treat the information below as the SINGLE SOURCE OF TRUTH when
+working on any Dime Time investor materials unless the founder
+explicitly changes it.
+
+==========================================================
+CANONICAL RULES
+==========================================================
+
+• The investor deck is LOCKED.
+
+• Two approved versions exist:
+
+  1. 14-slide Core Deck
+     - Default version
+     - Used for investors, accelerators, introductions,
+       competitions and outreach.
+
+  2. 17-slide Due-Diligence Version
+     - Identical 14 slides
+     - Plus three patent/IP appendix slides
+     - Only provided when specifically requested.
+
+• Do NOT redesign, rewrite or restructure the deck unless new
+  traction metrics exist or the founder requests revisions.
+
+==========================================================
+PRIMARY INVESTMENT STORY
+==========================================================
+
+Use this exact narrative:
+
+"Dime Time is a live fintech product—not a prototype—with real ACH
+infrastructure already proven bank-to-bank. This pre-seed round
+funds public launch, customer acquisition and measurable traction."
+
+==========================================================
+FACTUAL STANDARDS
+==========================================================
+
+Every statement must be categorized honestly.
+
+Use ONLY these labels:
+
+LIVE
+PROVEN IN CONTROLLED LIVE TEST
+BUILT · FEATURE-GATED
+PENDING
+PLANNED
+
+Never blur these categories.
+
+Never inflate traction.
+
+Never estimate users.
+
+Never invent revenue.
+
+Never fabricate growth metrics.
+
+==========================================================
+VERIFIED FACTS
+==========================================================
+
+APP STATUS
+
+• Dime Time v1.0.5
+• Build 207
+• LIVE on Apple App Store
+• Approved July 2026
+• App ID 6755106723
+
+MONEY MOVEMENT
+
+• $1.00 ACH debt payment initiated
+  July 7, 2026
+
+• $0.99 payout confirmed
+  Mercury
+  July 21, 2026
+
+Status:
+
+PROVEN IN CONTROLLED LIVE TEST
+
+Do NOT describe this as public production money movement until
+public banking is enabled.
+
+PUBLIC BANK LINKING
+
+Status:
+
+PENDING
+
+Reason:
+
+• Stripe Financial Connections registration under review
+
+• Plaid production / Liabilities approval pending
+
+PATENT
+
+Status:
+
+PATENT PENDING
+
+Never write:
+
+"Patented"
+
+LEGAL ENTITY
+
+Dime Time Technologies LLC
+
+Do NOT include:
+
+• EIN
+
+• D-U-N-S
+
+FOUNDER
+
+Tim Carlisle
+
+Founder & CEO
+
+Credentials:
+
+• U.S. Navy veteran
+
+• MBA
+
+• Graduate degree in Management Information Systems
+
+Never change this to:
+
+"M.S."
+
+INFRASTRUCTURE
+
+Plaid
+→ Bank connections
+
+Stripe
+→ ACH rails
+
+Mercury
+→ Business banking and payout destination
+
+Do NOT describe Mercury as a software integration.
+
+COINBASE
+
+Status:
+
+PLANNED
+
+Not yet available to users.
+
+PARTNERS
+
+Partner names indicate service relationships only.
+
+No endorsements.
+
+No partner logos.
+
+==========================================================
+MARKET DATA
+==========================================================
+
+Use only these figures.
+
+• $18.8T
+  U.S. Household Debt
+
+• $1.25T
+  Credit Card Debt
+
+Source:
+
+NY Fed Household Debt & Credit Report
+Q1 2026
+
+Released May 2026
+
+Mobile statistic:
+
+91% of U.S. adults own a smartphone
+
+Source:
+
+Pew Research
+Mobile Fact Sheet 2025
+
+==========================================================
+14-SLIDE STRUCTURE
+==========================================================
+
+01 Cover
+
+02 Problem
+
+03 Solution
+
+04 Dynamic Allocation Engine
+
+05 Product
+
+06 Market
+
+07 Business Model
+
+08 Competition
+
+09 Defensibility
+
+10 Go-To-Market
+
+11 Traction
+
+12 Team
+
+13 Raise
+
+14 Appendix
+
+Slides 15–17 exist ONLY in the IP appendix version.
+
+==========================================================
+DESIGN RULES
+==========================================================
+
+Theme colors:
+
+• Dime Time Purple (#918EF4)
+
+• Dark Navy
+
+• White text
+
+Minimum font:
+
+9.5 pt
+
+Slide numbering:
+
+01/14 through 14/14
+
+PDF must remain:
+
+• Native searchable text
+
+• Embedded fonts
+
+• Not flattened images
+
+Patent appendix remains image-based intentionally.
+
+==========================================================
+FUNDRAISING
+==========================================================
+
+SAFE
+
+$150,000
+
+Post-money
+
+Use of funds:
+
+35%
+Marketing & User Acquisition
+
+30%
+Founder Compensation & Operating Runway
+
+25%
+Engineering & Contractor Support
+
+10%
+Compliance, Infrastructure & Operations
+
+Do not modify unless the founder explicitly changes them.
+
+==========================================================
+IMPORTANT WRITING RULES
+==========================================================
+
+Never claim:
+
+• Public users
+• Revenue
+• ARR achieved
+• Retention
+• CAC
+• Growth metrics
+
+unless they actually exist.
+
+Never write:
+
+• "Only platform"
+
+• "First ever"
+
+• Replication timeline claims
+
+Competition should reference:
+
+CATEGORIES
+
+not specific companies.
+
+==========================================================
+DOMAIN
+==========================================================
+
+https://dime-time.com
+
+Contact:
+
+tim@dime-time.com
+
+==========================================================
+FUTURE AI INSTRUCTIONS
+==========================================================
+
+Whenever creating:
+
+• Investor deck updates
+• Executive summaries
+• One-pagers
+• Pitch competition submissions
+• SAFE documents
+• Due diligence responses
+• Accelerator applications
+• Investor emails
+• Website investor pages
+
+treat this document as the authoritative source.
+
+Do not contradict it.
+
+Do not embellish it.
+
+Do not introduce new metrics.
+
+Do not change statuses.
+
+Do not change the fundraising structure.
+
+Do not modify the investment story unless instructed directly by
+the founder.
+
+This document is the canonical Dime Time fundraising reference as
+of July 21, 2026.
+================================================================
