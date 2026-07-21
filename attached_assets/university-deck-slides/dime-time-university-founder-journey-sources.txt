@@ -1,0 +1,67 @@
+================================================================
+DIME TIME — UNIVERSITY SPEAKING DECK
+Source List for All External Statistics
+Deck: dime-time-university-founder-journey.pptx
+Prepared: July 21, 2026
+================================================================
+
+EXTERNAL STATISTICS USED IN THE DECK
+(all appear on Slide 5 — "Why Dime Time Needed to Exist" —
+with on-slide citations at 14 pt)
+
+1. U.S. household debt: $18.8 trillion
+   Source: Federal Reserve Bank of New York
+   Report: Quarterly Report on Household Debt and Credit,
+           Q1 2026
+   Released: May 2026
+
+2. U.S. credit-card balances: $1.25 trillion
+   Source: Federal Reserve Bank of New York
+   Report: Quarterly Report on Household Debt and Credit,
+           Q1 2026
+   Released: May 2026
+
+3. Smartphone ownership: 91% of U.S. adults
+   Source: Pew Research Center
+   Report: Mobile Fact Sheet
+   Year: 2025
+
+No other external statistics appear anywhere in the deck.
+
+================================================================
+INTERNAL (COMPANY-VERIFIED) FACTS USED IN THE DECK
+================================================================
+
+These are Dime Time operational facts, verified against project
+records as of July 21, 2026:
+
+- Company: Dime Time Technologies LLC
+- Founder: Tim Carlisle — U.S. Navy veteran, solo founder
+- Education: MBA • Graduate degree in Management Information
+  Systems (exact phrasing used throughout)
+- Website: dime-time.com  |  Email: tim@dime-time.com
+- First commit / development begins: August 3, 2025
+- Privacy Policy & Terms effective: May 27, 2026
+- First Apple App Store launch: June 29, 2026
+- Live version: v1.0.5, build 207 (approved and live
+  July 21, 2026)
+- Controlled ACH test: $1.00 initiated July 7, 2026
+- Payout confirmed: $0.99 in Mercury, July 21, 2026
+- Patent status: USPTO provisional filed — patent pending
+- Stripe: ACH infrastructure active; Financial Connections
+  registration submitted July 21, 2026 (under review)
+- Plaid: production access for approved products; Liabilities
+  pending
+- Mercury: business bank and payout destination (a banking
+  relationship, not a software integration)
+- Coinbase: planned only — not available to users
+- Public user metrics / revenue: none reported (none claimed
+  anywhere in the deck)
+
+STATUS LANGUAGE
+The deck uses "PROVEN IN CONTROLLED LIVE TEST" for the money
+loop and never uses "live in app" for public transfers.
+
+DISCLAIMER USED ON PARTNER MENTIONS
+"Partner names indicate service relationships, not
+endorsements." (Slide 9)

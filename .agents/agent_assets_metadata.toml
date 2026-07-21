@@ -450,3 +450,33 @@ id = "Ez5PZiZowc74EddxBlaB-"
 uri = "file://attached_assets/dime-time-brand-icon-200.png"
 type = "image"
 title = "Dime Time brand icon — 200×200 for Stripe"
+
+[[outputs]]
+id = "19POegC0qh3RnrAPFXh_x"
+uri = "file://attached_assets/university-deck-slides/dime-time-university-founder-journey.pptx"
+type = "slides"
+title = "University Deck — PowerPoint (upload this to Google Slides)"
+
+[[outputs]]
+id = "Jrg4YV-oLo0X1z-Uh7V1r"
+uri = "file://attached_assets/university-deck-slides/dime-time-university-founder-journey.pdf"
+type = "pdf"
+title = "University Deck — Presentation PDF"
+
+[[outputs]]
+id = "GX_jvDlkT_-UXnD6I1Rvd"
+uri = "file://attached_assets/university-deck-slides/dime-time-university-founder-journey-outline.txt"
+type = "text"
+title = "Slide-by-Slide Outline + Timing Guide"
+
+[[outputs]]
+id = "WBuNdZMVnAUZ05-ujQ0vn"
+uri = "file://attached_assets/university-deck-slides/dime-time-university-founder-journey-sources.txt"
+type = "text"
+title = "Source List (all statistics)"
+
+[[outputs]]
+id = "HizC1BQrt2fxwLS_YOwvM"
+uri = "file://attached_assets/university-deck-slides/dime-time-university-founder-journey-changelog.txt"
+type = "text"
+title = "Final Change Log"

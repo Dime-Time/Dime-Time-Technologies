@@ -1,0 +1,71 @@
+================================================================
+DIME TIME — UNIVERSITY SPEAKING DECK
+Final Change Log
+Deck: dime-time-university-founder-journey.pptx (21 slides)
+Prepared: July 21, 2026
+================================================================
+
+WHAT WAS BUILT
+- New, standalone university speaking deck created from scratch
+  per UNIVERSITY-DECK-BRIEF.txt. No locked investor pitch deck
+  or timeline deck files were modified or reused.
+- 21 slides total: 18 core + 3 optional appendix slides
+  (terminology, discussion questions, verified status).
+- 16:9 widescreen; all text native and editable (verified via
+  embedded-font check on the exported PDF); no transitions,
+  no rasterized text — clean Google Slides import.
+- Speaker notes embedded on all 21 slides (~1-2 minutes each)
+  with [20-MIN VERSION], [45-60 MIN], [PAUSE HERE] and
+  [DO NOT OVERSTATE] markers.
+- Two real App Store screenshots used on Slide 6 (dashboard,
+  round-ups). Official logo only; no partner logos.
+
+CHANGES MADE DURING BUILD & REVIEW
+1. Cover title resized 42pt → 32pt (within the brief's 28-36pt
+   title range) to prevent a line-wrap collision with the
+   subtitle. Found during full-slide visual inspection.
+2. Appendix C "PLANNED" column widened and "Coinbase / Bitcoin"
+   respaced to eliminate an awkward mid-word break. Found
+   during visual inspection.
+3. Slide 8 title bumped 27pt → 28pt to meet the brief's title
+   minimum. Found in independent review.
+4. Slide 12 flow-chip sub-labels bumped 12pt → 14pt to meet the
+   brief's caption minimum. Found in independent review.
+5. Slide 12 speaker notes: added the missing [20-MIN VERSION]
+   cue (slide is part of the 20-minute cut). Found in
+   independent review.
+
+EDITORIAL DECISIONS (flagged for founder awareness)
+- Timeline (Slide 11) shows "2014-2025" for the idea/classroom
+  era. The brief marked this era "date not specified," but 2014
+  is founder-provided in the project's milestone timeline and
+  already appears in the locked historical timeline deck. Easy
+  to remove if you prefer no year on this deck.
+- Aug 3, 2025 (first commit) added to the timeline from the
+  verified milestone record — it strengthens the "11 months to
+  launch" arc.
+- Patent is intentionally absent from slide text (no verified
+  filing date to show); it appears only in the sources file as
+  "patent pending."
+- Closing slide uses the brief-specified line "Get out of debt,
+  one dime at a time with Dime Time!" — the cover uses the
+  canonical quoted slogan.
+
+VERIFICATION PERFORMED
+- Slide count confirmed: 21 (asserted in the generator and
+  confirmed in the exported PDF page count).
+- Every slide rendered to image and visually inspected for
+  clipping, overlap, small text and contrast.
+- Facts cross-checked against the brief's FACTUAL RULES list
+  and the canonical project record (dates, version/build,
+  education phrasing, status labels).
+- Independent review pass: no factual or prohibition
+  violations found; minor items above were fixed.
+- Page numbering sequential 01/21 through 21/21.
+
+FILES DELIVERED
+- dime-time-university-founder-journey.pptx  (editable, notes)
+- dime-time-university-founder-journey.pdf   (presentation PDF)
+- dime-time-university-founder-journey-outline.txt
+- dime-time-university-founder-journey-sources.txt
+- dime-time-university-founder-journey-changelog.txt (this file)

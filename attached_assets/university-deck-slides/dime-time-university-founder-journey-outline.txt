@@ -1,0 +1,173 @@
+================================================================
+DIME TIME — UNIVERSITY SPEAKING DECK
+"FROM SOMMELIER TO FINTECH FOUNDER"
+Slide-by-Slide Content Outline
+Deck: dime-time-university-founder-journey.pptx (21 slides, 16:9)
+Prepared: July 21, 2026
+================================================================
+
+CORE DECK (SLIDES 1-18)
+
+01  COVER — From Sommelier to Fintech Founder
+    Subtitle: How a Nontechnical Founder Built and Launched
+    Dime Time. Speaker block: Tim Carlisle, Founder & CEO,
+    Dime Time Technologies LLC, U.S. Navy Veteran, MBA •
+    Graduate degree in Management Information Systems.
+    Slogan: "Get out of debt, one dime at a time."
+
+02  WHO I AM — A Nontraditional Path Into Technology
+    Navy veteran, Las Vegas/Dallas hospitality, high-profile
+    restaurant openings, sommelier, MBA + MIS graduate degree,
+    founder of Dime Time. Core message: tech founders do not
+    all begin as software engineers.
+
+03  WHAT HOSPITALITY TAUGHT ME — Hospitality Was Founder Training
+    Nine transferable skills (reading customers, pressure,
+    clarity, trust, recovery, timing, consistency, standards,
+    informal leadership) bridged to fintech trust requirements.
+
+04  THE CLASSROOM FOUNDATION — The Idea Began as an Academic
+    Exercise
+    Entrepreneurship coursework frameworks + MIS education +
+    early outsourced demo. Framing: the demo was a learning
+    tool, not the product. No invented dates.
+
+05  THE PROBLEM — Why Dime Time Needed to Exist
+    Behavioral framing (intention vs. discipline) + verified
+    market context: $18.8T household debt, $1.25T credit-card
+    balances (NY Fed Q1 2026), 91% smartphone ownership (Pew
+    2025). Explicit note: these are national statistics, not
+    Dime Time metrics. Citations on-slide.
+
+06  THE SOLUTION — Get Out of Debt, One Dime at a Time
+    Six-step concept (connect → analyze → round up → accumulate
+    → user controls destination/schedule → authorized ACH
+    payments). Accuracy note: money moves on a user-approved
+    schedule, not per purchase. Two real App Store screenshots.
+
+07  FROM IDEA TO SYSTEM — A Fintech Product Is More Than an App
+    Screen
+    Seven-stage pipeline diagram (UX → bank connection →
+    analysis → round-up calc → authorization → ACH → tracking/
+    reconciliation) + the twelve capability areas required.
+
+08  BUILDING WITHOUT AN ENGINEERING BACKGROUND
+    Problem-first learning, AI-assisted development,
+    decomposition, verification-over-trust, evidence habits.
+    Core lesson: AI accelerates execution but does not replace
+    founder judgment, testing, accountability.
+
+09  THE TECHNOLOGY — The System Behind Dime Time
+    Four stack cards: Front end (React/TypeScript/Capacitor),
+    Back end (Express/Node, PostgreSQL, Drizzle), Financial
+    infrastructure (Plaid approved products, Stripe ACH, Stripe
+    Financial Connections under review, Mercury as business
+    bank), Operations (Replit, Codemagic, App Store, Google
+    Play prep). Disclaimer: partner names ≠ endorsements.
+    Coinbase intentionally absent (planned only).
+
+10  SAFETY BEFORE SCALE — Building Guardrails
+    Twelve guardrail cards (master switch, ACH switch,
+    allowlist, no auto-approval, first-transfer/daily/frequency
+    limits, authorization evidence, duplicate protection,
+    webhook verification, ledger, audit logging) + instant
+    disable. Core lesson: safest successful test > uncontrolled
+    launch.
+
+11  THE HISTORICAL TIMELINE — From Academic Concept to Live
+    Fintech Product
+    2014-2025 idea/classroom era (no invented dates) →
+    Aug 3, 2025 first commit → May 27, 2026 legal effective →
+    Jun 29, 2026 App Store live → Jul 7, 2026 $1.00 controlled
+    ACH test → Jul 21, 2026 v1.0.5 build 207 live + $0.99
+    Mercury payout (loop proven) + Stripe FC submitted.
+
+12  THE MOMENT THE MODEL BECAME REAL — One Dollar Changed the
+    Project
+    Flow: $1.00 ACH → Stripe → $0.99 payout → Mercury → loop
+    proven. Status badge: PROVEN IN CONTROLLED LIVE TEST.
+    Mandatory caveat: public transfers NOT enabled.
+
+13  WHAT DID NOT HAPPEN OVERNIGHT — The Invisible Work Behind a
+    Launch
+    Twelve categories of invisible work (reviews, rejections,
+    provider applications, approvals, security, legal, email,
+    OAuth, screenshots, versioning, Android prep, queues).
+
+14  SETBACKS AS SYSTEM FEEDBACK — Every Failure Became a Better
+    Control
+    Challenge/Response/Lesson table, five rows: duplicate-app
+    rejection, email failures, real-money risk, OAuth return
+    flow, Android permissions. Framed as learning, not blame.
+
+15  WHAT AI DID AND DID NOT DO — Force Multiplier, Not Autopilot
+    Two columns: 8 things AI helped with vs. 9 things that
+    required the founder. Core lesson: the advantage is
+    directing, questioning and verifying AI.
+
+16  LESSONS FOR STUDENTS — What I Wish More Students Knew
+    Ten numbered lessons + highlighted quote: "Your background
+    does not disqualify you. It gives you a different set of
+    raw materials."
+
+17  WHAT COMES NEXT — The Next Chapter
+    Banner: CURRENT ROADMAP — NOT COMPLETED MILESTONES.
+    Google Play verification/signing/submission, Stripe FC
+    approval → controlled public bank linking, Plaid
+    Liabilities → debt import, controlled acquisition, metrics,
+    $150,000 pre-seed raise (last item only). No promised dates.
+
+18  CLOSING — WHAT WILL YOU BUILD?
+    Closing quote, contact (dime-time.com / tim@dime-time.com),
+    slogan. Open space for Q&A.
+
+APPENDIX (SLIDES 19-21 — optional, for 60-minute class sessions)
+
+19  APPENDIX A — Fintech Terminology
+    ACH, bank linking, Financial Connections, payment
+    authorization, idempotency, webhook, feature flag,
+    allowlist, production vs. sandbox, settlement.
+
+20  APPENDIX B — Classroom Discussion Questions
+    Eight prompts (moat, build vs. acquire, speed vs. safety,
+    AI trust, investment evidence, acquisition channel,
+    activation definition, automation ethics).
+
+21  APPENDIX C — Verified Project Status
+    Five honesty labels kept distinct: LIVE / PROVEN IN
+    CONTROLLED LIVE TEST / BUILT • FEATURE-GATED / PENDING /
+    PLANNED.
+
+================================================================
+TIMING GUIDANCE
+================================================================
+
+20-MINUTE VERSION (12-14 slides)
+Use: 1, 2, 4, 5, 6, 10, 11, 12, 14, 16, 17, 18.
+Skip: 3, 7, 8, 9, 13 and all appendix slides. Speaker notes on
+each slide include a [20-MIN VERSION] cue with compressed
+delivery language.
+
+45-MINUTE VERSION (all 18 core slides)
+All core slides with the deeper [45-60 MIN] commentary in the
+notes: expand architecture (7), setbacks (13-14), AI-assisted
+development (8, 15) and safety controls (10).
+
+60-MINUTE CLASS SESSION (all 21 slides)
+All core slides + Appendix A terminology + Appendix B
+discussion questions. Reserve 15-20 minutes for Q&A and
+discussion (prompts on slide 20).
+
+================================================================
+SPEAKER NOTES
+================================================================
+Every slide carries embedded speaker notes (~1-2 minutes of
+material each) with these markers:
+  [20-MIN VERSION]    — shorter delivery language
+  [45-60 MIN]         — deeper commentary options
+  [PAUSE HERE]        — audience-interaction moments
+  [DO NOT OVERSTATE]  — accuracy guardrails (controlled test
+                        vs. public availability, degree naming,
+                        no invented dates, AI-assisted framing)
+Google Slides imports these into its Speaker notes pane
+automatically.

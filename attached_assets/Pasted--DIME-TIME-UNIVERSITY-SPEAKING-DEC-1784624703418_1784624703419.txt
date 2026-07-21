@@ -1,0 +1,1021 @@
+================================================================
+DIME TIME — UNIVERSITY SPEAKING DECK CREATION BRIEF
+Historical Timeline, Milestones and Founder Journey
+Prepared: July 21, 2026
+================================================================
+
+PROJECT OBJECTIVE
+
+Create a polished, educational presentation for Tim Carlisle to use
+when speaking at universities, business schools, entrepreneurship
+programs and information-systems programs.
+
+This is NOT an investor pitch deck.
+
+The presentation should tell the true story of how a U.S. Navy veteran,
+hospitality professional and nontraditional technology founder used his
+MBA, graduate education in Management Information Systems, AI-assisted
+development and persistent execution to build and launch a real fintech
+application.
+
+The audience may include:
+- Undergraduate business students
+- MBA students
+- Information-systems students
+- Entrepreneurship students
+- Finance and fintech students
+- Veterans transitioning into business or technology
+- Faculty, administrators and university startup communities
+
+The presentation should be educational, honest, inspiring and grounded
+in verified milestones. It should explain both the accomplishments and
+the difficult realities of building a regulated financial product.
+
+================================================================
+OUTPUTS REQUIRED
+================================================================
+
+Create:
+
+1. An editable PowerPoint file compatible with Google Slides
+2. A presentation-ready PDF
+3. A version with speaker notes
+4. A concise slide-by-slide content outline
+5. A source list for all external statistics
+6. A final change log
+7. Confirmation of the final slide count
+8. Confirmation that all slides were visually inspected
+
+Use a standard 16:9 widescreen format.
+
+The editable PowerPoint should import cleanly into Google Slides
+without:
+- Missing fonts
+- Shifted elements
+- Clipped text
+- Broken charts
+- Unsupported transitions
+- Rasterized full-slide text
+
+Use native, editable text wherever possible.
+
+================================================================
+WORKING PRESENTATION TITLE
+================================================================
+
+Primary title:
+
+FROM SOMMELIER TO FINTECH FOUNDER
+
+Subtitle:
+
+How a Nontechnical Founder Built and Launched Dime Time
+
+Supporting line:
+
+A real-world journey through entrepreneurship, information systems,
+financial infrastructure and AI-assisted development
+
+Speaker:
+
+Tim Carlisle
+Founder & CEO, Dime Time Technologies LLC
+U.S. Navy Veteran
+MBA • Graduate degree in Management Information Systems
+
+Alternative university-specific title:
+
+FROM THE CLASSROOM TO THE APP STORE
+
+Subtitle:
+
+Building a Real Fintech Company as a Nontraditional Founder
+
+Do not put both title options on the same cover. Use the first title as
+the default and make the title easy to customize for each university.
+
+================================================================
+DESIGN DIRECTION
+================================================================
+
+Use the established Dime Time visual identity:
+
+- Primary lavender: #918EF4
+- Dark navy backgrounds
+- White text
+- Clean fintech aesthetic
+- Modern but academically credible
+- Minimal visual clutter
+- Strong contrast for lecture halls and projectors
+- Large, readable typography
+- Consistent margins and footer placement
+
+Minimum recommended font sizes:
+- Slide titles: 28–36 pt
+- Body text: 20–24 pt
+- Captions and sources: no smaller than 14–16 pt
+
+Do not use the investor deck’s 9.5-point minimum. This presentation
+must remain readable from the back of a classroom.
+
+Use:
+- Timeline graphics
+- Milestone cards
+- Simplified process diagrams
+- Real Dime Time screenshots
+- A small number of meaningful statistics
+- Short quotations or lesson statements
+- Status labels where helpful
+
+Do not use:
+- Partner logos
+- University logos without permission
+- Unlicensed photography
+- Decorative stock imagery that does not add meaning
+- Excessive animations
+- Dense paragraphs
+- Investor-style fundraising language
+- Confidential documents
+- Personal financial information
+- API keys, credentials or bank details
+
+Partner names may appear as text only when necessary. Include:
+
+“Partner names indicate service relationships, not endorsements.”
+
+================================================================
+RECOMMENDED DECK STRUCTURE
+================================================================
+
+Create approximately 18 slides.
+
+----------------------------------------------------------------
+SLIDE 1 — COVER
+----------------------------------------------------------------
+
+Title:
+
+FROM SOMMELIER TO FINTECH FOUNDER
+
+Subtitle:
+
+How a Nontechnical Founder Built and Launched Dime Time
+
+Speaker:
+
+Tim Carlisle
+Founder & CEO, Dime Time Technologies LLC
+U.S. Navy Veteran
+MBA • Graduate degree in Management Information Systems
+
+Include the Dime Time slogan:
+
+“Get out of debt, one dime at a time.”
+
+Visual:
+- Clean Dime Time cover
+- Dime Time logo if already available in the project
+- No partner or university logos without permission
+
+----------------------------------------------------------------
+SLIDE 2 — WHO I AM
+----------------------------------------------------------------
+
+Title:
+
+A Nontraditional Path Into Technology
+
+Content:
+
+- U.S. Navy veteran
+- Hospitality career in Las Vegas and Dallas
+- Experience opening and operating high-profile restaurants
+- Sommelier serving demanding, high-expectation guests
+- MBA
+- Graduate degree in Management Information Systems
+- Founder and builder of Dime Time
+
+Core message:
+
+Technology founders do not all begin as software engineers. Operational
+experience, customer empathy, discipline and systems thinking can
+become founder advantages.
+
+Do not invent an “M.S.” degree title. Use exactly:
+
+“MBA • Graduate degree in Management Information Systems”
+
+----------------------------------------------------------------
+SLIDE 3 — WHAT HOSPITALITY TAUGHT ME
+----------------------------------------------------------------
+
+Title:
+
+Hospitality Was Founder Training
+
+Explain the transferable lessons:
+
+- Reading customer needs quickly
+- Performing under pressure
+- Communicating complex information clearly
+- Building trust
+- Recovering when something goes wrong
+- Managing timing and operational details
+- Delivering consistent experiences
+- Working within high standards
+- Leading without always having formal authority
+
+Connect these lessons to fintech:
+
+A financial application also depends on trust, reliability, clarity
+and a carefully designed customer experience.
+
+----------------------------------------------------------------
+SLIDE 4 — THE CLASSROOM FOUNDATION
+----------------------------------------------------------------
+
+Title:
+
+The Idea Began as an Academic Exercise
+
+Content:
+
+- Business education helped convert an observation into a structured
+  opportunity
+- Entrepreneurship coursework introduced:
+  - Problem definition
+  - Customer value propositions
+  - Market analysis
+  - Branding
+  - Business models
+  - Pitch development
+  - Financial planning
+- Management Information Systems education helped connect business
+  strategy to technology architecture
+- Early academic work included the Dime Time concept, branding, color
+  scheme, presentation materials and an initial outsourced demo
+
+Important framing:
+
+The early demo was not the final product. It was a learning tool that
+helped transform an abstract idea into something people could see and
+discuss.
+
+Do not invent a date for the original classroom concept unless the
+founder provides one.
+
+----------------------------------------------------------------
+SLIDE 5 — THE PROBLEM
+----------------------------------------------------------------
+
+Title:
+
+Why Dime Time Needed to Exist
+
+Content:
+
+- Many consumers intend to make extra debt payments
+- Manual extra payments require repeated discipline
+- Small amounts of money are often easier to commit than large,
+  irregular payments
+- Everyday transactions can create a recurring behavioral trigger
+- Automation can help translate intention into action
+
+Include verified market context:
+
+- $18.8 trillion in U.S. household debt
+- $1.25 trillion in credit-card balances
+- 91% of U.S. adults own a smartphone
+
+Sources:
+- Federal Reserve Bank of New York, Household Debt and Credit Report,
+  Q1 2026, released May 2026
+- Pew Research Center, Mobile Fact Sheet, 2025
+
+Explain that these figures describe the scale of the problem. They are
+not Dime Time revenue figures.
+
+----------------------------------------------------------------
+SLIDE 6 — THE SOLUTION
+----------------------------------------------------------------
+
+Title:
+
+Get Out of Debt, One Dime at a Time
+
+Explain the Dime Time concept:
+
+1. A user connects an eligible financial account
+2. Everyday purchases are analyzed
+3. Each purchase is rounded up
+4. Round-ups accumulate
+5. The user controls the destination and schedule
+6. Authorized ACH payments apply accumulated amounts toward debt
+
+Important accuracy note:
+
+Money does not move after every individual purchase. Round-ups
+accumulate and are transferred according to a user-approved schedule.
+
+Include the slogan:
+
+“Get out of debt, one dime at a time.”
+
+----------------------------------------------------------------
+SLIDE 7 — FROM IDEA TO SYSTEM
+----------------------------------------------------------------
+
+Title:
+
+A Fintech Product Is More Than an App Screen
+
+Use a simple architecture diagram:
+
+USER EXPERIENCE
+        ↓
+BANK CONNECTION
+        ↓
+TRANSACTION ANALYSIS
+        ↓
+ROUND-UP CALCULATION
+        ↓
+USER AUTHORIZATION
+        ↓
+ACH PAYMENT
+        ↓
+TRANSFER TRACKING AND RECONCILIATION
+
+Explain that Dime Time required:
+
+- Mobile and web interfaces
+- Authentication
+- Database design
+- Bank connectivity
+- Transaction processing
+- ACH payment infrastructure
+- User authorization records
+- Security controls
+- Transfer status tracking
+- Error recovery
+- Privacy and legal documentation
+- App Store compliance
+
+Keep this educational and nontechnical enough for a mixed university
+audience.
+
+----------------------------------------------------------------
+SLIDE 8 — BUILDING AS A NONTECHNICAL FOUNDER
+----------------------------------------------------------------
+
+Title:
+
+Learning to Build Without a Traditional Engineering Background
+
+Content:
+
+- Began with the business problem, not the programming language
+- Learned how software components fit together
+- Used AI-assisted development to accelerate learning and execution
+- Broke large problems into smaller, testable tasks
+- Learned to verify outputs instead of accepting them blindly
+- Used screenshots, tests, logs and controlled experiments as evidence
+- Developed enough technical literacy to make product decisions and
+  question unsafe assumptions
+
+Core lesson:
+
+AI can accelerate execution, but it does not replace founder judgment,
+testing, accountability or domain understanding.
+
+Do not claim AI independently built or operated the company.
+
+----------------------------------------------------------------
+SLIDE 9 — THE TECHNOLOGY
+----------------------------------------------------------------
+
+Title:
+
+The System Behind Dime Time
+
+Use a concise stack overview:
+
+FRONT END
+- React
+- TypeScript
+- Capacitor mobile application
+
+BACK END
+- Express / Node.js
+- PostgreSQL
+- Drizzle ORM
+
+FINANCIAL INFRASTRUCTURE
+- Plaid for approved bank-connectivity products
+- Stripe ACH
+- Stripe Financial Connections under review
+- Mercury as business bank and payout destination
+
+OPERATIONS
+- Replit development environment
+- Codemagic mobile build workflow
+- Apple App Store
+- Google Play preparation
+
+Include:
+
+“Partner names indicate service relationships, not endorsements.”
+
+Do not include Coinbase in the active infrastructure stack. Coinbase
+is planned only and is not available to users.
+
+----------------------------------------------------------------
+SLIDE 10 — SAFETY BEFORE SCALE
+----------------------------------------------------------------
+
+Title:
+
+Building Financial Technology Means Building Guardrails
+
+Explain the controlled rollout philosophy:
+
+- Master real-transfer switch
+- Separate ACH feature switch
+- Founder-controlled user allowlist
+- Public users cannot be automatically approved
+- First-transfer limit
+- Daily transfer limit
+- Transfer-frequency limit
+- User authorization evidence
+- Idempotency and duplicate-payment protection
+- Webhook verification
+- Transaction ledger
+- Audit logging
+- Ability to disable real transfers
+
+Core lesson:
+
+In fintech, the safest successful test is more valuable than an
+uncontrolled launch.
+
+Do not reveal secrets, code, exact exploitable implementation details
+or private operational credentials.
+
+----------------------------------------------------------------
+SLIDE 11 — THE HISTORICAL TIMELINE
+----------------------------------------------------------------
+
+Title:
+
+From Academic Concept to Live Fintech Product
+
+Create a visually strong horizontal or vertical timeline using only
+verified dates.
+
+MILESTONES:
+
+EARLY FOUNDATION — DATE NOT SPECIFIED
+- Entrepreneurship and business-school work helped shape the Dime Time
+  concept, brand and early presentation
+- An initial prototype/demo helped make the concept tangible
+- MBA and Management Information Systems education helped connect
+  business strategy with system design
+
+MAY 27, 2026
+- Privacy Policy and Terms effective date established
+- Legal and consumer-facing documentation prepared for production
+
+JUNE 29, 2026
+- Dime Time first went live on the Apple App Store
+
+JULY 7, 2026
+- Controlled $1.00 real ACH debt-payment test initiated through Stripe
+
+JULY 21, 2026
+- Dime Time v1.0.5, build 207 approved and live
+- $0.99 Stripe payout confirmed in Mercury
+- Bank-to-bank money loop proven end-to-end
+- Stripe Financial Connections registration submitted for review
+- Investor deck completed and locked
+
+CURRENT STATUS
+- iOS application live
+- Real financial rails proven through a controlled founder test
+- Google Play preparation underway
+- Public bank linking awaiting external approval
+- Automatic debt import awaiting Plaid Liabilities approval
+
+Do not invent dates for early concept development, patent filing or
+other events that do not have verified dates.
+
+----------------------------------------------------------------
+SLIDE 12 — THE MOMENT THE MODEL BECAME REAL
+----------------------------------------------------------------
+
+Title:
+
+One Dollar Changed the Project
+
+Feature the controlled money-loop milestone:
+
+$1.00 ACH DEBT PAYMENT
+        ↓
+STRIPE PROCESSING
+        ↓
+$0.99 PAYOUT
+        ↓
+MERCURY
+        ↓
+BANK-TO-BANK LOOP PROVEN
+
+Explain:
+
+- The amount was intentionally small
+- The test used the founder’s controlled, allowlisted account
+- The payment successfully moved through real production rails
+- The payout confirmed that the underlying financial system worked
+- This did not mean public transfers were enabled
+
+Use this exact status:
+
+“PROVEN IN CONTROLLED LIVE TEST”
+
+Never say:
+
+“Live in app”
+
+until real transfers are available to public users.
+
+----------------------------------------------------------------
+SLIDE 13 — WHAT DID NOT HAPPEN OVERNIGHT
+----------------------------------------------------------------
+
+Title:
+
+The Invisible Work Behind a Launch
+
+Content may include:
+
+- App Store reviews and resubmissions
+- Resolving a duplicate-app rejection
+- Payment-provider applications
+- Bank-connectivity approvals
+- Security reviews
+- Legal documentation
+- Email reliability fixes
+- OAuth and universal-link work
+- Mobile screenshot preparation
+- Version and build management
+- Android permission and signing preparation
+- Waiting through third-party review queues
+- Protecting production money movement while continuing development
+
+Core message:
+
+The public sees a launch date. The founder experiences hundreds of
+small decisions, failures, corrections and verification steps.
+
+----------------------------------------------------------------
+SLIDE 14 — SETBACKS AS SYSTEM FEEDBACK
+----------------------------------------------------------------
+
+Title:
+
+Every Failure Became a Better Control
+
+Use a table with three columns:
+
+CHALLENGE | RESPONSE | LESSON
+
+Suggested rows:
+
+App Store duplicate-app rejection
+| Removed the obsolete record and clarified the production app
+| Compliance problems require evidence and precise communication
+
+Production email failures
+| Diagnosed delivery paths, corrected notifications and added tests
+| A feature is not working merely because the interface says it is
+
+Real-money risk
+| Added feature flags, allowlisting, limits and audit controls
+| Safety must be designed before activation
+
+OAuth return-flow issues
+| Added universal-link and resume handling
+| The complete user journey matters, not only the API call
+
+Android permission risk
+| Removed permissions the product did not need
+| Minimize access and justify every permission
+
+Do not present mistakes as blame. Present them as evidence of learning,
+systems thinking and responsible iteration.
+
+----------------------------------------------------------------
+SLIDE 15 — WHAT AI DID AND DID NOT DO
+----------------------------------------------------------------
+
+Title:
+
+AI as a Force Multiplier, Not an Autopilot
+
+WHAT AI HELPED WITH:
+- Explaining technical concepts
+- Drafting implementation plans
+- Reviewing code and configuration
+- Generating tests
+- Diagnosing failures
+- Preparing documentation
+- Structuring compliance checklists
+- Accelerating iteration
+
+WHAT STILL REQUIRED THE FOUNDER:
+- Choosing the problem
+- Defining the product
+- Making risk decisions
+- Opening provider accounts
+- Completing identity and business verification
+- Reviewing financial behavior
+- Running controlled live tests
+- Deciding when not to launch
+- Accepting responsibility for the outcome
+
+Core lesson:
+
+The competitive advantage is not merely access to AI. It is the
+ability to direct it, question it, verify it and combine it with
+real-world judgment.
+
+----------------------------------------------------------------
+SLIDE 16 — LESSONS FOR STUDENTS
+----------------------------------------------------------------
+
+Title:
+
+What I Wish More Students Knew
+
+Include concise lessons:
+
+1. You do not need permission to begin learning.
+2. Your previous career may contain your founder advantage.
+3. A prototype starts a conversation; a production system earns trust.
+4. Learn enough technology to ask better questions.
+5. Evidence is stronger than confidence.
+6. Compliance is part of product design.
+7. Small controlled tests beat large uncontrolled bets.
+8. Do not confuse activity with progress.
+9. External rejection is information, not identity.
+10. Shipping creates opportunities that planning alone cannot.
+
+Optional highlighted statement:
+
+“Your background does not disqualify you. It gives you a different set
+of raw materials.”
+
+----------------------------------------------------------------
+SLIDE 17 — WHAT COMES NEXT
+----------------------------------------------------------------
+
+Title:
+
+The Next Chapter
+
+Current forward-looking milestones:
+
+- Complete Google Play identity and organization verification
+- Complete Android signing and first production build
+- Test Dime Time on real Android hardware
+- Submit Dime Time to Google Play
+- Receive Stripe Financial Connections approval
+- Enable controlled public bank linking
+- Receive Plaid Liabilities approval
+- Verify automatic debt import
+- Begin controlled public user acquisition
+- Measure activation, retention, ACH volume and subscription conversion
+- Raise $150,000 in pre-seed capital after launch milestones strengthen
+  the story
+
+Clearly label all of these as:
+
+CURRENT ROADMAP — NOT COMPLETED MILESTONES
+
+Do not provide guaranteed approval dates or launch dates.
+
+----------------------------------------------------------------
+SLIDE 18 — CLOSING / QUESTIONS
+----------------------------------------------------------------
+
+Title:
+
+WHAT WILL YOU BUILD?
+
+Include:
+
+Tim Carlisle
+Founder & CEO
+Dime Time Technologies LLC
+
+Website:
+dime-time.com
+
+Email:
+tim@dime-time.com
+
+Closing message:
+
+“Dime Time began as an idea about spare change. It became a lesson in
+persistence, systems thinking and turning education into execution.”
+
+Include:
+
+“Get out of debt, one dime at a time with Dime Time!”
+
+Leave sufficient open space for a clean final slide and live Q&A.
+
+================================================================
+OPTIONAL APPENDIX SLIDES
+================================================================
+
+Keep the main presentation near 18 slides. Create optional appendix
+slides only if they add genuine educational value.
+
+OPTIONAL APPENDIX A — FINTECH TERMINOLOGY
+
+Define:
+- ACH
+- Bank linking
+- Financial Connections
+- Payment authorization
+- Idempotency
+- Webhook
+- Feature flag
+- Allowlist
+- Production versus sandbox
+- Settlement
+
+OPTIONAL APPENDIX B — CLASSROOM DISCUSSION QUESTIONS
+
+1. Which part of Dime Time’s moat is technical, and which is
+   operational?
+2. When should a founder stop building and begin acquiring users?
+3. How should a fintech balance speed with safety?
+4. What should AI be trusted to do?
+5. What evidence would you require before investing?
+6. Which acquisition channel should Dime Time test first?
+7. How would you define an activated user?
+8. What ethical obligations come with automating financial behavior?
+
+OPTIONAL APPENDIX C — VERIFIED PROJECT STATUS
+
+LIVE
+- iOS v1.0.5, build 207
+- Apple App Store availability
+- Core product interface
+- Production access for approved Plaid products
+- Stripe ACH infrastructure
+
+PROVEN IN CONTROLLED LIVE TEST
+- $1.00 ACH payment
+- $0.99 Mercury payout
+- Bank-to-bank financial loop
+
+BUILT • FEATURE-GATED
+- Core $2.99 subscription functionality
+- Real-transfer functionality behind safeguards
+
+PENDING
+- Stripe Financial Connections public bank-linking approval
+- Plaid Liabilities approval
+- Google Play launch process
+
+PLANNED
+- Coinbase/Bitcoin allocation
+- Pro and Premium subscription tiers
+- Broader public acquisition
+
+================================================================
+SPEAKER NOTES REQUIREMENTS
+================================================================
+
+Add useful speaker notes to every slide.
+
+Speaker notes should:
+- Sound natural and conversational
+- Avoid simply repeating slide text
+- Include the story or lesson behind each milestone
+- Give Tim approximately 1–2 minutes of speaking material per slide
+- Identify where to pause for audience questions
+- Flag statements that must not be overstated
+- Include optional shorter language for a 20-minute presentation
+- Include optional deeper commentary for a 45–60 minute presentation
+
+Prepare timing options:
+
+20-MINUTE VERSION
+- Approximately 12–14 core slides
+- Focus on founder journey, product, timeline, controlled ACH test,
+  lessons and closing
+
+45-MINUTE VERSION
+- All 18 core slides
+- More explanation of system architecture, setbacks, AI-assisted
+  development and safety controls
+
+60-MINUTE CLASS SESSION
+- All slides
+- Include appendix terminology
+- Include classroom discussion questions
+- Reserve 15–20 minutes for Q&A and discussion
+
+================================================================
+FACTUAL RULES
+================================================================
+
+Use these facts exactly:
+
+- Company: Dime Time Technologies LLC
+- Founder: Tim Carlisle
+- Founder status: U.S. Navy veteran and solo founder
+- Education:
+  “MBA • Graduate degree in Management Information Systems”
+- Website: dime-time.com
+- Email: tim@dime-time.com
+- App Store ID: 6755106723
+- Live version: v1.0.5
+- Build: 207
+- App status: live on Apple App Store
+- First App Store launch: June 29, 2026
+- Controlled ACH test: $1.00 initiated July 7, 2026
+- Confirmed payout: $0.99 in Mercury on July 21, 2026
+- Legal documents effective: May 27, 2026
+- Patent status: patent pending; USPTO provisional filed
+- Public bank linking: pending external approval
+- Public user metrics: none reported
+- Public revenue: none reported
+- Coinbase: planned only
+- Mercury: business bank and payout destination, not a software
+  integration
+- Plaid: production access for currently approved products;
+  Liabilities remains pending
+- Stripe: ACH infrastructure active; Financial Connections
+  registration under review
+
+Use the status phrase:
+
+“PROVEN IN CONTROLLED LIVE TEST”
+
+Do not use:
+
+“LIVE IN APP”
+
+for public debt repayment until the founder confirms public transfer
+availability.
+
+================================================================
+DO NOT CLAIM OR INVENT
+================================================================
+
+Do not invent:
+- Public users
+- Revenue
+- Paying subscribers
+- Linked public bank accounts
+- Public ACH volume
+- Debt reduced for public users
+- Customer acquisition cost
+- Retention
+- Conversion rate
+- Approval dates
+- Launch dates
+- Investment commitments
+- University partnerships
+- Named advisors
+- Employees or cofounders
+- Technical degrees not actually earned
+- Patent approval
+- Partner endorsements
+- Coinbase integration
+- International availability
+
+Do not say:
+- “Patented”
+- “Only platform”
+- “First ever”
+- “Guaranteed”
+- “Live in app” for public transfers
+- “Mercury integration”
+- “Coinbase integration”
+- “Plaid Liabilities approved”
+- “Public users are moving money”
+
+================================================================
+PRIVACY AND SECURITY RULES
+================================================================
+
+Do not include:
+- EIN
+- D-U-N-S number
+- Founder home address
+- Government identification
+- Bank account or routing numbers
+- Bank balances
+- Stripe account identifiers
+- Plaid secrets
+- API keys
+- Database credentials
+- Session identifiers
+- Private customer information
+- Private screenshots from financial dashboards
+- Unredacted patent or corporate documents
+- Personal phone numbers
+
+Use only redacted evidence and approved public-facing screenshots.
+
+================================================================
+EXTERNAL SOURCES
+================================================================
+
+Use and cite primary, authoritative sources wherever possible.
+
+Approved statistics:
+
+1. U.S. household debt: $18.8 trillion
+2. Credit-card balances: $1.25 trillion
+
+Source:
+Federal Reserve Bank of New York
+Household Debt and Credit Report, Q1 2026
+Released May 2026
+
+3. Smartphone ownership: 91% of U.S. adults
+
+Source:
+Pew Research Center
+Mobile Fact Sheet, 2025
+
+Place readable citations on the relevant slides and include a final
+source list in the presentation notes or appendix.
+
+Do not add additional statistics without verifying them.
+
+================================================================
+FINAL QUALITY CHECK
+================================================================
+
+Before returning the completed university deck:
+
+1. Confirm all dates against this brief.
+2. Confirm no unsupported milestones were added.
+3. Confirm live, proven, gated, pending and planned statuses remain
+   distinct.
+4. Confirm the deck is educational rather than investor-oriented.
+5. Confirm no fundraising ask appears as the central presentation
+   purpose.
+6. Confirm the $150,000 raise appears only as part of the future
+   roadmap if included.
+7. Confirm the presentation is readable in a lecture hall.
+8. Confirm all external statistics have readable citations.
+9. Confirm partner names do not imply endorsement.
+10. Confirm no partner logos are used.
+11. Confirm the founder’s two graduate degrees are described
+    accurately.
+12. Confirm Mercury is not called an integration.
+13. Confirm Coinbase is planned only.
+14. Confirm no confidential or personally identifying information
+    appears.
+15. Confirm page numbering is sequential and matches the final count.
+16. Confirm the PowerPoint imports cleanly into Google Slides.
+17. Confirm text remains editable and searchable.
+18. Render every slide and inspect for clipping, overlap, small text
+    and contrast problems.
+19. Return a concise change log.
+20. Do not modify or replace the locked investor pitch deck files.
+
+================================================================
+CENTRAL EDUCATIONAL STORY
+================================================================
+
+This presentation should communicate:
+
+“Dime Time began as a classroom-supported business concept and became
+a live fintech product through persistence, systems thinking,
+AI-assisted learning and responsible testing. Tim Carlisle did not
+begin as a traditional software engineer. He combined lessons from the
+Navy, hospitality, business education and Management Information
+Systems to build and launch a real application with financial
+infrastructure proven bank-to-bank.”
+
+FINAL INSTRUCTION
+
+Build this as a separate university speaking deck.
+
+Do not alter, overwrite or reuse the filenames of the locked Dime Time
+investor decks.
+
+Suggested new filenames:
+
+- dime-time-university-founder-journey.pptx
+- dime-time-university-founder-journey.pdf
+- dime-time-university-founder-journey-outline.txt
+- dime-time-university-founder-journey-sources.txt
+================================================================

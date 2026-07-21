@@ -1,0 +1,514 @@
+================================================================
+DIME TIME — MASTER HISTORICAL TIMELINE
+FOR REPLIT PRESENTATION CREATION
+Prepared: July 21, 2026
+Purpose: Build a professional historical timeline presentation
+showing the evolution of Dime Time from idea to live fintech
+company. This is NOT an investor pitch deck. It is a milestone
+history presentation that documents execution over time.
+================================================================
+
+OBJECTIVE
+
+Create a clean, premium presentation that visually tells the
+story of Dime Time's development from concept through launch.
+
+The presentation should emphasize:
+
+• Execution
+• Persistence
+• Technical progress
+• Regulatory progress
+• Product maturity
+• Real financial milestones
+
+The tone should feel similar to an Apple product history,
+startup journey, or annual shareholder timeline.
+
+Avoid marketing hype.
+
+Remain factual.
+
+================================================================
+DESIGN LANGUAGE
+================================================================
+
+Use the official Dime Time branding.
+
+Colors
+
+• Dime Time Purple (#918EF4)
+
+• Dark Navy
+
+• White
+
+Style
+
+• Modern
+• Minimal
+• Executive
+• High-end fintech
+• Large screenshots
+• Clean timelines
+• Icons where appropriate
+
+Each milestone should include:
+
+• Date
+• Title
+• One sentence summary
+• Why it mattered
+
+Include subtle connecting timeline graphics between milestones.
+
+================================================================
+SUGGESTED PRESENTATION STRUCTURE
+================================================================
+
+Slide 1
+
+DIME TIME
+
+The Journey
+
+From Idea
+to Live Fintech Platform
+
+Timeline
+2025–Present
+
+------------------------------------------------------------
+
+Slide 2
+
+Company Vision
+
+• Why Dime Time exists
+
+• Debt is one of America's largest financial problems.
+
+• The goal has always been to automate debt reduction using
+everyday spending.
+
+Include founder photo if available.
+
+------------------------------------------------------------
+
+Slide 3
+
+Project Begins
+
+August 3, 2025
+
+• Initial architecture
+• First commits
+• Product planning
+• Core concept established
+
+Mention this marks Day One of development.
+
+------------------------------------------------------------
+
+Slide 4
+
+Foundation Phase
+
+Late 2025
+
+Milestones
+
+• Core application architecture
+
+• Database
+
+• Authentication
+
+• Security
+
+• Banking research
+
+• Stripe integration planning
+
+• Plaid integration planning
+
+• Initial UI/UX
+
+------------------------------------------------------------
+
+Slide 5
+
+Company Formation
+
+Early 2026
+
+Milestones
+
+• Dime Time Technologies LLC established
+
+• Mercury business banking approved
+
+• Business infrastructure established
+
+• Legal documentation
+
+• Privacy Policy
+
+• Terms of Service
+
+------------------------------------------------------------
+
+Slide 6
+
+Engineering Expansion
+
+Highlight
+
+• Thousands of lines of code
+
+• React
+
+• TypeScript
+
+• Express
+
+• PostgreSQL
+
+• Capacitor
+
+• iOS native application
+
+Mention approximately
+
+35,000+ lines of code
+
+1,100+ Git commits
+
+346+ days of development
+
+(if current figures remain accurate)
+
+------------------------------------------------------------
+
+Slide 7
+
+Financial Infrastructure
+
+Timeline showing
+
+Plaid
+
+↓
+
+Stripe ACH
+
+↓
+
+Mercury
+
+Explain the role of each system.
+
+Do NOT imply endorsements.
+
+------------------------------------------------------------
+
+Slide 8
+
+Patent Progress
+
+• Provisional patent filed
+
+• Dynamic Dual-Split and Multi-Destination Round-Up Allocation
+System
+
+Status
+
+Patent Pending
+
+------------------------------------------------------------
+
+Slide 9
+
+Apple Development
+
+Timeline
+
+TestFlight
+
+↓
+
+App Store Review
+
+↓
+
+Rejections
+
+↓
+
+Iterations
+
+↓
+
+Approval
+
+↓
+
+Version history
+
+Show perseverance through Apple's review process.
+
+------------------------------------------------------------
+
+Slide 10
+
+Major Milestone
+
+June 29, 2026
+
+Dime Time launches on the Apple App Store.
+
+This represents the transition from development to a publicly
+available fintech application.
+
+------------------------------------------------------------
+
+Slide 11
+
+Money Movement Proven
+
+Timeline graphic
+
+Purchase
+
+↓
+
+Round-up
+
+↓
+
+Stripe ACH
+
+↓
+
+Debt Payment
+
+↓
+
+Mercury Settlement
+
+Include
+
+July 7
+
+$1.00 ACH initiated
+
+↓
+
+July 21
+
+$0.99 payout confirmed
+
+Label
+
+Bank-to-Bank Money Loop Successfully Proven
+
+Status
+
+PROVEN IN CONTROLLED LIVE TEST
+
+------------------------------------------------------------
+
+Slide 12
+
+Current Product
+
+Display current App Store screenshots
+
+Dashboard
+
+Debt Tracking
+
+Round-Ups
+
+Insights
+
+Explain that the product is now a fully functioning iOS
+application.
+
+------------------------------------------------------------
+
+Slide 13
+
+Current Infrastructure
+
+Status table
+
+Apple App
+LIVE
+
+Android
+In Development
+
+Plaid
+Production approval process
+
+Stripe ACH
+Integrated
+
+Mercury
+Operational
+
+Patent
+Pending
+
+Public Bank Linking
+Pending partner approvals
+
+------------------------------------------------------------
+
+Slide 14
+
+What's Next
+
+Upcoming milestones
+
+• Public bank linking
+
+• Public debt import
+
+• Android release
+
+• First public users
+
+• First paying subscribers
+
+• Customer acquisition
+
+• Recurring ACH volume
+
+• Seed fundraising
+
+------------------------------------------------------------
+
+Slide 15
+
+Founder Journey
+
+Tim Carlisle
+
+• U.S. Navy Veteran
+
+• MBA
+
+• Graduate Degree in Management Information Systems
+
+• Solo founder
+
+Designed, built, tested and launched Dime Time end-to-end.
+
+------------------------------------------------------------
+
+Slide 16
+
+Execution Timeline
+
+Create a visual horizontal timeline including:
+
+Aug 3 2025
+Development begins
+
+↓
+
+Early 2026
+Company infrastructure
+
+↓
+
+Patent filed
+
+↓
+
+Mercury approved
+
+↓
+
+Privacy Policy
+
+↓
+
+Terms of Service
+
+↓
+
+Apple TestFlight
+
+↓
+
+June 29 2026
+App Store Launch
+
+↓
+
+July 7 2026
+First ACH
+
+↓
+
+July 21 2026
+Money Loop Proven
+
+↓
+
+Build 207 Approved
+
+↓
+
+Stripe Financial Connections Submitted
+
+------------------------------------------------------------
+
+Slide 17
+
+Today
+
+Dime Time is now a live fintech company with:
+
+✓ Live App Store application
+
+✓ Proven ACH infrastructure
+
+✓ Patent Pending
+
+✓ Production banking infrastructure
+
+✓ Real bank-to-bank financial movement demonstrated
+
+Public launch expansion now depends primarily on external partner
+approvals (Stripe Financial Connections and Plaid production).
+
+================================================================
+IMPORTANT INSTRUCTIONS
+================================================================
+
+Do not fabricate dates.
+
+Do not fabricate users.
+
+Do not fabricate revenue.
+
+Do not fabricate fundraising.
+
+Do not fabricate partnerships.
+
+Maintain historical accuracy.
+
+Use evidence-backed milestones only.
+
+Where screenshots exist, use actual Dime Time screenshots rather
+than mockups.
+
+The overall presentation should feel like a premium startup
+company history that documents nearly a year of execution from
+initial concept to a live fintech application with proven
+end-to-end money movement.
+================================================================
