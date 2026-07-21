@@ -95,7 +95,7 @@ title = "Slide Image 4 — Dashboard"
 id = "xTE8CD_vKQE8yZUYjCwEK"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pdf"
 type = "pdf"
-title = "Dime Time Pitch Deck — PDF (backup, for email/print)"
+title = "Pitch Deck (13 slides, updated)"
 
 [[outputs]]
 id = "PwY0MiFJPlJyLEQq1ZP3J"
@@ -173,7 +173,7 @@ title = "Slide 13 — Company Info"
 id = "Gv57Vsp4aKd2piUxhlMEw"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pptx"
 type = "slides"
-title = "⭐ Dime Time Pitch Deck — PowerPoint (drop into Google Slides)"
+title = "Pitch Deck .pptx"
 
 [[outputs]]
 id = "EjV56LOgTpf9aZFgnL9Ua"
@@ -209,7 +209,7 @@ title = "Full Pitch Deck + IP Appendix — 16 slides (PowerPoint)"
 id = "BK-MZR9aaU0LbiMcQYOKC"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck-with-ip.pdf"
 type = "pdf"
-title = "Full Pitch Deck + IP Appendix — 16 slides (PDF)"
+title = "Pitch Deck with IP Appendix (16 slides)"
 
 [[outputs]]
 id = "Zts5fV5VCe2gOII1ArIOU"
@@ -419,13 +419,13 @@ title = "Dime Time — Go-Live Runbook ($1 Test)"
 id = "DVONa60HVtBDfJZZYNkIr"
 uri = "file://attached_assets/timeline-deck-slides/dime-time-timeline-deck.pptx"
 type = "slides"
-title = "Dime Time Timeline Deck (import into Google Slides)"
+title = "Timeline Deck .pptx"
 
 [[outputs]]
 id = "-VI2tVVNZbeiGCNRjyc9d"
 uri = "file://attached_assets/timeline-deck-slides/dime-time-timeline-deck.pdf"
 type = "pdf"
-title = "Timeline Deck — PDF preview"
+title = "12-Month Timeline Deck (17 slides, updated)"
 
 [[outputs]]
 id = "kxo_zEYcTwwpy0mMGlqKo"

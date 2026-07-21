@@ -127,13 +127,13 @@ s = slide(WHITE)
 tf = box(s, 0.7, 0.4, 12, 0.6)
 para(tf, "THE YEAR AT A GLANCE", 15, DEEP, bold=True, first=True)
 tf = box(s, 0.7, 0.85, 12, 0.8)
-para(tf, "1,099 commits, month by month", 34, DARK, bold=True, first=True)
+para(tf, "1,216 commits, month by month", 34, DARK, bold=True, first=True)
 months = [("Aug", 106), ("Sep", 206), ("Oct", 105), ("Nov", 127), ("Dec", 140), ("Jan", 21),
-          ("Feb", 13), ("Mar", 31), ("Apr", 39), ("May", 69), ("Jun", 105), ("Jul", 137)]
+          ("Feb", 13), ("Mar", 31), ("Apr", 39), ("May", 69), ("Jun", 105), ("Jul", 254)]
 chart_x, chart_y, chart_w, chart_h = 0.9, 2.1, 11.6, 3.4
 bw = chart_w / len(months) * 0.62
 gapx = chart_w / len(months)
-maxv = 206
+maxv = 254
 for i, (m, v) in enumerate(months):
     bh = chart_h * v / maxv
     x = chart_x + i * gapx + (gapx - bw) / 2
@@ -261,7 +261,7 @@ para(tf, "283 days after the birthday rejection, the answer flipped to yes.", 20
 
 # ---------- 11. REAL MONEY FLOW ----------
 s = slide(WHITE)
-month_header(s, "Month 12  •  July 2026", "Real Money", 137)
+month_header(s, "Month 12  •  July 2026", "Real Money", 254)
 steps = [("$1.00", "Real ACH debit — the founder's own account"),
          ("CHASE", "Pulled from a real consumer bank"),
          ("STRIPE", "Processed on live payment rails"),
@@ -286,9 +286,9 @@ for i, (big, small) in enumerate(steps):
         para(tf2, "→", 24, DARK, bold=True, align=PP_ALIGN.CENTER, first=True)
     x += bw2 + gap2
 tf = box(s, 0.75, 5.0, 11.8, 1.9)
-para(tf, "July 7–8: initiated  •  July 13–14: settled  •  July 15: payout landed in Mercury", 18, DEEP, bold=True, first=True, space_after=10)
-para(tf, "Also this month: v1.0.4 redesign approved by Apple, admin money controls, automatic debt import built, AI-readable web guides.", 16, DARK, space_after=10)
-para(tf, "The machine works — proven with real money, 346 days after the first commit.", 18, DARK, bold=True)
+para(tf, "July 7–8: initiated  •  July 13–14: settled  •  July 20: $0.99 payout confirmed in Mercury", 18, DEEP, bold=True, first=True, space_after=10)
+para(tf, "Also this month: v1.0.5 approved & live on the App Store, Google Play account opened, admin money controls, automatic debt import built.", 16, DARK, space_after=10)
+para(tf, "The machine works — proven bank-to-bank with real money, 351 days after the first commit.", 18, DARK, bold=True)
 
 # ---------- 12. WHY DIME TIME EXISTS ----------
 s = slide(DEEP)
@@ -317,7 +317,7 @@ c2.fill.solid(); c2.fill.fore_color.rgb = GREEN
 c2.line.fill.background(); c2.shadow.inherit = False
 tf = box(s, 7.25, 2.35, 4.8, 4.1)
 para(tf, "YES", 40, WHITE, bold=True, first=True, space_after=10)
-for t in ["Mercury — business banking", "Stripe — payment rails", "Apple — June 29, 2026", "USPTO — provisional patent drafted", "The first real dollar — July 2026"]:
+for t in ["Mercury — business banking", "Stripe — payment rails", "Apple — June 29, 2026", "USPTO — provisional patent filed (pending)", "The first real dollar — July 2026"]:
     para(tf, "✓  " + t, 19, WHITE, space_after=8)
 
 # ---------- 14. STOREFRONT ----------
@@ -346,7 +346,7 @@ para(tf, "The storefront existed before the store — and it was already measuri
 s = slide(PURPLE)
 tf = box(s, 0.7, 0.5, 12, 0.6)
 para(tf, "BY THE NUMBERS", 15, WHITE, bold=True, first=True)
-stats = [("1,160+", "commits"), ("35,000+", "lines of code"), ("12", "months"),
+stats = [("1,216", "commits"), ("35,000+", "lines of code"), ("12", "months"),
          ("1", "founder"), ("$0", "raised"), ("1", "live fintech")]
 positions = [(0.9, 1.6), (5.05, 1.6), (9.2, 1.6), (0.9, 4.35), (5.05, 4.35), (9.2, 4.35)]
 for (bigt, small), (x, y) in zip(stats, positions):
@@ -379,7 +379,7 @@ for i, t in enumerate(steps2):
         para(tf, "→", 22, DARK, bold=True, align=PP_ALIGN.CENTER, first=True)
     x += bw3 + gap3
 tf = box(s, 0.9, 5.1, 11.6, 1.6)
-para(tf, "Near-term: automatic debt import in production  •  first paying subscribers ($2.99/mo)  •  the public launch announcement.", 18, DARK, first=True, space_after=8)
+para(tf, "In motion now: Google Play launch prep  •  Stripe Financial Connections & Plaid Liabilities under review  •  first paying subscribers ($2.99/mo)  •  the public launch announcement.", 18, DARK, first=True, space_after=8)
 para(tf, "Positioning: a case study in building a regulated fintech from scratch — while working full-time.", 17, DEEP, bold=True)
 
 # ---------- 17. CLOSING ----------
