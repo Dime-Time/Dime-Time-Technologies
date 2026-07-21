@@ -1,0 +1,147 @@
+================================================================
+DIME TIME PITCH DECK — FINAL ACCEPTANCE
+Date: July 21, 2026
+================================================================
+
+FINAL VERDICT
+
+PASS — INVESTOR-READY
+
+The final correction round has been reviewed and accepted. There are
+no remaining required content, factual, layout or export corrections.
+
+APPROVED FILES
+
+CORE INVESTOR DECK
+- dime-time-pitch-deck.pptx
+- dime-time-pitch-deck.pdf
+- 14 slides
+
+EXTENDED IP VERSION
+- dime-time-pitch-deck-with-ip.pptx
+- dime-time-pitch-deck-with-ip.pdf
+- 17 slides
+
+RECOMMENDED USE
+
+14-SLIDE CORE DECK
+Use this as the default version for:
+- Investor introductions
+- Angel outreach
+- Accelerator applications
+- Pitch meetings
+- Email attachments
+- Pitch competitions
+- General fundraising conversations
+
+17-SLIDE IP DECK
+Use this version when:
+- An investor requests intellectual-property detail
+- A serious investor enters substantive diligence
+- Patent-pending workflow details are directly relevant
+- Additional technical context will strengthen the discussion
+
+Do not lead with the 17-slide IP version unless the recipient
+specifically benefits from the additional technical material.
+
+ACCEPTED FINAL CORRECTIONS
+
+1. Slide 4 now says:
+   “PROVEN IN CONTROLLED LIVE TEST”
+
+2. Slide 12 accurately presents two graduate credentials:
+   “MBA • Graduate degree in Management Information Systems”
+
+3. Mercury is accurately described:
+   “Built with Plaid and Stripe ACH; payout rails verified through
+   Mercury”
+
+4. Coinbase has been removed from the active infrastructure stack.
+
+5. Coinbase appears only as:
+   “PLANNED — not yet available to users”
+
+6. The partner disclaimer now clarifies:
+   “Partner names indicate service relationships, not endorsements.”
+
+7. Citations and footnotes have been enlarged and given stronger
+   contrast.
+
+8. No deck text is smaller than 9.5 points.
+
+9. Slide 9 has been de-crowded and its disclaimer repositioned.
+
+10. Use of Funds now says:
+    “Founder compensation & operating runway”
+
+11. Use-of-funds allocation remains:
+    - 35% Marketing and user acquisition
+    - 30% Founder compensation and operating runway
+    - 25% Engineering and contractor support
+    - 10% Compliance, infrastructure and operations
+    - Total: 100%
+
+12. Page numbering runs sequentially from 01/14 through 14/14.
+
+13. The legal entity remains:
+    Dime Time Technologies LLC
+
+14. EIN and D-U-N-S information remain excluded.
+
+15. Public-launch metrics remain honestly labeled as pending.
+
+16. The deck preserves the verified evidence:
+    - Dime Time v1.0.5, build 207 is live on the Apple App Store
+    - $1.00 ACH payment completed through Stripe
+    - $0.99 payout confirmed in Mercury
+    - Bank-to-bank money loop proven
+    - Public bank linking pending
+    - Public user metrics not fabricated
+    - Patent pending
+
+PDF EXPORT CORRECTION
+
+The final PDF is not flattened into full-slide images.
+
+The final 14-slide PDF:
+- Contains embedded TrueType fonts
+- Uses native text
+- Is searchable
+- Is selectable
+- Successfully extracts corrected text through pdftotext
+
+The prior flattened-image assessment was based on the earlier deck’s
+extraction behavior and should not be applied to this final export.
+
+The only image-based pages are the three patent-figure appendix slides
+in the 17-slide IP version. This is intentional.
+
+FINAL STATUS
+
+The deck is complete.
+
+Do not continue polishing or redesigning it without new evidence.
+
+The next meaningful deck revision should be driven by actual traction:
+- Public users
+- Linked bank accounts
+- Activated users
+- Completed ACH volume
+- Debt reduced
+- Paying subscribers
+- Conversion rate
+- Retention
+- Customer acquisition cost
+- Month-over-month growth
+
+Until those metrics exist, preserve this version as the approved
+fundraising deck.
+
+APPROVED INVESTMENT STORY
+
+“Dime Time is a live fintech product—not a prototype—with real ACH
+infrastructure already proven bank-to-bank. This pre-seed round funds
+public launch, customer acquisition and measurable traction.”
+
+STATUS: FINAL ACCEPTANCE — INVESTOR-READY
+================================================================
