@@ -42,9 +42,10 @@ Detailed operational runbooks and subsystem specs live in `.agents/memory/` — 
 - The `transfers` ledger is provider-agnostic (Plaid/Mercury/Stripe write the same row shape); status strings are normalized via `shared/transactionStatus.ts` — UI never branches on raw provider statuses.
 - Auth tokens encrypted at rest (AES-GCM WebCrypto) in localStorage; PIN lock with SHA-256 hash, auto-lock on background.
 
-### Launch Status (as of 2026-07-09)
-- App Store: **LIVE**; v1.0.4 redesign APPROVED & LIVE (2026-07-09). Next build number must be 207+.
-- First real $1.00 ACH debt payment executed in production (Stripe, 2026-07-07) — end-to-end money loop proven. ACH settles in 2–4 business days via webhook.
+### Launch Status (as of 2026-07-21)
+- App Store: **LIVE**; v1.0.5 (build 207) APPROVED & LIVE (2026-07-21). Next build number must be 208+.
+- Money loop proven bank-to-bank: $1.00 ACH debt payment (2026-07-07) settled via Stripe, $0.99 payout landed in Mercury (confirmed 2026-07-21). ACH settles in 2–4 business days via webhook.
+- Stripe Financial Connections registration SUBMITTED (2026-07-21, founder) — under Stripe review; bank linking for public users unblocks when approved.
 - Stripe account live; prod has `ENABLE_STRIPE_ACH` + `ENABLE_REAL_TRANSFERS` ON (founder decision; public protected by the default-false per-user allowlist).
 - LinkedIn launch post is INTENTIONALLY HELD (founder decision 2026-07-09) until two milestones land: (1) real money movement working for users, (2) Plaid debt import live in production. Blockers are external approvals: Stripe Financial Connections registration + Plaid production/Liabilities approval.
 
@@ -81,7 +82,7 @@ Gated by `ADMIN_USER_IDS` secret (fails closed when empty). `/admin` page: Trans
 ## iOS Release Rules
 - `ios/App/App/Info.plist` is the ONLY source of truth for version/build numbers; `codemagic.yaml` reads it and must never overwrite it. Never reintroduce any build phase that writes version values into the built product.
 - Never set `server.url` in `capacitor.config.ts` (breaks cold-start). Before each Codemagic build: `npm run build && npx cap sync ios`.
-- After Apple accepts an upload, update `LAST_ACCEPTED_BY_APPLE` in codemagic.yaml (two lines). Currently 206 (v1.0.4).
+- After Apple accepts an upload, update `LAST_ACCEPTED_BY_APPLE` in codemagic.yaml (two lines). Currently 207 (v1.0.5).
 
 ## Investor / Patent Materials
 - `attached_assets/patent-application/` — USPTO provisional draft + 7 figures

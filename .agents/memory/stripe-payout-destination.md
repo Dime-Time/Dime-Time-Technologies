@@ -17,3 +17,5 @@ description: Where Stripe payouts actually land — Stripe Balance storage accou
 **RESOLVED 2026-07-18:** Root cause was the Dashboard "Payout destinations" setting = "Transfer all revenue to your financial account" (the Mercury payout bank was ALREADY linked as default the whole time). Founder flipped it to "Transfer all revenue to your payout bank account" and manually paid out the stranded balance. Future revenue now flows Stripe → Mercury automatically.
 
 **Lesson:** when Stripe payouts show the `fa_` destination pattern, check the Payout destinations radio setting first — the bank can be linked and default yet still bypassed. Note founder has multiple Mercury accounts — the payout bank differs from the checking account he screenshots, so deposits may not appear in the account he's looking at.
+
+**CLOSED 2026-07-21:** Founder confirmed the $0.99 deposit arrived in Mercury. Full loop now proven bank-to-bank: user bank → Stripe ACH debit → Stripe balance → Mercury. No open payout issues.
