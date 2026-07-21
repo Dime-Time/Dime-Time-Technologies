@@ -12,7 +12,7 @@ description: Android/Play submission decisions, what's done, and the remaining f
 - Plaid production accepts `com.dimetime.app` (android_package_name registered + verified via link/token/create 200, 2026-07-21).
 
 ## Remaining steps (in order)
-1. **Founder**: Google Play ORGANIZATION account signup (D-U-N-S 128458968, "Dime Time Technologies LLC", ~$25) → Google verification queue (days–2 weeks). Org type skips the 12-tester/14-day rule.
+1. **Founder**: ~~Play org signup~~ DONE 2026-07-21 — "Dime Time LLC" org account, ID 9075945124672067537 (display name lacks "Technologies", same as Stripe; non-blocking but verification docs must match the D&B record). Now in verification: identity docs + phone — founder-run, days to ~2 weeks.
 2. **Founder-present**: generate upload keystore (outside repo), enroll in Play App Signing, set 4 signing env vars in Codemagic.
 3. Plaid Android OAuth + App Links: needs `assetlinks.json` served at https://dime-time.com/.well-known/ (doesn't exist yet) — do NOT touch the iOS OAuth flow.
 4. Play listing assets, Data Safety form, device testing.
