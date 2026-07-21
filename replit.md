@@ -94,7 +94,7 @@ Gated by `ADMIN_USER_IDS` secret (fails closed when empty). `/admin` page: Trans
 ## Investor / Patent Materials
 - `attached_assets/patent-application/` — USPTO provisional draft + 7 figures
 - `attached_assets/patent-deck-slides/` — 12-slide investor patent deck (.pptx/.pdf/PNGs)
-- `attached_assets/pitch-deck-slides/` — 13-slide pitch deck; `attached_assets/business-plan-slides/` — 14-slide business plan
+- `attached_assets/pitch-deck-slides/` — 14-slide pitch deck (with-ip variant adds 3 IP appendix pages); `attached_assets/business-plan-slides/` — 14-slide business plan
 
 ## Detailed Docs (in `.agents/memory/`)
 - `plaid-key-rotation-runbook.md` — ordered steps to rotate `PLAID_TOKEN_ENCRYPTION_KEY`

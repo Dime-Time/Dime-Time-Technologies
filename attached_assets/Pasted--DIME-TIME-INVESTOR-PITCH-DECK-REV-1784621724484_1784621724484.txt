@@ -1,0 +1,472 @@
+================================================================
+DIME TIME — INVESTOR PITCH DECK REVISION REQUEST
+Date: July 21, 2026
+Source reviewed: dime-time-pitch-deck.pdf
+================================================================
+
+OBJECTIVE
+
+Revise the existing Dime Time pitch deck into an investor-ready
+pre-seed fundraising deck.
+
+Preserve the current visual identity:
+- Dime Time lavender and dark navy color palette
+- Clean, premium fintech aesthetic
+- Existing typography and overall design language
+- Concise presentation length
+- Real app screenshots and evidence-based claims
+
+This should be a strategic revision, not a complete redesign.
+
+================================================================
+CRITICAL ISSUE: PAGE COUNT AND MISSING SLIDE
+================================================================
+
+The PDF contains 12 actual pages, but its page numbering runs through
+13/13. A slide numbered 12/13 appears to be missing.
+
+Add a dedicated fundraising slide before the Company Information
+appendix. After revision, verify that:
+- Every slide is present
+- Slide numbering is sequential
+- The displayed total matches the actual PDF page count
+- No blank or accidentally omitted page exists
+
+================================================================
+REVISION 1: ADD THE FUNDRAISING ASK
+================================================================
+
+Add a slide titled:
+
+THE RAISE
+$150K TO LAUNCH AND PROVE TRACTION
+
+Suggested content:
+
+RAISING
+$150,000
+
+INSTRUMENT
+Post-money SAFE
+
+ESTIMATED RUNWAY
+Approximately 12 months
+
+USE OF FUNDS
+- 35% — Marketing and user acquisition
+- 30% — Founder runway
+- 25% — Engineering and contractor support
+- 10% — Compliance, infrastructure and operations
+
+MILESTONES THIS CAPITAL SHOULD ACHIEVE
+- Launch publicly on iOS and Android
+- Prove repeatable customer acquisition
+- Reach an initial paying-subscriber target
+- Demonstrate recurring ACH payment volume
+- Establish the traction required for a larger seed round
+
+IMPORTANT:
+- Do not invent a SAFE valuation cap or discount.
+- Do not present unapproved legal terms.
+- Keep the allocation totals at exactly 100%.
+
+================================================================
+REVISION 2: ADD A GO-TO-MARKET SLIDE
+================================================================
+
+The current deck explains the product but does not explain how Dime
+Time will acquire customers.
+
+Add a concise slide titled:
+
+GO-TO-MARKET
+FOCUSED LAUNCH. MEASURABLE GROWTH.
+
+INITIAL CUSTOMER PROFILE
+Mobile-first consumers carrying credit-card debt who want to make
+additional payments but struggle with consistency.
+
+INITIAL ACQUISITION CHANNELS
+- Founder-led LinkedIn and earned media
+- Veteran and military communities
+- Financial-wellness creators
+- University and young-professional communities
+- Employer financial-wellness partnerships
+- Referral incentives after retention is validated
+
+LAUNCH STRATEGY
+1. Activate public bank linking
+2. Launch coordinated founder and product communications
+3. Acquire an initial controlled user cohort
+4. Measure activation, linked-account rate, retention, ACH volume
+   and subscription conversion
+5. Concentrate spending on the channels that demonstrate efficient,
+   repeatable acquisition
+
+IMPORTANT:
+- Do not invent CAC, retention or conversion numbers.
+- Clearly label any future projections as targets or hypotheses.
+- Keep the slide visually concise.
+
+================================================================
+REVISION 3: REBUILD THE MARKET-OPPORTUNITY SLIDE
+================================================================
+
+The current $18.3 trillion consumer-debt figure demonstrates the size
+of the problem, but it is not automatically Dime Time’s addressable
+market.
+
+Retain the consumer-debt statistic only as market context, and add a
+bottom-up subscription opportunity.
+
+Suggested examples:
+
+SUBSCRIPTION REVENUE EXAMPLES AT $2.99/MONTH
+
+- 1,400 paying subscribers ≈ $50,000 ARR
+- 5,600 paying subscribers ≈ $201,000 ARR
+- 25,000 paying subscribers ≈ $897,000 ARR
+
+Use the exact calculations:
+- 1,400 × $2.99 × 12 = $50,232
+- 5,600 × $2.99 × 12 = $200,928
+- 25,000 × $2.99 × 12 = $897,000
+
+If TAM, SAM and SOM are included, base them on:
+- Number of plausible target users
+- Realistic reachable segment
+- Annual subscription revenue per user
+- Clearly documented assumptions
+
+Do not describe total U.S. consumer debt as Dime Time’s revenue TAM.
+
+Add dated, readable sources for:
+- Total U.S. consumer debt
+- Smartphone-user statistics
+- Generational debt figures
+- Any other external market statistics
+
+Do not use unsupported or outdated statistics.
+
+================================================================
+REVISION 4: STRENGTHEN THE COMPETITION SLIDE
+================================================================
+
+The existing comparison against only Ditch and Changed is too narrow.
+Broaden the competitive framing.
+
+Use a capability-based matrix such as:
+
+CAPABILITY                  DIME TIME   ROUND-UP   DEBT     BUDGETING
+                                        APPS       APPS     APPS
+Purchase round-ups          Yes         Often      Limited  Limited
+Automated debt payments     Yes         Rare       Varies   No
+User-controlled allocation  Yes         Varies     Limited  No
+Real ACH execution          Yes         Varies     Varies   No
+Debt-first positioning      Yes         No         Yes      No
+
+Competitor categories may include:
+- Automated round-up and savings applications
+- Debt-paydown applications
+- Budgeting applications
+- Financial-wellness platforms
+
+IMPORTANT:
+- Verify current competitors before naming them.
+- Do not claim “only platform” or “first system” unless documented
+  research supports the claim.
+- Do not use competitor or partner logos without written approval.
+- Preserve the central positioning: Dime Time combines automated
+  round-ups, debt-first allocation and real ACH execution.
+
+================================================================
+REVISION 5: DISTINGUISH LIVE FEATURES FROM FUTURE FEATURES
+================================================================
+
+Review every product and business-model claim and assign it to one of
+these categories:
+
+- LIVE
+- BUILT BUT FEATURE-GATED
+- PENDING PARTNER APPROVAL
+- PLANNED
+
+Current evidence-based status:
+
+LIVE
+- iOS application v1.0.5, build 207
+- Apple App Store availability
+- Plaid production access for approved products
+- Stripe ACH payment infrastructure
+- One completed $1.00 ACH test
+- $0.99 Stripe payout confirmed in Mercury
+- Real bank-to-bank money loop proven
+- Dashboard, debt tracking, round-up tracking and insights
+
+BUILT BUT FEATURE-GATED
+- $2.99 subscription functionality
+- Any functionality completed in code but not publicly enabled
+
+PENDING PARTNER APPROVAL
+- Stripe Financial Connections registration for public bank linking
+- Plaid Liabilities for automatic debt import
+
+PLANNED OR REQUIRING VERIFICATION
+- Bitcoin/Coinbase allocation
+- Public cryptocurrency functionality
+- Pro and Premium pricing tiers
+- Faster transfers
+- Multiple funding accounts
+- Priority routing
+- Any feature not currently available to public users
+
+Do not present planned functionality as live.
+
+Review these current statements carefully:
+- “Bitcoin (Coinbase)”
+- “Integrated Plaid, Mercury, and Coinbase”
+- Pro and Premium subscription features
+- “Faster transfers”
+- “Multiple accounts”
+- “Priority routing”
+- “Direct execution into financial endpoints”
+
+Reword or label them accurately.
+
+================================================================
+REVISION 6: IMPROVE THE DEFENSIBILITY SLIDE
+================================================================
+
+Retain:
+- Patent-pending allocation workflow
+- Production financial infrastructure
+- Real ACH money movement
+- App Store launch
+- Partner approval and compliance work
+
+Expand the defensibility narrative to include:
+- Patent-pending workflow
+- Accumulated financial-infrastructure work
+- Compliance and partner-approval history
+- Potential repayment and behavioral data advantage
+- User trust and retention
+- Future distribution partnerships
+- Distinct debt-first brand positioning
+
+Remove or soften:
+“Replicating this stack requires 6–12 months of compliance and
+engineering.”
+
+Suggested replacement:
+“Dime Time combines proprietary workflow design, production financial
+infrastructure, partner approvals and a debt-first consumer brand.”
+
+Always use “patent pending.” Do not suggest that a provisional patent
+guarantees exclusivity or prevents all competitors from entering the
+category.
+
+================================================================
+SLIDE-BY-SLIDE REVISIONS
+================================================================
+
+SLIDE 1 — COVER
+Current design is strong.
+
+Consider replacing:
+“Financial Automation Engine”
+
+With:
+“Automated debt reduction through everyday spending”
+
+Keep:
+“Get out of debt, one dime at a time.”
+
+SLIDE 2 — PROBLEM
+- Retain the main problem statement.
+- Add dated sources for $18.3T and 275M+.
+- Verify both statistics before publication.
+- Keep citations readable but visually unobtrusive.
+
+SLIDE 3 — SOLUTION
+- Explain that users maintain control over allocation.
+- Clarify that round-ups ultimately create authorized debt payments.
+- Avoid implying money moves instantly after every individual purchase.
+
+SLIDE 4 — DYNAMIC ALLOCATION
+- Keep the allocation visual.
+- Remove “first system” unless substantiated.
+- Clearly label Bitcoin allocation as planned if it is not currently
+  live.
+- Replace vague wording such as “financial endpoints” with plain,
+  specific language.
+
+SLIDE 5 — PRODUCT
+- Preserve this slide; it is one of the strongest.
+- Retain the real application screenshots.
+- Confirm all screenshots accurately represent v1.0.5.
+- Ensure small captions remain readable on a laptop and projector.
+
+SLIDE 6 — MARKET
+- Replace the top-down debt figure as the primary market model.
+- Add bottom-up subscriber and ARR examples.
+- Keep total consumer debt only as problem context.
+- Add citations and dates.
+
+SLIDE 7 — BUSINESS MODEL
+- Retain $2.99/month as the core subscription price.
+- Mark Pro and Premium as “Planned” if not currently available.
+- Avoid presenting unlaunched benefits as existing features.
+- Explain briefly why customers would upgrade between tiers.
+
+SLIDE 8 — COMPETITION
+- Broaden the competitive landscape.
+- Use a capability-based matrix.
+- Remove unsupported “only platform” language.
+- Do not use third-party logos without approval.
+
+SLIDE 9 — DEFENSIBILITY
+- Retain patent-pending status and proven infrastructure.
+- Remove unsupported replication timelines.
+- Add compliance, data, trust, retention and distribution as future
+  components of the moat.
+- Ensure partner names do not imply endorsement.
+
+SLIDE 10 — TRACTION
+Preserve the core headline:
+“Live App. Real Money Moved.”
+
+Retain:
+- Live on Apple App Store
+- v1.0.5, build 207
+- $1.00 ACH payment
+- $0.99 payout confirmed in Mercury
+- Bank-to-bank rails proven
+- Google Play and partner approvals in progress
+
+Keep zero or unavailable metrics honest. Do not invent users, linked
+accounts, transaction volume or debt reduced.
+
+Consider changing blank values from “—” to:
+“Public launch pending”
+
+This may communicate the current stage more intentionally.
+
+SLIDE 11 — TEAM
+Retain:
+- Tim Carlisle, Founder & CEO
+- U.S. Navy veteran
+- MBA
+- Management Information Systems graduate degree
+- Built Dime Time end-to-end
+- Solo-founder execution and capital efficiency
+
+Correct or qualify:
+“Integrated Plaid, Mercury, and Coinbase”
+
+Only name integrations that are technically accurate and currently
+supported. If Coinbase is future functionality, label it planned.
+
+Suggested supporting line:
+“Solo founder who designed, built and launched a production fintech
+application with working ACH infrastructure.”
+
+SLIDE 12 — NEW FUNDRAISING SLIDE
+Insert the fundraising ask, use of funds, runway and milestones
+described above.
+
+SLIDE 13 — COMPANY INFORMATION
+Change company name to the exact legal entity:
+
+Dime Time Technologies LLC
+
+Retain:
+- Founder: Tim Carlisle
+- Website: dime-time.com
+- Email: tim@dime-time.com
+
+Remove from the general investor deck:
+- EIN
+- D-U-N-S number
+
+Those identifiers belong in the private data room, not the circulated
+pitch deck.
+
+================================================================
+VISUAL AND TECHNICAL QUALITY CHECKS
+================================================================
+
+The design is already strong, but make these refinements:
+
+- Increase the size or contrast of small supporting text.
+- Pay special attention to readability on lavender backgrounds.
+- Test every slide at normal laptop size and projected presentation
+  size.
+- Maintain consistent title position, margins and footer placement.
+- Ensure no text is clipped, crowded or too close to card boundaries.
+- Confirm all app screenshots are sharp.
+- Confirm every statistical citation is readable.
+- Ensure displayed page numbers match the final page count.
+- Preserve an editable source file.
+- Export the final PDF with searchable/selectable text if possible,
+  rather than flattening every slide into a single image.
+- Verify the PDF has no blank, missing or duplicated pages.
+- Do not expose secrets, banking credentials, private financial
+  documents or personal identifiers.
+- Do not include the EIN in the circulated deck.
+- Do not use partner logos without written permission.
+
+================================================================
+FINAL DECK STORY
+================================================================
+
+The revised narrative should flow as follows:
+
+1. Cover
+2. Problem
+3. Solution
+4. Dynamic allocation workflow
+5. Live product
+6. Market opportunity
+7. Business model
+8. Competition
+9. Defensibility
+10. Go-to-market
+11. Traction
+12. Team
+13. Fundraising ask
+14. Company information appendix
+
+A 14-slide deck is acceptable because the current deck is concise.
+If the design must remain at 13 slides, combine the solution and
+allocation slides or place Company Information outside the primary
+presentation as a separate appendix page.
+
+================================================================
+FINAL STANDARD
+================================================================
+
+The revised deck must distinguish clearly between:
+- What is live
+- What has been proven
+- What is built but disabled
+- What awaits third-party approval
+- What is planned
+
+Do not exaggerate traction, exclusivity, partnerships, market size or
+product availability.
+
+The central investment story should be:
+
+“Dime Time is not a fintech concept or mockup. It is a live App Store
+product with a patent-pending workflow and a real ACH payment loop
+already proven bank-to-bank. The pre-seed round funds public launch,
+customer acquisition and measurable traction.”
+
+Return:
+1. Revised editable source deck
+2. Revised PDF
+3. Final slide count
+4. A concise change log
+5. Confirmation that all statistics and feature claims were verified
+6. Confirmation that page numbering and PDF export were inspected
+================================================================
