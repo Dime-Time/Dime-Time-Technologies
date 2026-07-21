@@ -11,6 +11,7 @@
 - [App Store status & rejection vectors](appstore-rejection-history.md) — LIVE 2026-06-29 (App ID 6755106723); historical rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; BetaModeBanner not flag-gated → 2.2 risk.
 - [iOS build versioning](ios-build-versioning.md) — Info.plist is ONLY version source of truth; never reintroduce version-overwrite build phases; never set server.url; build+cap sync before CI.
 - [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; mismatch is INTENTIONAL+permanent, never reconcile.
+- [Google Play prep](google-play-prep.md) — versionCode=iOS build number; minimum-permission manifest; env-var-only signing (release fails loudly, debug works); founder steps inside.
 - [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
 - [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic before declaring done.
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.

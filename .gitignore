@@ -5,3 +5,12 @@ server/public
 vite.config.ts.*
 *.tar.gz
 *.pbxproj.bak.*
+
+# Android signing — NEVER commit keystores or signing credentials
+*.keystore
+*.jks
+keystore.properties
+signing.properties
+android/keystore/
+android/app/*.keystore
+android/app/*.jks

@@ -79,6 +79,13 @@ Defined once in `shared/flags.ts`; server reads via `server/lib/flags.ts` (`getF
 ## Internal Admin
 Gated by `ADMIN_USER_IDS` secret (fails closed when empty). `/admin` page: Transfers, Stripe Webhooks, and Real Money (allowlist approve/revoke) tabs. `/api/user` piggybacks `_isAdmin`. Do NOT re-add the removed Stripe Diagnostics tab (verdict logic preserved in `shared/stripeVerdict.ts`).
 
+## Android Release Rules
+- `android/app/build.gradle` version policy: `versionName` = iOS marketing version, `versionCode` = iOS build number (currently 1.0.5 / 207). versionCode must strictly increase every Play upload.
+- Manifest permissions are minimum-necessary (INTERNET, ACCESS_NETWORK_STATE, VIBRATE, USE_BIOMETRIC only). Never re-add a permission without a shipped feature that requires it.
+- Release signing comes ONLY from env vars (KEYSTORE_FILE/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD); keystores are never committed (.gitignore enforced). Debug builds work without credentials; release builds fail loudly without them.
+- Before any .aab build: `npm run build && npx cap sync android` (same rule as iOS).
+- Android package is `com.dimetime.app` (iOS is `com.dimetime.mobile`) — intentional, permanent, never reconcile.
+
 ## iOS Release Rules
 - `ios/App/App/Info.plist` is the ONLY source of truth for version/build numbers; `codemagic.yaml` reads it and must never overwrite it. Never reintroduce any build phase that writes version values into the built product.
 - Never set `server.url` in `capacitor.config.ts` (breaks cold-start). Before each Codemagic build: `npm run build && npx cap sync ios`.

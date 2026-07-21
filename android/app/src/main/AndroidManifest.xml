@@ -41,43 +41,26 @@
         </provider>
     </application>
 
-    <!-- Required Permissions -->
+    <!--
+      PERMISSION POLICY (Google Play minimum-necessary rule):
+      Only permissions backed by an actual shipped feature are declared.
+      Audit 2026-07-21: removed CAMERA, storage/media, location, contacts,
+      notifications, and background-processing permissions — no code path
+      uses them. Do NOT re-add a permission without a working feature that
+      requires it; unused permissions are a top cause of fintech Play
+      review rejections and force false Data Safety declarations.
+    -->
     <uses-permission android:name="android.permission.INTERNET" />
-    
-    <!-- Camera and Storage for QR scanning and file uploads -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <!-- WRITE_EXTERNAL_STORAGE removed - deprecated on API 29+, using scoped storage -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    
-    <!-- Location for ATM/bank finder and transaction categorization -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    
-    <!-- Notifications -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    
-    <!-- Biometric authentication -->
-    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-    <!-- USE_FINGERPRINT removed - deprecated on API 28+, USE_BIOMETRIC covers all cases -->
-    
+
     <!-- Network state for connection monitoring -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    
-    <!-- Contacts for money transfers -->
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
-    
-    <!-- Background processing -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    
+
+    <!-- Haptic feedback (@capacitor/haptics) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Biometric app unlock (WebAuthn platform authenticator) -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
     <!-- Hardware Features (Optional) -->
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-    <uses-feature android:name="android.hardware.location" android:required="false" />
-    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
 </manifest>
