@@ -61,18 +61,55 @@ def footer(s, n, light):
 
 
 SHOTS = os.path.join(os.path.dirname(__file__), "..", "Dime-Time-App-Store-Screenshots-FINAL", "iPhone-6.9")
+FRAMED_DIR = "/tmp/framed-phones"
 
 
-def phone(s, x, y, h, png):
-    """Dark rounded device frame + screenshot inset. Aspect 1290x2796."""
-    w = h * 1290 / 2796
-    pad = 0.07
-    fr = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x - pad), Inches(y - pad),
-                            Inches(w + 2 * pad), Inches(h + 2 * pad))
-    fr.fill.solid(); fr.fill.fore_color.rgb = RGBColor(0x14, 0x12, 0x28)
-    fr.line.fill.background(); fr.shadow.inherit = False
-    fr.adjustments[0] = 0.09
-    s.shapes.add_picture(png, Inches(x), Inches(y), width=Inches(w), height=Inches(h))
+def build_framed(src, dst):
+    """Composite a 1290x2796 screenshot into an iPhone device frame:
+    black body w/ bezel, rounded screen corners, Dynamic Island, side buttons."""
+    from PIL import Image, ImageDraw
+    shot = Image.open(src).convert("RGB")
+    W, H = shot.size
+    bez = 40                     # bezel thickness
+    rad_screen = 150             # display corner radius (~iPhone 6.9" ratio)
+    rad_body = rad_screen + bez
+    body_w, body_h = W + 2 * bez, H + 2 * bez
+    btn = 16                     # button protrusion
+    canvas = Image.new("RGBA", (body_w + 2 * btn, body_h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(canvas)
+    BODY = (22, 20, 42, 255)
+    BTN = (38, 36, 62, 255)
+    # side buttons (behind body): left = action + volumes, right = power
+    for y0, y1 in [(560, 700), (790, 1010), (1080, 1300)]:
+        d.rounded_rectangle([4, y0, btn + 8, y1], 8, fill=BTN)
+    d.rounded_rectangle([canvas.width - btn - 8, 880, canvas.width - 4, 1230], 8, fill=BTN)
+    # body
+    d.rounded_rectangle([btn, 0, btn + body_w - 1, body_h - 1], rad_body, fill=BODY)
+    # screen with rounded corners
+    mask = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, W - 1, H - 1], rad_screen, fill=255)
+    canvas.paste(shot, (btn + bez, bez), mask)
+    # Dynamic Island
+    iw, ih = 380, 110
+    ix = btn + bez + (W - iw) // 2
+    iy = bez + 52
+    d.rounded_rectangle([ix, iy, ix + iw, iy + ih], ih // 2, fill=(8, 7, 18, 255))
+    canvas.save(dst)
+    return canvas.width / canvas.height
+
+
+def framed(name):
+    os.makedirs(FRAMED_DIR, exist_ok=True)
+    dst = os.path.join(FRAMED_DIR, name)
+    aspect = build_framed(os.path.join(SHOTS, name), dst)
+    return dst, aspect
+
+
+def phone(s, x, y, h, name):
+    """Place an iPhone-framed screenshot; returns rendered width in inches."""
+    dst, aspect = framed(name)
+    w = h * aspect
+    s.shapes.add_picture(dst, Inches(x), Inches(y), width=Inches(w), height=Inches(h))
     return w
 
 
@@ -87,7 +124,7 @@ sol_bullets = [
     "Works passively in the background",
 ]
 text(s, 0.95, 2.3, 7.6, 3.4, [("\u2022  " + b, 17, WHITE, False, 20) for b in sol_bullets])
-phone(s, 9.85, 1.35, 5.35, os.path.join(SHOTS, "01-dashboard-iphone.png"))
+phone(s, 9.75, 1.35, 5.35, "01-dashboard-iphone.png")
 footer(s, "03", light=True)
 
 # ---------- SLIDE 05 — PRODUCT ----------
@@ -101,11 +138,11 @@ shots = [
     ("04-insights-iphone.png", "Insights"),
 ]
 ph_h = 3.85
-ph_w = ph_h * 1290 / 2796
+ph_w = ph_h * framed(shots[0][0])[1]
 gap = (13.333 - 2 * 1.15 - 4 * ph_w) / 3
 x = 1.15
 for png, label in shots:
-    phone(s, x, 2.0, ph_h, os.path.join(SHOTS, png))
+    phone(s, x, 2.0, ph_h, png)
     text(s, x - 0.45, 6.0, ph_w + 0.9, 0.4, [(label, 14, WHITE, True, 0)], align=PP_ALIGN.CENTER)
     x += ph_w + gap
 text(s, 2.0, 6.55, 9.3, 0.35, [("As shipped in v1.0.5 — live on the App Store, July 2026", 12, FAINT, False, 0)], align=PP_ALIGN.CENTER)
