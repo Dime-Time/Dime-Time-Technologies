@@ -1,0 +1,316 @@
+================================================================
+DIME TIME — FINAL PITCH DECK CORRECTION ROUND
+Date: July 21, 2026
+Deck reviewed: dime-time-pitch-deck (1).pdf
+================================================================
+
+OVERALL VERDICT
+
+The revised deck is substantially improved and nearly investor-ready.
+
+Current assessment:
+- Visual quality: 9/10
+- Narrative quality: 8.5/10
+- Investor readiness: 8/10
+- Status: One short correction round recommended
+
+The following work was completed successfully:
+- Deck now contains 14 actual slides
+- Slide numbering correctly runs from 01/14 through 14/14
+- Fundraising ask was added
+- Go-to-market strategy was added
+- Bottom-up subscription revenue examples were added
+- Competitive positioning was improved
+- Live, feature-gated and planned features are better distinguished
+- Legal entity was corrected to Dime Time Technologies LLC
+- EIN and D-U-N-S number were removed
+- Company information appendix is cleaner
+- Use-of-funds percentages total 100%
+- No traction metrics were fabricated
+
+Do not redesign the deck. Preserve its current visual identity and
+structure. Make only the targeted corrections below.
+
+================================================================
+REQUIRED CORRECTION 1 — SLIDE 4: REAL-MONEY STATUS
+================================================================
+
+CURRENT ISSUE
+
+The debt-repayment section is labeled:
+
+“LIVE IN APP”
+
+This overstates public availability. Real ACH functionality has been
+proven through a controlled production test using the founder’s
+allowlisted account, but it is not yet available to the public.
+
+REPLACE:
+
+LIVE IN APP
+
+WITH:
+
+PROVEN IN CONTROLLED LIVE TEST
+
+If that phrase does not fit visually, use:
+
+CONTROLLED LIVE ROLLOUT
+
+Do not describe real ACH debt repayment as publicly available until
+public bank linking and public transfers are actually enabled.
+
+Keep the existing Bitcoin label:
+
+PLANNED
+
+================================================================
+REQUIRED CORRECTION 2 — SLIDE 12: EDUCATION
+================================================================
+
+CURRENT TEXT:
+
+MBA — Management Information Systems
+
+CURRENT ISSUE
+
+This wording makes it appear that Management Information Systems was
+only the MBA concentration. Tim has an MBA plus a separate graduate
+degree in Management Information Systems.
+
+REPLACE WITH:
+
+MBA • Graduate degree in Management Information Systems
+
+Only use “M.S.” if the official degree is specifically a Master of
+Science. Do not assume or invent the precise degree designation.
+
+================================================================
+REQUIRED CORRECTION 3 — SLIDE 12: MERCURY LANGUAGE
+================================================================
+
+CURRENT TEXT:
+
+Integrated Plaid, Stripe ACH and Mercury (Coinbase planned)
+
+CURRENT ISSUE
+
+Mercury is the receiving business bank and payout destination. It
+should not be described as a software integration unless an actual
+Mercury API integration exists.
+
+REPLACE WITH:
+
+Built with Plaid and Stripe ACH; payout rails verified through Mercury
+
+Alternative if it fits better:
+
+Integrated Plaid and Stripe ACH; verified settlement into Mercury
+
+Coinbase should remain labeled as planned and should not be included in
+this sentence as though it were an active integration.
+
+Suggested final team bullets:
+
+- U.S. Navy veteran
+- MBA • Graduate degree in Management Information Systems
+- Designed, built and shipped Dime Time end-to-end
+- Built with Plaid and Stripe ACH; payout rails verified through
+  Mercury
+
+Preserve the supporting statement:
+
+“Solo founder who designed, built and launched a production fintech
+application with working ACH infrastructure.”
+
+================================================================
+REQUIRED CORRECTION 4 — SLIDE 9: COINBASE POSITIONING
+================================================================
+
+CURRENT ISSUE
+
+Coinbase is labeled “planned,” but it still appears inside the active
+“Infrastructure Stack.” This can imply that the Coinbase integration
+already exists.
+
+PREFERRED FIX:
+
+Remove Coinbase entirely from the active infrastructure stack.
+
+The active infrastructure stack should show:
+
+PLAID
+Bank connections and verification — production access
+
+STRIPE
+ACH rails; Financial Connections under review
+
+MERCURY
+Business banking and payout destination
+
+OPTIONAL ALTERNATIVE:
+
+If Coinbase must remain, move it outside the active infrastructure
+stack into a clearly separate section labeled:
+
+PLANNED ECOSYSTEM EXPANSION
+
+Then label:
+
+COINBASE
+Potential future cryptocurrency integration — not yet available
+
+Do not imply that Coinbase is currently integrated, active, approved
+or available to users.
+
+================================================================
+REQUIRED CORRECTION 5 — TEXT SIZE AND READABILITY
+================================================================
+
+Several citations, footnotes and supporting statements are too small
+for comfortable reading on a laptop or projector.
+
+Review these slides carefully:
+- Slide 2
+- Slide 3
+- Slide 6
+- Slide 9
+- Slide 10
+- Slide 11
+
+Slide 9 is currently the most crowded.
+
+Required actions:
+- Increase the smallest font sizes
+- Improve contrast on lavender backgrounds
+- Shorten explanatory language when necessary
+- Maintain safe margins
+- Ensure citations remain readable during a presentation
+- Prevent footer text from competing with slide numbers
+- Check readability at normal presentation size, not only when zoomed
+
+Do not solve this by overcrowding cards or shrinking other important
+content.
+
+================================================================
+REQUIRED CORRECTION 6 — PDF EXPORT
+================================================================
+
+The revised PDF currently appears to be exported as flattened
+slide-sized images. The deck looks correct, but the text is not
+searchable or selectable.
+
+Required actions:
+- Preserve the editable source presentation
+- Export the final PDF with live, searchable and selectable text if
+  supported by the presentation workflow
+- Do not rasterize each entire slide into a single image
+- Preserve sharp app screenshots and graphical elements
+- Confirm fonts render correctly after export
+- Confirm all 14 slides remain present
+- Confirm numbering remains 01/14 through 14/14
+- Confirm there are no blank, duplicated or missing pages
+
+If searchable-text export is not technically possible, report the
+specific limitation instead of silently flattening the PDF.
+
+================================================================
+OPTIONAL IMPROVEMENT — SLIDE 13
+================================================================
+
+CURRENT USE-OF-FUNDS LABEL:
+
+Founder runway
+
+OPTIONAL REPLACEMENT:
+
+Founder compensation and operating runway
+
+This sounds more complete while remaining transparent.
+
+The allocation is reasonable:
+- 30% of $150,000 = $45,000
+- $45,000 across 12 months = approximately $3,750 per month
+
+Do not change the allocation percentages unless specifically directed.
+
+Current allocation must remain:
+- 35% Marketing and user acquisition
+- 30% Founder compensation and operating runway
+- 25% Engineering and contractor support
+- 10% Compliance, infrastructure and operations
+- Total: 100%
+
+================================================================
+FACTUAL LANGUAGE TO PRESERVE
+================================================================
+
+The deck should continue to state:
+
+- Dime Time v1.0.5, build 207 is live on the Apple App Store
+- A controlled $1.00 ACH payment was completed through Stripe
+- A $0.99 payout was confirmed in Mercury
+- The real bank-to-bank money loop has been proven
+- Public users are not yet active
+- Public bank linking awaits Stripe Financial Connections approval
+- Automatic debt import awaits Plaid Liabilities approval
+- Google Play launch remains in progress
+- Coinbase functionality is planned, not live
+- Core subscription functionality is built but feature-gated
+- Pro and Premium tiers are planned
+- Patent status must always be described as “patent pending”
+
+Do not invent:
+- Users
+- Linked accounts
+- Public transactions
+- Transaction volume
+- Debt reduced
+- Customer acquisition cost
+- Retention
+- Subscription conversion
+- Revenue
+- Partner endorsements
+- Approval timelines
+
+================================================================
+FINAL QUALITY CHECK
+================================================================
+
+Before returning the updated deck:
+
+1. Confirm the PDF contains exactly 14 slides.
+2. Confirm numbering runs sequentially from 01/14 to 14/14.
+3. Confirm Slide 4 no longer says “LIVE IN APP.”
+4. Confirm Slide 12 accurately lists the MBA and separate MIS graduate
+   degree.
+5. Confirm Mercury is not described as a software integration.
+6. Confirm Coinbase is removed from the active stack or placed in a
+   separate planned section.
+7. Confirm small citations and footnotes are presentation-readable.
+8. Confirm Dime Time Technologies LLC is the company name.
+9. Confirm the EIN and D-U-N-S number remain excluded.
+10. Confirm all live, gated, pending and planned features are labeled
+    accurately.
+11. Confirm the editable source is preserved.
+12. Confirm the PDF uses searchable/selectable text if technically
+    supported.
+13. Confirm no secrets, credentials, private bank information or
+    personal documents appear anywhere.
+14. Provide a concise change log with the final files.
+
+RETURN:
+
+1. Revised editable source deck
+2. Revised PDF
+3. Final slide count
+4. Concise change log
+5. Confirmation of each required correction
+6. Explanation if searchable-text PDF export remains unavailable
+
+FINAL INVESTMENT STORY:
+
+“Dime Time is a live fintech product—not a prototype—with real ACH
+infrastructure already proven bank-to-bank. This pre-seed round funds
+public launch, customer acquisition and measurable traction.”
+================================================================

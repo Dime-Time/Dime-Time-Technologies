@@ -95,7 +95,7 @@ title = "Slide Image 4 — Dashboard"
 id = "xTE8CD_vKQE8yZUYjCwEK"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pdf"
 type = "pdf"
-title = "Pitch Deck — PDF (searchable text)"
+title = "Pitch Deck — PDF (searchable text, corrected)"
 
 [[outputs]]
 id = "PwY0MiFJPlJyLEQq1ZP3J"
@@ -173,7 +173,7 @@ title = "Slide 13 — Company Info"
 id = "Gv57Vsp4aKd2piUxhlMEw"
 uri = "file://attached_assets/pitch-deck-slides/dime-time-pitch-deck.pptx"
 type = "slides"
-title = "Pitch Deck — 14 slides (editable PowerPoint)"
+title = "Pitch Deck — 14 slides (editable PowerPoint, corrected)"
 
 [[outputs]]
 id = "EjV56LOgTpf9aZFgnL9Ua"

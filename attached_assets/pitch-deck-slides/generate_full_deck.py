@@ -183,6 +183,7 @@ ln = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(5.42), Inches(5.55), Inches(
 ln.fill.solid(); ln.fill.fore_color.rgb = RGBColor(0xBD, 0xBB, 0xF8); ln.line.fill.background(); ln.shadow.inherit = False
 text(s, 1.0, 5.75, 11.333, 0.4, [("Tim Carlisle · Founder & CEO", 14, WHITE, True, 0)], align=PP_ALIGN.CENTER)
 text(s, 1.0, 6.2, 11.333, 0.4, [(spaced("AUTOMATED DEBT REDUCTION THROUGH EVERYDAY SPENDING"), 10.5, LAV_SOFT, False, 0)], align=PP_ALIGN.CENTER)
+text(s, 11.6, 6.95, 1.3, 0.35, [(f"01 / {TOTAL}", 11, LAV_SOFT, False, 0)], align=PP_ALIGN.RIGHT)
 
 # ================= SLIDE 02 — PROBLEM =================
 s = slide(DARKBG)
@@ -204,7 +205,7 @@ text(s, 8.45, 2.95, 3.9, 1.2, [("91%", 44, WHITE, True, 2),
 ln = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.45), Inches(4.75), Inches(3.8), Pt(1))
 ln.fill.solid(); ln.fill.fore_color.rgb = CARD_EDGE; ln.line.fill.background(); ln.shadow.inherit = False
 text(s, 8.45, 4.95, 3.9, 1.0, [("Plaid, ACH rails and mobile banking now make fully automated debt repayment possible.", 12.5, WHITE, False, 0)])
-text(s, 0.72, 6.5, 11.9, 0.35, [("Sources: Federal Reserve Bank of New York, Household Debt & Credit Report Q1 2026 (released May 2026) · Pew Research Center, Mobile Fact Sheet (2025)", 9, MUTED_DARK, False, 0)])
+text(s, 0.72, 6.45, 11.9, 0.35, [("Sources: Federal Reserve Bank of New York, Household Debt & Credit Report Q1 2026 (released May 2026) · Pew Research Center, Mobile Fact Sheet (2025)", 10.5, FAINT, False, 0)])
 footer(s, 2, light=False)
 
 # ================= SLIDE 03 — SOLUTION =================
@@ -218,7 +219,7 @@ sol_bullets = [
     "No willpower required — it works quietly in the background",
 ]
 text(s, 0.95, 2.3, 8.0, 3.2, [("\u2022  " + b, 17, WHITE, False, 20) for b in sol_bullets])
-text(s, 0.95, 5.6, 8.0, 0.8, [("Round-ups are batched and transferred on a schedule the user approves — money does not move on every individual purchase.", 12, LAV_SOFT, False, 0)])
+text(s, 0.95, 5.6, 8.0, 0.8, [("Round-ups are batched and transferred on a schedule the user approves — money does not move on every individual purchase.", 13, WHITE, False, 0)])
 phone(s, 9.75, 1.35, 5.35, "01-dashboard-iphone.png")
 footer(s, 3, light=True)
 
@@ -233,13 +234,13 @@ pill.fill.solid(); pill.fill.fore_color.rgb = WHITE; pill.line.fill.background()
 text(s, 0.98, 2.95, 2.65, 0.3, [(spaced("ROUND-UP EXAMPLE"), 8.5, DEEP, True, 0)])
 text(s, 0.98, 3.22, 2.5, 0.5, [("$0.37", 26, DEEP, True, 0)])
 for cy, name, sub, pct, blabel, bfill in [
-    (2.35, "Debt Repayment", "primary debt payoff", "80%", "LIVE IN APP", True),
+    (2.35, "Debt Repayment", "primary debt payoff", "80%", "PROVEN IN CONTROLLED LIVE TEST", True),
     (4.05, "Bitcoin (Coinbase)", "long-term wealth — not yet available to users", "20%", "PLANNED", False),
 ]:
     c = card(s, 7.0, cy, 5.6, 1.35, dark=False)
     text(s, 7.3, cy + 0.18, 3.6, 0.5, [(name, 17, WHITE, True, 2), (sub, 10.5, LAV_SOFT, False, 0)])
     text(s, 11.2, cy + 0.28, 1.2, 0.6, [(pct, 26, WHITE, True, 0)], align=PP_ALIGN.RIGHT)
-    badge(s, 7.3, cy + 0.92, blabel, w=1.7, filled=bfill)
+    badge(s, 7.3, cy + 0.92, blabel, w=4.6 if len(blabel) > 10 else 1.7, filled=bfill)
 for x0, b in [(0.72, "Real-time allocation tracking"), (4.9, "User-controlled split"), (9.0, "Payments execute over ACH rails")]:
     text(s, x0, 5.85, 4.0, 0.6, [("\u2022  " + b, 13, WHITE, False, 0)])
 text(s, 2.0, 6.55, 9.3, 0.4, [("Patent-pending allocation workflow · Real transfers roll out with public bank linking.", 12, LAV_SOFT, False, 0)], align=PP_ALIGN.CENTER)
@@ -277,7 +278,7 @@ text(s, 1.05, 2.9, 4.0, 1.9, [("$18.8T", 40, WHITE, True, 2),
                               ("U.S. household debt", 12.5, WHITE, False, 10),
                               ("$1.25T", 40, WHITE, True, 2),
                               ("credit-card balances — our first target", 12.5, WHITE, False, 0)])
-text(s, 1.05, 5.5, 4.05, 0.5, [("Context for the size of the problem — not our revenue model.", 10.5, LAV_SOFT, False, 0)])
+text(s, 1.05, 5.45, 4.05, 0.55, [("Context for the size of the problem — not our revenue model.", 11.5, WHITE, False, 0)])
 # right: bottom-up ARR
 text(s, 5.95, 2.2, 6.7, 0.35, [(spaced("SUBSCRIPTION REVENUE AT $2.99 / MONTH"), 11, WHITE, True, 0)])
 rows = [("1,400", "paying subscribers", "$50,232 ARR"),
@@ -291,8 +292,8 @@ for n, lbl, arr in rows:
     ln = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(5.95), Inches(y + 0.62), Inches(6.7), Pt(1))
     ln.fill.solid(); ln.fill.fore_color.rgb = RGBColor(0xB8, 0xB6, 0xF8); ln.line.fill.background(); ln.shadow.inherit = False
     y += 0.92
-text(s, 5.95, y + 0.05, 6.7, 0.7, [("Subscriber counts are illustrative milestones — targets, not forecasts. ARR = subscribers × $2.99 × 12.", 10.5, LAV_SOFT, False, 0)])
-text(s, 0.72, 6.5, 11.9, 0.35, [("Source: Federal Reserve Bank of New York, Household Debt & Credit Report Q1 2026 (released May 2026)", 9, LAV_SOFT, False, 0)])
+text(s, 5.95, y + 0.05, 6.7, 0.7, [("Subscriber counts are illustrative milestones — targets, not forecasts. ARR = subscribers × $2.99 × 12.", 11, WHITE, False, 0)])
+text(s, 0.72, 6.45, 11.9, 0.35, [("Source: Federal Reserve Bank of New York, Household Debt & Credit Report Q1 2026 (released May 2026)", 10.5, WHITE, False, 0)])
 footer(s, 6, light=True)
 
 # ================= SLIDE 07 — BUSINESS MODEL =================
@@ -366,19 +367,18 @@ bullets = [
     "Debt-first brand, user trust and future distribution partnerships",
 ]
 text(s, 0.95, 2.25, 6.3, 4.0, [("\u2022  " + b, 15, WHITE, False, 14) for b in bullets])
-pnl = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.5), Inches(2.25), Inches(5.15), Inches(4.25))
+pnl = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.5), Inches(2.25), Inches(5.15), Inches(3.75))
 pnl.fill.background()
 pnl.line.color.rgb = WHITE; pnl.line.width = Pt(1.2); pnl.shadow.inherit = False
 text(s, 7.8, 2.5, 4.6, 0.4, [(spaced("INFRASTRUCTURE STACK"), 11, WHITE, True, 0)])
 stack = [
     ("PLAID", "Bank connections & verification — production access"),
     ("STRIPE", "ACH rails; Financial Connections under review"),
-    ("MERCURY", "Business banking & treasury"),
-    ("COINBASE", "Crypto execution — planned"),
+    ("MERCURY", "Business banking & payout destination"),
 ]
-y = 3.0
+y = 3.05
 for name, desc in stack:
-    chipsh = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.78), Inches(y), Inches(4.6), Inches(0.78))
+    chipsh = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.78), Inches(y), Inches(4.6), Inches(0.88))
     chipsh.fill.solid(); chipsh.fill.fore_color.rgb = LAV_PANEL
     chipsh.line.fill.background(); chipsh.shadow.inherit = False
     tf = chipsh.text_frame; tf.word_wrap = True
@@ -386,13 +386,13 @@ for name, desc in stack:
     tf.margin_left = Inches(0.18)
     p = tf.paragraphs[0]; p.alignment = PP_ALIGN.LEFT
     r = p.add_run(); r.text = name
-    r.font.size = Pt(15); r.font.bold = True; r.font.color.rgb = WHITE
+    r.font.size = Pt(16); r.font.bold = True; r.font.color.rgb = WHITE
     p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.LEFT
     r2 = p2.add_run(); r2.text = desc
-    r2.font.size = Pt(10); r2.font.color.rgb = WHITE
-    y += 0.87
-text(s, 1.2, 6.58, 10.9, 0.4, [("Proprietary workflow design + production financial infrastructure + partner approvals + a debt-first consumer brand.", 11.5, LAV_SOFT, False, 0)], align=PP_ALIGN.CENTER)
-text(s, 7.0, 6.98, 4.3, 0.3, [("Partner names indicate integrations, not endorsements.", 8, LAV_SOFT, False, 0)], align=PP_ALIGN.RIGHT)
+    r2.font.size = Pt(11); r2.font.color.rgb = WHITE
+    y += 1.0
+text(s, 7.5, 6.12, 5.15, 0.3, [("Partner names indicate service relationships, not endorsements.", 9.5, WHITE, False, 0)], align=PP_ALIGN.CENTER)
+text(s, 1.2, 6.55, 10.9, 0.4, [("Proprietary workflow design + production financial infrastructure + partner approvals + a debt-first consumer brand.", 12, WHITE, False, 0)], align=PP_ALIGN.CENTER)
 footer(s, 9, light=True)
 
 # ================= SLIDE 10 — GO-TO-MARKET =================
@@ -425,7 +425,7 @@ chans = [
     "Referral incentives once retention is validated",
 ]
 text(s, 7.17, 2.7, 5.2, 3.6, [("\u2022  " + ch, 12.5, WHITE, False, 12) for ch in chans])
-text(s, 1.2, 6.7, 10.9, 0.35, [("No paid-spend assumptions — channels are validated before scaling. All growth figures will be reported, not projected.", 10.5, MUTED_DARK, False, 0)], align=PP_ALIGN.CENTER)
+text(s, 1.2, 6.68, 10.9, 0.35, [("No paid-spend assumptions — channels are validated before scaling. All growth figures will be reported, not projected.", 11.5, FAINT, False, 0)], align=PP_ALIGN.CENTER)
 footer(s, 10, light=False)
 
 # ================= SLIDE 11 — TRACTION =================
@@ -450,7 +450,7 @@ for label in labels:
     text(s, x, 5.32, 2.5, 0.4, [("Public launch", 13, WHITE, True, 1), ("pending", 13, WHITE, True, 0)], align=PP_ALIGN.CENTER)
     x += 2.42
 text(s, 2.0, 6.3, 9.3, 0.4, [(spaced("LIVE ON THE APP STORE  ·  V1.0.5  ·  BUILD 207"), 12, LAVENDER, True, 0)], align=PP_ALIGN.CENTER)
-text(s, 2.0, 6.65, 9.3, 0.35, [("No user metrics are reported until public launch — nothing on this slide is estimated.", 10, MUTED_DARK, False, 0)], align=PP_ALIGN.CENTER)
+text(s, 2.0, 6.63, 9.3, 0.35, [("No user metrics are reported until public launch — nothing on this slide is estimated.", 11.5, FAINT, False, 0)], align=PP_ALIGN.CENTER)
 footer(s, 11, light=False)
 
 # ================= SLIDE 12 — TEAM =================
@@ -469,9 +469,9 @@ ln = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(2.95), Inches(3.95), Inches(
 ln.fill.solid(); ln.fill.fore_color.rgb = CARD_EDGE; ln.line.fill.background(); ln.shadow.inherit = False
 team_bullets = [
     "U.S. Navy veteran",
-    "MBA — Management Information Systems",
+    "MBA • Graduate degree in Management Information Systems",
     "Designed, built and shipped Dime Time end-to-end",
-    "Integrated Plaid, Stripe ACH and Mercury (Coinbase planned)",
+    "Built with Plaid and Stripe ACH; payout rails verified through Mercury",
 ]
 text(s, 2.95, 4.15, 7.4, 1.6, [("\u2022  " + b, 12.5, WHITE, False, 8) for b in team_bullets])
 text(s, 1.2, 6.1, 10.9, 0.4, [("Solo founder who designed, built and launched a production fintech application with working ACH infrastructure.", 13, FAINT, False, 0)], align=PP_ALIGN.CENTER)
@@ -491,12 +491,12 @@ for k, v in stats:
     y += 1.48
 # middle: use of funds
 text(s, 4.55, 2.15, 4.0, 0.35, [(spaced("USE OF FUNDS"), 11, WHITE, True, 0)])
-funds = [(35, "Marketing & user acquisition"), (30, "Founder runway"),
+funds = [(35, "Marketing & user acquisition"), (30, "Founder compensation & operating runway"),
          (25, "Engineering & contractor support"), (10, "Compliance, infra & operations")]
 y = 2.65
 for pct, lbl in funds:
     text(s, 4.55, y, 0.95, 0.4, [(f"{pct}%", 17, WHITE, True, 0)])
-    text(s, 5.5, y + 0.05, 3.0, 0.4, [(lbl, 11, WHITE, False, 0)])
+    text(s, 5.5, y + 0.08, 3.35, 0.4, [(lbl, 10.5, WHITE, False, 0)])
     barbg = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(4.6), Inches(y + 0.52), Inches(3.85), Inches(0.16))
     barbg.adjustments[0] = 0.5
     barbg.fill.solid(); barbg.fill.fore_color.rgb = LAV_PANEL; barbg.line.fill.background(); barbg.shadow.inherit = False
