@@ -5,6 +5,11 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
+## Status update 2026-07-21: Liabilities APPROVED — pending Order Form signature
+- Plaid emailed approval of the Liabilities product add request (founder shared the email 2026-07-21). Production access activates ONLY after the founder signs an updated Order Form with Plaid (contract step, founder-run, GTM contact for questions).
+- Contract caution: prior decision (plaid-billing-contract.md) was to be on pay-as-you-go, NOT a committed-minimum plan. The founder should confirm the updated Order Form's tier/commitment BEFORE signing — signing is the moment leverage exists.
+- Once access commences: NO republish needed. Prod already has `PLAID_ENV=production`, `ENABLE_DEBT_IMPORT=1`, `DEBT_IMPORT_PROVIDER=plaid` mounted; the INVALID_PRODUCT error simply disappears when Plaid flips the entitlement. Verification order: (1) re-probe entitlement via `link/token/create` with liabilities, (2) founder end-to-end test in the live app with his own account, (3) only then treat LinkedIn milestone #2 (debt import live) as met.
+
 ## Status update 2026-07-18 (later): production Plaid LIVE
 - Republished 2026-07-18; prod boot log confirms "Plaid service initialized in production environment" + EnvValidation ok. Real bank linking live in the App Store app (server-side — iOS app always calls dime-time.com, no App Store update needed for server changes).
 - `PLAID_ENV=production` set in PRODUCTION env scope only (dev stays sandbox). Boot validation fails fast in prod if the production secret ever goes missing.
