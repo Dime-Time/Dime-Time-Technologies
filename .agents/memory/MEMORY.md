@@ -33,3 +33,4 @@
 - [iOS universal links](ios-universal-links.md) — AASA + App.entitlements + client listener must stay in lockstep; native redirect URI is rebuilt from pathname+search, never window.location.href.
 - Founder PII policy: dossier/journal/profile files deleted 2026-07-19 before sharing project with engineers/investors. Comms prefs live in replit.md. Never store founder personal/family/financial details in project files.
 - [npm lockfile CI portability](npm-lockfile-ci-portability.md) — Replit installs write package-firewall.replit.local URLs into package-lock.json → Codemagic npm fails; grep lockfile = 0 before any release push.
+- [Android / Google Play launch](android-play-launch.md) — submission kit in attached_assets/play-store-assets/; assetlinks.json MUST wait for Play's app-signing SHA-256 (post-first-upload); keystore founder-run.

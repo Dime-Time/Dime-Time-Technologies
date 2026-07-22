@@ -1,0 +1,92 @@
+================================================================
+DIME TIME — GOOGLE PLAY STORE LISTING COPY
+Prepared: July 21, 2026
+Package: com.dimetime.app  |  Version: 1.0.5 (207)
+================================================================
+
+APP NAME (30 char max)
+Dime Time: Debt Payoff
+
+  (Alternative if rejected/taken: "Dime Time – Pay Off Debt")
+
+SHORT DESCRIPTION (80 char max — 77 used)
+Round up everyday purchases and put the spare change toward
+paying off debt.
+  (single line in Play Console:)
+Round up everyday purchases and put the spare change toward paying off debt.
+
+FULL DESCRIPTION (4000 char max — ~1,900 used)
+----------------------------------------------------------------
+Get out of debt, one dime at a time.
+
+Dime Time turns your everyday spending into steady progress
+against your debt. Connect an eligible account, and every
+purchase is rounded up to the next dollar — that spare change
+accumulates and goes toward paying down the debts you choose,
+on a schedule you approve.
+
+HOW IT WORKS
+1. Add your debts — credit cards, student loans, auto loans,
+   personal loans, or anything else you're paying off
+2. Connect an eligible funding account
+3. Everyday purchases are rounded up to the next dollar
+4. Spare change accumulates automatically
+5. You control the destination, schedule, and every payment
+
+KEY FEATURES
+• Debt tracking with payoff projections — see your actual
+  debt-free date and how much interest you'll save
+• Automatic round-ups with optional multipliers (2x, 3x) to
+  accelerate your progress
+• Payment scheduling you control — money never moves without
+  your authorization
+• Secure bank connections through regulated financial
+  infrastructure partners
+• PIN lock and biometric unlock to protect your financial data
+• Progress analytics that show exactly where you stand
+
+BUILT FOR SECURITY
+• Bank credentials are never stored on your device or our
+  servers — connections use tokenized, encrypted access
+• All data is encrypted in transit
+• PIN and biometric app lock with automatic locking
+• Delete your account and data at any time, right in the app
+
+Dime Time is a financial technology platform and is not a bank.
+Banking services and payment infrastructure are provided
+through regulated financial partners.
+
+Questions? Reach us at tim@dime-time.com or dime-time.com.
+----------------------------------------------------------------
+
+RELEASE NOTES — first release (500 char max)
+Welcome to Dime Time! Track your debts with payoff projections,
+round up everyday purchases, and put the spare change toward
+becoming debt-free — on a schedule you control.
+
+CATEGORY
+App category: Finance
+Tags: personal finance, debt, budgeting
+
+CONTACT / LINKS
+Privacy Policy URL:  https://dime-time.com/privacy
+Terms URL:           https://dime-time.com/terms
+Support email:       tim@dime-time.com
+Website:             https://dime-time.com
+
+GRAPHICS (in this folder)
+icon-512.png                    512x512 hi-res icon
+feature-graphic-1024x500.png    required feature graphic
+Phone screenshots: TAKE FROM THE REAL ANDROID BUILD during
+internal testing (min 2, recommended 5-6). Recommended story:
+Dashboard → Debts → Round-ups/Transactions → Insights →
+Banking/Settings. No crypto demo screens, no beta banners, no
+real personal financial data.
+
+RULES APPLIED
+- No Stripe/Plaid/bank partner names or logos in the listing
+- No claims of being a bank, lender, or FDIC insurance
+- No instant-settlement claims; user-authorized payments only
+- Debt import NOT mentioned (not live until Plaid activates it)
+- Crypto NOT mentioned (avoid extra financial-policy review
+  scope for v1)

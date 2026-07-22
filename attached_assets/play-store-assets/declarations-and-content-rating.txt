@@ -1,0 +1,71 @@
+================================================================
+DIME TIME — GOOGLE PLAY DECLARATIONS & CONTENT RATING
+Prepared: July 21, 2026
+Play Console → App content (complete every card before submit)
+================================================================
+
+FINANCIAL FEATURES DECLARATION
+Play Console asks "Does your app provide any financial features?"
+Answer: YES → select:
+  ☑ Personal loan management / debt management tools
+    (debt tracking + user-authorized payments toward debts)
+  ☑ Money transfer (ACH payments user-authorizes toward debts)
+      — if the form offers "payment processing via third-party
+        processor," choose that; Dime Time never holds funds
+  ☐ NOT a bank             ☐ NOT a lender
+  ☐ NOT crypto exchange/wallet (crypto features are
+    informational views; no trading is live)
+If a follow-up questionnaire asks for licenses: Dime Time is a
+financial technology platform, not a bank or lender; payments
+run through regulated third-party financial infrastructure.
+If Google requests documentation, forward it to Tim — do not
+improvise answers.
+
+CONTENT RATING QUESTIONNAIRE (IARC)
+- Category: Utility/Productivity/Finance ("all other app types")
+- Violence/sex/language/drugs/gambling: NO to all
+- Does the app allow users to interact or exchange content? NO
+- Does the app share user-provided personal info with third
+  parties? NO (service providers only, for functionality)
+- Does the app allow purchase of digital goods? NO (no in-app
+  purchases in this build; subscriptions are NOT enabled)
+- Gambling/contests: NO
+Expected rating: Everyone / PEGI 3
+
+ADS DECLARATION
+Does your app contain ads? NO (no ad SDK — verified)
+
+TARGET AUDIENCE
+- Target age: 18+ (financial services)
+- Not directed at children; not enrolling in Families program
+
+APP ACCESS (reviewer credentials)
+Google reviewers need a working login:
+- Provide the SAME demo/review account used for Apple review
+  (founder's production review account with clean sample data,
+  no bank link). Add credentials under App access → "All or
+  some functionality is restricted."
+- Note for reviewers: "Bank linking and payments require
+  approvals from our financial partners and are in controlled
+  rollout; all other features are fully functional."
+
+GOVERNMENT APPS / COVID / NEWS DECLARATIONS
+All: NO / not applicable.
+
+DATA SAFETY
+See data-safety-worksheet.txt in this folder.
+
+SUBMISSION ORDER (after phone verification clears)
+1. Create app: name "Dime Time: Debt Payoff", package
+   com.dimetime.app (PERMANENT — cannot be changed), Finance,
+   Free, org account Dime Time LLC
+2. Complete ALL App content cards (this file + data safety)
+3. Upload signed .aab from Codemagic to INTERNAL TESTING first
+4. Install on a real Android phone via the internal-testing
+   link; run the test checklist; capture screenshots
+5. Complete store listing (copy + graphics from this folder)
+6. Promote to Production → submit for review
+Google may require a closed-testing period for new personal
+accounts — organization accounts (Dime Time LLC) typically are
+NOT subject to the 12-tester/14-day rule, but report exactly
+what the console shows rather than assuming.

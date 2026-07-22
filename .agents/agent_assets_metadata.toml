@@ -480,3 +480,33 @@ id = "HizC1BQrt2fxwLS_YOwvM"
 uri = "file://attached_assets/university-deck-slides/dime-time-university-founder-journey-changelog.txt"
 type = "text"
 title = "Change Log (incl. trim + date correction)"
+
+[[outputs]]
+id = "cq1u_a3dj-kVCDCSqd6KO"
+uri = "file://attached_assets/play-store-assets/listing-copy.txt"
+type = "text"
+title = "Play Store Listing Copy (name, descriptions, release notes)"
+
+[[outputs]]
+id = "armh9Fcuj9GEIj2HSN0ql"
+uri = "file://attached_assets/play-store-assets/data-safety-worksheet.txt"
+type = "text"
+title = "Data Safety Worksheet (evidence-based answers)"
+
+[[outputs]]
+id = "-_bLkXNF9c8WC8ZinpEQ9"
+uri = "file://attached_assets/play-store-assets/declarations-and-content-rating.txt"
+type = "text"
+title = "Financial Declarations + Content Rating + Submission Order"
+
+[[outputs]]
+id = "kyqQP4ALZEwwA1UkjRikc"
+uri = "file://attached_assets/play-store-assets/icon-512.png"
+type = "image"
+title = "Play Store Icon (512x512)"
+
+[[outputs]]
+id = "rU1ollvG6IWJCtA74RqQG"
+uri = "file://attached_assets/play-store-assets/feature-graphic-1024x500.png"
+type = "image"
+title = "Feature Graphic (1024x500)"

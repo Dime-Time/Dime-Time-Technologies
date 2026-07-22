@@ -1,0 +1,71 @@
+================================================================
+DIME TIME — GOOGLE PLAY DATA SAFETY WORKSHEET
+Prepared: July 21, 2026 — evidence-based from actual code
+Answer these in Play Console → App content → Data safety
+================================================================
+
+OVERVIEW ANSWERS
+- Does your app collect or share user data?          YES (collect)
+- Is all user data encrypted in transit?             YES (HTTPS only;
+  cleartext traffic disabled in the Android build)
+- Do you provide a way for users to request deletion? YES
+  (in-app account deletion permanently removes the account and
+  all associated data; also deletable via support email)
+
+DATA COLLECTED — declare these categories:
+
+1. PERSONAL INFO → Name
+   Collected: YES (first/last name at signup)  Shared: NO
+   Optional: YES   Purpose: Account management
+2. PERSONAL INFO → Email address
+   Collected: YES  Shared: NO
+   Optional: NO (required for account)
+   Purpose: Account management (login, verification, password
+   reset via transactional email)
+3. FINANCIAL INFO → User payment info
+   Collected: YES (linked funding-account details held as
+   encrypted tokens by regulated processors; card/account
+   numbers are never stored by Dime Time)
+   Shared: YES — with service providers solely to provide app
+   functionality (bank linking and payment processing)
+   Optional: YES (only if user connects a bank)
+   Purpose: App functionality
+4. FINANCIAL INFO → Purchase history
+   Collected: YES (transactions from the linked account power
+   round-up calculations)   Shared: NO
+   Optional: YES   Purpose: App functionality
+5. FINANCIAL INFO → Other financial info
+   Collected: YES (debt balances, interest rates, minimum
+   payments — entered by the user)   Shared: NO
+   Optional: YES   Purpose: App functionality
+6. APP INFO & PERFORMANCE → Crash logs / diagnostics
+   ⚠️ CONDITIONAL — declare ONLY if a Sentry DSN is set in the
+   production deployment. As of July 21, 2026 no Sentry key is
+   visible in production secrets → if that's still true at
+   submission, answer NOT COLLECTED. If error reporting has
+   been enabled, declare: Collected YES, Shared NO, purpose
+   Analytics/Diagnostics (crash data is PII-redacted).
+   VERIFY BEFORE SUBMITTING — do not guess.
+
+DATA **NOT** COLLECTED (answer NO to everything else), notably:
+- Location (no permission, no code path)
+- Contacts, photos, files, camera, microphone
+- App activity / browsing history (no analytics SDK exists)
+- Device or advertising identifiers (no ads, no ad SDK)
+- Health, messages, calendar, audio
+
+SECURITY-PRACTICES SECTION
+- Data encrypted in transit:        YES
+- User can request data deletion:   YES (in-app)
+- Committed to Play Families:       NO (finance app, 18+ target)
+- Independent security review:      NO (answer honestly)
+
+CONSISTENCY CHECK (why these answers are safe):
+- Matches Privacy Policy at dime-time.com/privacy
+- Matches actual schema: users(email, name), debts, transactions,
+  encrypted provider tokens; no analytics tables
+- Matches Android manifest: only INTERNET, NETWORK_STATE,
+  VIBRATE, BIOMETRIC permissions
+- Account deletion endpoint verified present in production code
+- Google cross-checks declarations against observed app
+  behavior — these answers reflect code, not marketing
