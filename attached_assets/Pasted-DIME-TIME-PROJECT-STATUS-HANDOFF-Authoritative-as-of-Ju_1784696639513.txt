@@ -1,0 +1,304 @@
+DIME TIME — PROJECT STATUS HANDOFF
+Authoritative as of July 22, 2026
+
+WHAT DIME TIME IS
+- Dime Time is a fintech app that rounds up everyday purchases and applies the spare change toward debt paydown through ACH transfers.
+- Stack: Capacitor hybrid mobile app for iOS and Android, React/TypeScript web app, Express backend, and PostgreSQL database.
+- Marketing site and web app: https://dime-time.com
+- Live on the Apple App Store: Apple App ID 6755106723.
+
+==================================================
+iOS / APP STORE STATUS
+==================================================
+
+- Dime Time has been live on the Apple App Store since June 29, 2026.
+- Current production version: v1.0.5, build 207.
+- Version 1.0.5 was approved and released on July 21, 2026.
+- The next iOS build number must be 208 or higher.
+- iOS builds run through Codemagic CI.
+- Info.plist is the sole source of truth for the iOS version and build number.
+
+==================================================
+MONEY MOVEMENT STATUS
+==================================================
+
+- The real-money bank-to-bank loop has been proven successfully.
+- A $1.00 ACH debt payment was initiated on July 7, 2026.
+- The payment settled successfully through Stripe.
+- The resulting $0.99 payout landed in the Dime Time Mercury account on July 21, 2026.
+- ACH settlement currently takes approximately 2–4 business days.
+
+Real transfers remain protected through defense-in-depth controls:
+
+- Per-user real-transfer allowlist
+- Allowlist default is OFF for every user
+- First transfer capped at $1
+- Conservative daily limits
+- Duplicate-payment protections
+- Complete audit logging
+- Public users cannot move real money based solely on a feature flag
+- Real-money feature flags and live secrets remain founder-controlled only
+
+Stripe Financial Connections registration was submitted on July 21, 2026 and is currently under Stripe review. Public bank linking through the Stripe flow must remain gated until the required approval is confirmed.
+
+Do not enable public real-money access, change real-money flags, expose live secrets, or expand the allowlist without explicit founder authorization.
+
+==================================================
+PLAID STATUS — IMPORTANT CORRECTION
+==================================================
+
+Plaid Liabilities product approval has been GRANTED.
+
+However, approval does not yet mean production access is active.
+
+Plaid stated that production access requires:
+
+1. Liabilities to be included on an updated Plaid Order Form
+2. Confirmation of pricing and any minimum commitments
+3. A defined Order Form start date
+4. Plaid activation of production access
+
+Therefore, the correct status is:
+
+PLAID LIABILITIES IS APPROVED, BUT PRODUCTION ACTIVATION REMAINS PENDING THE UPDATED ORDER FORM AND ITS START DATE.
+
+Keep automatic debt import disabled until production access is contractually active and the production integration has passed controlled testing.
+
+==================================================
+LINKEDIN LAUNCH HOLD
+==================================================
+
+The main LinkedIn launch announcement remains intentionally held.
+
+Do not recommend publishing it until both of these milestones are complete:
+
+1. Real-money functionality is ready for approved public users
+2. Plaid Liabilities debt import is active and verified in production
+
+==================================================
+ANDROID / GOOGLE PLAY STATUS
+==================================================
+
+- Android package name: com.dimetime.app
+- This differs intentionally from the iOS bundle identifier.
+- Upload keystore generated using RSA 2048.
+- Keystore validity extends to 2053.
+- Password is stored only as an encrypted secret.
+- Password must never appear in source code, chat, Git history, or build logs.
+- Keystore has been uploaded to Codemagic code signing.
+- Android release pipeline is configured and working.
+- First Android App Bundle build succeeded.
+- AAB size: approximately 19.5 MB.
+- Build time: approximately 2.5 minutes.
+- Play App Signing is enabled.
+- Google re-signs distributed builds with the Play app-signing key.
+- Google provides a process to reset the upload key if necessary.
+
+Google Play Console status:
+
+- Dime Time app record created
+- Package: com.dimetime.app
+- Internal Testing release is live
+- Current internal release: version 1.0.5, versionCode 207
+- Release rolled out July 21, 2026
+- Internal tester: tim.carlisle77@gmail.com
+
+All future Android uploads must use a versionCode greater than 207.
+
+The next Android build must use versionCode 208 or higher. Dime Time policy keeps the Android versionCode aligned with the corresponding iOS build number.
+
+==================================================
+ANDROID APP LINKS / PLAID OAUTH
+==================================================
+
+Android App Links have been implemented for the Plaid OAuth return route.
+
+Live verification file:
+
+https://dime-time.com/.well-known/assetlinks.json
+
+Verified production behavior:
+
+- HTTP 200
+- Content-Type: application/json
+- Zero redirects
+- Correct Android package: com.dimetime.app
+- Contains the Google Play app-signing certificate SHA-256 fingerprint
+- Contains the Android upload-key certificate SHA-256 fingerprint
+
+A matching Android intent filter has been added to the app manifest.
+
+The intent filter is intentionally scoped only to:
+
+https://dime-time.com/plaid/oauth
+
+This mirrors the existing iOS Universal Link behavior.
+
+An independent code review passed, and both fingerprints were verified.
+
+The website verification file was published before shipping an Android build containing the App Links change. This sequencing was intentional to prevent silent Android domain-verification failure.
+
+==================================================
+IMMEDIATE ANDROID WORK SEQUENCE
+==================================================
+
+Proceed in this order:
+
+1. KEYSTORE BACKUP AND CLEANUP
+
+Wait for the founder to confirm that:
+
+- The keystore ZIP has been downloaded
+- The keystore is backed up in at least two secure external locations
+- The password is saved in a password manager
+
+Only after explicit founder confirmation:
+
+- Delete the keystore from the shared Replit workspace
+- Delete the keystore ZIP from the shared Replit workspace
+- Delete any stored workspace copy of its password
+- Verify the signing files were never committed to Git
+- Verify .gitignore excludes all keystore and signing-artifact patterns
+- Report exactly what was removed
+
+Do not delete signing materials before founder confirmation.
+
+2. PREPARE ANDROID BUILD 208+
+
+- Confirm the Android versionName remains appropriate
+- Set Android versionCode to 208 or higher
+- Keep it aligned with the iOS build-number policy
+- Include the new /plaid/oauth Android App Links intent filter
+- Verify assetlinks.json remains live before building
+- Preserve all existing iOS behavior and workflow configuration
+- Do not alter the permanent package identifiers
+
+3. RUN CODEMAGIC ANDROID BUILD
+
+- Build a signed Android App Bundle
+- Use the existing Android Google Play workflow
+- Verify the correct Codemagic signing identity is used
+- Never print signing credentials
+- Confirm the final artifact is an .aab file
+- Report the versionCode, versionName, package name, artifact name, and build result
+
+4. INTERNAL ANDROID TEST
+
+After uploading build 208+ to Internal Testing:
+
+- Install through the Google Play opt-in link on a physical Android phone
+- Confirm signup and login
+- Confirm navigation and layouts
+- Confirm bank-linking behavior
+- Test return handling for the /plaid/oauth App Link
+- Confirm no redirect loop or browser dead end
+- Confirm real-money access remains gated
+- Record any Android-specific defects
+
+5. SCREENSHOTS
+
+Capture Google Play listing screenshots from the physical Android device.
+
+Final target size:
+
+1080 × 1920 pixels
+
+Do not fabricate app screens or include unsupported partner logos.
+
+6. GOOGLE PLAY LISTING AND COMPLIANCE
+
+Complete:
+
+- Main store listing
+- App icon
+- Feature graphic
+- Phone screenshots
+- Short description
+- Full description
+- Data Safety form
+- App access instructions
+- Privacy Policy URL
+- Account-deletion URL
+- Content rating questionnaire
+- Financial-features declarations
+- Ads declaration
+- Target audience
+- Countries and regions
+- Any required testing or production-readiness steps shown by Play Console
+
+Do not submit inaccurate declarations. Flag any question that requires founder confirmation.
+
+==================================================
+KEY INVARIANTS — DO NOT DRIFT
+==================================================
+
+1. Official domain:
+   https://dime-time.com
+
+   The hyphen is mandatory.
+   Dime Time does not own dimetime.com.
+
+2. Permanent identifiers:
+   Android: com.dimetime.app
+   iOS: com.dimetime.mobile
+
+   They are different intentionally. Do not rename or attempt to align them.
+
+3. iOS version source of truth:
+   Info.plist only.
+
+4. Android versionCode:
+   Must strictly increase with every Google Play upload.
+   Next required value: 208 or higher.
+
+5. Branding:
+   Do not use bank, Plaid, Stripe, Coinbase, or other partner logos without written authorization.
+
+6. Real money:
+   Do not change live secrets, transfer flags, user allowlists, caps, or production money-movement settings without explicit founder authorization.
+
+7. Debt import:
+   Plaid Liabilities is product-approved but not yet production-active.
+   Keep ENABLE_DEBT_IMPORT disabled until Order Form activation and production testing are complete.
+
+8. Safety:
+   Never commit secrets, keystores, passwords, private keys, certificates, base64 signing data, or live API keys.
+
+==================================================
+CURRENT EXTERNAL HOLDS
+==================================================
+
+1. Stripe Financial Connections registration approval
+   - Submitted July 21, 2026
+   - Awaiting Stripe review
+   - Public Stripe bank linking remains gated
+
+2. Plaid Liabilities production activation
+   - Product approval granted
+   - Updated Order Form still required
+   - Pricing, commitments, and start date must be confirmed
+   - Production access must be activated before enabling debt import
+
+3. LinkedIn launch announcement
+   - Remains held until the two production milestones above are complete
+
+==================================================
+REPORTING REQUIREMENTS
+==================================================
+
+Before making changes, inspect and report the current state.
+
+For every implementation session, report:
+
+- Files inspected
+- Files changed
+- Exact versionCode and versionName
+- Tests performed
+- Build result
+- Live endpoints verified
+- Safety flags confirmed unchanged
+- Any risks or blockers
+- Whether founder action is required
+
+Do not claim completion without direct verification.
+Do not publish to production or enable public money movement without explicit founder authorization.
