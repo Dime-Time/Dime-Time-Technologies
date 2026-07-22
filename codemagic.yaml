@@ -205,19 +205,30 @@ workflows:
     environment:
       java: 17
 
-      # Environment group that must contain:
-      #   ANDROID_KEYSTORE_BASE64  — base64 of your release.keystore file
-      #     (generate once: keytool -genkey -v -keystore release.keystore \
-      #       -alias dimetime -keyalg RSA -keysize 2048 -validity 10000
-      #      then: base64 -w0 release.keystore  → paste the output as this var)
-      #     ⚠️  KEEP THE ORIGINAL release.keystore FOREVER + BACK IT UP.
-      #         Lose it and you can never update the app on Google Play.
-      #   KEYSTORE_PASSWORD        — the keystore password you chose
-      #   KEY_ALIAS                — the key alias (e.g. "dimetime")
-      #   KEY_PASSWORD             — the key password you chose
+      # PRIMARY SIGNING METHOD — Codemagic "Code signing identities":
+      # Upload dimetime-upload.keystore in the Codemagic UI under
+      #   Team settings → codemagic.yaml settings → Code signing identities
+      #   → Android keystores
+      # with:
+      #   Reference name:    dimetime_upload   (must match the line below)
+      #   Keystore password: (the keystore password)
+      #   Key alias:         dimetime
+      #   Key password:      (same as keystore password)
+      # Codemagic then injects CM_KEYSTORE_PATH / CM_KEYSTORE_PASSWORD /
+      # CM_KEY_ALIAS / CM_KEY_PASSWORD into the build — no base64 needed.
+      # ⚠️  KEEP THE ORIGINAL dimetime-upload.keystore FOREVER + BACK IT UP
+      #     in two places. Lose it and you cannot update the app on Google
+      #     Play without a Google-assisted upload-key reset.
+      android_signing:
+        - dimetime_upload
+
+      # Environment group that must contain ONLY:
       #   VITE_STRIPE_PUBLISHABLE_KEY (pk_live_...) — baked into the client
       #     bundle by `npm run build`; the shipped AAB needs it for Stripe ACH.
       #     Value lives ONLY in this Codemagic group, never hardcoded here.
+      # (Legacy fallback: ANDROID_KEYSTORE_BASE64 + KEYSTORE_PASSWORD +
+      #  KEY_ALIAS + KEY_PASSWORD in this group also work if the
+      #  android_signing identity above is ever removed.)
       groups:
         - android_build_info
 
@@ -248,19 +259,29 @@ workflows:
         script: |
           set -e
 
-          # All four signing values must be present — android/app/build.gradle
-          # fails the build if any are missing (security requirement).
-          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
-            echo "FATAL: Missing one or more Android signing vars (ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD)."
-            echo "       Add them to the android_build_info Codemagic environment group."
+          # Signing source 1 (preferred): Codemagic Code signing identities.
+          # The android_signing block above injects CM_KEYSTORE_PATH,
+          # CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD.
+          # Signing source 2 (legacy fallback): ANDROID_KEYSTORE_BASE64 +
+          # KEYSTORE_PASSWORD + KEY_ALIAS + KEY_PASSWORD from the env group.
+          # Either way we export the four vars android/app/build.gradle reads.
+          if [ -n "$CM_KEYSTORE_PATH" ]; then
+            echo "Using Codemagic code signing identity (dimetime_upload)."
+            export KEYSTORE_FILE="$CM_KEYSTORE_PATH"
+            export KEYSTORE_PASSWORD="$CM_KEYSTORE_PASSWORD"
+            export KEY_ALIAS="$CM_KEY_ALIAS"
+            export KEY_PASSWORD="$CM_KEY_PASSWORD"
+          elif [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "Using legacy base64 keystore from environment group."
+            export KEYSTORE_FILE="$CM_BUILD_DIR/release.keystore"
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_FILE"
+          else
+            echo "FATAL: No Android signing credentials available."
+            echo "       Upload the keystore under Codemagic → Team settings →"
+            echo "       codemagic.yaml settings → Code signing identities →"
+            echo "       Android keystores with reference name: dimetime_upload"
             exit 1
           fi
-
-          # Decode the keystore to a file and point build.gradle at it.
-          # KEYSTORE_FILE/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD are read by
-          # the release signingConfig in android/app/build.gradle.
-          export KEYSTORE_FILE="$CM_BUILD_DIR/release.keystore"
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_FILE"
 
           echo "=== Building signed release AAB ==="
           cd android

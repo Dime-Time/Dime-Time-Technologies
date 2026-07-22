@@ -510,3 +510,9 @@ id = "rU1ollvG6IWJCtA74RqQG"
 uri = "file://attached_assets/play-store-assets/feature-graphic-1024x500.png"
 type = "image"
 title = "Feature Graphic (1024x500)"
+
+[[outputs]]
+id = "kAlff1rajIOOGx5nCCcP-"
+uri = "file://dimetime-upload-keystore.zip"
+type = "unspecified"
+title = "Android upload keystore (dimetime-upload.keystore, zipped)"

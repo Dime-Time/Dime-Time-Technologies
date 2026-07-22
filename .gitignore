@@ -14,3 +14,4 @@ signing.properties
 android/keystore/
 android/app/*.keystore
 android/app/*.jks
+dimetime-upload-keystore.zip
