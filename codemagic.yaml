@@ -206,7 +206,10 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
-      java: 17
+      # Capacitor 7 generates android/app/capacitor.build.gradle with
+      # JavaVersion.VERSION_21 — building with Java 17 fails with
+      # "invalid source release: 21" (seen 2026-07-21). Keep this at 21+.
+      java: 21
 
       # PRIMARY SIGNING METHOD — Codemagic "Code signing identities":
       # Upload dimetime-upload.keystore in the Codemagic UI under
