@@ -279,6 +279,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/.well-known/apple-app-site-association", serveAasa);
   app.get("/apple-app-site-association", serveAasa);
 
+  // ── Android App Links (Plaid OAuth deep links) ──────────────────────
+  // Android equivalent of the AASA file: proves dime-time.com and the
+  // com.dimetime.app package belong together so Android opens the app for
+  // https://dime-time.com/plaid/oauth. Contains BOTH the Play app-signing
+  // certificate (what installed devices see — Google re-signs uploads) and
+  // the upload-key certificate (sideloaded release builds). Served
+  // explicitly for a guaranteed application/json content type, no redirects.
+  const assetlinksPath = path.join(publicDir, ".well-known", "assetlinks.json");
+  app.get("/.well-known/assetlinks.json", (_req: Request, res: Response) => {
+    res.type("application/json");
+    res.sendFile(assetlinksPath);
+  });
+
   app.use(express.static(publicDir, { index: false }));
 
   // ── GEO guide pages: pre-rendered, crawler-readable static HTML ──────

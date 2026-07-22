@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.dimetime.app",
+      "sha256_cert_fingerprints": [
+        "77:61:31:FD:10:8D:EF:93:D9:5C:EF:9B:39:B2:70:61:94:60:AC:22:2E:59:B1:B4:95:69:92:CE:F6:D2:E6:7F",
+        "45:92:82:E3:B3:4C:A4:39:C4:5E:DC:36:D4:9F:C6:67:A6:F5:71:C2:FD:63:0D:C4:40:06:39:38:77:8A:2E:E7"
+      ]
+    }
+  }
+]
