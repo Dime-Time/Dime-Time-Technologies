@@ -200,7 +200,10 @@ workflows:
   android_release:
     name: Dime Time – Android AAB Build (Google Play)
     max_build_duration: 120
-    instance_type: linux_x2
+    # mac_mini_m2 matches the iOS workflow — it's the instance type included
+    # in the current Codemagic billing plan (linux_x2 was rejected 2026-07-21:
+    # "selected instance type is not available with the current billing plan").
+    instance_type: mac_mini_m2
 
     environment:
       java: 17
