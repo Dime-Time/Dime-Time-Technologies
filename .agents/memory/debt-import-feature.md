@@ -7,7 +7,7 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 ## Status update 2026-07-21: Liabilities APPROVED — pending Order Form signature
 - Plaid emailed approval of the Liabilities product add request (founder shared the email 2026-07-21). Production access activates ONLY after the founder signs an updated Order Form with Plaid (contract step, founder-run, GTM contact for questions).
-- Contract caution: prior decision (plaid-billing-contract.md) was to be on pay-as-you-go, NOT a committed-minimum plan. The founder should confirm the updated Order Form's tier/commitment BEFORE signing — signing is the moment leverage exists.
+- Contract caution: prior decision (plaid-billing-contract.md) was to be on pay-as-you-go, NOT a committed-minimum plan. The founder should confirm the updated Order Form's tier/commitment BEFORE signing — signing is the moment leverage exists. Dashboard confirmed the team ("Dime Time LLC") is on a CUSTOM plan (Liabilities price shown as "-"); founder emailed rep Melanie 2026-07-21 requesting the Order Form with explicit pricing + account move to pay-as-you-go. A second sandbox-only Plaid team ("Dime Time", gmail login) exists — irrelevant to prod, don't confuse them.
 - Once access commences: NO republish needed. Prod already has `PLAID_ENV=production`, `ENABLE_DEBT_IMPORT=1`, `DEBT_IMPORT_PROVIDER=plaid` mounted; the INVALID_PRODUCT error simply disappears when Plaid flips the entitlement. Verification order: (1) re-probe entitlement via `link/token/create` with liabilities, (2) founder end-to-end test in the live app with his own account, (3) only then treat LinkedIn milestone #2 (debt import live) as met.
 
 ## Status update 2026-07-18 (later): production Plaid LIVE
