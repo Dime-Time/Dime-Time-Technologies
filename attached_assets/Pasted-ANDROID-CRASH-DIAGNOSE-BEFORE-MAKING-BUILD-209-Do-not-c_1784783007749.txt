@@ -1,0 +1,107 @@
+ANDROID CRASH — DIAGNOSE BEFORE MAKING BUILD 209
+
+Do not create another build and do not make speculative configuration changes yet.
+
+The application installs successfully from Google Play Internal Testing but crashes immediately before rendering any UI. Minification has already been disabled in versionCode 208, so ProGuard/R8 is not the current leading theory.
+
+PRIMARY SUSPECT: ANDROID PACKAGE/CLASS ALIGNMENT
+
+The Android applicationId is com.dimetime.app, but capacitor.config currently reports appId as com.dimetime.mobile. Inspect the complete native package chain and report the exact value from each location:
+
+1. capacitor.config.ts or capacitor.config.json:
+   - appId
+
+2. android/app/build.gradle:
+   - namespace
+   - applicationId
+   - versionCode
+   - versionName
+
+3. MainActivity.java:
+   - full filesystem path
+   - package declaration
+   - class name
+   - superclass
+
+4. AndroidManifest.xml:
+   - activity android:name
+
+5. Merged release manifest:
+   - resolved MainActivity component name
+   - resolved application theme
+   - resolved launch activity theme
+
+6. Generated Capacitor configuration under:
+   android/app/src/main/assets/
+   - report appId/package-related values
+
+The required Android alignment should be:
+
+- Capacitor Android appId: com.dimetime.app
+- Gradle namespace: com.dimetime.app
+- Gradle applicationId: com.dimetime.app
+- MainActivity source path:
+  android/app/src/main/java/com/dimetime/app/MainActivity.java
+- MainActivity package declaration:
+  package com.dimetime.app;
+- Manifest activity:
+  android:name=".MainActivity"
+  or the explicit equivalent:
+  android:name="com.dimetime.app.MainActivity"
+
+The iOS bundle identifier must remain com.dimetime.mobile. Do not change the iOS Xcode project, Info.plist, iOS bundle identifier, or Codemagic iOS workflow.
+
+IMPORTANT:
+Changing the Android capacitor.config appId to com.dimetime.app must be evaluated carefully so it fixes Android without changing the permanent iOS identifier. If the shared Capacitor config cannot safely represent the intentionally different platform identifiers, implement a platform-safe configuration approach and explain it before changing files.
+
+ALSO INSPECT:
+
+- styles.xml and themes.xml for:
+  AppTheme
+  AppTheme.NoActionBar
+  AppTheme.NoActionBarLaunch
+- Confirm AppTheme.NoActionBarLaunch exists in every applicable resource configuration.
+- Confirm androidx.core:core-splashscreen is packaged.
+- Confirm the networkSecurityConfig resource exists.
+- Confirm MainActivity has no custom initialization hidden outside the provided snippet.
+- Confirm all Capacitor dependencies are on compatible 7.4.x versions.
+- Confirm there are no stale com.dimetime.mobile references inside the Android project.
+- Do not treat intentional iOS references as Android defects.
+
+VERSION VERIFICATION:
+Determine whether the currently published Internal Testing build is versionCode 208 and whether it was rolled out at 100%. Both builds use versionName 1.0.5, so versionName alone does not prove which build is installed.
+
+DO NOT:
+- Create build 209 yet
+- Re-enable minification
+- Disable App Links
+- Change signing keys
+- Change Play App Signing
+- Change real-money flags
+- Change live secrets
+- Change the permanent Android package
+- Change the permanent iOS bundle identifier
+
+WAITING FOR LOGCAT:
+The founder will capture the crash through Android Studio:
+
+View → Tool Windows → Logcat
+
+Filter:
+package:com.dimetime.app level:ERROR
+
+The required evidence is the complete block containing:
+- FATAL EXCEPTION
+- Process
+- AndroidRuntime
+- Exception class
+- Every Caused by line
+- First relevant com.dimetime or com.getcapacitor stack frames
+
+REPORT BACK:
+1. Exact package-alignment table
+2. Any mismatch found
+3. Whether that mismatch can produce the observed native launch crash
+4. Other concrete launch risks found
+5. Files that would need changes
+6. No changes yet unless the crash log conclusively supports them
