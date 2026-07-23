@@ -1,0 +1,297 @@
+DIME TIME — ANDROID LAUNCH CRASH: CURRENT DIAGNOSIS AND NEXT ACTION
+
+PACKAGE-ALIGNMENT AUDIT RESULT
+
+The package-alignment audit is strong and correctly rules out the native package/class mismatch as the current launch-crash cause.
+
+Verified Android values:
+
+- capacitor.config.ts appId:
+  com.dimetime.mobile
+
+- Android Gradle namespace:
+  com.dimetime.app
+
+- Android Gradle applicationId:
+  com.dimetime.app
+
+- Android versionCode:
+  208
+
+- Android versionName:
+  1.0.5
+
+- MainActivity path:
+  android/app/src/main/java/com/dimetime/app/MainActivity.java
+
+- MainActivity package:
+  package com.dimetime.app;
+
+- MainActivity class:
+  public class MainActivity extends BridgeActivity {}
+
+- AndroidManifest activity:
+  android:name=".MainActivity"
+
+- Resolved Android activity:
+  com.dimetime.app.MainActivity
+
+- Application theme:
+  @style/AppTheme
+
+- Launch activity theme:
+  @style/AppTheme.NoActionBarLaunch
+
+The only mismatch is:
+
+- Capacitor configuration appId:
+  com.dimetime.mobile
+
+- Android applicationId:
+  com.dimetime.app
+
+This mismatch is untidy but is NOT currently supported as the cause of the native crash.
+
+SOURCE-LEVEL EVIDENCE
+
+The installed Capacitor Android runtime source was searched for use of the appId field.
+
+Result:
+
+- Zero runtime references to appId were found.
+- CapConfig.java does not use appId for native class resolution, activity resolution, resources, or WebView startup.
+- The appId is primarily consumed by the Capacitor CLI during project creation and development commands.
+- The same appId mismatch existed in both Android builds 207 and 208.
+- MainActivity, Gradle namespace, applicationId, manifest activity, and filesystem package are aligned correctly.
+
+Do not change capacitor.config.ts or any package identifier as part of the crash investigation unless later evidence proves it is necessary.
+
+OTHER VERIFIED ITEMS
+
+All requested configuration checks passed:
+
+- AppTheme exists.
+- AppTheme.NoActionBar exists.
+- AppTheme.NoActionBarLaunch exists.
+- There are no conflicting night-mode or API-specific theme variants.
+- androidx.core:core-splashscreen:1.0.1 is declared.
+- network_security_config.xml exists.
+- Cordova config.xml exists and is benign.
+- MainActivity contains no custom initialization.
+- Capacitor core, CLI, Android runtime, and plugins use compatible 7.x versions.
+- No unexplained stale com.dimetime.mobile references were found inside the Android native project.
+- Minification and resource shrinking are disabled in build 208.
+- No file changes are justified yet.
+
+CURRENT CONCLUSION
+
+Do not create Android build 209 yet.
+
+Do not make speculative changes to:
+
+- Gradle
+- AndroidManifest.xml
+- MainActivity
+- Themes
+- App Links
+- Capacitor configuration
+- Package identifiers
+- Signing configuration
+- ProGuard/R8
+- Real-money feature flags
+- Live secrets
+
+The next required step is to capture the actual FATAL EXCEPTION from Android Studio Logcat.
+
+VERSION CONFIRMATION
+
+Do not rely on versionName 1.0.5 because both builds 207 and 208 use that same versionName.
+
+Standard Logcat output may identify:
+
+- Package name
+- Process name
+- Process ID
+- Exception
+- Stack trace
+
+However, it may NOT display versionCode 208.
+
+To eliminate uncertainty about which build is installed:
+
+1. Confirm Google Play Console shows release 208 (1.0.5) as the active Internal Testing release.
+2. Uninstall Dime Time from the emulator.
+3. Reinstall Dime Time from the Google Play Internal Testing opt-in link.
+4. Only then reproduce the crash.
+
+This fresh installation ensures the emulator receives the currently active build instead of retaining build 207.
+
+CAPTURE THE CRASH WITHOUT TERMINAL
+
+No Terminal or adb commands are required.
+
+Use Android Studio:
+
+1. Start the stable Pixel 8 API 36 emulator.
+
+2. Open Android Studio.
+
+3. From the macOS menu bar, select:
+
+   View
+   → Tool Windows
+   → Logcat
+
+4. In the Logcat device selector, choose the stable Pixel 8 API 36 emulator.
+
+5. In the Logcat search/filter field, enter:
+
+   package:com.dimetime.app level:ERROR
+
+6. Clear the existing logs using the trash-can or clear icon.
+
+7. Launch Dime Time from the emulator.
+
+8. Wait for the “Dime Time keeps stopping” dialog.
+
+9. Return to Logcat.
+
+10. Copy the complete crash block beginning with:
+
+    FATAL EXCEPTION
+
+Include all lines containing:
+
+- FATAL EXCEPTION
+- Process: com.dimetime.app
+- AndroidRuntime
+- Exception class and message
+- Caused by
+- All nested Caused by sections
+- Relevant com.dimetime.app stack frames
+- Relevant com.getcapacitor stack frames
+- Relevant AndroidX splash-screen stack frames
+- The final portion of the exception chain
+
+Do not copy only the first line. The deepest “Caused by” section is often the actual root cause.
+
+IF THE FIRST FILTER SHOWS NOTHING
+
+Replace the Logcat filter with:
+
+message:com.dimetime.app level:ERROR
+
+Clear the logs and launch Dime Time again.
+
+If that is still empty, temporarily use:
+
+level:ERROR
+
+Clear the logs, launch the app once, and copy the AndroidRuntime fatal block associated with com.dimetime.app.
+
+WHAT THE EXCEPTION MAY REVEAL
+
+Possible exception categories include:
+
+1. Resources$NotFoundException
+   Likely meaning:
+   - Missing theme
+   - Missing drawable
+   - Missing color
+   - Missing splash-screen resource
+   - Device-specific resource packaging issue
+
+2. ClassNotFoundException
+   Likely meaning:
+   - Activity or application class missing
+   - Incorrect dependency packaging
+   - Incorrect generated manifest reference
+
+3. NoClassDefFoundError
+   Likely meaning:
+   - Required runtime dependency omitted
+   - Dependency-version incompatibility
+   - Class referenced by a plugin is unavailable
+
+4. IllegalStateException
+   Likely meaning:
+   - Splash-screen initialization problem
+   - WebView initialization problem
+   - Capacitor Bridge startup problem
+   - Invalid lifecycle or theme configuration
+
+5. UnsatisfiedLinkError
+   Likely meaning:
+   - ABI-specific native library missing
+   - Incorrect split-APK delivery
+   - Native dependency incompatible with arm64
+   - Native library incompatible with the emulator page size
+
+6. SecurityException
+   Likely meaning:
+   - Manifest component restriction
+   - Exported-component issue
+   - Platform security restriction
+   - Permission or intent-filter problem
+
+7. WebView provider exception
+   Likely meaning:
+   - Android System WebView problem
+   - Chrome/WebView provider incompatibility
+   - Emulator system-image problem
+
+A Play-delivered Android App Bundle can behave differently from a locally installed universal APK because Google Play generates optimized split APKs for each device.
+
+However:
+
+- AAB splitting is standard behavior.
+- Play App Signing normally does not cause a successfully installed app to crash at launch.
+- Signing problems usually prevent installation or updating.
+- Dime Time currently has no obvious custom native library that makes ABI splitting the leading theory.
+- The fact that the crash occurs on both a 16 KB preview emulator and a stable standard-page-size emulator makes the experimental 16 KB image an unlikely sole cause.
+
+REPLIT INSTRUCTIONS AFTER RECEIVING LOGCAT
+
+Once the founder supplies the complete fatal crash block:
+
+1. Identify the exception class.
+2. Find the deepest Caused by entry.
+3. Map the failing class/resource to the exact source file or dependency.
+4. Explain the root cause before editing anything.
+5. Identify the minimum safe fix.
+6. Preserve the iOS project and workflow.
+7. Preserve all permanent package identifiers.
+8. Preserve signing configuration.
+9. Preserve App Links unless the stack trace directly implicates them.
+10. Preserve real-money flags and production secrets.
+11. Create build 209 only after the evidence supports a specific fix.
+12. Report:
+    - Root cause
+    - Evidence from Logcat
+    - Files changed
+    - Why each change is required
+    - Tests performed
+    - versionCode and versionName
+    - Codemagic build result
+    - Internal Testing rollout status
+
+PERMANENT IDENTIFIERS — DO NOT CHANGE
+
+- Android package:
+  com.dimetime.app
+
+- iOS bundle identifier:
+  com.dimetime.mobile
+
+- Official domain:
+  https://dime-time.com
+
+The Android and iOS identifiers are intentionally different.
+
+CURRENT REQUIRED ACTION
+
+Pause all code changes.
+
+Capture the complete AndroidRuntime FATAL EXCEPTION using Android Studio Logcat after a fresh installation of Internal Testing build 208.
+
+The crash log is the decisive evidence needed before creating another build.
