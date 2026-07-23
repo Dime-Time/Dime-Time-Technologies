@@ -6,7 +6,6 @@
         <domain includeSubdomains="true">production.plaid.com</domain>
         <domain includeSubdomains="true">sandbox.plaid.com</domain>
         <domain includeSubdomains="true">api.coinbase.com</domain>
-        <domain includeSubdomains="true">localhost</domain>
     </domain-config>
     
     <base-config cleartextTrafficPermitted="false">

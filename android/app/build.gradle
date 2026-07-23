@@ -11,7 +11,7 @@ android {
         // version and versionCode aligned with the iOS build number
         // (ios/App/App/Info.plist). Google Play requires versionCode to
         // strictly increase on every upload — never reuse or lower it.
-        versionCode 208
+        versionCode 209
         versionName "1.0.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -71,18 +71,17 @@ android {
         
         release {
             // Capacitor default is NO minification/resource shrinking.
-            // Build 207 (minifyEnabled/shrinkResources true) crashed
-            // instantly on launch on every Android emulator (stable
-            // API 36 and preview alike). Most likely cause (no stack
-            // trace was captured — unconfirmed mechanism): R8/resource
-            // shrinking interfering with Capacitor's reflective
-            // startup (Class.forName plugin loading, config.xml).
-            // minify/shrink was the only delta from Capacitor's
-            // known-good default release config. iOS has no
-            // equivalent step, which is why iOS was never affected.
-            // Do NOT re-enable without a full on-device launch test;
-            // if a launch crash ever recurs, capture adb logcat / an
-            // emulator bug report BEFORE changing anything.
+            // Keep both OFF. Note: the instant launch crash in builds
+            // 207/208 was NOT caused by minification — the real root
+            // cause (confirmed via logcat, fixed in versionCode 209)
+            // was a duplicate <domain>localhost</domain> declaration in
+            // res/xml/network_security_config.xml, which Android's
+            // XmlConfigSource parser treats as fatal at startup.
+            // Minify/shrink stay disabled anyway (Capacitor template
+            // default — one less variable). Do NOT re-enable without a
+            // full on-device launch test of a signed release build; if
+            // a launch crash ever recurs, capture the logcat FATAL
+            // block BEFORE changing anything.
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
