@@ -1,0 +1,56 @@
+Name: Pixel_8
+CPU/ABI: arm64
+Path: /Users/dimetime/.android/avd/Pixel_8.avd
+Target: google_apis_playstore [Google APIs PlayStore] (API level 1000)
+Skin: pixel_8
+SD Card: 512M
+AvdId: Pixel_8
+PlayStore.enabled: true
+avd.ini.displayname: Pixel 8
+avd.ini.encoding: UTF-8
+disk.dataPartition.size: 10G
+emulator.dev.xr.glasses_display: monocular_right
+fastboot.chosenSnapshotFile: 
+fastboot.forceChosenSnapshotBoot: no
+fastboot.forceColdBoot: no
+fastboot.forceFastBoot: yes
+hw.accelerometer: yes
+hw.arc: false
+hw.audioInput: yes
+hw.battery: yes
+hw.camera.back: virtualscene
+hw.camera.front: emulated
+hw.cpu.ncore: 4
+hw.dPad: no
+hw.device.hash2: MD5:fbe1eac454dad6439d972cce5eda9e57
+hw.device.manufacturer: Google
+hw.device.name: pixel_8
+hw.gps: yes
+hw.gpu.enabled: yes
+hw.gpu.mode: auto
+hw.gyroscope: yes
+hw.initialOrientation: portrait
+hw.keyboard: yes
+hw.lcd.density: 420
+hw.lcd.height: 2400
+hw.lcd.width: 1080
+hw.mainKeys: no
+hw.ramSize: 2048
+hw.sdCard: yes
+hw.sensors.light: yes
+hw.sensors.magnetic_field: yes
+hw.sensors.orientation: yes
+hw.sensors.pressure: yes
+hw.sensors.proximity: yes
+hw.trackBall: no
+image.sysdir.1: system-images/android-37.1/google_apis_playstore_ps16k/arm64-v8a/
+runtime.network.latency: none
+runtime.network.speed: full
+showDeviceFrame: yes
+skin.dynamic: yes
+tag.display: Google APIs PlayStore
+tag.displaynames: Google APIs PlayStore,Page Size 16KB
+tag.id: google_apis_playstore
+tag.ids: google_apis_playstore,page_size_16kb
+target: android-37.1
+vm.heapSize: 228
