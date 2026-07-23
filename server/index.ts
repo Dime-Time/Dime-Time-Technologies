@@ -50,7 +50,8 @@ const allowedOriginsProd = [
   "https://www.dime-time.com",
   "https://dime-time-2sdmp44chp.replit.app",
   "https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app",
-  "capacitor://localhost",
+  "capacitor://localhost", // iOS native WebView origin
+  "https://localhost", // Android native WebView origin (androidScheme: "https")
   "ionic://localhost",
 ];
 
@@ -59,7 +60,8 @@ const allowedOriginsDev = [
   "http://127.0.0.1:5000",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  "capacitor://localhost",
+  "capacitor://localhost", // iOS native WebView origin
+  "https://localhost", // Android native WebView origin (androidScheme: "https")
   "ionic://localhost",
 ];
 
