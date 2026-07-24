@@ -5,6 +5,16 @@ description: Play submission package location, App Links sequencing constraint, 
 
 # Android / Google Play launch
 
+## Production submission (2026-07-23)
+First production release SUBMITTED for Google review 2026-07-23: versionCode 209 (1.0.5), United States only (deliberate — US-ACH-only product; countries can be added later without new review). All 10 App content declarations completed. Managed publishing OFF → app goes live automatically on approval. Non-obvious form answers worth reusing on updates:
+- Financial features: "Other" ONLY (no debt-management option exists; Banking/Money-transfer/Crypto/Advice would trigger licensing-proof requests). Documentation step = third-party providers (Stripe/Plaid), no own licenses.
+- Data safety label: collected = Name/Email (Account management; Email is the only "required" type), User payment info/Purchase history/Other financial info (App functionality, optional); shared = User payment info only (App functionality). Nothing ephemeral, no other purposes (no analytics/ads SDKs). Delete URL: https://dime-time.com/delete-account (page must stay live — Google has it on file).
+- Health apps = none; Government = No; Advertising ID = No (manifest has no AD_ID); Target audience = 18+ only (younger groups trigger child-safety requirements).
+
+## Post-approval follow-ups (pending)
+1. Rotate founder's prod password (was briefly exposed in chat screenshots, files deleted) → update reviewer-account credentials in BOTH App Store Connect and Play Console.
+2. Keystore cleanup (see below) once founder confirms 2 backups.
+
 ## Submission package
 `attached_assets/play-store-assets/` holds the complete first-submission kit: listing copy, Data Safety worksheet (evidence-based from code), financial/content-rating declarations, 512px icon, 1024x500 feature graphic. Screenshots must come from the real Android build on a real device during internal testing — never reuse iOS captures.
 

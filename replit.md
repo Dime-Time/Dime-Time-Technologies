@@ -43,8 +43,9 @@ Detailed operational runbooks and subsystem specs live in `.agents/memory/` — 
 - The `transfers` ledger is provider-agnostic (Plaid/Mercury/Stripe write the same row shape); status strings are normalized via `shared/transactionStatus.ts` — UI never branches on raw provider statuses.
 - Auth tokens encrypted at rest (AES-GCM WebCrypto) in localStorage; PIN lock with SHA-256 hash, auto-lock on background.
 
-### Launch Status (as of 2026-07-21)
-- App Store: **LIVE**; v1.0.5 (build 207) APPROVED & LIVE (2026-07-21). Next build number must be 208+.
+### Launch Status (as of 2026-07-23)
+- App Store: **LIVE**; v1.0.5 (build 207) APPROVED & LIVE (2026-07-21). Next iOS build number must be ≥210.
+- Google Play: first production release **SUBMITTED FOR REVIEW 2026-07-23** (versionCode 209, v1.0.5, US only, managed publishing off → auto-live on approval). Delete-account page https://dime-time.com/delete-account is on file with Google — must stay live. See `.agents/memory/android-play-launch.md`.
 - Money loop proven bank-to-bank: $1.00 ACH debt payment (2026-07-07) settled via Stripe, $0.99 payout landed in Mercury (confirmed 2026-07-21). ACH settles in 2–4 business days via webhook.
 - Stripe Financial Connections registration SUBMITTED (2026-07-21, founder) — under Stripe review; bank linking for public users unblocks when approved.
 - Stripe account live; prod has `ENABLE_STRIPE_ACH` + `ENABLE_REAL_TRANSFERS` ON (founder decision; public protected by the default-false per-user allowlist).
