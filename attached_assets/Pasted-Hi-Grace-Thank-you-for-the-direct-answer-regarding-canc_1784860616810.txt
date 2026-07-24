@@ -1,0 +1,40 @@
+Hi Grace,
+
+Thank you for the direct answer regarding cancelability and for exploring options within the existing agreement. I appreciate your willingness to advocate for Dime Time.
+
+To provide a clear picture, Dime Time is already live on the Apple App Store, with its Google Play release in final testing. Two external approvals stand between the current version and full commercial operation:
+
+1. **Plaid:** Liabilities production access, allowing users to import their debt accounts directly into Dime Time. Approval was confirmed on July 21, and I understand that activation is now pending the updated Order Form.
+
+2. **Stripe:** Final authorization to expand live ACH transfers beyond the current controlled stage. That request has been submitted and is under review.
+
+On the Plaid side, the debt-import integration is built, tested, and deployed to production behind a disabled feature flag. No additional app update or App Store review is required. Once the entitlement is activated, I can complete final production validation and make debt import available to users within days. Plaid API usage can therefore begin immediately, independent of Stripe’s timeline.
+
+There is also encouraging evidence of market interest. Before Dime Time’s App Store release, a single LinkedIn post about the company’s journey generated approximately 500 visits to the Dime Time website.
+
+After Liabilities is activated, my launch plan is to:
+
+1. Validate Liabilities in production.
+2. Enable debt importing for users.
+3. Announce the expanded launch on LinkedIn and other channels.
+4. Begin a controlled advertising campaign directing users toward Dime Time’s $2.99-per-month debt-management subscription.
+
+To plan this rollout responsibly, I need the updated Order Form with clear line-item pricing for Liabilities. As an early-stage, pre-revenue company, a structure that more closely aligns near-term billing with actual usage would allow me to direct limited capital toward customer acquisition and grow into the agreement.
+
+Within the existing agreement, could you please explore whether Plaid could provide any of the following:
+
+* A temporary billing deferral or delayed commencement;
+* Credits covering the period before Liabilities was available to Dime Time;
+* A reduced or graduated minimum during the initial launch period;
+* Reallocation of the existing commitment toward actual product usage; or
+* Another early-stage accommodation that would preserve capital for customer acquisition.
+
+I am committed to building with Plaid. My goal is to clear these final external approvals, begin generating subscription revenue, and grow Dime Time into a sustainable long-term Plaid customer.
+
+Please let me know what options you can bring to your team based on this timeline.
+
+Best,
+
+Tim Carlisle
+Founder, Dime Time LLC
+https://dime-time.com
