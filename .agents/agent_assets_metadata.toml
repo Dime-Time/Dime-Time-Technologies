@@ -503,16 +503,52 @@ title = "Financial Declarations + Content Rating + Submission Order"
 id = "kyqQP4ALZEwwA1UkjRikc"
 uri = "file://attached_assets/play-store-assets/icon-512.png"
 type = "image"
-title = "Play Store Icon (512x512)"
+title = "Play hi-res icon (512×512)"
 
 [[outputs]]
 id = "rU1ollvG6IWJCtA74RqQG"
 uri = "file://attached_assets/play-store-assets/feature-graphic-1024x500.png"
 type = "image"
-title = "Feature Graphic (1024x500)"
+title = "Play feature graphic (1024×500)"
 
 [[outputs]]
 id = "kAlff1rajIOOGx5nCCcP-"
 uri = "file://dimetime-upload-keystore.zip"
 type = "unspecified"
 title = "Android upload keystore — DOWNLOAD THIS (dimetime-upload-keystore.zip)"
+
+[[outputs]]
+id = "87oNGLQ0kM82vaSdhV-nj"
+uri = "file://attached_assets/play-store-assets/screenshots/01-home.png"
+type = "image"
+title = "Play screenshot 1 — Home"
+
+[[outputs]]
+id = "ISYPkQ_aLDNr8kBEyENA8"
+uri = "file://attached_assets/play-store-assets/screenshots/02-debts.png"
+type = "image"
+title = "Play screenshot 2 — Debts"
+
+[[outputs]]
+id = "rtN3XpJKrMA0s-LbMZ0-H"
+uri = "file://attached_assets/play-store-assets/screenshots/03-banking.png"
+type = "image"
+title = "Play screenshot 3 — Banking"
+
+[[outputs]]
+id = "t_soZ2i2gYgUtdsED4UQG"
+uri = "file://attached_assets/play-store-assets/screenshots/04-crypto.png"
+type = "image"
+title = "Play screenshot 4 — Crypto"
+
+[[outputs]]
+id = "PxnyAMXKBTW2xrVBaTFCp"
+uri = "file://attached_assets/play-store-assets/screenshots/05-insights.png"
+type = "image"
+title = "Play screenshot 5 — Insights"
+
+[[outputs]]
+id = "E8mxqWNqXWr8RmYTGnzfq"
+uri = "file://attached_assets/play-store-assets/screenshots/06-settings.png"
+type = "image"
+title = "Play screenshot 6 — Settings"
