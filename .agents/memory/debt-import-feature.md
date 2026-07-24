@@ -5,6 +5,11 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
+## Status update 2026-07-24: Order Form SIGNED by all parties — entitlement NOT yet flipped
+- Plaid Signatures email confirms "All parties have completed Order Form (Dime Time and Plaid)" (founder shared 2026-07-24). Contract step DONE.
+- Same-day production probe (`link/token/create` with liabilities): still `INVALID_PRODUCT` — Plaid hasn't activated the entitlement yet. Activation after countersignature is typically hours to a few business days; no founder action needed unless it's still off after ~3 business days (then ping rep Melanie).
+- Re-probe before declaring live; then founder end-to-end test in the live app; only then is LinkedIn milestone #2 met. Still zero republish needed.
+
 ## Status update 2026-07-21: Liabilities APPROVED — pending Order Form signature
 - Plaid emailed approval of the Liabilities product add request (founder shared the email 2026-07-21). Production access activates ONLY after the founder signs an updated Order Form with Plaid (contract step, founder-run, GTM contact for questions).
 - Contract caution: prior decision (plaid-billing-contract.md) was to be on pay-as-you-go, NOT a committed-minimum plan. The founder should confirm the updated Order Form's tier/commitment BEFORE signing — signing is the moment leverage exists. Dashboard confirmed the team ("Dime Time LLC") is on a CUSTOM plan (Liabilities price shown as "-"); founder emailed rep Melanie 2026-07-21 requesting the Order Form with explicit pricing + account move to pay-as-you-go. A second sandbox-only Plaid team ("Dime Time", gmail login) exists — irrelevant to prod, don't confuse them.
