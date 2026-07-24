@@ -40,6 +40,7 @@ import Notifications from "@/pages/notifications";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import DeleteAccount from "@/pages/delete-account";
 import PlaidOauthPage from "@/pages/plaid-oauth";
 import Signup from "@/pages/signup";
 import Login from "@/pages/Login";
@@ -272,6 +273,7 @@ function AppContent() {
 
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/delete-account" component={DeleteAccount} />
 
       {/* Plaid OAuth return: banks redirect here after the user authorizes.
           Must render for any auth state — the page itself resumes Link. */}
