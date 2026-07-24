@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   loadPlaidOauthState,
   clearPlaidOauthState,
+  reportPlaidLinkEvent,
   type PlaidOauthState,
 } from "@/lib/plaidOauth";
 
@@ -31,7 +32,15 @@ export default function PlaidOauthPage() {
       ? ""
       : "We couldn't find your in-progress bank connection. Please return to the app and try connecting again.",
   );
+  const [errorDetail, setErrorDetail] = useState("");
   const submitted = useRef(false);
+
+  // Tell the server when the resume page lands with no stored state — that
+  // failure otherwise never leaves the browser (usePlaidLink is skipped).
+  useEffect(() => {
+    if (!state) reportPlaidLinkEvent("oauth_resume_no_state");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const destination = state?.flow === "debt_import" ? "/debts" : "/banking";
   const destinationLabel = state?.flow === "debt_import" ? "Go to My Debts" : "Go to Banking";
@@ -80,15 +89,33 @@ export default function PlaidOauthPage() {
   // card instead of silently dumping the user on /banking (which renders the
   // marketing page when the session is gone).
   const onExit = useCallback(
-    (error: { error_message?: string } | null) => {
+    (
+      error: {
+        error_type?: string;
+        error_code?: string;
+        error_message?: string;
+      } | null,
+      metadata?: { request_id?: string; link_session_id?: string },
+    ) => {
       clearPlaidOauthState();
       if (!state || error) {
+        reportPlaidLinkEvent(
+          state ? "oauth_resume_exit_error" : "oauth_resume_no_state",
+          error,
+          metadata,
+        );
         setErrorMessage(
           "We couldn't resume your bank connection. Please return to the app and try connecting again.",
+        );
+        setErrorDetail(
+          [error?.error_code, metadata?.request_id && `ref ${metadata.request_id}`]
+            .filter(Boolean)
+            .join(" · "),
         );
         setStatus("error");
         return;
       }
+      reportPlaidLinkEvent("oauth_resume_user_cancel", null, metadata);
       navigate(destination);
     },
     [state, navigate, destination],
@@ -168,6 +195,11 @@ export default function PlaidOauthPage() {
               Connection interrupted
             </h1>
             <p className="text-slate-600 mt-2 font-medium">{errorMessage}</p>
+            {errorDetail && (
+              <p className="text-slate-400 mt-2 text-xs" data-testid="text-oauth-error-detail">
+                {errorDetail}
+              </p>
+            )}
             <Button
               className="w-full mt-6 bg-dime-purple hover:bg-dime-purple/90 text-white font-bold h-12 text-lg rounded-xl"
               onClick={() => navigate("/banking")}

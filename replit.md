@@ -47,7 +47,7 @@ Detailed operational runbooks and subsystem specs live in `.agents/memory/` — 
 - App Store: **LIVE**; v1.0.5 (build 207) APPROVED & LIVE (2026-07-21). Next iOS build number must be ≥210.
 - Google Play: first production release **SUBMITTED FOR REVIEW 2026-07-23** (versionCode 209, v1.0.5, US only, managed publishing off → auto-live on approval). Delete-account page https://dime-time.com/delete-account is on file with Google — must stay live. See `.agents/memory/android-play-launch.md`.
 - Money loop proven bank-to-bank: $1.00 ACH debt payment (2026-07-07) settled via Stripe, $0.99 payout landed in Mercury (confirmed 2026-07-21). ACH settles in 2–4 business days via webhook.
-- Stripe Financial Connections registration SUBMITTED (2026-07-21, founder) — under Stripe review; bank linking for public users unblocks when approved.
+- Stripe Financial Connections registration **APPROVED — live-verified 2026-07-24**: founder's iPhone test created a live FC session (`fc_session_created` in prod logs) and the full Stripe bank-picker UI rendered in-app. Final proof pending: one completed link through the exchange step. Plaid in-app OAuth resume (Chase) still failing — telemetry added, needs next republish (web) / build ≥210 (native).
 - Stripe account live; prod has `ENABLE_STRIPE_ACH` + `ENABLE_REAL_TRANSFERS` ON (founder decision; public protected by the default-false per-user allowlist).
 - LinkedIn launch post is INTENTIONALLY HELD (founder decision 2026-07-09) until two milestones land: (1) real money movement working for users, (2) Plaid debt import live in production. Blockers are external approvals: Stripe Financial Connections registration + Plaid production/Liabilities approval.
 

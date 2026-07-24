@@ -5,6 +5,18 @@ description: FC bank-connect (beta) has THREE independent 502 failure modes — 
 
 # Stripe Financial Connections: registration AND permission-scope must both line up
 
+## STATUS 2026-07-24: registration APPROVED and live-verified
+Founder's on-device test (live prod): `fc_session_created` logged in live mode and the
+Stripe FC modal fully rendered in the iOS app — Link phone verification, saved-account
+picker (his Mercury accounts), institution list, Chase hand-off. The old "not registered"
+502 is gone. Remaining to fully prove the loop: complete one link through
+`/financial-connections/exchange` (fastest: pick already-saved Link accounts → "Connect
+accounts"; no bank OAuth needed). **Gotcha found:** choosing Chase inside the FC modal in
+the native WebView shows Stripe's "Copy the link below and open it in your browser"
+fallback (app-to-app OAuth can't launch from the WebView); the modal polls and proceeds
+after the user authorizes in Safari — clunky but functional. Selecting saved Link accounts
+avoids it entirely.
+
 The Stripe "Connect bank account (beta)" flow (`StripeConnectButton` →
 `POST /api/stripe/financial-connections/session` → `createFinancialConnectionsSession`
 in `server/services/stripeService.ts` → `collectFinancialConnectionsAccounts`) depends on

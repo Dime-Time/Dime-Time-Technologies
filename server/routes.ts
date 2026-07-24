@@ -1662,6 +1662,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client-side Plaid Link telemetry: 20 events per IP per minute.
+  const plaidEventLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    message: { message: "Too many events." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
+  });
+
+  // Structured log of Plaid Link client-side outcomes (esp. OAuth resume
+  // failures, which never reach the server otherwise). Log-only — no DB
+  // writes, no PII beyond Plaid's own error/session identifiers. Auth is
+  // optional on purpose: the OAuth resume page can land in a browser where
+  // the session is gone, and that failure is exactly what we need to see.
+  app.post("/api/plaid/link-event", plaidEventLimiter, (req: Request, res: Response) => {
+    const userId = getUserIdFromRequest(req) ?? "anonymous";
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const clip = (v: unknown, max = 200) =>
+      typeof v === "string" ? v.slice(0, max) : undefined;
+    console.log(JSON.stringify({
+      service: "PlaidLinkClient",
+      event: "link_client_event",
+      userId,
+      stage: clip(b.stage, 40),
+      errorType: clip(b.errorType, 60),
+      errorCode: clip(b.errorCode, 60),
+      errorMessage: clip(b.errorMessage),
+      requestId: clip(b.requestId, 60),
+      linkSessionId: clip(b.linkSessionId, 60),
+      platform: clip(b.platform, 20),
+    }));
+    res.status(204).end();
+  });
+
   // Plaid banking integration routes
   app.post("/api/plaid/create-link-token", async (req: Request, res: Response) => {
     try {

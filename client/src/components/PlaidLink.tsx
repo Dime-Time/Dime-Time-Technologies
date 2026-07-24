@@ -3,7 +3,7 @@ import { usePlaidLink } from 'react-plaid-link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { savePlaidOauthState, clearPlaidOauthState } from '@/lib/plaidOauth';
+import { savePlaidOauthState, clearPlaidOauthState, reportPlaidLinkEvent } from '@/lib/plaidOauth';
 import { Loader2, CreditCard } from 'lucide-react';
 import { trackBankConnection, trackFeatureUsage, trackUserMilestone } from '../../lib/analytics';
 
@@ -57,11 +57,20 @@ export function PlaidLink({ onSuccess, onExit }: PlaidLinkProps) {
     [onSuccess, toast]
   );
 
-  const handleOnExit = useCallback(() => {
-    console.log('Plaid Link exited');
-    clearPlaidOauthState();
-    onExit?.();
-  }, [onExit]);
+  const handleOnExit = useCallback(
+    (
+      error: { error_type?: string; error_code?: string; error_message?: string } | null,
+      metadata?: { request_id?: string; link_session_id?: string },
+    ) => {
+      console.log('Plaid Link exited');
+      // OAuth banks leave the WebView mid-flow; only clear the saved resume
+      // state on a REAL exit (user cancel / hard error), which this is.
+      clearPlaidOauthState();
+      reportPlaidLinkEvent(error ? 'link_exit_error' : 'link_exit_cancel', error, metadata);
+      onExit?.();
+    },
+    [onExit],
+  );
 
   const { open, ready } = usePlaidLink({
     token: linkToken,
