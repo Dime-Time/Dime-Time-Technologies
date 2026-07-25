@@ -22,5 +22,10 @@ The round-up "crypto %" split only writes bookkeeping rows (simulated purchase r
 ## Rollout reminder
 The Preview label reaches the website on next republish; native iPhone/Android users only get it with the next app build (rides with build ≥210).
 
+## Alternatives evaluated (2026-07-25) — don't re-research
+- **Kraken**: no consumer OAuth; per-user access = user-generated API keys pasted into the app (rejected: unshippable UX + key-custody liability for a consumer audience). Kraken **Embed** is the real fintech product (Kraken holds custody/licenses) but it's institutional: contact-sales form, partnership contracts — a "later, at scale" option.
+- **Crypto.com**: OAuth exists only inside their institutional Exchange **Broker Programme** (apply/partnership); otherwise manual API keys. Same rejection.
+- **Verdict:** every real path is apply-and-wait; Coinbase OAuth is the only consumer-grade one and stays the plan. Embedded-brokerage CaaS (Kraken Embed / Zero Hash class) is the eventual alternative if Coinbase never whitelists.
+
 ## Founder's background action (non-blocking for launch)
 As of 2026-07-25, Coinbase has new OAuth client creation **paused / partner-gated** — no self-serve registration. Path: submit the CDP developer-interest form (coinbase.com/developer-platform/developer-interest), wait for whitelisting; once approved, clients are created in CDP portal → API Keys → OAuth (redirect URI `https://dime-time.com/coinbase-callback`). The portal's "Verify your business / custodial APIs" banner is for Coinbase's payments/stablecoin products — NOT needed for per-user OAuth; don't send the founder through it. No sandbox exists: OAuth testing requires real KYC'd Coinbase accounts. Client id/secret go into Secrets only when the connect flow is built.
