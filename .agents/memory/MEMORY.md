@@ -18,7 +18,7 @@
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
 - [Automatic debt import](debt-import-feature.md) — Liabilities LIVE on prod 2026-07-25, zero republish; probe prod with PLAID_SECRET_PRODUCTION + valid-UUIDv4 fake token, never PLAID_SECRET.
-- [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — APPROVED, live-verified 2026-07-24; final proof = one completed link; three 502 failure modes documented inside.
+- [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — LOOP CLOSED 2026-07-25: full link flow live-verified (idempotent re-link); four 502 failure modes documented inside.
 - [Stripe payout destination](stripe-payout-destination.md) — payouts land in Stripe Balance storage (fa_ dest), NOT a bank; no external account on file until founder links Mercury.
 - [Forced white-text theme](forced-white-text-theme.md) — index.css forces white text + remaps bg-white→lavender; readable inputs need a scoped opt-out (.dt-marketing / .dt-auth).
 - [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab deliberately deleted post go/no-go; verdict logic lives in shared/stripeVerdict.ts; don't re-add.

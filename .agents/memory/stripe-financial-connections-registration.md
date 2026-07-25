@@ -5,10 +5,12 @@ description: FC bank-connect (beta) has FOUR independent 502 failure modes — u
 
 # Stripe Financial Connections: registration AND permission-scope must both line up
 
-## STATUS 2026-07-25: exchange re-link fix in workspace — PENDING REPUBLISH, loop still unproven
-First live exchange attempt (2026-07-25 08:08 UTC, founder re-picking his Mercury account
-saved since 2026-07-10) failed at Stage 4 below. Fix applied in workspace; prod needs a
-republish, then one completed link closes the loop.
+## STATUS 2026-07-25: LOOP CLOSED — full link flow live-verified end to end
+Founder completed the flow on iPhone at 12:08 UTC (after the Stage-4 fix was republished
+at 12:02): authorize → fc_session_created → Stripe picker → BOTH Mercury accounts exchanged
+via `fc_exchange_relinked` → 200 in ~0.5s each. Both accounts had rows since 2026-07-10,
+which is why the pre-fix blind insert 502'd (08:08 UTC attempt) and why both took the
+refresh path post-fix. Nothing left to verify in this flow.
 
 ## STATUS 2026-07-24: registration APPROVED and live-verified
 Founder's on-device test (live prod): `fc_session_created` logged in live mode and the
