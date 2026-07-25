@@ -313,6 +313,18 @@ export function registerStripeRoutes(app: Express): void {
 
       stripeLog(correlationId, "fc_exchange_start", { userId, fcAccountId });
 
+      // Re-link guard: Stripe Link remembers saved bank accounts, so users
+      // routinely re-pick an account that already has a stripe_accounts row.
+      // Same user → refresh the row in place. Different user → refuse.
+      const existing = await storage.getStripeAccountByFcAccountId(fcAccountId);
+      if (existing && existing.userId !== userId) {
+        stripeLog(correlationId, "fc_exchange_conflict", { severity: "ERROR", fcAccountId });
+        return res.status(409).json({
+          message: "This bank account is already linked to a different Dime Time account",
+          correlationId,
+        });
+      }
+
       const user = await storage.getUser(userId);
       const holderName =
         [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
@@ -325,22 +337,59 @@ export function registerStripeRoutes(app: Express): void {
         holderName,
       });
 
-      const saved = await storage.createStripeAccount({
-        userId,
-        stripeCustomerId: customerId,
-        stripeFcAccountId: fcAccountId,
-        paymentMethodIdPlaintext: paymentMethodId,
-        institutionName,
-        last4,
-      });
+      let saved;
+      let relinked = false;
+      if (existing) {
+        saved = await storage.updateStripeAccountLink(existing.id, {
+          paymentMethodIdPlaintext: paymentMethodId,
+          stripeCustomerId: customerId,
+          institutionName,
+          last4,
+        });
+        relinked = true;
+      } else {
+        try {
+          saved = await storage.createStripeAccount({
+            userId,
+            stripeCustomerId: customerId,
+            stripeFcAccountId: fcAccountId,
+            paymentMethodIdPlaintext: paymentMethodId,
+            institutionName,
+            last4,
+          });
+        } catch (insertErr: any) {
+          // Concurrent-exchange race on the fcAccountId unique index:
+          // another request inserted the row between our lookup and insert.
+          const isDuplicate =
+            insertErr?.code === "23505" ||
+            /stripe_accounts_stripe_fc_account_id_unique/.test(insertErr?.message ?? "");
+          if (!isDuplicate) throw insertErr;
+          const row = await storage.getStripeAccountByFcAccountId(fcAccountId);
+          if (!row || row.userId !== userId) {
+            stripeLog(correlationId, "fc_exchange_conflict", { severity: "ERROR", fcAccountId });
+            return res.status(409).json({
+              message: "This bank account is already linked to a different Dime Time account",
+              correlationId,
+            });
+          }
+          saved = await storage.updateStripeAccountLink(row.id, {
+            paymentMethodIdPlaintext: paymentMethodId,
+            stripeCustomerId: customerId,
+            institutionName,
+            last4,
+          });
+          relinked = true;
+        }
+      }
 
-      stripeLog(correlationId, "fc_exchange_success", {
+      stripeLog(correlationId, relinked ? "fc_exchange_relinked" : "fc_exchange_success", {
         stripeAccountId: saved.id,
         institutionName,
       });
 
-      return res.status(201).json({
+      return res.status(relinked ? 200 : 201).json({
         success: true,
+        relinked,
         stripeAccountId: saved.id,
         institutionName,
         last4,

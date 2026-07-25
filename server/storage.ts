@@ -244,6 +244,8 @@ export interface IStorage {
   // writes go through createTransfer/updateTransferStatus; these methods
   // manage the encrypted PaymentMethod reference.
   createStripeAccount(data: Omit<InsertStripeAccount, 'stripePaymentMethodEnc'> & { paymentMethodIdPlaintext: string }): Promise<StripeAccount>;
+  getStripeAccountByFcAccountId(fcAccountId: string): Promise<StripeAccount | undefined>;
+  updateStripeAccountLink(id: string, data: { paymentMethodIdPlaintext: string; stripeCustomerId: string; institutionName?: string | null; last4?: string | null }): Promise<StripeAccount>;
   getStripeAccountById(id: string): Promise<StripeAccount | undefined>;
   getStripeAccountsByUserId(userId: string): Promise<StripeAccount[]>;
   getStripePaymentMethodId(stripeAccountId: string): Promise<string | undefined>;
@@ -1721,6 +1723,8 @@ export class MemStorage implements IStorage {
   async getTransferByStripeChargeId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
   async createStripeAccount(_data: any): Promise<StripeAccount> { throw new Error('MemStorage does not support Stripe accounts'); }
+  async getStripeAccountByFcAccountId(_fcAccountId: string): Promise<StripeAccount | undefined> { return undefined; }
+  async updateStripeAccountLink(_id: string, _data: any): Promise<StripeAccount> { throw new Error('MemStorage does not support Stripe accounts'); }
   async getStripeAccountById(_id: string): Promise<StripeAccount | undefined> { return undefined; }
   async getStripeAccountsByUserId(_userId: string): Promise<StripeAccount[]> { return []; }
   async getStripePaymentMethodId(_id: string): Promise<string | undefined> { return undefined; }
@@ -2533,6 +2537,29 @@ export class DatabaseStorage implements IStorage {
       ...rest,
       stripePaymentMethodEnc: encrypted,
     }).returning();
+    return result;
+  }
+
+  async getStripeAccountByFcAccountId(fcAccountId: string): Promise<StripeAccount | undefined> {
+    const [result] = await db.select().from(stripeAccounts).where(eq(stripeAccounts.stripeFcAccountId, fcAccountId));
+    return result;
+  }
+
+  // Re-link refresh: same FC account linked again → replace the stored
+  // PaymentMethod reference in place. Keeping the SAME row id preserves
+  // everything that points at it (funding-account selection, transfer history).
+  async updateStripeAccountLink(
+    id: string,
+    data: { paymentMethodIdPlaintext: string; stripeCustomerId: string; institutionName?: string | null; last4?: string | null },
+  ): Promise<StripeAccount> {
+    const encrypted = encryptToken(data.paymentMethodIdPlaintext);
+    const [result] = await db.update(stripeAccounts).set({
+      stripePaymentMethodEnc: encrypted,
+      stripeCustomerId: data.stripeCustomerId,
+      ...(data.institutionName !== undefined ? { institutionName: data.institutionName } : {}),
+      ...(data.last4 !== undefined ? { last4: data.last4 } : {}),
+    }).where(eq(stripeAccounts.id, id)).returning();
+    if (!result) throw new Error(`stripe_accounts row not found for re-link: ${id}`);
     return result;
   }
 

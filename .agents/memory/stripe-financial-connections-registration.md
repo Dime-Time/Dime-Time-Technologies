@@ -1,9 +1,14 @@
 ---
 name: Stripe Financial Connections registration + permission scope
-description: FC bank-connect (beta) has THREE independent 502 failure modes — unregistered account, session requesting an unactivated scope, and exchange omitting billing_details[name].
+description: FC bank-connect (beta) has FOUR independent 502 failure modes — unregistered account, unactivated scope, exchange omitting billing_details[name], and duplicate re-link of an already-linked FC account.
 ---
 
 # Stripe Financial Connections: registration AND permission-scope must both line up
+
+## STATUS 2026-07-25: exchange re-link fix in workspace — PENDING REPUBLISH, loop still unproven
+First live exchange attempt (2026-07-25 08:08 UTC, founder re-picking his Mercury account
+saved since 2026-07-10) failed at Stage 4 below. Fix applied in workspace; prod needs a
+republish, then one completed link closes the loop.
 
 ## STATUS 2026-07-24: registration APPROVED and live-verified
 Founder's on-device test (live prod): `fc_session_created` logged in live mode and the
@@ -20,7 +25,7 @@ avoids it entirely.
 The Stripe "Connect bank account (beta)" flow (`StripeConnectButton` →
 `POST /api/stripe/financial-connections/session` → `createFinancialConnectionsSession`
 in `server/services/stripeService.ts` → `collectFinancialConnectionsAccounts`) depends on
-Stripe **Financial Connections**. It can 502 for TWO distinct reasons — fix them in order:
+Stripe **Financial Connections**. It can 502 for FOUR distinct reasons — fix them in order:
 
 ## Stage 1 — account not registered (external, founder action)
 **Symptom:** 502, log `event:"fc_session_failed"` with
@@ -61,6 +66,18 @@ NOT verify this name against the bank's holder record (ownership is proven by th
 in the FC modal), so the app user's name is acceptable. **Before wider beta:** replace the
 literal placeholder fallback with a 422 "complete your profile" so real-money ACH mandate
 evidence always carries a real name.
+
+## Stage 4 — re-linking an already-linked account hits the unique index (CODE bug, fixed 2026-07-25)
+**Symptom:** 502, log `fc_exchange_failed` with
+> duplicate key value violates unique constraint "stripe_accounts_stripe_fc_account_id_unique"
+
+Stripe Link remembers saved bank accounts, so re-picking an already-linked account is the
+NORMAL returning-user path — the exchange route blind-inserted into `stripe_accounts`.
+**Fix:** exchange is idempotent: lookup by `stripe_fc_account_id` first — same user → attach a
+fresh PaymentMethod and refresh the EXISTING row in place (same row id, so funding-account
+selection and transfer history stay valid); different user → 409 (`fc_exchange_conflict`);
+insert race → catch 23505/constraint-name and fall back to the refresh path. Old
+PaymentMethods stay attached to the Stripe customer (harmless clutter — deliberate, no detach).
 
 **UX gotcha (not a bug):** a successful link surfaces on the **Debts page** (each debt's
 "Pay with linked bank (beta)" button reads `/api/stripe/status`), NOT the Banking page — the
