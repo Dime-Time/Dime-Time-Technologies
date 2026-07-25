@@ -23,4 +23,4 @@ The round-up "crypto %" split only writes bookkeeping rows (simulated purchase r
 The Preview label reaches the website on next republish; native iPhone/Android users only get it with the next app build (rides with build ≥210).
 
 ## Founder's background action (non-blocking for launch)
-Register an OAuth application in the Coinbase Developer Platform portal (redirect URI on dime-time.com; client id/secret go into Secrets only when the connect flow is built).
+As of 2026-07-25, Coinbase has new OAuth client creation **paused / partner-gated** — no self-serve registration. Path: submit the CDP developer-interest form (coinbase.com/developer-platform/developer-interest), wait for whitelisting; once approved, clients are created in CDP portal → API Keys → OAuth (redirect URI `https://dime-time.com/coinbase-callback`). The portal's "Verify your business / custodial APIs" banner is for Coinbase's payments/stablecoin products — NOT needed for per-user OAuth; don't send the founder through it. No sandbox exists: OAuth testing requires real KYC'd Coinbase accounts. Client id/secret go into Secrets only when the connect flow is built.

@@ -20,7 +20,7 @@
 - [Automatic debt import](debt-import-feature.md) — Liabilities NOT active yet (2026-07-25): only the link/token/create probe is authoritative — /liabilities/get lies; app auto-flips ≤10 min after Plaid activates.
 - [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — LOOP CLOSED 2026-07-25: full link flow live-verified (idempotent re-link); four 502 failure modes documented inside.
 - [Stripe payout destination](stripe-payout-destination.md) — payouts land in Stripe Balance storage (fa_ dest), NOT a bank; no external account on file until founder links Mercury.
-- [Crypto preview & Coinbase plan](coinbase-crypto-preview.md) — crypto is SIMULATED by design (live public prices, fake buys, labeled Preview); real path = per-user Coinbase OAuth, never single-account custody.
+- [Crypto preview & Coinbase plan](coinbase-crypto-preview.md) — crypto SIMULATED by design (live prices, fake buys, labeled Preview); real path = per-user OAuth, never custody; OAuth creation partner-gated 2026-07.
 - [Forced white-text theme](forced-white-text-theme.md) — index.css forces white text + remaps bg-white→lavender; readable inputs need a scoped opt-out (.dt-marketing / .dt-auth).
 - [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab deliberately deleted post go/no-go; verdict logic lives in shared/stripeVerdict.ts; don't re-add.
 - [Subscription billing](subscription-billing.md) — $2.99/mo Stripe Billing; incomplete+past_due ARE entitled (ACH lag); consent row precedes Stripe calls; founder prod-enable checklist inside.
