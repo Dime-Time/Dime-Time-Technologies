@@ -18,8 +18,6 @@ import { insertTransactionSchema, insertPaymentSchema, insertDebtSchema, insertC
 import { z } from "zod";
 import { plaidService } from "./services/plaidService";
 import { coinbaseService } from "./services/coinbaseService";
-import { s3Service } from "./services/s3Service";
-import { dynamoService } from "./services/dynamoService";
 import { axosService } from "./services/axosService";
 import { registerAxosRoutes } from "./routes/axosRoutes";
 import { registerMercuryRoutes } from "./routes/mercuryRoutes";
@@ -40,7 +38,6 @@ import { notificationService } from "./services/notificationService";
 import { notificationTriggers } from "./services/notificationTriggers";
 import { roundUpSplitService } from "./services/roundUpSplitService";
 import { calculateRoundUp } from "../client/src/lib/calculations";
-import multer from "multer";
 import { randomBytes } from "crypto";
 import { sendPasswordResetEmail, sendVerificationEmail, sendContactNotificationEmail, isEmailServiceDegraded } from "./services/emailService";
 import { decideForgotPasswordResponse } from "./lib/passwordResetContract";
@@ -2106,180 +2103,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error awarding tokens:', error);
       res.status(500).json({ message: 'Failed to award tokens' });
-    }
-  });
-
-  // Configure multer for file uploads (in-memory storage)
-  const upload = multer({ 
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-  });
-
-  // AWS S3 File Upload Routes
-  app.post("/api/aws/upload", upload.single('file'), async (req: Request, res: Response) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const documentType = req.body.documentType || 'other';
-      
-      if (!req.file) {
-        return res.status(400).json({ message: "No file provided" });
-      }
-
-      if (!s3Service.isServiceConfigured()) {
-        return res.status(503).json({ 
-          message: "S3 service not configured. Please provide AWS credentials.",
-          configured: false
-        });
-      }
-
-      const fileUrl = await s3Service.uploadUserDocument(
-        userId, 
-        req.file.originalname, 
-        req.file.buffer, 
-        documentType as 'receipt' | 'statement' | 'profile' | 'other'
-      );
-
-      res.json({
-        success: true,
-        fileUrl,
-        fileName: req.file.originalname,
-        documentType,
-        message: "File uploaded successfully to S3"
-      });
-    } catch (error) {
-      console.error('Error uploading file to S3:', error);
-      res.status(500).json({ message: "Failed to upload file" });
-    }
-  });
-
-  app.get("/api/aws/files/:userId", async (req: Request, res: Response) => {
-    try {
-      const authUserId = getUserIdFromRequest(req);
-      if (!authUserId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const { userId } = req.params;
-      if (userId !== authUserId) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-      const documentType = req.query.type as string;
-
-      if (!s3Service.isServiceConfigured()) {
-        return res.status(503).json({ message: "S3 service not configured" });
-      }
-
-      const files = await s3Service.listUserFiles(userId, documentType);
-      res.json({ files });
-    } catch (error) {
-      console.error('Error listing user files:', error);
-      res.status(500).json({ message: "Failed to list files" });
-    }
-  });
-
-  app.post("/api/aws/backup-user-data", async (req: Request, res: Response) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      if (!s3Service.isServiceConfigured()) {
-        return res.status(503).json({ message: "S3 service not configured" });
-      }
-
-      // Gather all user data
-      const [debts, transactions, payments, cryptoPurchases] = await Promise.all([
-        storage.getDebtsByUserId(userId),
-        storage.getTransactionsByUserId(userId),
-        storage.getPaymentsByUserId(userId),
-        storage.getCryptoPurchasesByUserId(userId),
-      ]);
-
-      const userData = {
-        userId,
-        backupDate: new Date().toISOString(),
-        data: {
-          debts,
-          transactions,
-          payments,
-          cryptoPurchases,
-        }
-      };
-
-      const backupUrl = await s3Service.backupUserData(userId, userData);
-      
-      res.json({
-        success: true,
-        backupUrl,
-        message: "User data backed up successfully to S3"
-      });
-    } catch (error) {
-      console.error('Error backing up user data:', error);
-      res.status(500).json({ message: "Failed to backup user data" });
-    }
-  });
-
-  // AWS DynamoDB Routes (for migration or parallel storage)
-  app.post("/api/aws/sync-to-dynamo", async (req: Request, res: Response) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      if (!dynamoService.isServiceConfigured()) {
-        return res.status(503).json({ 
-          message: "DynamoDB service not configured. Please provide AWS credentials.",
-          configured: false
-        });
-      }
-
-      // Sync transactions to DynamoDB
-      const transactions = await storage.getTransactionsByUserId(userId);
-      const syncResults = await Promise.all(
-        transactions.map(transaction => 
-          dynamoService.createTransaction(transaction)
-        )
-      );
-
-      res.json({
-        success: true,
-        syncedCount: syncResults.length,
-        message: "Financial data synced to DynamoDB successfully"
-      });
-    } catch (error) {
-      console.error('Error syncing to DynamoDB:', error);
-      res.status(500).json({ message: "Failed to sync data to DynamoDB" });
-    }
-  });
-
-  app.get("/api/aws/service-status", async (req: Request, res: Response) => {
-    try {
-      const status = {
-        s3: {
-          configured: s3Service.isServiceConfigured(),
-          status: s3Service.isServiceConfigured() ? 'ready' : 'missing_credentials'
-        },
-        dynamodb: {
-          configured: dynamoService.isServiceConfigured(),
-          status: dynamoService.isServiceConfigured() ? 'ready' : 'missing_credentials'
-        },
-        plaid: {
-          configured: plaidService.isServiceConfigured(),
-          status: plaidService.isServiceConfigured() ? 'ready' : 'missing_credentials'
-        },
-        coinbase: {
-          configured: coinbaseService.isServiceConfigured(),
-          status: coinbaseService.isServiceConfigured() ? 'ready' : 'missing_credentials'
-        }
-      };
-      res.json(status);
-    } catch (error) {
-      console.error('Error checking AWS service status:', error);
-      res.status(500).json({ message: "Failed to check AWS service status" });
     }
   });
 

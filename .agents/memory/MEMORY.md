@@ -17,6 +17,7 @@
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
+- [AWS fully removed](aws-removed.md) — zero AWS dependency since 2026-07; lingering AWS_* secrets are leftovers, never reintroduce SDKs or S3/Dynamo code.
 - [Automatic debt import](debt-import-feature.md) — Liabilities NOT active yet (2026-07-25): only the link/token/create probe is authoritative — /liabilities/get lies; app auto-flips ≤10 min after Plaid activates.
 - [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — LOOP CLOSED 2026-07-25: full link flow live-verified (idempotent re-link); four 502 failure modes documented inside.
 - [Stripe payout destination](stripe-payout-destination.md) — payouts land in Stripe Balance storage (fa_ dest), NOT a bank; no external account on file until founder links Mercury.
