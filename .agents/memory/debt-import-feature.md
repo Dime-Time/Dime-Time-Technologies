@@ -5,6 +5,18 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
+## Status update 2026-07-25: Liabilities entitlement LIVE on production (probe-verified)
+Direct `/liabilities/get` probe with a valid-format unknown token returns INVALID_ACCESS_TOKEN
+"could not find matching access token" — the day before, the same call died at INVALID_PRODUCT
+"not enabled for liabilities". Entitlement gate gone → product active. Prod deployment already
+wired (Plaid service in production env, debt-import routes mounted, ENABLE_DEBT_IMPORT=1) →
+zero republish needed. Remaining proof: one real end-to-end import (founder).
+**Probe gotcha:** use PLAID_SECRET_PRODUCTION — PLAID_SECRET is the sandbox secret and yields
+INVALID_API_KEYS against production.plaid.com (easily misread as "founder rotated keys"). The
+fake token must be a strictly valid UUIDv4 (`access-production-xxxxxxxx-xxxx-4xxx-{8|9|a|b}xxx-…`);
+loose fakes fail the format check first and mask the entitlement signal. Observed check order:
+keys → entitlement → token format → token lookup.
+
 ## Status update 2026-07-24: Order Form SIGNED by all parties — entitlement NOT yet flipped
 - Plaid Signatures email confirms "All parties have completed Order Form (Dime Time and Plaid)" (founder shared 2026-07-24). Contract step DONE.
 - Same-day production probe (`link/token/create` with liabilities): still `INVALID_PRODUCT` — Plaid hasn't activated the entitlement yet. Activation after countersignature is typically hours to a few business days; no founder action needed unless it's still off after ~3 business days (then ping rep Melanie).
