@@ -143,25 +143,27 @@ export class RoundUpSplitService {
    * Get current cryptocurrency price
    */
   private async getCurrentCryptoPrice(cryptoSymbol: string): Promise<number> {
+    // coinbaseService.getSpotPrice returns live public market prices even in
+    // demo/preview mode, so use it whether or not API keys are configured.
     try {
-      if (coinbaseService.isServiceConfigured()) {
-        const priceData: any = await coinbaseService.getSpotPrice(`${cryptoSymbol}-USD`);
-        return parseFloat(priceData.data?.amount || priceData.amount || priceData);
-      } else {
-        // Demo prices
-        const demoPrices: { [key: string]: number } = {
-          'BTC': 95000,
-          'ETH': 3200,
-          'XRP': 0.55,
-          'LTC': 140,
-          'ADA': 0.38
-        };
-        return demoPrices[cryptoSymbol] || 95000;
+      const priceData: any = await coinbaseService.getSpotPrice(`${cryptoSymbol}-USD`);
+      const price = parseFloat(priceData.data?.amount || priceData.amount || priceData);
+      if (Number.isFinite(price) && price > 0) {
+        return price;
       }
+      throw new Error(`Invalid spot price for ${cryptoSymbol}`);
     } catch (error) {
       console.error('Error getting crypto price:', error);
-      // Fallback to demo price
-      return 95000;
+      // Static fallback prices, aligned with coinbaseService fallbacks
+      const fallbackPrices: { [key: string]: number } = {
+        'BTC': 43250,
+        'ETH': 3200,
+        'XRP': 0.55,
+        'LTC': 140,
+        'ADA': 0.38,
+        'SOL': 145
+      };
+      return fallbackPrices[cryptoSymbol] || fallbackPrices['BTC'];
     }
   }
 

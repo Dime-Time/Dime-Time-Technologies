@@ -199,6 +199,16 @@ class CoinbaseService {
   private isConfigured: boolean = false;
   private demoMode: boolean = true; // Always use demo mode for user safety
 
+  // Live public market prices (no auth required) so Preview mode shows real
+  // prices while purchases stay simulated. Cached so round-up processing
+  // never waits on repeated price lookups.
+  private static readonly FALLBACK_USD_PRICES: Record<string, number> = {
+    BTC: 43250, ETH: 3200, ADA: 0.38, SOL: 145, XRP: 0.55, LTC: 140,
+  };
+  private spotPriceCache = new Map<string, { price: number; fetchedAt: number }>();
+  private static readonly SPOT_CACHE_TTL_MS = 60_000;
+  private inflightSpotFetches = new Map<string, Promise<number | null>>();
+
   constructor() {
     try {
       if (process.env.COINBASE_API_KEY && process.env.COINBASE_API_SECRET) {
@@ -209,6 +219,7 @@ class CoinbaseService {
         );
         this.isConfigured = true;
         console.log('✅ Coinbase service initialized with secure API client (DEMO MODE - no real trades)');
+        this.warmSpotPriceCache();
       } else {
         this.isConfigured = false;
         console.log('⚠️  Coinbase service not configured - missing API credentials');
@@ -217,6 +228,76 @@ class CoinbaseService {
       console.error('Failed to initialize Coinbase service:', error);
       this.isConfigured = false;
     }
+  }
+
+  /**
+   * Pre-warm the public price cache for the coins offered in the app so the
+   * first round-up after boot never waits on a network price lookup.
+   */
+  private warmSpotPriceCache(): void {
+    for (const symbol of ['BTC', 'ETH', 'ADA', 'SOL']) {
+      void this.fetchAndCacheSpotPrice(`${symbol}-USD`);
+    }
+  }
+
+  /**
+   * Fetch + cache a live public spot price. Never throws; returns null on
+   * failure. Concurrent calls for the same pair share one request.
+   */
+  private fetchAndCacheSpotPrice(pair: string): Promise<number | null> {
+    const existing = this.inflightSpotFetches.get(pair);
+    if (existing) {
+      return existing;
+    }
+    const fetchPromise = (async () => {
+      try {
+        const resp = await axios.get(`https://api.coinbase.com/v2/prices/${pair}/spot`, { timeout: 4000 });
+        const price = parseFloat(resp.data?.data?.amount);
+        if (!Number.isFinite(price) || price <= 0) {
+          throw new Error('Invalid price payload from Coinbase public API');
+        }
+        this.spotPriceCache.set(pair, { price, fetchedAt: Date.now() });
+        return price;
+      } catch (error) {
+        console.warn(`Coinbase public price fetch failed for ${pair}:`, error instanceof Error ? error.message : error);
+        return null;
+      } finally {
+        this.inflightSpotFetches.delete(pair);
+      }
+    })();
+    this.inflightSpotFetches.set(pair, fetchPromise);
+    return fetchPromise;
+  }
+
+  /**
+   * Live spot price from Coinbase's public (unauthenticated) price API,
+   * used in demo/preview mode so users see real market prices even though
+   * purchases are simulated. Designed to never block the round-up hot path:
+   * a fresh or stale cached price is returned immediately (stale triggers a
+   * background refresh); only the very first lookup for a pair awaits the
+   * network, and it degrades to a static fallback on failure.
+   */
+  private async getPublicSpotPrice(currencyPair: string): Promise<{ amount: string; currency: string }> {
+    const pair = currencyPair.toUpperCase();
+    const base = pair.split('-')[0] || 'BTC';
+    const formatUsd = (p: number) => (p >= 1 ? p.toFixed(2) : p.toFixed(6));
+    const cached = this.spotPriceCache.get(pair);
+
+    if (cached) {
+      if (Date.now() - cached.fetchedAt >= CoinbaseService.SPOT_CACHE_TTL_MS) {
+        // Stale: serve immediately, refresh in the background
+        void this.fetchAndCacheSpotPrice(pair);
+      }
+      return { amount: formatUsd(cached.price), currency: 'USD' };
+    }
+
+    // Cold path (first lookup for this pair since boot): await one fetch
+    const price = await this.fetchAndCacheSpotPrice(pair);
+    if (price !== null) {
+      return { amount: formatUsd(price), currency: 'USD' };
+    }
+    const fallback = CoinbaseService.FALLBACK_USD_PRICES[base] ?? CoinbaseService.FALLBACK_USD_PRICES.BTC;
+    return { amount: formatUsd(fallback), currency: 'USD' };
   }
 
   /**
@@ -327,12 +408,13 @@ class CoinbaseService {
 
   async getExchangeRates(currency: string = 'BTC') {
     if (this.demoMode) {
+      // Preview mode: derive the USD rate from the live public spot price
+      // instead of advertising stale hardcoded numbers.
+      const spot = await this.getPublicSpotPrice(`${currency}-USD`);
       return {
         currency: currency,
         rates: {
-          USD: '43250.00',
-          EUR: '39800.00',
-          GBP: '34100.00'
+          USD: spot.amount
         }
       };
     }
@@ -352,10 +434,8 @@ class CoinbaseService {
 
   async getSpotPrice(currencyPair: string = 'BTC-USD') {
     if (this.demoMode) {
-      return {
-        amount: '43250.00',
-        currency: 'USD'
-      };
+      // Preview mode: real market price, simulated trading
+      return this.getPublicSpotPrice(currencyPair);
     }
 
     if (!this.isConfigured || !this.client) {

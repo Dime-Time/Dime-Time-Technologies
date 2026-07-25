@@ -149,7 +149,7 @@ export default function CryptoPage() {
               </div>
               Crypto Round-ups
             </h1>
-            <p className="text-slate-600 mt-2 ml-1 text-lg">Invest spare change in cryptocurrency through Coinbase</p>
+            <p className="text-slate-600 mt-2 ml-1 text-lg">Practice investing spare change in crypto — live prices, simulated purchases</p>
           </div>
           <Button 
             variant="outline" 
@@ -159,6 +159,27 @@ export default function CryptoPage() {
             <Settings className="w-4 h-4" />
             Settings
           </Button>
+        </div>
+
+        {/* Preview notice — purchases are simulated until the real Coinbase integration ships */}
+        <div
+          className="mb-8 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
+          data-testid="banner-crypto-preview"
+        >
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+              Crypto is in Preview
+              <Badge variant="secondary" className="border border-amber-200 bg-amber-100 text-amber-800">
+                Simulated
+              </Badge>
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-amber-800">
+              Prices are live market prices, but purchases here are practice only — no real money is
+              moved and no real crypto is bought. A direct connection to your own Coinbase account is
+              in the works.
+            </p>
+          </div>
         </div>
 
         {/* Settings Panel */}
