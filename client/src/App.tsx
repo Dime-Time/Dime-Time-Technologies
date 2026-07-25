@@ -42,6 +42,7 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import DeleteAccount from "@/pages/delete-account";
 import PlaidOauthPage from "@/pages/plaid-oauth";
+import CoinbaseCallback from "@/pages/coinbase-callback";
 import Signup from "@/pages/signup";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -278,6 +279,7 @@ function AppContent() {
       {/* Plaid OAuth return: banks redirect here after the user authorizes.
           Must render for any auth state — the page itself resumes Link. */}
       <Route path="/plaid/oauth" component={PlaidOauthPage} />
+      <Route path="/coinbase-callback" component={CoinbaseCallback} />
 
       <Route path="/bank-setup">
         {effectivelyAuthenticated ? (
