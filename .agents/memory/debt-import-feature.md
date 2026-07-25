@@ -5,12 +5,20 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
-## Status update 2026-07-25: Liabilities entitlement LIVE on production (probe-verified)
-Direct `/liabilities/get` probe with a valid-format unknown token returns INVALID_ACCESS_TOKEN
-"could not find matching access token" — the day before, the same call died at INVALID_PRODUCT
-"not enabled for liabilities". Entitlement gate gone → product active. Prod deployment already
-wired (Plaid service in production env, debt-import routes mounted, ENABLE_DEBT_IMPORT=1) →
-zero republish needed. Remaining proof: one real end-to-end import (founder).
+## Status update 2026-07-25 (CORRECTED): entitlement only PARTIALLY active — Link gate still closed
+Morning `/liabilities/get` probe (fake token) newly returned INVALID_ACCESS_TOKEN instead of
+INVALID_PRODUCT and was misread as "Liabilities LIVE". The founder's real import attempt at
+12:15 UTC showed the truth: `link/token/create` with `products:["liabilities"]` still returns
+INVALID_PRODUCT ("Your account is not enabled for liabilities") — confirmed in prod logs and by
+direct re-probe at 12:18 UTC. **Lesson: the ONLY authoritative entitlement probe is
+`link/token/create` with liabilities — the exact call the app's capability probe makes.
+`/liabilities/get` error shape can flip earlier and lies about Link readiness.**
+When Plaid truly activates, the app recovers with ZERO work: the 10-min capability cache
+re-probes and the "Coming soon" modal disappears on its own (no republish; native build 209
+already ships the full import UI — founder's screenshot proves it). Escalation clock: Order
+Form completed 2026-07-24 → if the link-token probe still fails ~2026-07-29 (3 business days),
+founder pings rep Melanie. When it flips, run the first import on WEB (dime-time.com), not the
+native app — Chase OAuth resume on native needs build ≥210.
 **Probe gotcha:** use PLAID_SECRET_PRODUCTION — PLAID_SECRET is the sandbox secret and yields
 INVALID_API_KEYS against production.plaid.com (easily misread as "founder rotated keys"). The
 fake token must be a strictly valid UUIDv4 (`access-production-xxxxxxxx-xxxx-4xxx-{8|9|a|b}xxx-…`);
