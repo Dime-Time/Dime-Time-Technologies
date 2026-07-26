@@ -153,7 +153,11 @@ export default function Debts() {
   const totalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
   const totalOriginalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.originalBalance), 0);
   const totalMinimumPayments = debts.reduce((sum, debt) => sum + parseFloat(debt.minimumPayment), 0);
-  const overallProgress = totalOriginalDebt > 0 ? ((totalOriginalDebt - totalDebt) / totalOriginalDebt) * 100 : 0;
+  // Clamp 0–100 so legacy data (currentBalance > originalBalance) can never
+  // render a negative summary bar or >100% payoff.
+  const overallProgress = totalOriginalDebt > 0
+    ? Math.min(100, Math.max(0, ((totalOriginalDebt - totalDebt) / totalOriginalDebt) * 100))
+    : 0;
   const paidOffCount = debts.filter(isPaidOff).length;
 
   const realThisMonthPayments = payments

@@ -39,8 +39,11 @@ export function formatTime(date: Date | string): string {
 export function calculateDebtProgress(originalBalance: string, currentBalance: string): number {
   const original = parseFloat(originalBalance);
   const current = parseFloat(currentBalance);
-  if (original === 0) return 0;
-  return Math.round(((original - current) / original) * 100);
+  if (!Number.isFinite(original) || !Number.isFinite(current) || original <= 0) return 0;
+  // Clamp to 0–100 so a balance edited above the original (or bad data) can
+  // never render a negative progress bar or >100% payoff.
+  const pct = Math.round(((original - current) / original) * 100);
+  return Math.min(100, Math.max(0, pct));
 }
 
 export function estimatePayoffMonths(currentBalance: string, monthlyPayment: number): number {
