@@ -19,7 +19,7 @@ import { DebtHistoryModal } from "@/components/DebtHistoryModal";
 import { ImportDebtsModal } from "@/components/ImportDebtsModal";
 import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
-import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download, Pencil, Trash2, Zap, LayoutList, PartyPopper, Archive, ArchiveRestore, ChevronDown, Trophy } from "lucide-react";
+import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download, Pencil, Trash2, Zap, LayoutList, PartyPopper, Archive, ArchiveRestore, ChevronDown, Trophy, Share2 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -169,6 +169,47 @@ export default function Debts() {
       });
     },
   });
+
+  const shareMilestone = async (debt: Debt) => {
+    const payoffDate = debt.archivedAt
+      ? new Date(debt.archivedAt).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : null;
+    const message = `I paid off my ${debt.name} (${formatCurrency(debt.originalBalance)})${payoffDate ? ` on ${payoffDate}` : ""} with Dime Time! 🎉`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: message });
+      } catch (err) {
+        // User cancelled the share sheet — not an error worth surfacing.
+        if ((err as DOMException)?.name !== "AbortError") {
+          toast({
+            title: "Couldn't Share",
+            description: "Something went wrong opening the share sheet. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(message);
+      toast({
+        title: "Copied to Clipboard",
+        description: "Your milestone message is ready to paste anywhere.",
+      });
+    } catch {
+      toast({
+        title: "Couldn't Copy",
+        description: "Clipboard access was blocked. You can share manually instead.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const openPaymentModal = (debtId?: string) => {
     setPaymentDebtId(debtId);
@@ -397,15 +438,26 @@ export default function Debts() {
                           </p>
                         </div>
                       </div>
-                      <Button
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm press-scale px-6"
-                        disabled={deleteDebtMutation.isPending}
-                        onClick={() => deleteDebtMutation.mutate(debt.id)}
-                        data-testid={`button-archive-debt-${debt.id}`}
-                      >
-                        <Archive className="w-4 h-4 mr-2" />
-                        {deleteDebtMutation.isPending ? "Archiving..." : "Archive this debt"}
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="outline"
+                          className="bg-white font-bold text-green-700 border-green-300 shadow-sm hover:bg-green-50 hover:text-green-800"
+                          onClick={() => shareMilestone(debt)}
+                          data-testid={`button-share-milestone-${debt.id}`}
+                        >
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share the win
+                        </Button>
+                        <Button
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm press-scale px-6"
+                          disabled={deleteDebtMutation.isPending}
+                          onClick={() => deleteDebtMutation.mutate(debt.id)}
+                          data-testid={`button-archive-debt-${debt.id}`}
+                        >
+                          <Archive className="w-4 h-4 mr-2" />
+                          {deleteDebtMutation.isPending ? "Archiving..." : "Archive this debt"}
+                        </Button>
+                      </div>
                     </div>
                   )}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
@@ -594,6 +646,17 @@ export default function Debts() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        {paidOff && (
+                          <Button
+                            variant="outline"
+                            className="bg-white font-semibold text-green-700 border-green-300 shadow-sm hover:bg-green-50 hover:text-green-800"
+                            onClick={() => shareMilestone(debt)}
+                            data-testid={`button-share-archived-${debt.id}`}
+                          >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Share
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           className="bg-white font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
