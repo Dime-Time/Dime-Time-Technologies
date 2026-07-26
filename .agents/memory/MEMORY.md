@@ -17,6 +17,7 @@
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
+- [Task-agent merge verification](task-merge-verification.md) — agents snapshot current main (dup tasks merge as no-ops); after every Apply: stat + sentinel greps + suite + restart + live probe.
 - [AWS fully removed](aws-removed.md) — zero AWS dependency; account CLOSED 2026-07-26 (0 buckets verified); never reintroduce SDKs or S3/Dynamo code.
 - [Secrets deletion & recovery](replit-secrets-deletion.md) — agent can't delete Secrets; checkpoints don't restore them; deployment store = recovery copy; PLAID_TOKEN_ENCRYPTION_KEY never re-issuable.
 - [Automatic debt import](debt-import-feature.md) — Plaid Liabilities NOT active (2026-07-25); only the link/token/create probe is authoritative — /liabilities/get lies; auto-flips when active.
