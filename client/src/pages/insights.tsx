@@ -446,8 +446,15 @@ export default function Insights() {
                       t.status === "pending" || t.status === "processing"
                         ? describeTransactionStatus(t.status, "transfer")
                         : null;
+                    // Resolve the destination debt across active AND archived
+                    // debts. Permanent deletion intentionally leaves the
+                    // transfer ledger untouched for audit integrity, so a
+                    // transfer can reference a debt that no longer exists —
+                    // label it "Deleted debt" instead of dropping the line.
                     const destinationDebt = t.debtId
-                      ? debts.find((d) => d.id === t.debtId)?.name ?? null
+                      ? debts.find((d) => d.id === t.debtId)?.name ??
+                        archivedDebts.find((d) => d.id === t.debtId)?.name ??
+                        "Deleted debt"
                       : null;
                     const fundingLabel = t.fundingAccount
                       ? `${t.fundingAccount.institutionName || "Linked bank"}${
