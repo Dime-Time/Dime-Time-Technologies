@@ -140,6 +140,18 @@ export default function Insights() {
     0,
   );
 
+  // Best-available payoff date per debt: the latest payment recorded against
+  // it (the payment that brought the balance to zero). The schema has no
+  // dedicated payoff timestamp, so a debt with no payment history (e.g.
+  // imported already-paid or manually zeroed) simply shows no date rather
+  // than a made-up one.
+  const payoffDateByDebtId = new Map<string, Date>();
+  for (const p of payments) {
+    const when = new Date(p.date);
+    const existing = payoffDateByDebtId.get(p.debtId);
+    if (!existing || when > existing) payoffDateByDebtId.set(p.debtId, when);
+  }
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 animate-fade-in-up">
       <header className="mb-8">
@@ -340,20 +352,48 @@ export default function Insights() {
             <div className="space-y-4">
               {paidOffWins.length > 0 && (
                 <div
-                  className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50/70 p-3"
+                  className="rounded-lg border border-green-200 bg-green-50/70 p-3"
                   data-testid="banner-insights-paid-off"
                 >
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Trophy className="w-5 h-5 text-green-600 shrink-0" />
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-100 p-2 rounded-full">
+                      <Trophy className="w-5 h-5 text-green-600 shrink-0" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-green-900">
+                        {paidOffWins.length} debt{paidOffWins.length === 1 ? "" : "s"} paid off 🎉
+                      </p>
+                      <p className="text-xs font-medium text-green-700/80">
+                        {formatCurrency(paidOffAmount)} eliminated for good. Keep stacking wins!
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-green-900">
-                      {paidOffWins.length} debt{paidOffWins.length === 1 ? "" : "s"} paid off 🎉
-                    </p>
-                    <p className="text-xs font-medium text-green-700/80">
-                      {formatCurrency(paidOffAmount)} eliminated for good. Keep stacking wins!
-                    </p>
-                  </div>
+                  <ul className="mt-3 space-y-2" data-testid="list-paid-off-wins">
+                    {paidOffWins.map((win) => {
+                      const payoffDate = payoffDateByDebtId.get(win.id);
+                      return (
+                        <li
+                          key={win.id}
+                          className="flex items-center justify-between gap-3 rounded-md border border-green-100 bg-white/80 px-3 py-2"
+                          data-testid={`paid-off-win-${win.id}`}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-green-900 truncate">
+                              {win.name}
+                            </p>
+                            <p className="text-xs text-green-700/80">
+                              {payoffDate
+                                ? `Paid off ${formatDate(payoffDate.toISOString())}`
+                                : "Paid off"}
+                            </p>
+                          </div>
+                          <span className="text-sm font-bold text-green-800 tabular-nums shrink-0">
+                            {formatCurrency(win.originalBalance)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               )}
               <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
