@@ -51,6 +51,11 @@ export const debts = pgTable("debts", {
   // When the debt was archived (soft-deleted). Set when isActive flips to
   // false; cleared on restore. For paid-off debts this is the payoff date.
   archivedAt: timestamp("archived_at"),
+  // Exact moment currentBalance FIRST reached zero. Stamped once by the
+  // storage layer whenever a balance update brings currentBalance <= 0 and
+  // cleared if the balance goes back above zero — the celebration date must
+  // never be inferred from (possibly missing) payment history.
+  paidOffAt: timestamp("paid_off_at"),
   payeeAccountNumber: text("payee_account_number"), // Creditor's bank account number for ACH payment (set by admin)
   payeeRoutingNumber: text("payee_routing_number"), // Creditor's bank routing number for ACH payment (set by admin)
   // --- Automatic debt import (provider-agnostic) ---
@@ -506,6 +511,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertDebtSchema = createInsertSchema(debts).omit({
   id: true,
   createdAt: true,
+  // Server-owned payoff bookkeeping — stamped by the storage layer only.
+  paidOffAt: true,
   // Provider/import-owned columns are set SERVER-SIDE ONLY. Omitting them from
   // the public insert schema prevents mass-assignment (e.g. a user forging an
   // "imported from Chase" debt via POST /api/debts).

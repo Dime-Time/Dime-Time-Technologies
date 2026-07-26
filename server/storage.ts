@@ -378,6 +378,7 @@ export class MemStorage implements IStorage {
         dueDate: 15,
         isActive: true,
         archivedAt: null,
+        paidOffAt: null,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
         source: "manual",
@@ -405,6 +406,7 @@ export class MemStorage implements IStorage {
         dueDate: 22,
         isActive: true,
         archivedAt: null,
+        paidOffAt: null,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
         source: "manual",
@@ -432,6 +434,7 @@ export class MemStorage implements IStorage {
         dueDate: 1,
         isActive: true,
         archivedAt: null,
+        paidOffAt: null,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
         source: "manual",
@@ -1109,6 +1112,9 @@ export class MemStorage implements IStorage {
       id,
       isActive: insertDebt.isActive ?? true,
       archivedAt: null,
+      // Creation never stamps a payoff date (routes require balance > 0 and
+      // a debt created at zero was paid off on an unknown earlier day).
+      paidOffAt: null,
       payeeAccountNumber: insertDebt.payeeAccountNumber ?? null,
       payeeRoutingNumber: insertDebt.payeeRoutingNumber ?? null,
       source: "manual",
@@ -1138,6 +1144,21 @@ export class MemStorage implements IStorage {
       updates = { ...updates, archivedAt: new Date() };
     } else if (updates.isActive === true && updates.archivedAt === undefined) {
       updates = { ...updates, archivedAt: null };
+    }
+
+    // Payoff bookkeeping: stamp paidOffAt ONCE at the actual >0 → <=0
+    // crossing; clear it if the balance goes back above zero. A debt that was
+    // ALREADY at zero (legacy, pre-feature) is never backfilled with "now" —
+    // its true payoff day is unknown. Mirrors DatabaseStorage.
+    if (updates.currentBalance !== undefined && updates.paidOffAt === undefined) {
+      const newBalance = parseFloat(updates.currentBalance);
+      if (newBalance <= 0) {
+        if (!debt.paidOffAt && parseFloat(debt.currentBalance) > 0) {
+          updates = { ...updates, paidOffAt: new Date() };
+        }
+      } else if (debt.paidOffAt) {
+        updates = { ...updates, paidOffAt: null };
+      }
     }
 
     const updatedDebt = { ...debt, ...updates };
@@ -1190,6 +1211,16 @@ export class MemStorage implements IStorage {
           // originalBalance bumps the original so progress can't go negative.
           const bumped = bumpedOriginalBalance(existing.originalBalance, balance);
           if (bumped !== undefined) next.originalBalance = bumped;
+          // Payoff bookkeeping — same crossing rule as updateDebt (import
+          // refresh can zero a balance with no payment history). A debt that
+          // was already at zero is left untouched. Mirrors DatabaseStorage.
+          if (parseFloat(balance) <= 0) {
+            if (!existing.paidOffAt && parseFloat(existing.currentBalance) > 0) {
+              next.paidOffAt = new Date();
+            }
+          } else if (existing.paidOffAt) {
+            next.paidOffAt = null;
+          }
         }
         if (!edited.includes("minimumPayment")) next.minimumPayment = minPay;
         if (!edited.includes("interestRate")) next.interestRate = apr;
@@ -1211,6 +1242,9 @@ export class MemStorage implements IStorage {
           dueDate: lib.dueDate,
           isActive: true,
           archivedAt: null,
+          // Never backfill: an imported debt that arrives already at zero was
+          // paid off on an unknown earlier day.
+          paidOffAt: null,
           payeeAccountNumber: null,
           payeeRoutingNumber: null,
           source: "imported",
@@ -1874,6 +1908,23 @@ export class DatabaseStorage implements IStorage {
         updates = { ...updates, archivedAt: null };
       }
     }
+    // Payoff bookkeeping: stamp paidOffAt ONCE at the actual >0 → <=0
+    // crossing; clear it if the balance goes back above zero. A debt that was
+    // ALREADY at zero (legacy, pre-feature) is never backfilled with "now" —
+    // its true payoff day is unknown. Mirrors MemStorage.
+    if (updates.currentBalance !== undefined && updates.paidOffAt === undefined) {
+      const existing = await this.getDebt(id);
+      if (existing) {
+        const newBalance = parseFloat(updates.currentBalance);
+        if (newBalance <= 0) {
+          if (!existing.paidOffAt && parseFloat(existing.currentBalance) > 0) {
+            updates = { ...updates, paidOffAt: new Date() };
+          }
+        } else if (existing.paidOffAt) {
+          updates = { ...updates, paidOffAt: null };
+        }
+      }
+    }
     const [result] = await db.update(debts).set(updates).where(eq(debts.id, id)).returning();
     return result;
   }
@@ -1935,6 +1986,16 @@ export class DatabaseStorage implements IStorage {
           // originalBalance bumps the original so progress can't go negative.
           const bumped = bumpedOriginalBalance(existing.originalBalance, balance);
           if (bumped !== undefined) set.originalBalance = bumped;
+          // Payoff bookkeeping — same crossing rule as updateDebt (import
+          // refresh can zero a balance with no payment history). A debt that
+          // was already at zero is left untouched. Mirrors MemStorage.
+          if (parseFloat(balance) <= 0) {
+            if (!existing.paidOffAt && parseFloat(existing.currentBalance) > 0) {
+              set.paidOffAt = new Date();
+            }
+          } else if (existing.paidOffAt) {
+            set.paidOffAt = null;
+          }
         }
         if (!edited.includes("minimumPayment")) set.minimumPayment = minPay;
         if (!edited.includes("interestRate")) set.interestRate = apr;
@@ -1956,6 +2017,9 @@ export class DatabaseStorage implements IStorage {
             minimumPayment: minPay,
             dueDate: lib.dueDate,
             isActive: true,
+            // Never backfill: an imported debt that arrives already at zero
+            // was paid off on an unknown earlier day.
+            paidOffAt: null,
             source: "imported",
             provider,
             providerAccountId: lib.providerAccountId,

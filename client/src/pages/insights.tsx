@@ -140,11 +140,9 @@ export default function Insights() {
     0,
   );
 
-  // Best-available payoff date per debt: the latest payment recorded against
-  // it (the payment that brought the balance to zero). The schema has no
-  // dedicated payoff timestamp, so a debt with no payment history (e.g.
-  // imported already-paid or manually zeroed) simply shows no date rather
-  // than a made-up one.
+  // Fallback payoff date per debt: the latest payment recorded against it.
+  // Only used for legacy debts zeroed before the dedicated `paidOffAt`
+  // timestamp existed — the server-stamped date always wins below.
   const payoffDateByDebtId = new Map<string, Date>();
   for (const p of payments) {
     const when = new Date(p.date);
@@ -370,7 +368,11 @@ export default function Insights() {
                   </div>
                   <ul className="mt-3 space-y-2" data-testid="list-paid-off-wins">
                     {paidOffWins.map((win) => {
-                      const payoffDate = payoffDateByDebtId.get(win.id);
+                      // Exact server-stamped payoff moment wins; the
+                      // payment-derived date is only a legacy fallback.
+                      const payoffDate = win.paidOffAt
+                        ? new Date(win.paidOffAt)
+                        : payoffDateByDebtId.get(win.id);
                       return (
                         <li
                           key={win.id}
