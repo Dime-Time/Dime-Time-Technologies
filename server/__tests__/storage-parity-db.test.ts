@@ -16,7 +16,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { MemStorage, storage as dbStorage, type IStorage } from "../storage";
-import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings } from "../../shared/schema";
+import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings, notificationSettings } from "../../shared/schema";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -97,6 +97,7 @@ async function seedScenario(s: IStorage): Promise<Seeded> {
 async function cleanupDb(userId: string): Promise<void> {
   await db.delete(payments).where(eq(payments.userId, userId));
   await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
+  await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
   await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
   await db.delete(transactions).where(eq(transactions.userId, userId));
   await db.delete(debts).where(eq(debts.userId, userId));
@@ -334,6 +335,88 @@ test("parity: round-up settings defaults and partial updates match in MemStorage
 
     // Full parity across every observed column.
     assert.deepEqual(dbObs, memObs, "round-up settings observations must match exactly");
+  } finally {
+    await cleanupDb(dbUser.id);
+  }
+});
+
+/**
+ * Notification settings default parity (same drift risk as round-up settings):
+ *   MemStorage fills defaults inline in code, DatabaseStorage relies on
+ *   schema column defaults. Observes the FULL row from a minimal-payload
+ *   create, then a partial update, and asserts identical results
+ *   (ids/userIds normalized away; updatedAt normalized to "stamped").
+ */
+async function observeNotificationSettings(s: IStorage, userId: string) {
+  // 1. Create with the minimal possible payload — every other field must
+  //    come from defaults, identically in both implementations.
+  const created = await s.createOrUpdateNotificationSettings({ userId });
+
+  // 2. Partial update — must change ONLY the provided fields and must not
+  //    clobber (or re-default) anything else.
+  const updated = await s.createOrUpdateNotificationSettings({
+    userId,
+    smsEnabled: false,
+    phoneNumber: "+15555550123",
+  });
+
+  const fetched = await s.getNotificationSettings(userId);
+
+  // Normalize instance-specific identifiers and wall-clock timestamps;
+  // keep every other column.
+  const norm = (r: typeof created | undefined) => {
+    if (!r) return undefined;
+    const { id: _id, userId: _uid, updatedAt, ...rest } = r;
+    return { ...rest, updatedAtStamped: updatedAt != null };
+  };
+  return { created: norm(created), updated: norm(updated), fetched: norm(fetched) };
+}
+
+test("parity: notification settings defaults and partial updates match in MemStorage and DatabaseStorage", async () => {
+  const mem = new MemStorage();
+  const memUser = await mem.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  const memObs = await observeNotificationSettings(mem, memUser.id);
+
+  const dbUser = await dbStorage.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  try {
+    const dbObs = await observeNotificationSettings(dbStorage, dbUser.id);
+
+    // Pin the expected defaulted row explicitly so a failure names the
+    // drifted field (and so schema-default changes are caught deliberately).
+    const expectedCreated = {
+      smsEnabled: true,
+      emailEnabled: true,
+      pushEnabled: true,
+      phoneNumber: null,
+      paymentReminders: true,
+      roundupMilestones: true,
+      cryptoUpdates: true,
+      weeklyReports: true,
+      marketingMessages: false,
+      updatedAtStamped: true,
+    };
+    assert.deepEqual(memObs.created, expectedCreated, "MemStorage: minimal-payload create defaults");
+    assert.deepEqual(dbObs.created, expectedCreated, "DatabaseStorage: minimal-payload create defaults");
+
+    // Partial update changes only the provided fields.
+    const expectedUpdated = { ...expectedCreated, smsEnabled: false, phoneNumber: "+15555550123" };
+    assert.deepEqual(memObs.updated, expectedUpdated, "MemStorage: partial update must not clobber unrelated fields");
+    assert.deepEqual(dbObs.updated, expectedUpdated, "DatabaseStorage: partial update must not clobber unrelated fields");
+
+    // Round-trip read matches what the write returned.
+    assert.deepEqual(memObs.fetched, memObs.updated, "MemStorage: fetched row matches returned row");
+    assert.deepEqual(dbObs.fetched, dbObs.updated, "DatabaseStorage: fetched row matches returned row");
+
+    // Full parity across every observed column.
+    assert.deepEqual(dbObs, memObs, "notification settings observations must match exactly");
   } finally {
     await cleanupDb(dbUser.id);
   }
