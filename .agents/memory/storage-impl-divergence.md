@@ -25,5 +25,11 @@ payment history 500s on the FK and destroys the money trail. Debts are removed
 via soft-delete (`isActive=false`) and hidden by the `getDebtsByUserId` filter.
 Same lesson family as the account-deletion cascade note.
 
+## DB-backed parity tests need a synced dev schema
+Behavioral parity for the debt-import bump rule is pinned by a dev-DB test
+alongside the MemStorage one. The dev database can lag `shared/schema.ts`
+(42703 "column does not exist"); run `npm run db:push -- --force` before
+blaming the storage code when a DB-backed test fails that way.
+
 (The previously-noted `POST /api/payments` debtId IDOR was closed in the
 2026-07 pre-launch security pass — ownership + isActive are now checked.)
