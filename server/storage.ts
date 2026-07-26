@@ -96,6 +96,37 @@ import { eq, desc, and, sql, inArray, gte } from "drizzle-orm";
  * still written, and `httpStatus`/`message` are the deterministic response to
  * cache against the idempotency key.
  */
+/** Shape returned by getDashboardSummary — shared by both storage implementations. */
+export interface DashboardSummary {
+  totalDebt: string;
+  totalRoundUps: string;
+  totalCrypto: string;
+  debtCount: number;
+  transactionCount: number;
+}
+
+/**
+ * Shared implementation of getDashboardSummary so MemStorage and
+ * DatabaseStorage cannot drift — both delegate here.
+ */
+async function computeDashboardSummary(storage: IStorage, userId: string): Promise<DashboardSummary> {
+  const debts = await storage.getUserDebts(userId);
+  const transactions = await storage.getUserTransactions(userId);
+  const cryptoPurchases = await storage.getUserCryptoPurchases(userId);
+
+  const totalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
+  const totalRoundUps = transactions.reduce((sum, trans) => sum + (parseFloat(trans.roundUpAmount || '0')), 0);
+  const totalCrypto = cryptoPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.amountUsd), 0);
+
+  return {
+    totalDebt: totalDebt.toFixed(2),
+    totalRoundUps: totalRoundUps.toFixed(2),
+    totalCrypto: totalCrypto.toFixed(2),
+    debtCount: debts.length,
+    transactionCount: transactions.length,
+  };
+}
+
 export type RealAchGateResult =
   | { ok: true; ledger: Transfer; auditId: string; isFirst: boolean }
   | { ok: false; httpStatus: number; reason: string; message: string; auditId: string | null };
@@ -291,6 +322,17 @@ export interface IStorage {
   consumeEmailVerificationToken(tokenHash: string): Promise<EmailVerificationToken | undefined>;
   invalidateEmailVerificationTokensForUser(userId: string): Promise<void>;
   markUserEmailVerified(userId: string, when?: Date): Promise<void>;
+
+  // Convenience/alias methods used by services (debtCalculationService,
+  // notificationTriggers, dashboard routes). Declared here so tsc flags any
+  // implementation that omits them — MemStorage and DatabaseStorage must not
+  // drift apart again.
+  getAllUsers(): Promise<User[]>;
+  getUserTransactions(userId: string, limit?: number): Promise<Transaction[]>;
+  getUserDebts(userId: string): Promise<Debt[]>;
+  getUserCryptoPurchases(userId: string): Promise<CryptoPurchase[]>;
+  getUserNotifications(userId: string, limit?: number): Promise<Notification[]>;
+  getDashboardSummary(userId: string): Promise<DashboardSummary>;
 }
 
 export class MemStorage implements IStorage {
@@ -1554,23 +1596,8 @@ export class MemStorage implements IStorage {
     return this.getCryptoPurchasesByUserId(userId);
   }
 
-  async getDashboardSummary(userId: string): Promise<any> {
-    // Calculate summary data
-    const debts = await this.getUserDebts(userId);
-    const transactions = await this.getUserTransactions(userId);
-    const cryptoPurchases = await this.getUserCryptoPurchases(userId);
-
-    const totalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
-    const totalRoundUps = transactions.reduce((sum, trans) => sum + (parseFloat(trans.roundUpAmount || '0')), 0);
-    const totalCrypto = cryptoPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.amountUsd), 0);
-
-    return {
-      totalDebt: totalDebt.toFixed(2),
-      totalRoundUps: totalRoundUps.toFixed(2), 
-      totalCrypto: totalCrypto.toFixed(2),
-      debtCount: debts.length,
-      transactionCount: transactions.length
-    };
+  async getDashboardSummary(userId: string): Promise<DashboardSummary> {
+    return computeDashboardSummary(this, userId);
   }
 
   async getNotificationById(id: string): Promise<Notification | undefined> {
@@ -2367,22 +2394,8 @@ export class DatabaseStorage implements IStorage {
     return this.getCryptoPurchasesByUserId(userId);
   }
 
-  async getDashboardSummary(userId: string): Promise<any> {
-    const debts = await this.getUserDebts(userId);
-    const transactions = await this.getUserTransactions(userId);
-    const cryptoPurchases = await this.getUserCryptoPurchases(userId);
-
-    const totalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
-    const totalRoundUps = transactions.reduce((sum, trans) => sum + (parseFloat(trans.roundUpAmount || '0')), 0);
-    const totalCrypto = cryptoPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.amountUsd), 0);
-
-    return {
-      totalDebt: totalDebt.toFixed(2),
-      totalRoundUps: totalRoundUps.toFixed(2),
-      totalCrypto: totalCrypto.toFixed(2),
-      debtCount: debts.length,
-      transactionCount: transactions.length
-    };
+  async getDashboardSummary(userId: string): Promise<DashboardSummary> {
+    return computeDashboardSummary(this, userId);
   }
 
   // Contact submission methods

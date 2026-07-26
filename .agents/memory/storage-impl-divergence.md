@@ -11,6 +11,12 @@ independently and **have drifted** — e.g. `MemStorage.getDebtsByUserId` filter
 `isActive` for a long time while `DatabaseStorage.getDebtsByUserId` did **not**,
 so a soft-delete (isActive=false) would hide a debt in dev but not in prod.
 
+Signature drift is now closed: every convenience method services call
+(getAllUsers, getUserDebts, getUserTransactions, getUserCryptoPurchases,
+getUserNotifications, getDashboardSummary) is declared on `IStorage`, and
+getDashboardSummary delegates to one shared `computeDashboardSummary` helper
+returning a typed `DashboardSummary`. Behavioral drift can still happen:
+
 **Why:** TypeScript only checks that both satisfy the interface (method
 signatures), not that their *behavior* matches. A filter added to one class is
 not enforced on the other.
