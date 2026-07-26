@@ -258,6 +258,87 @@ async function observeWrites(s: IStorage, seeded: Seeded) {
   };
 }
 
+/**
+ * Round-up settings default parity:
+ *   MemStorage fills defaults inline in code, while DatabaseStorage relies on
+ *   schema column defaults. If those two lists drift, round-up behavior (how
+ *   much money is swept) differs between dev and production. This observes
+ *   the FULL row from a minimal-payload create, then a partial update, and
+ *   asserts identical results (ids/userIds normalized away).
+ */
+async function observeRoundUpSettings(s: IStorage, userId: string) {
+  // 1. Create with the minimal possible payload — every other field must
+  //    come from defaults, identically in both implementations.
+  const created = await s.createOrUpdateRoundUpSettings({ userId });
+
+  // 2. Partial update — must change ONLY the provided fields and must not
+  //    clobber (or re-default) anything else.
+  const updated = await s.createOrUpdateRoundUpSettings({
+    userId,
+    multiplier: "2.00",
+    cryptoEnabled: true,
+  });
+
+  const fetched = await s.getRoundUpSettings(userId);
+
+  // Normalize instance-specific identifiers; keep every other column.
+  const norm = (r: typeof created | undefined) => {
+    if (!r) return undefined;
+    const { id: _id, userId: _uid, ...rest } = r;
+    return rest;
+  };
+  return { created: norm(created), updated: norm(updated), fetched: norm(fetched) };
+}
+
+test("parity: round-up settings defaults and partial updates match in MemStorage and DatabaseStorage", async () => {
+  const mem = new MemStorage();
+  const memUser = await mem.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  const memObs = await observeRoundUpSettings(mem, memUser.id);
+
+  const dbUser = await dbStorage.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  try {
+    const dbObs = await observeRoundUpSettings(dbStorage, dbUser.id);
+
+    // Pin the expected defaulted row explicitly so a failure names the
+    // drifted field (and so schema-default changes are caught deliberately).
+    const expectedCreated = {
+      isEnabled: true,
+      sourceAccountId: null,
+      targetDebtId: null,
+      fundingStripeAccountId: null,
+      multiplier: "1.00",
+      autoApplyThreshold: "25.00",
+      cryptoEnabled: false,
+      cryptoPercentage: "0.00",
+      preferredCrypto: "BTC",
+    };
+    assert.deepEqual(memObs.created, expectedCreated, "MemStorage: minimal-payload create defaults");
+    assert.deepEqual(dbObs.created, expectedCreated, "DatabaseStorage: minimal-payload create defaults");
+
+    // Partial update changes only the provided fields.
+    const expectedUpdated = { ...expectedCreated, multiplier: "2.00", cryptoEnabled: true };
+    assert.deepEqual(memObs.updated, expectedUpdated, "MemStorage: partial update must not clobber unrelated fields");
+    assert.deepEqual(dbObs.updated, expectedUpdated, "DatabaseStorage: partial update must not clobber unrelated fields");
+
+    // Round-trip read matches what the write returned.
+    assert.deepEqual(memObs.fetched, memObs.updated, "MemStorage: fetched row matches returned row");
+    assert.deepEqual(dbObs.fetched, dbObs.updated, "DatabaseStorage: fetched row matches returned row");
+
+    // Full parity across every observed column.
+    assert.deepEqual(dbObs, memObs, "round-up settings observations must match exactly");
+  } finally {
+    await cleanupDb(dbUser.id);
+  }
+});
+
 test("parity: money-moving writes behave identically in MemStorage and DatabaseStorage", async () => {
   const mem = new MemStorage();
   const memSeed = await seedScenario(mem);
