@@ -370,15 +370,17 @@ export class MemStorage implements IStorage {
     this.debtProviderConnectionsMap = new Map();
     this.debtImportAuditLogsArr = [];
     
-    // Initialize DTT token info
+    // Initialize DTT token info with the SAME values as the dtt_token_info
+    // schema column defaults — if these drift, the token price/market data
+    // shown in dev (MemStorage) differs from production (DatabaseStorage).
     this.dttTokenInfoData = {
       id: "dtt-info",
-      currentPrice: "0.284700",
-      priceChange24h: "12.45",
-      marketCap: "28470000.00",
-      volume24h: "2847000.00",
-      totalSupply: "100000000",
-      circulatingSupply: "75000000",
+      currentPrice: "0.250000",
+      priceChange24h: "5.25",
+      marketCap: "2500000.00",
+      volume24h: "125000.00",
+      totalSupply: "10000000",
+      circulatingSupply: "2500000",
       lastUpdated: new Date(),
     };
     
@@ -1769,14 +1771,26 @@ export class MemStorage implements IStorage {
   }
 
   async updateDttTokenInfo(info: InsertDttTokenInfo): Promise<DttTokenInfo> {
-    const updated: DttTokenInfo = {
+    // Partial-update semantics MUST match DatabaseStorage: merge the provided
+    // fields onto the existing row (drizzle's .set() skips undefined values),
+    // never re-default unspecified fields. Base row uses the schema defaults.
+    const base: DttTokenInfo = this.dttTokenInfoData ?? {
       id: "dtt-info",
-      currentPrice: info.currentPrice || "0.250000",
-      marketCap: info.marketCap || "2500000.00",
-      volume24h: info.volume24h || "125000.00",
-      priceChange24h: info.priceChange24h || "5.25",
-      totalSupply: info.totalSupply || "10000000",
-      circulatingSupply: info.circulatingSupply || "2500000",
+      currentPrice: "0.250000",
+      marketCap: "2500000.00",
+      volume24h: "125000.00",
+      priceChange24h: "5.25",
+      totalSupply: "10000000",
+      circulatingSupply: "2500000",
+      lastUpdated: new Date(),
+    };
+    const provided = Object.fromEntries(
+      Object.entries(info).filter(([, v]) => v !== undefined),
+    );
+    const updated: DttTokenInfo = {
+      ...base,
+      ...provided,
+      id: base.id,
       lastUpdated: new Date(),
     };
     this.dttTokenInfoData = updated;
@@ -2328,8 +2342,9 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db.update(dttTokenInfo).set({ ...info, lastUpdated: new Date() }).where(eq(dttTokenInfo.id, existing.id)).returning();
       return updated;
     }
-    const id = randomUUID();
-    const [result] = await db.insert(dttTokenInfo).values({ ...info, id }).returning();
+    // No row yet — insert one, letting the schema defaults fill unspecified
+    // columns (including id = "dtt-info"), matching MemStorage's seed row.
+    const [result] = await db.insert(dttTokenInfo).values({ ...info }).returning();
     return result;
   }
 

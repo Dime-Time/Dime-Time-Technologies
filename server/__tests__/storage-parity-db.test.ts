@@ -16,7 +16,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { MemStorage, storage as dbStorage, type IStorage } from "../storage";
-import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings, notificationSettings, dttHoldings, dttRewards, dttStaking } from "../../shared/schema";
+import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings, notificationSettings, dttHoldings, dttRewards, dttStaking, dttTokenInfo } from "../../shared/schema";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -634,6 +634,102 @@ test("parity: DTT reward and staking creates match in MemStorage and DatabaseSto
     assert.deepEqual(dbObs, memObs, "DTT reward/staking observations must match exactly");
   } finally {
     await cleanupDb(dbUser.id);
+  }
+});
+
+/**
+ * DTT token info parity (singleton market-data row — the LAST unparity-tested
+ * DTT table): MemStorage seeds it inline in the constructor and merges
+ * updates in memory, while DatabaseStorage relies on schema column defaults
+ * and an update-or-insert. If those drift, the token price/market-cap display
+ * differs between dev and production. Observes a partial update (which must
+ * default every unspecified column identically), a second partial update
+ * (which must preserve — not re-default — earlier values), and a round-trip
+ * read. lastUpdated is normalized to "stamped" plus a refresh check; id is
+ * normalized away (pre-existing prod rows may carry a legacy UUID id).
+ */
+async function observeDttTokenInfo(s: IStorage) {
+  // 1. Partial update — unspecified columns must come from defaults,
+  //    identically in both implementations.
+  const seeded = await s.updateDttTokenInfo({
+    currentPrice: "0.310000",
+    priceChange24h: "-2.10",
+  });
+
+  // Ensure a measurable clock difference so the lastUpdated refresh check
+  // below is deterministic.
+  await sleep(15);
+
+  // 2. Second partial update — must change ONLY the provided field and must
+  //    NOT clobber (or re-default) the values written in step 1.
+  const updated = await s.updateDttTokenInfo({ volume24h: "999999.99" });
+
+  const fetched = await s.getDttTokenInfo();
+
+  // Normalize instance-specific identifiers and wall-clock timestamps;
+  // keep every other column.
+  const norm = (r: typeof seeded | undefined) => {
+    if (!r) return undefined;
+    const { id: _id, lastUpdated, ...rest } = r;
+    return { ...rest, lastUpdatedStamped: lastUpdated != null };
+  };
+  return {
+    seeded: norm(seeded),
+    updated: norm(updated),
+    fetched: norm(fetched),
+    // Every update must re-stamp lastUpdated in BOTH implementations.
+    lastUpdatedRefreshed:
+      updated.lastUpdated.getTime() > seeded.lastUpdated.getTime(),
+  };
+}
+
+test("parity: DTT token info defaults and partial updates match in MemStorage and DatabaseStorage", async () => {
+  const mem = new MemStorage();
+  const memObs = await observeDttTokenInfo(mem);
+
+  // dtt_token_info is a SINGLETON shared table (no userId scoping) — snapshot
+  // whatever the dev DB currently holds, run against a clean table, and
+  // restore the original rows afterward so the running app is unaffected.
+  const snapshot = await db.select().from(dttTokenInfo);
+  await db.delete(dttTokenInfo);
+  try {
+    const dbObs = await observeDttTokenInfo(dbStorage);
+
+    // Pin the expected rows explicitly so a failure names the drifted field
+    // (and so schema-default changes are caught deliberately).
+    const expectedSeeded = {
+      currentPrice: "0.310000",
+      priceChange24h: "-2.10",
+      marketCap: "2500000.00",
+      volume24h: "125000.00",
+      totalSupply: "10000000",
+      circulatingSupply: "2500000",
+      lastUpdatedStamped: true,
+    };
+    assert.deepEqual(memObs.seeded, expectedSeeded, "MemStorage: partial update defaults unspecified columns");
+    assert.deepEqual(dbObs.seeded, expectedSeeded, "DatabaseStorage: partial update defaults unspecified columns");
+
+    // Second partial update changes only the provided field.
+    const expectedUpdated = { ...expectedSeeded, volume24h: "999999.99" };
+    assert.deepEqual(memObs.updated, expectedUpdated, "MemStorage: partial update must not clobber or re-default earlier values");
+    assert.deepEqual(dbObs.updated, expectedUpdated, "DatabaseStorage: partial update must not clobber or re-default earlier values");
+
+    // Every update re-stamps lastUpdated.
+    assert.equal(memObs.lastUpdatedRefreshed, true, "MemStorage: update refreshes lastUpdated");
+    assert.equal(dbObs.lastUpdatedRefreshed, true, "DatabaseStorage: update refreshes lastUpdated");
+
+    // Round-trip read matches what the write returned.
+    assert.deepEqual(memObs.fetched, memObs.updated, "MemStorage: fetched row matches returned row");
+    assert.deepEqual(dbObs.fetched, dbObs.updated, "DatabaseStorage: fetched row matches returned row");
+
+    // Full parity across every observed column.
+    assert.deepEqual(dbObs, memObs, "DTT token info observations must match exactly");
+  } finally {
+    // Restore the singleton exactly as it was before the test.
+    await db.delete(dttTokenInfo);
+    if (snapshot.length > 0) {
+      await db.insert(dttTokenInfo).values(snapshot);
+    }
   }
 });
 
