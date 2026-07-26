@@ -377,6 +377,7 @@ export class MemStorage implements IStorage {
         minimumPayment: "165.00",
         dueDate: 15,
         isActive: true,
+        archivedAt: null,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
         source: "manual",
@@ -403,6 +404,7 @@ export class MemStorage implements IStorage {
         minimumPayment: "248.00",
         dueDate: 22,
         isActive: true,
+        archivedAt: null,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
         source: "manual",
@@ -429,6 +431,7 @@ export class MemStorage implements IStorage {
         minimumPayment: "89.00",
         dueDate: 1,
         isActive: true,
+        archivedAt: null,
         payeeAccountNumber: null,
         payeeRoutingNumber: null,
         source: "manual",
@@ -1105,6 +1108,7 @@ export class MemStorage implements IStorage {
       ...insertDebt, 
       id,
       isActive: insertDebt.isActive ?? true,
+      archivedAt: null,
       payeeAccountNumber: insertDebt.payeeAccountNumber ?? null,
       payeeRoutingNumber: insertDebt.payeeRoutingNumber ?? null,
       source: "manual",
@@ -1127,7 +1131,15 @@ export class MemStorage implements IStorage {
   async updateDebt(id: string, updates: Partial<Debt>): Promise<Debt | undefined> {
     const debt = this.debts.get(id);
     if (!debt) return undefined;
-    
+
+    // Archive bookkeeping: stamp archivedAt when a debt is soft-deleted
+    // (isActive true → false) and clear it on restore. Mirrors DatabaseStorage.
+    if (updates.isActive === false && debt.isActive && updates.archivedAt === undefined) {
+      updates = { ...updates, archivedAt: new Date() };
+    } else if (updates.isActive === true && updates.archivedAt === undefined) {
+      updates = { ...updates, archivedAt: null };
+    }
+
     const updatedDebt = { ...debt, ...updates };
     this.debts.set(id, updatedDebt);
     return updatedDebt;
@@ -1198,6 +1210,7 @@ export class MemStorage implements IStorage {
           minimumPayment: minPay,
           dueDate: lib.dueDate,
           isActive: true,
+          archivedAt: null,
           payeeAccountNumber: null,
           payeeRoutingNumber: null,
           source: "imported",
@@ -1849,6 +1862,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateDebt(id: string, updates: Partial<Debt>): Promise<Debt | undefined> {
+    // Archive bookkeeping: stamp archivedAt when a debt is soft-deleted
+    // (isActive → false) and clear it on restore. Mirrors MemStorage.
+    if (updates.archivedAt === undefined) {
+      if (updates.isActive === false) {
+        const existing = await this.getDebt(id);
+        if (existing?.isActive) {
+          updates = { ...updates, archivedAt: new Date() };
+        }
+      } else if (updates.isActive === true) {
+        updates = { ...updates, archivedAt: null };
+      }
+    }
     const [result] = await db.update(debts).set(updates).where(eq(debts.id, id)).returning();
     return result;
   }

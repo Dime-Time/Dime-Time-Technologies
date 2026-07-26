@@ -48,6 +48,9 @@ export const debts = pgTable("debts", {
   minimumPayment: decimal("minimum_payment", { precision: 10, scale: 2 }).notNull(),
   dueDate: integer("due_date").notNull(), // day of month
   isActive: boolean("is_active").default(true).notNull(),
+  // When the debt was archived (soft-deleted). Set when isActive flips to
+  // false; cleared on restore. For paid-off debts this is the payoff date.
+  archivedAt: timestamp("archived_at"),
   payeeAccountNumber: text("payee_account_number"), // Creditor's bank account number for ACH payment (set by admin)
   payeeRoutingNumber: text("payee_routing_number"), // Creditor's bank routing number for ACH payment (set by admin)
   // --- Automatic debt import (provider-agnostic) ---

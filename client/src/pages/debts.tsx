@@ -579,6 +579,19 @@ export default function Debts() {
                           •••• {debt.accountNumber?.slice(-4) || "----"}
                           {paidOff ? ` • ${formatCurrency(debt.originalBalance)} conquered` : ""}
                         </p>
+                        {debt.archivedAt && (
+                          <p
+                            className="text-xs font-medium text-slate-500 mt-0.5"
+                            data-testid={`text-archived-date-${debt.id}`}
+                          >
+                            {paidOff ? "Paid off" : "Archived"}{" "}
+                            {new Date(debt.archivedAt).toLocaleDateString(undefined, {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <Button
