@@ -2,6 +2,7 @@
  * DB-backed parity tests for DatabaseStorage.importDebtsFromProvider.
  *
  * Run locally (DEV DB only — throwaway user, cleaned up after each test):
+ *   npm run test:db          (syncs the dev schema first — preferred)
  *   npx tsx --test server/__tests__/debt-import-db.test.ts
  *
  * Why this exists: MemStorage and DatabaseStorage have silently drifted

@@ -2,6 +2,7 @@
  * Regression tests for the real-money ACH rollout gate's concurrency guarantees.
  *
  * Run locally (DEV DB only — no Stripe, no money ever moves):
+ *   npm run test:db          (syncs the dev schema first — preferred)
  *   npx tsx --test server/__tests__/real-transfer-gate.test.ts
  *
  * Covers:

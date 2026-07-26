@@ -8,7 +8,8 @@
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server-dist && rm -rf server-dist/public && mkdir -p server-dist/public && cp -r dist/public/* server-dist/public/",
     "start": "NODE_ENV=production node server-dist/index.js",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "test:db": "drizzle-kit push --force && tsx --test server/__tests__/debt-import-db.test.ts server/__tests__/real-transfer-gate.test.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",
