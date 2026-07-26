@@ -2351,6 +2351,40 @@ export class DatabaseStorage implements IStorage {
     return this.getNotificationsByUserId(userId, limit);
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async getUserTransactions(userId: string, limit?: number): Promise<Transaction[]> {
+    return this.getTransactionsByUserId(userId, limit);
+  }
+
+  async getUserDebts(userId: string): Promise<Debt[]> {
+    return this.getDebtsByUserId(userId);
+  }
+
+  async getUserCryptoPurchases(userId: string): Promise<CryptoPurchase[]> {
+    return this.getCryptoPurchasesByUserId(userId);
+  }
+
+  async getDashboardSummary(userId: string): Promise<any> {
+    const debts = await this.getUserDebts(userId);
+    const transactions = await this.getUserTransactions(userId);
+    const cryptoPurchases = await this.getUserCryptoPurchases(userId);
+
+    const totalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
+    const totalRoundUps = transactions.reduce((sum, trans) => sum + (parseFloat(trans.roundUpAmount || '0')), 0);
+    const totalCrypto = cryptoPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.amountUsd), 0);
+
+    return {
+      totalDebt: totalDebt.toFixed(2),
+      totalRoundUps: totalRoundUps.toFixed(2),
+      totalCrypto: totalCrypto.toFixed(2),
+      debtCount: debts.length,
+      transactionCount: transactions.length
+    };
+  }
+
   // Contact submission methods
   async createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission> {
     const [result] = await db.insert(contactSubmissions).values(submission).returning();
