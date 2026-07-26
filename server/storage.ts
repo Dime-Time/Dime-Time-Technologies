@@ -1395,12 +1395,13 @@ export class MemStorage implements IStorage {
       throw new Error('Debt not found or unauthorized');
     }
 
-    // Create the payment record
+    // Create the payment record — source MUST match DatabaseStorage
+    // ("accelerated"), which is what the UI filters/labels on.
     const payment = await this.createPayment({
       userId,
       debtId,
       amount,
-      source: 'manual',
+      source: 'accelerated',
     });
 
     // Update the debt balance

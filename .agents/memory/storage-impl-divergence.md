@@ -37,5 +37,13 @@ alongside the MemStorage one. The dev database can lag `shared/schema.ts`
 (42703 "column does not exist"); run `npm run db:push -- --force` before
 blaming the storage code when a DB-backed test fails that way.
 
+## Write-path parity now pinned too
+The parity suite also runs money-moving WRITES against both impls
+(accelerated payment math + clamp + paidOffAt, archive/restore archivedAt,
+permanent-delete cascade + round-up target nulling). It already caught real
+drift: MemStorage stamped accelerated payments `source:'manual'` while
+DatabaseStorage used `'accelerated'` (fixed 2026-07-26). Any new business rule
+in a storage write should get a pin in the write-parity observation.
+
 (The previously-noted `POST /api/payments` debtId IDOR was closed in the
 2026-07 pre-launch security pass — ownership + isActive are now checked.)

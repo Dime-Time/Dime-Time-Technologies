@@ -16,7 +16,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { MemStorage, storage as dbStorage, type IStorage } from "../storage";
-import { users, debts, transactions, cryptoPurchases } from "../../shared/schema";
+import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings } from "../../shared/schema";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -95,6 +95,8 @@ async function seedScenario(s: IStorage): Promise<Seeded> {
 }
 
 async function cleanupDb(userId: string): Promise<void> {
+  await db.delete(payments).where(eq(payments.userId, userId));
+  await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
   await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
   await db.delete(transactions).where(eq(transactions.userId, userId));
   await db.delete(debts).where(eq(debts.userId, userId));
@@ -174,6 +176,126 @@ test("parity: MemStorage and DatabaseStorage return identical results for the sa
     // Finally: full observation parity (catches any drift the explicit
     // assertions above didn't anticipate).
     assert.deepEqual(dbObs, memObs, "MemStorage and DatabaseStorage observations must match exactly");
+  } finally {
+    await cleanupDb(dbSeed.userId);
+  }
+});
+
+/**
+ * Write-path parity (money-moving business rules):
+ *   - makeAcceleratedPayment: balance math, clamp-at-0, paidOffAt stamping,
+ *     payment record source/status.
+ *   - updateDebt archive→restore: archivedAt stamped on soft-delete, cleared
+ *     on restore.
+ *   - deleteDebtPermanently: debt + payment history gone, dangling
+ *     round-up target reference nulled.
+ * Timestamps are normalized to booleans (stamped vs not) since wall-clock
+ * values can never match across implementations.
+ */
+async function observeWrites(s: IStorage, seeded: Seeded) {
+  const { userId, debtIds } = seeded;
+
+  // 1. Partial accelerated payment on active1: 100.00 - 40.25 → 59.75.
+  const partial = await s.makeAcceleratedPayment(userId, debtIds.active1, "40.25");
+
+  // 2. Full-payoff (overpayment) on active2: 50.50 - 60.00 → clamps to 0.00.
+  const payoff = await s.makeAcceleratedPayment(userId, debtIds.active2, "60.00");
+
+  // 3. Paying an archived debt must be rejected identically.
+  let archivedPayError = false;
+  try {
+    await s.makeAcceleratedPayment(userId, debtIds.archived, "1.00");
+  } catch {
+    archivedPayError = true;
+  }
+
+  // 4. Archive active1, then restore it — archivedAt bookkeeping.
+  const archived = await s.updateDebt(debtIds.active1, { isActive: false });
+  const restored = await s.updateDebt(debtIds.active1, { isActive: true });
+
+  // 5. Point round-up settings at the paid-off debt, archive it, then
+  //    permanently delete it — payments cascade + target reference nulled.
+  await s.createOrUpdateRoundUpSettings({ userId, targetDebtId: debtIds.active2 });
+  await s.updateDebt(debtIds.active2, { isActive: false });
+  await s.deleteDebtPermanently(debtIds.active2);
+
+  const deletedDebt = await s.getDebt(debtIds.active2);
+  const deletedDebtPayments = await s.getPaymentsByDebtId(debtIds.active2);
+  const settingsAfterDelete = await s.getRoundUpSettings(userId);
+  const remainingPayments = await s.getPaymentsByUserId(userId);
+
+  return {
+    partial: {
+      paymentAmount: partial.payment.amount,
+      paymentSource: partial.payment.source,
+      paymentStatus: partial.payment.status,
+      newBalance: partial.updatedDebt.currentBalance,
+      paidOff: partial.updatedDebt.paidOffAt !== null,
+    },
+    payoff: {
+      paymentAmount: payoff.payment.amount,
+      newBalance: payoff.updatedDebt.currentBalance,
+      paidOff: payoff.updatedDebt.paidOffAt !== null,
+    },
+    archivedPayError,
+    archive: {
+      isActive: archived?.isActive,
+      archivedAtStamped: archived?.archivedAt != null,
+    },
+    restore: {
+      isActive: restored?.isActive,
+      archivedAtCleared: restored?.archivedAt == null,
+      // Restore must not touch payoff bookkeeping on a non-paid-off debt.
+      paidOff: restored?.paidOffAt != null,
+      balance: restored?.currentBalance,
+    },
+    afterPermanentDelete: {
+      debtGone: deletedDebt === undefined,
+      paymentsGone: deletedDebtPayments.length === 0,
+      roundUpTargetCleared: settingsAfterDelete?.targetDebtId === null,
+      remainingPaymentCount: remainingPayments.length,
+    },
+  };
+}
+
+test("parity: money-moving writes behave identically in MemStorage and DatabaseStorage", async () => {
+  const mem = new MemStorage();
+  const memSeed = await seedScenario(mem);
+  const memObs = await observeWrites(mem, memSeed);
+
+  const dbSeed = await seedScenario(dbStorage);
+  try {
+    const dbObs = await observeWrites(dbStorage, dbSeed);
+
+    // Pin the expected behavior explicitly so failures name the drift.
+    const expected = {
+      partial: {
+        paymentAmount: "40.25",
+        paymentSource: "accelerated",
+        paymentStatus: "completed",
+        newBalance: "59.75",
+        paidOff: false,
+      },
+      payoff: {
+        paymentAmount: "60.00",
+        newBalance: "0.00",
+        paidOff: true,
+      },
+      archivedPayError: true,
+      archive: { isActive: false, archivedAtStamped: true },
+      restore: { isActive: true, archivedAtCleared: true, paidOff: false, balance: "59.75" },
+      afterPermanentDelete: {
+        debtGone: true,
+        paymentsGone: true,
+        roundUpTargetCleared: true,
+        remainingPaymentCount: 1, // the partial payment on active1 survives
+      },
+    };
+    assert.deepEqual(memObs, expected, "MemStorage write behavior");
+    assert.deepEqual(dbObs, expected, "DatabaseStorage write behavior");
+
+    // Full observation parity (catches drift the pins didn't anticipate).
+    assert.deepEqual(dbObs, memObs, "write observations must match exactly");
   } finally {
     await cleanupDb(dbSeed.userId);
   }
