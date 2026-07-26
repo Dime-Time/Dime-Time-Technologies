@@ -113,6 +113,12 @@ export interface IStorage {
   getDebt(id: string): Promise<Debt | undefined>;
   createDebt(debt: InsertDebt): Promise<Debt>;
   updateDebt(id: string, updates: Partial<Debt>): Promise<Debt | undefined>;
+  /**
+   * Hard-delete a debt row AND its FK-linked children (payments,
+   * distribution_payments). Irreversible — callers must ensure the debt is
+   * already archived (isActive=false) and owned by the requesting user.
+   */
+  deleteDebtPermanently(id: string): Promise<void>;
 
   // Debt import (provider-agnostic) methods
   importDebtsFromProvider(userId: string, provider: string, liabilities: NormalizedLiability[]): Promise<{ imported: number; updated: number; debts: Debt[] }>;
@@ -1127,6 +1133,18 @@ export class MemStorage implements IStorage {
     return updatedDebt;
   }
 
+  async deleteDebtPermanently(id: string): Promise<void> {
+    // Remove orphaned payments first, then the debt itself.
+    Array.from(this.payments.entries())
+      .filter(([, p]) => p.debtId === id)
+      .forEach(([paymentId]) => this.payments.delete(paymentId));
+    // Clear dangling round-up target references (parity with DatabaseStorage).
+    Array.from(this.roundUpSettings.entries())
+      .filter(([, s]) => s.targetDebtId === id)
+      .forEach(([key, s]) => this.roundUpSettings.set(key, { ...s, targetDebtId: null }));
+    this.debts.delete(id);
+  }
+
   async importDebtsFromProvider(
     userId: string,
     provider: string,
@@ -1833,6 +1851,22 @@ export class DatabaseStorage implements IStorage {
   async updateDebt(id: string, updates: Partial<Debt>): Promise<Debt | undefined> {
     const [result] = await db.update(debts).set(updates).where(eq(debts.id, id)).returning();
     return result;
+  }
+
+  async deleteDebtPermanently(id: string): Promise<void> {
+    // Atomic: children with NOT NULL FKs to debts.id must go first or the
+    // debt delete violates FK constraints. All-or-nothing so a failure never
+    // leaves a debt without its history (or vice versa).
+    await db.transaction(async (tx) => {
+      await tx.delete(payments).where(eq(payments.debtId, id));
+      await tx.delete(distributionPayments).where(eq(distributionPayments.debtId, id));
+      // weekly_dispersals.target_debt_id is an FK to debts.id — null it out
+      // (dispersal history is kept, it just no longer points at a debt).
+      await tx.update(weeklyDispersals).set({ targetDebtId: null }).where(eq(weeklyDispersals.targetDebtId, id));
+      // round_up_settings.target_debt_id is not an FK but would dangle.
+      await tx.update(roundUpSettings).set({ targetDebtId: null }).where(eq(roundUpSettings.targetDebtId, id));
+      await tx.delete(debts).where(eq(debts.id, id));
+    });
   }
 
   async importDebtsFromProvider(

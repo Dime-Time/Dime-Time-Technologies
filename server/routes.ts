@@ -961,6 +961,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Permanently delete an ARCHIVED debt — owner only, irreversible. Hard
+  // deletes the debt row plus its orphaned payment history. Active debts are
+  // rejected: they must be archived first (DELETE /api/debts/:id), which
+  // keeps the destructive path a deliberate two-step action.
+  app.delete("/api/debts/:id/permanent", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const debt = await storage.getDebt(req.params.id);
+      if (!canAccessDebt(debt, userId)) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      if (debt.isActive) {
+        return res.status(400).json({ message: "Debt must be archived before it can be permanently deleted" });
+      }
+
+      await storage.deleteDebtPermanently(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // List archived (soft-deleted) debts — owner only. Powers the "Archived
   // Debts" section on /debts and lifetime paid-off wins on Insights.
   app.get("/api/debts/archived", async (req: Request, res: Response) => {

@@ -58,6 +58,7 @@ export default function Debts() {
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [historyDebt, setHistoryDebt] = useState<Debt | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Debt | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Debt | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const debtImportEnabled = useFlag("ENABLE_DEBT_IMPORT");
   const { toast } = useToast();
@@ -118,6 +119,30 @@ export default function Debts() {
       toast({
         title: "Couldn't Remove Debt",
         description: "There was an error removing this debt. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/debts/${id}/permanent`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Debt Deleted",
+        description: "The debt and its payment history were permanently deleted.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/debts/archived"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
+      setPermanentDeleteTarget(null);
+    },
+    onError: () => {
+      toast({
+        title: "Couldn't Delete Debt",
+        description: "There was an error deleting this debt. Please try again.",
         variant: "destructive",
       });
     },
@@ -555,16 +580,29 @@ export default function Debts() {
                           {paidOff ? ` • ${formatCurrency(debt.originalBalance)} conquered` : ""}
                         </p>
                       </div>
-                      <Button
-                        variant="outline"
-                        className="bg-white font-semibold text-slate-700 shadow-sm hover:bg-slate-50 shrink-0"
-                        disabled={restoreDebtMutation.isPending}
-                        onClick={() => restoreDebtMutation.mutate(debt.id)}
-                        data-testid={`button-restore-debt-${debt.id}`}
-                      >
-                        <ArchiveRestore className="w-4 h-4 mr-2" />
-                        Restore
-                      </Button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          className="bg-white font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                          disabled={restoreDebtMutation.isPending}
+                          onClick={() => restoreDebtMutation.mutate(debt.id)}
+                          data-testid={`button-restore-debt-${debt.id}`}
+                        >
+                          <ArchiveRestore className="w-4 h-4 mr-2" />
+                          Restore
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Delete permanently"
+                          className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          disabled={permanentDeleteMutation.isPending}
+                          onClick={() => setPermanentDeleteTarget(debt)}
+                          data-testid={`button-permanent-delete-debt-${debt.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
@@ -630,6 +668,38 @@ export default function Debts() {
         debt={historyDebt}
         payments={payments}
       />
+
+      <Dialog open={!!permanentDeleteTarget} onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden">
+          <div className="h-2 w-full bg-red-600"></div>
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle className="text-xl font-bold">Delete this debt permanently?</DialogTitle>
+            <DialogDesc className="text-base text-slate-600 mt-2">
+              {permanentDeleteTarget
+                ? `"${permanentDeleteTarget.name}" and its entire payment history will be permanently deleted. This cannot be undone.`
+                : ""}
+            </DialogDesc>
+          </DialogHeader>
+          <DialogFooter className="px-6 pb-6 pt-4 flex gap-3 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setPermanentDeleteTarget(null)}
+              data-testid="button-cancel-permanent-delete"
+              className="font-semibold text-slate-700 w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold w-full sm:w-auto shadow-sm"
+              disabled={permanentDeleteMutation.isPending}
+              onClick={() => permanentDeleteTarget && permanentDeleteMutation.mutate(permanentDeleteTarget.id)}
+              data-testid="button-confirm-permanent-delete"
+            >
+              {permanentDeleteMutation.isPending ? "Deleting..." : "Delete Permanently"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden">
