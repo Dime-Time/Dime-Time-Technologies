@@ -16,7 +16,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { MemStorage, storage as dbStorage, type IStorage } from "../storage";
-import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings, notificationSettings } from "../../shared/schema";
+import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings, notificationSettings, dttHoldings } from "../../shared/schema";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -98,6 +98,7 @@ async function cleanupDb(userId: string): Promise<void> {
   await db.delete(payments).where(eq(payments.userId, userId));
   await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
   await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
+  await db.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
   await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
   await db.delete(transactions).where(eq(transactions.userId, userId));
   await db.delete(debts).where(eq(debts.userId, userId));
@@ -417,6 +418,102 @@ test("parity: notification settings defaults and partial updates match in MemSto
 
     // Full parity across every observed column.
     assert.deepEqual(dbObs, memObs, "notification settings observations must match exactly");
+  } finally {
+    await cleanupDb(dbUser.id);
+  }
+});
+
+/**
+ * DTT token holdings default parity (same drift risk as round-up and
+ * notification settings): MemStorage fills defaults inline in code
+ * (balance "0.00000000" etc.), DatabaseStorage relies on schema column
+ * defaults. Observes the FULL row from a minimal-payload create, then a
+ * partial update, and asserts identical results (ids/userIds normalized
+ * away; timestamps normalized to "stamped"/"refreshed").
+ */
+async function observeDttHoldings(s: IStorage, userId: string) {
+  // 1. Create with the minimal possible payload — every other field must
+  //    come from defaults, identically in both implementations.
+  const created = await s.createOrUpdateDttHoldings({ userId });
+
+  // Ensure a measurable clock difference before the update so the
+  // lastActivity refresh check below is deterministic.
+  await sleep(15);
+
+  // 2. Partial update — must change ONLY the provided fields and must not
+  //    clobber (or re-default) anything else.
+  const updated = await s.createOrUpdateDttHoldings({
+    userId,
+    balance: "12.34567800",
+  });
+
+  const fetched = await s.getDttHoldings(userId);
+
+  // Normalize instance-specific identifiers and wall-clock timestamps;
+  // keep every other column.
+  const norm = (r: typeof created | undefined) => {
+    if (!r) return undefined;
+    const { id: _id, userId: _uid, lastActivity, createdAt, ...rest } = r;
+    return {
+      ...rest,
+      lastActivityStamped: lastActivity != null,
+      createdAtStamped: createdAt != null,
+    };
+  };
+  return {
+    created: norm(created),
+    updated: norm(updated),
+    fetched: norm(fetched),
+    // Update path must refresh lastActivity in BOTH implementations.
+    lastActivityRefreshed:
+      updated.lastActivity.getTime() > created.lastActivity.getTime(),
+  };
+}
+
+test("parity: DTT holdings defaults and partial updates match in MemStorage and DatabaseStorage", async () => {
+  const mem = new MemStorage();
+  const memUser = await mem.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  const memObs = await observeDttHoldings(mem, memUser.id);
+
+  const dbUser = await dbStorage.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  try {
+    const dbObs = await observeDttHoldings(dbStorage, dbUser.id);
+
+    // Pin the expected defaulted row explicitly so a failure names the
+    // drifted field (and so schema-default changes are caught deliberately).
+    const expectedCreated = {
+      balance: "0.00000000",
+      stakedAmount: "0.00000000",
+      totalEarned: "0.00000000",
+      lastActivityStamped: true,
+      createdAtStamped: true,
+    };
+    assert.deepEqual(memObs.created, expectedCreated, "MemStorage: minimal-payload create defaults");
+    assert.deepEqual(dbObs.created, expectedCreated, "DatabaseStorage: minimal-payload create defaults");
+
+    // Partial update changes only the provided fields.
+    const expectedUpdated = { ...expectedCreated, balance: "12.34567800" };
+    assert.deepEqual(memObs.updated, expectedUpdated, "MemStorage: partial update must not clobber unrelated fields");
+    assert.deepEqual(dbObs.updated, expectedUpdated, "DatabaseStorage: partial update must not clobber unrelated fields");
+
+    // Update refreshes lastActivity in both implementations.
+    assert.equal(memObs.lastActivityRefreshed, true, "MemStorage: update refreshes lastActivity");
+    assert.equal(dbObs.lastActivityRefreshed, true, "DatabaseStorage: update refreshes lastActivity");
+
+    // Round-trip read matches what the write returned.
+    assert.deepEqual(memObs.fetched, memObs.updated, "MemStorage: fetched row matches returned row");
+    assert.deepEqual(dbObs.fetched, dbObs.updated, "DatabaseStorage: fetched row matches returned row");
+
+    // Full parity across every observed column.
+    assert.deepEqual(dbObs, memObs, "DTT holdings observations must match exactly");
   } finally {
     await cleanupDb(dbUser.id);
   }

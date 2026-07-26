@@ -2263,7 +2263,9 @@ export class DatabaseStorage implements IStorage {
   async createOrUpdateDttHoldings(holdings: InsertDttHoldings): Promise<DttHoldings> {
     const existing = await this.getDttHoldings(holdings.userId);
     if (existing) {
-      const [updated] = await db.update(dttHoldings).set(holdings).where(eq(dttHoldings.userId, holdings.userId)).returning();
+      // Refresh lastActivity on every update — MemStorage does this inline,
+      // and the column default only applies on INSERT.
+      const [updated] = await db.update(dttHoldings).set({ ...holdings, lastActivity: new Date() }).where(eq(dttHoldings.userId, holdings.userId)).returning();
       return updated;
     }
     const id = randomUUID();
