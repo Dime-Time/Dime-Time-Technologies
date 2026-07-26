@@ -4,7 +4,10 @@ description: Why crypto is simulated, how preview pricing works, and the chosen 
 ---
 
 ## Status (decided 2026-07-25)
-Crypto ships as a clearly labeled **PREVIEW** (founder decision). `demoMode = true` in the Coinbase service is **deliberate** — never flip it to "fix" crypto. The Crypto page carries a Preview/Simulated banner (`banner-crypto-preview`).
+Crypto ships as a clearly labeled **PREVIEW** (founder decision). The Coinbase service is simulation + public prices ONLY: the authenticated company-key client (HMAC signing, real `buys` calls) was fully **REMOVED** 2026-07-25 per the founder-approved compliance handoff — `COINBASE_API_KEY/SECRET` secrets are now unused by code, and `isServiceConfigured()` is credential-free (always true; round-up split + routes gate on it). Never re-add company-key trading, and never let UI/API copy imply simulated purchases are real (App Review 2.2 + compliance). The Crypto page carries a Preview/Simulated banner (`banner-crypto-preview`).
+
+## Partner outreach (submitted 2026-07-25 — awaiting replies)
+All three inquiries went out the same day ("start Strategy B now" decision resolved): Coinbase Advanced Trade developer-interest form requesting OAuth whitelisting (redirect URI `https://dime-time.com/coinbase-callback`), Alpaca Broker API sales form, Zero Hash embedded-trading form. Founder monitors the company support inbox (+ spam folder) for replies. Rule: no contract or production build until a provider supplies written pricing, minimums, KYC/custody split, ACH funding architecture, and timeline. Coinbase OAuth approval may involve fees — don't describe Strategy A as guaranteed free.
 
 ## Architecture rule (the important one)
 Real crypto MUST be **per-user Coinbase OAuth** — buys execute inside the user's own Coinbase account with their own funds.

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -355,19 +356,19 @@ export default function Settings() {
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input
-                    type="password"
+                  <PasswordInput
                     placeholder="New Password"
                     value={profileData.newPassword}
                     onChange={(e) => setProfileData(prev => ({ ...prev, newPassword: e.target.value }))}
                     className="border-slate-200 focus-visible:ring-dime-purple"
+                    data-testid="input-new-password"
                   />
-                  <Input
-                    type="password"
+                  <PasswordInput
                     placeholder="Confirm New Password"
                     value={profileData.confirmPassword}
                     onChange={(e) => setProfileData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     className="border-slate-200 focus-visible:ring-dime-purple"
+                    data-testid="input-confirm-password"
                   />
                 </div>
                 <Button variant="outline" size="sm" className="w-full sm:w-auto text-slate-700 press-scale">

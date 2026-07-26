@@ -11,6 +11,10 @@ The public contact form is protected by Cloudflare Turnstile scoped to
 live contact form rejected every submission ("Captcha verification failed") —
 a silent-looking outage found only by probing prod directly.
 
+**Status 2026-07-26: LIVE-VERIFIED, both lanes — don't re-run.** Founder submitted the real form twice: logged-in (row filed `source=in_app`) and incognito (`source=marketing`, server-side Turnstile verify passed). Resend founder-notification email fired ok for both.
+
+**Dual-lane gotcha (explains "wrong email" reports):** `/api/contact` with a valid session becomes in-app feedback — the server OVERRIDES typed name/email with the account identity and SKIPS Turnstile (rate limit still applies). Only logged-out submissions keep what the visitor typed. A logged-in founder "testing as a stranger" must use a private window.
+
 **How to apply / test:**
 - In the dev workspace the widget always shows Turnstile error `110200`
   (unknown domain) because the replit.dev host is not in the widget's hostname

@@ -1009,6 +1009,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // List archived (soft-deleted) debts — owner only. Powers the "Archived
+  // Debts" section on /debts and lifetime paid-off wins on Insights.
+  app.get("/api/debts/archived", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const archived = await storage.getArchivedDebtsByUserId(userId);
+      res.json(archived);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Restore an archived debt — owner only. Flips isActive back to true so the
+  // debt reappears in lists and totals; payment history was never touched.
+  app.post("/api/debts/:id/restore", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const debt = await storage.getDebt(req.params.id);
+      if (!debt || debt.userId !== userId) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      if (debt.isActive) {
+        return res.status(400).json({ message: "Debt is not archived" });
+      }
+
+      const restored = await storage.updateDebt(req.params.id, { isActive: true });
+      res.json(restored);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get user's transactions
   app.get("/api/transactions", async (req: Request, res: Response) => {
     try {
@@ -1504,7 +1544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new crypto purchase with real Coinbase integration
+  // Create new crypto purchase (Preview: always simulated — no real money moves)
   app.post("/api/crypto-purchases", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
@@ -1549,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const cryptoResponse = {
               ...purchase,
               coinbaseTransaction,
-              message: "Real crypto purchase completed via Coinbase"
+              message: "Preview purchase recorded — simulated, no real money moved"
             };
             if (idempotencyKey) {
               await saveIdempotency(idempotencyKey, userId, '/api/crypto-purchases', 201, cryptoResponse);
@@ -1573,7 +1613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.status(503).json({
             ...purchase,
             error: coinbaseError,
-            message: "Coinbase purchase failed - check API credentials"
+            message: "Crypto Preview simulation failed"
           });
         }
       } else {
@@ -1589,7 +1629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const demoResponse = {
           ...purchase,
-          message: "Demo purchase - Add Coinbase credentials for real trading"
+          message: "Preview purchase recorded — simulated, no real money moved"
         };
         if (idempotencyKey) {
           await saveIdempotency(idempotencyKey, userId, '/api/crypto-purchases', 201, demoResponse);
@@ -1857,7 +1897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!coinbaseService.isServiceConfigured()) {
         return res.status(503).json({ 
-          message: "Coinbase service not configured. Please provide COINBASE_API_KEY and COINBASE_API_SECRET environment variables.",
+          message: "Crypto Preview service unavailable",
           configured: false
         });
       }
@@ -1921,7 +1961,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         coinbaseOrderId: (transaction as any).id || ''
       });
 
-      res.json({ success: true, transaction });
+      res.json({
+        success: true,
+        simulated: true,
+        message: "Preview purchase — simulated, no real money moved",
+        transaction
+      });
     } catch (error) {
       console.error('Error buying crypto:', error);
       res.status(500).json({ message: "Failed to purchase cryptocurrency" });

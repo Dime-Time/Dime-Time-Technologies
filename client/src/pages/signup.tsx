@@ -7,6 +7,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/queryClient";
 import { LogoWithText } from "@/components/logo";
 import { saveAuthToken } from "@/lib/authToken";
+import { PasswordInput } from "@/components/ui/password-input";
+import { markReturningUser } from "@/lib/returningUser";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -53,6 +55,7 @@ export default function Signup() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      markReturningUser();
 
       toast({
         title: `Welcome to Dime Time, ${firstName}!`,
@@ -116,8 +119,7 @@ export default function Signup() {
           />
 
           <div className="space-y-1">
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Password"
               autoComplete="new-password"
               value={password}

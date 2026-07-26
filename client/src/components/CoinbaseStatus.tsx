@@ -36,25 +36,22 @@ export function CoinbaseStatus() {
   }
 
   if (coinbaseStatus.configured) {
+    // Crypto is a labeled Preview: purchases are always simulated. There is
+    // no "real purchases enabled" state — real crypto ships only through an
+    // approved licensed partner as a separate integration.
     return (
       <Alert className="bg-dime-purple/5 border-dime-purple/20 mb-8 shadow-sm">
         <CheckCircle className="h-5 w-5 text-dime-purple" />
         <AlertDescription className="text-slate-700">
           <div className="flex items-center justify-between">
             <span className="font-medium text-base">
-              {coinbaseStatus.demoMode 
-                ? "Bitcoin purchases in demo mode - simulated trades only"
-                : "Coinbase integration is active - real crypto purchases enabled"
-              }
+              Crypto Preview — prices are live, purchases are simulated
             </span>
-            <Badge 
-              variant="default" 
-              className={coinbaseStatus.demoMode 
-                ? "bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200" 
-                : "bg-dime-purple text-white hover:bg-dime-purple/90"
-              }
+            <Badge
+              variant="default"
+              className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200"
             >
-              {coinbaseStatus.demoMode ? "Demo Mode" : "Connected"}
+              Preview
             </Badge>
           </div>
         </AlertDescription>

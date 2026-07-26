@@ -1,0 +1,611 @@
+DIME TIME — CRYPTO PARTNERSHIP AND COMPLIANCE HANDOFF
+Date: July 25, 2026
+Founder: Tim Carlisle
+Company: Dime Time LLC
+Website: https://dime-time.com
+Contact: tim@dime-time.com
+
+==================================================
+EXECUTIVE SUMMARY
+==================================================
+
+Dime Time is a live US consumer fintech application that helps users pay
+down debt through automated purchase round-ups and ACH payments.
+
+- iOS: Live on the Apple App Store since June 29, 2026
+- Android: Submitted to Google Play; publication pending
+- Bank linking: Plaid + Stripe Financial Connections
+- ACH payments: Stripe
+- Crypto: Currently an explicitly labeled simulated Preview
+- Real crypto purchases: NOT enabled
+- Dime Time does not currently hold, purchase, transfer, or custody crypto
+
+Today we verified Coinbase's OAuth status and contacted three potential
+partners for a compliant real-crypto implementation:
+
+1. Coinbase — OAuth whitelisting request submitted
+2. Alpaca — Broker API sales request submitted
+3. Zero Hash — Embedded crypto infrastructure inquiry submitted
+
+The launch of Dime Time is not blocked by any of these discussions.
+Crypto remains a simulated Preview while the main debt-payoff product
+continues launching.
+
+==================================================
+CURRENT CRYPTO PREVIEW IMPLEMENTATION
+==================================================
+
+The Crypto page now clearly tells users:
+
+- Crypto purchases are simulated practice
+- Market prices are real
+- No real dollars or cryptocurrency move
+- The feature is a Preview of planned functionality
+
+Live prices now come from Coinbase's free public price API:
+
+- Prices are cached for 60 seconds
+- Price requests do not delay transaction processing
+- Safe fallback prices are available
+- This replaced inaccurate hardcoded prices
+
+The following callback page was also added:
+
+https://dime-time.com/coinbase-callback
+
+This is intended to become the registered Coinbase OAuth redirect URI.
+For now, it displays a polite “connection coming soon” message instead
+of returning a 404.
+
+Publishing status:
+
+- Website changes will become public on the next website republish
+- Mobile changes will ship in build 210 or later
+- The same upcoming mobile build also contains the bank-login fix
+
+==================================================
+PERMANENTLY REJECTED ARCHITECTURE
+==================================================
+
+The previous proposal to route all customer purchases through one
+company-controlled Coinbase account has been permanently rejected.
+
+Dime Time will NOT:
+
+- Pool customer crypto purchases in a company Coinbase account
+- Hold customer fiat designated for crypto
+- Hold or custody customer cryptocurrency
+- Buy crypto in Dime Time's name for customer benefit
+- Request users to create and paste manual exchange API keys
+- Store API credentials capable of moving customer money
+- Send customer crypto to a Dime Time-controlled wallet
+
+That architecture could make Dime Time a custodian or money transmitter
+and creates unacceptable licensing, security, accounting, and operational
+risk for an early-stage solo founder.
+
+The existing Coinbase Advanced Trade API key remains enabled, but it only
+controls the founder/company Coinbase portfolio. It must NOT be used for
+customer purchases.
+
+==================================================
+TARGET ARCHITECTURES
+==================================================
+
+STRATEGY A — COINBASE OAUTH BRIDGE
+
+Each user connects their own verified Coinbase account through OAuth.
+
+- User explicitly authorizes access
+- Purchases happen inside the user's Coinbase account
+- Assets remain in the user's Coinbase account
+- Dime Time never holds crypto
+- Users must already have or create a verified Coinbase account
+- Dime Time securely stores encrypted OAuth tokens only
+- Coinbase handles the customer exchange account and custody
+
+Potential drawback:
+
+Every participating user must complete Coinbase registration and KYC,
+which may create significant drop-off among debt-payoff users who are new
+to cryptocurrency.
+
+STRATEGY B — EMBEDDED CRYPTO BROKERAGE
+
+A licensed partner creates and maintains individually owned customer
+accounts directly inside the Dime Time experience.
+
+The partner would ideally handle:
+
+- Customer KYC and identity verification
+- Sanctions and compliance screening
+- Fiat account funding
+- Trade execution
+- Crypto custody
+- Statements and confirmations
+- Transaction monitoring
+- Tax reporting
+- Regulatory licensing
+
+Potential partners contacted today:
+
+- Alpaca Broker API
+- Zero Hash
+
+This is likely the better long-term “Acorns-style” customer experience
+because users would not need an existing Coinbase account.
+
+==================================================
+COINBASE INVESTIGATION — VERIFIED RESULTS
+==================================================
+
+We logged into the Coinbase Developer Platform and verified:
+
+1. Dime Time's existing secret API key is enabled.
+2. The key has access to the founder's Primary portfolio.
+3. Its permissions include Trade View and Trade.
+4. It was created September 2, 2025.
+5. This key is NOT an OAuth client and must not be used for customers.
+
+We navigated to:
+
+Coinbase APIs
+→ Consumer
+→ Coinbase OAuth2
+→ Quickstart
+→ OAuth client access
+
+Coinbase's official documentation displays this notice:
+
+“New OAuth client creation is temporarily disabled. Existing clients
+will continue to work normally.”
+
+The prerequisite section further states:
+
+- OAuth client creation is limited to approved partners
+- Developers must create a CDP Portal account
+- Developers must contact a Coinbase representative for OAuth whitelisting
+- Once approved, OAuth clients can be created under API Keys → OAuth
+
+CONCLUSION:
+
+- Dime Time has NOT been suspended or rejected
+- Coinbase OAuth is still operational for existing approved clients
+- New public OAuth client creation is temporarily disabled
+- Coinbase has not published a general reopening date
+- Dime Time must receive approved-partner status and OAuth whitelisting
+
+The Coinbase documentation also confirms:
+
+- OAuth can let users sign in with Coinbase and authorize actions
+- Access tokens last approximately 1 hour
+- Refresh tokens last approximately 1.5 years
+- Refresh tokens rotate and may only be used once
+- Testing uses real KYC-verified Coinbase accounts
+- There is no separate OAuth sandbox
+- OAuth is primarily designed for US users
+
+No Coinbase OAuth implementation should begin until Coinbase approves
+Dime Time and confirms the appropriate account and trading scopes.
+
+==================================================
+COINBASE REQUEST SUBMITTED
+==================================================
+
+The Coinbase documentation's “Get Help” link led to an expired Discord
+invitation, so that was not used.
+
+Instead, we used Coinbase's official Advanced Trade API Developer Interest
+form. This program is designed for companies building customer-facing
+trading solutions and provides a pathway to managed developer support.
+
+The request stated that:
+
+- Dime Time is a live consumer fintech
+- Users would connect their own verified Coinbase accounts
+- Purchases would happen inside individually owned Coinbase accounts
+- Dime Time would not pool customer funds
+- Dime Time would not custody crypto
+- Dime Time is requesting OAuth whitelisting
+- Website: https://dime-time.com
+- Redirect URI: https://dime-time.com/coinbase-callback
+
+The Coinbase request was successfully submitted.
+
+Watch:
+
+tim@dime-time.com
+
+Also check Spam/Junk for a response.
+
+==================================================
+ALPACA INVESTIGATION
+==================================================
+
+Relevant product:
+
+Alpaca Broker API
+https://alpaca.markets/broker
+
+Alpaca advertises an end-to-end API platform for:
+
+- Stocks
+- Options
+- Fixed income
+- Cryptocurrency
+- Fractional investing
+- High-yield cash
+- Back-office operations
+
+Alpaca Broker API may be able to provide Dime Time with:
+
+- Individually owned customer accounts
+- Customer onboarding
+- KYC infrastructure
+- Fractional crypto trading
+- Trade execution
+- Custody through Alpaca Crypto
+- Account balances and history
+- Reporting
+- A Dime Time-branded customer experience
+
+We discovered a major Alpaca customer called “Dime!”
+
+Dime! is unrelated to Dime Time. It is a Thai fintech app established in
+2021 and backed by Kiatnakin Phatra Financial Group.
+
+Dime! offers:
+
+- Savings
+- Thai and US stocks
+- Fractional US shares
+- Mutual funds
+- Insurance
+- Foreign-currency accounts
+- Virtual portfolios
+
+Dime! uses Alpaca Broker API to provide fractional access to US markets.
+Alpaca describes it as a market leader for US-stock investing in Thailand.
+
+The name similarity is notable but does not currently appear to be a
+direct conflict because:
+
+- Dime! primarily operates in Thailand
+- Dime Time currently operates in the United States
+- Dime! primarily focuses on saving and investing
+- Dime Time primarily focuses on automated debt payoff
+- The names, logos, and branding are distinct
+
+International trademark review may be advisable before Dime Time expands
+into Southeast Asia or adds a broad investment platform.
+
+==================================================
+ALPACA REQUEST SUBMITTED
+==================================================
+
+We completed Alpaca's official Broker API contact form.
+
+Information submitted included:
+
+- Contact: Tim Carlisle
+- Company: Dime Time LLC
+- Email: tim@dime-time.com
+- Website: https://dime-time.com
+- Country: United States
+- iOS: Live
+- Android: Submitted to Google Play
+- Infrastructure: Plaid and Stripe ACH
+
+The message explained:
+
+- Dime Time helps users pay down debt using automated round-ups
+- Users may optionally allocate part of accumulated round-ups to crypto
+- Purchases should occur in individually owned accounts
+- Dime Time is evaluating customer onboarding, crypto execution, custody,
+  and compliance infrastructure
+- Dime Time will not hold or pool customer funds or cryptocurrency
+
+The Alpaca form was successfully submitted.
+
+Alpaca says its team normally responds within one business day.
+Because the submission occurred on Saturday, July 25, a response would
+most likely arrive Monday or Tuesday.
+
+==================================================
+ZERO HASH INVESTIGATION
+==================================================
+
+Relevant product:
+
+Zero Hash Embedded Crypto Trading
+https://zerohash.com/solutions/trade
+
+Zero Hash provides infrastructure to embed crypto buy, sell, and hold
+features inside another platform.
+
+Potential relevant Zero Hash capabilities:
+
+- Customer onboarding
+- Fiat funding
+- Crypto purchases and sales
+- Custody
+- Settlement
+- Compliance monitoring
+- Broad US licensing coverage
+- Statements and transaction records
+- Institutional infrastructure
+
+The Zero Hash contact form requested:
+
+- Contact information
+- Company information
+- Company size
+- Estimated crypto volume
+- Products of interest
+
+Selections used:
+
+- Company: Dime Time LLC
+- Company size: 1–49
+- Crypto volume: Lowest available/pre-launch range
+- Buy / Sell
+- Account Funding
+- On & Off Ramps
+
+We did not select:
+
+- Staking
+- Tokenization
+- Remittance
+- Payouts
+- Unrelated products
+
+The message explained that Dime Time:
+
+- Is a live US consumer fintech
+- Uses automated round-ups for debt payoff
+- Wants to offer optional fractional crypto purchases
+- Needs individually owned customer accounts
+- Is evaluating fiat funding, execution, custody, and compliance
+- Will not hold or pool customer funds or cryptocurrency
+- Uses Plaid and Stripe ACH
+- Is live on iOS
+- Has submitted Android to Google Play
+
+The Zero Hash inquiry was successfully submitted.
+
+Zero Hash confirmed that an infrastructure specialist will follow up.
+
+==================================================
+CURRENT PARTNER PIPELINE
+==================================================
+
+COINBASE
+
+Status:
+- Advanced Developer Program request submitted
+- OAuth whitelisting requested
+- Awaiting response
+
+Best possible outcome:
+- Dime Time receives permission to create an OAuth client
+- Users connect existing Coinbase accounts
+- Dime Time launches a lower-cost noncustodial bridge
+
+Main limitations:
+- Unknown approval timeline
+- Potential OAuth-related fees
+- Every user needs a verified Coinbase account
+- No OAuth sandbox
+
+ALPACA
+
+Status:
+- Broker API inquiry submitted
+- Awaiting sales response
+
+Best possible outcome:
+- Individually owned customer crypto accounts
+- Embedded customer onboarding
+- Fractional crypto purchases
+- Custody and compliance handled by Alpaca
+- More seamless Dime Time user experience
+
+ZERO HASH
+
+Status:
+- Embedded trading inquiry submitted
+- Awaiting infrastructure specialist response
+
+Best possible outcome:
+- Full regulated buy/sell/hold infrastructure
+- Fiat funding
+- Customer onboarding
+- Custody
+- Compliance and licensing coverage
+- Native Dime Time experience
+
+==================================================
+QUESTIONS TO ASK ALL PARTNERS
+==================================================
+
+1. Will you onboard an early-stage or pre-revenue consumer fintech?
+2. What setup or implementation fee applies?
+3. Is there a monthly platform minimum?
+4. Is there a minimum required transaction or trading volume?
+5. What is the smallest supported crypto purchase?
+6. Can purchases be as small as $1 or $5?
+7. Are there fixed per-order fees?
+8. What spread or basis-point fee applies?
+9. Are KYC checks charged per applicant?
+10. Are rejected or abandoned KYC applications charged?
+11. Can Dime Time begin with a 100–500-user controlled pilot?
+12. Is sandbox access free?
+13. Who handles customer identity verification?
+14. Who handles OFAC and sanctions screening?
+15. Who handles transaction monitoring?
+16. Who holds the fiat before a crypto purchase?
+17. Who originates the ACH debit?
+18. Who absorbs ACH returns, fraud losses, and negative balances?
+19. Who executes trades?
+20. Who legally custodies the crypto?
+21. Who produces customer statements and trade confirmations?
+22. Who maintains cost-basis records?
+23. Who produces applicable Form 1099-DA tax reporting?
+24. Can users authorize automatic purchases under standing instructions?
+25. Does every purchase require user interaction?
+26. Can round-ups accumulate until reaching a purchase threshold?
+27. Can Dime Time set weekly or monthly purchase limits?
+28. Can Dime Time earn a disclosed commission or revenue share?
+29. Is any exclusivity required?
+30. Can customer assets be migrated if Dime Time changes providers?
+31. What licenses or registrations must Dime Time independently hold?
+32. What legal agreements, disclosures, and insurance are required?
+33. What is the realistic implementation and production timeline?
+
+==================================================
+RECOMMENDED PRODUCT DESIGN
+==================================================
+
+Do not execute a separate crypto trade for every individual card purchase.
+
+Recommended flow:
+
+1. Track each eligible round-up in Dime Time's ledger.
+2. Apply the user's selected debt-versus-crypto allocation.
+3. Send the debt portion through the existing compliant debt-payment path.
+4. Accumulate the crypto portion as pending bookkeeping.
+5. Trigger a crypto purchase only after reaching a minimum threshold.
+6. Have the licensed partner fund, execute, and custody the purchase.
+7. Record the partner transaction ID and final execution details.
+8. Show the completed purchase in Dime Time.
+
+Potential purchase rules:
+
+- $5 minimum accumulated crypto allocation
+- Weekly purchase schedule
+- User-selected monthly maximum
+- Carry forward balances below the minimum
+- No purchase when fees exceed an acceptable percentage
+- Pause purchases after failed funding attempts
+- Pause crypto without disabling debt payments
+
+==================================================
+REGULATORY AND UX GUARDRAILS
+==================================================
+
+Crypto should remain optional and off by default.
+
+Users should explicitly select:
+
+- Whether to participate
+- Their crypto percentage
+- Supported cryptocurrency
+- Minimum purchase threshold
+- Maximum weekly or monthly amount
+
+Recommended initial assets:
+
+- Bitcoin
+- Ethereum
+
+Dime Time should avoid:
+
+- Selecting investments for users
+- Dynamically changing allocations
+- Rebalancing portfolios without clear user instructions
+- Promising investment performance
+- Suggesting crypto is a dependable debt-payoff method
+- Presenting simulated balances as real assets
+- Combining debt and crypto authorizations into unclear disclosures
+
+Debt payoff should remain the primary product.
+
+Potential conservative design:
+
+- Debt always receives the majority of round-ups
+- Crypto is off by default
+- Crypto allocation is capped
+- Failed debt payments may pause crypto purchases
+- Users can disable crypto without disabling debt payments
+- Clear disclosure that crypto can lose value
+- Clear disclosure that crypto is not FDIC or SIPC protected
+
+The final architecture must also address:
+
+- Regulation E authorization for variable electronic transfers
+- Separate debt and crypto mandates where appropriate
+- User cancellation and revocation
+- Error-resolution procedures
+- ACH returns and insufficient funds
+- Tax basis and Form 1099-DA reporting
+- Data retention
+- Encrypted token storage
+- Account takeover protection
+- Provider webhook verification
+- Idempotency and duplicate-purchase protection
+- Reconciliation between funding, orders, execution, and custody
+
+==================================================
+IMPORTANT TECHNICAL INSTRUCTION FOR REPLIT
+==================================================
+
+DO NOT implement real Coinbase OAuth or real embedded crypto purchases yet.
+
+Until a provider approves Dime Time and supplies the correct commercial
+architecture:
+
+- Keep crypto in Preview/simulation mode
+- Keep all simulated balances clearly identified
+- Do not use the existing company Coinbase API key for customers
+- Do not create or request manual user API keys
+- Do not enable real crypto money movement
+- Do not combine Stripe ACH proceeds with crypto purchases
+- Keep https://dime-time.com/coinbase-callback live
+- Keep the Coinbase public price API integration read-only
+- Preserve safe price fallbacks and 60-second caching
+- Ensure price API failures never block debt transaction processing
+- Keep all real crypto feature flags OFF
+
+Recommended preparation work that is safe before provider selection:
+
+- Maintain a provider-neutral crypto interface
+- Define provider-neutral account, order, execution, and custody statuses
+- Keep all partner implementation code behind disabled feature flags
+- Document the future funding and reconciliation state machine
+- Prepare encrypted OAuth-token storage design without activating it
+- Prepare webhook tables and idempotency fields
+- Preserve the existing simulated Preview experience
+- Avoid coupling the UI specifically to Coinbase, Alpaca, or Zero Hash
+
+==================================================
+CURRENT FINAL STATUS
+==================================================
+
+COMPLETED TODAY:
+
+- Verified Coinbase API key remains enabled
+- Confirmed the key only applies to the founder/company portfolio
+- Verified Coinbase OAuth remains operational for existing clients
+- Confirmed new OAuth client creation is temporarily disabled
+- Confirmed new OAuth clients require approved-partner whitelisting
+- Identified the official Coinbase Advanced Developer Program route
+- Submitted Coinbase partner/OAuth request
+- Investigated Alpaca Broker API
+- Confirmed Alpaca supports embedded crypto and fractional investing
+- Researched Alpaca customer Dime! in Thailand
+- Submitted Alpaca Broker API inquiry
+- Investigated Zero Hash embedded crypto infrastructure
+- Submitted Zero Hash product inquiry
+- Established questions for vendor follow-up
+- Preserved Crypto Preview as the safe launch strategy
+- Confirmed Dime Time's launch is not blocked by real crypto integration
+
+AWAITING:
+
+- Coinbase response
+- Alpaca response
+- Zero Hash response
+- Comparison of fees, minimums, licensing, funding, custody, and timeline
+- Selection of a production crypto partner
+- Written provider confirmation before any real integration begins

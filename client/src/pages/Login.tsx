@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/queryClient";
 import { LogoWithText } from "@/components/logo";
 import { saveAuthToken } from "@/lib/authToken";
+import { PasswordInput } from "@/components/ui/password-input";
+import { isReturningUser, markReturningUser } from "@/lib/returningUser";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -16,6 +18,7 @@ export default function Login() {
   const queryClient = useQueryClient();
 
   const [formError, setFormError] = useState<string | null>(null);
+  const [returning] = useState(() => isReturningUser());
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
@@ -37,7 +40,8 @@ export default function Login() {
         await saveAuthToken(data.authToken);
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ title: "Welcome back" });
+      toast({ title: returning ? "Welcome back" : "Welcome to Dime Time" });
+      markReturningUser();
       setLocation("/dashboard");
     },
     onError: () => {
@@ -62,8 +66,8 @@ export default function Login() {
           <LogoWithText size={100} />
         </div>
 
-        <h1 className="text-3xl font-bold text-white text-center mb-1">
-          Welcome Back
+        <h1 className="text-3xl font-bold text-white text-center mb-1" data-testid="text-login-heading">
+          {returning ? "Welcome Back" : "Welcome"}
         </h1>
         <p className="text-white/80 text-center mb-8">
           Log in to your Dime Time account
@@ -80,8 +84,7 @@ export default function Login() {
             data-testid="input-email"
             className="border-transparent h-12 rounded-xl"
           />
-          <Input
-            type="password"
+          <PasswordInput
             placeholder="Password"
             autoComplete="current-password"
             value={password}

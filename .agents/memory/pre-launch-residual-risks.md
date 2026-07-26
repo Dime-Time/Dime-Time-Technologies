@@ -30,6 +30,13 @@ These items were consciously deferred — re-check them when the trigger fires:
   schedule as maintenance.
 - **CSP intentionally omitted** from prod security headers (Capacitor WebView +
   Stripe.js breakage risk). Revisit only with device testing.
+- **`ENABLE_REAL_TRANSFERS` is defined twice** — as a global Secret AND as an
+  env-scoped Configuration (deployment `true` / testing `false`; confirmed in
+  founder's Secrets-pane screenshots 2026-07-26). Precedence between the two is
+  UNVERIFIED; behavior in both envs is currently known-good. If consolidating
+  (keep env-scoped pair, drop the Secret), first confirm precedence via Replit
+  docs and re-verify the testing env still blocks — it gates real money, never
+  delete casually.
 
 **Why:** each was judged lower-risk than the fix's regression risk days before
 the founder-only $1 live ACH test; every deferral has a concrete trigger above.

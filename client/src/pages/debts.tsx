@@ -19,7 +19,7 @@ import { DebtHistoryModal } from "@/components/DebtHistoryModal";
 import { ImportDebtsModal } from "@/components/ImportDebtsModal";
 import { AcceleratedPayment } from "@/components/AcceleratedPayment";
 import { formatCurrency, calculateDebtProgress, estimatePayoffMonths } from "@/lib/calculations";
-import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download, Pencil, Trash2, Zap, LayoutList, PartyPopper, Archive, Trophy } from "lucide-react";
+import { CreditCard, TrendingDown, Calendar, Plus, DollarSign, Download, Pencil, Trash2, Zap, LayoutList, PartyPopper, Archive, ArchiveRestore, ChevronDown, Trophy } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +58,7 @@ export default function Debts() {
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [historyDebt, setHistoryDebt] = useState<Debt | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Debt | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const debtImportEnabled = useFlag("ENABLE_DEBT_IMPORT");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,6 +68,10 @@ export default function Debts() {
 
   const { data: debts = [], isLoading } = useQuery<Debt[]>({
     queryKey: ["/api/debts"],
+  });
+
+  const { data: archivedDebts = [] } = useQuery<Debt[]>({
+    queryKey: ["/api/debts/archived"],
   });
 
   const { data: payments = [] } = useQuery<Payment[]>({
@@ -105,6 +110,7 @@ export default function Debts() {
         description: "The debt has been removed. Your payment history is preserved.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/debts/archived"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
       setDeleteTarget(null);
     },
@@ -112,6 +118,28 @@ export default function Debts() {
       toast({
         title: "Couldn't Remove Debt",
         description: "There was an error removing this debt. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const restoreDebtMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("POST", `/api/debts/${id}/restore`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Debt Restored",
+        description: "It's back on your list with its full payment history.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/debts/archived"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
+    },
+    onError: () => {
+      toast({
+        title: "Couldn't Restore Debt",
+        description: "There was an error restoring this debt. Please try again.",
         variant: "destructive",
       });
     },
@@ -468,6 +496,79 @@ export default function Debts() {
           })
         )}
       </div>
+
+      {/* Archived Debts — soft-deleted, restorable */}
+      {archivedDebts.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowArchived((v) => !v)}
+            className="w-full flex items-center justify-between px-1 py-2 group"
+            data-testid="button-toggle-archived"
+          >
+            <span className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <Archive className="w-5 h-5 text-slate-400" />
+              Archived Debts
+              <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-0 shadow-none">
+                {archivedDebts.length}
+              </Badge>
+            </span>
+            <ChevronDown
+              className={`w-5 h-5 text-slate-400 transition-transform group-hover:text-slate-600 ${showArchived ? "rotate-180" : ""}`}
+            />
+          </button>
+          {showArchived && (
+            <Card className="mt-2 shadow-card border-0 ring-1 ring-slate-200 animate-fade-in">
+              <CardContent className="p-0 divide-y divide-slate-100">
+                {archivedDebts.map((debt) => {
+                  const paidOff = isPaidOff(debt);
+                  return (
+                    <div
+                      key={debt.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:px-6"
+                      data-testid={`row-archived-${debt.id}`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-slate-700 truncate">{debt.name}</p>
+                          {paidOff ? (
+                            <Badge
+                              className="bg-green-600 text-white hover:bg-green-600"
+                              data-testid={`badge-archived-paid-off-${debt.id}`}
+                            >
+                              <Trophy className="w-3 h-3 mr-1" />
+                              Paid Off
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-0 shadow-none">
+                              {formatCurrency(debt.currentBalance)} left
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs font-medium text-slate-400 mt-1">
+                          {debt.institutionName ? `${debt.institutionName} • ` : ""}
+                          •••• {debt.accountNumber?.slice(-4) || "----"}
+                          {paidOff ? ` • ${formatCurrency(debt.originalBalance)} conquered` : ""}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="bg-white font-semibold text-slate-700 shadow-sm hover:bg-slate-50 shrink-0"
+                        disabled={restoreDebtMutation.isPending}
+                        onClick={() => restoreDebtMutation.mutate(debt.id)}
+                        data-testid={`button-restore-debt-${debt.id}`}
+                      >
+                        <ArchiveRestore className="w-4 h-4 mr-2" />
+                        Restore
+                      </Button>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Debt Strategy Tips */}
       <div className="pt-6">

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/queryClient";
@@ -98,8 +99,7 @@ export default function ResetPassword() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="New password"
               autoComplete="new-password"
               value={password}
@@ -109,8 +109,7 @@ export default function ResetPassword() {
               data-testid="input-new-password"
               className="border-transparent h-12 rounded-xl"
             />
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Confirm new password"
               autoComplete="new-password"
               value={confirm}

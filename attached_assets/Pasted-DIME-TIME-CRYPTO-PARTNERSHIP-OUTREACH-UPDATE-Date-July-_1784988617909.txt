@@ -1,0 +1,215 @@
+DIME TIME — CRYPTO PARTNERSHIP OUTREACH UPDATE
+Date: July 25, 2026
+
+UPDATE TO THE PREVIOUS SESSION REPORT
+
+The crypto-partner outreach decision has now been made, and all three
+initial inquiries were submitted.
+
+1. COINBASE — REQUEST SUBMITTED
+
+Coinbase's official documentation was inspected directly.
+
+Verified finding:
+
+“New OAuth client creation is temporarily disabled. Existing clients
+will continue to work normally.”
+
+Coinbase further states that:
+
+- New OAuth clients are currently limited to approved partners
+- A Coinbase representative must approve OAuth whitelisting
+- Once approved, the client can be created under API Keys → OAuth
+
+Important clarification:
+
+- Dime Time has not been suspended or rejected
+- The restriction applies to new OAuth clients generally
+- Dime Time's existing Advanced Trade API key remains enabled
+- That existing key only controls the founder/company Coinbase portfolio
+- It must NEVER be used to process customer crypto purchases
+
+The Coinbase Advanced Trade API Developer Interest form was successfully
+submitted requesting approved-partner access and OAuth whitelisting.
+
+Submitted use case:
+
+- Users connect their own verified Coinbase accounts
+- Purchases occur inside each user's Coinbase account
+- Dime Time does not pool customer funds
+- Dime Time does not hold or custody customer crypto
+- Redirect URI:
+  https://dime-time.com/coinbase-callback
+
+Important correction to Strategy A:
+
+Do not describe Coinbase OAuth as guaranteed to be free. Waiting does not
+cost anything, but Coinbase's current terms indicate that approved OAuth
+access may involve fees or a commercial arrangement. Pricing remains
+unknown until Coinbase responds.
+
+Status: AWAITING COINBASE RESPONSE
+
+2. ALPACA BROKER API — REQUEST SUBMITTED
+
+Dime Time submitted Alpaca's official Broker API contact form.
+
+Requested capabilities:
+
+- Individually owned customer accounts
+- Customer onboarding and KYC
+- Fractional crypto purchases
+- Trade execution
+- Custody
+- Account history and reporting
+- Compliance infrastructure
+
+The request explained that:
+
+- Dime Time is live on iOS
+- Android is in Google Play review
+- Dime Time uses Plaid and Stripe ACH
+- Crypto is currently a simulated Preview
+- Dime Time will not pool or custody customer funds or cryptocurrency
+- Users may optionally allocate part of accumulated round-ups to crypto
+
+Alpaca says its sales team normally responds within one business day.
+
+Status: AWAITING ALPACA RESPONSE
+
+3. ZERO HASH — REQUEST SUBMITTED
+
+Dime Time submitted Zero Hash's embedded crypto infrastructure form.
+
+Products selected:
+
+- Buy / Sell
+- Account Funding
+- On & Off Ramps
+
+Requested capabilities:
+
+- Customer onboarding
+- Fiat funding
+- Fractional crypto purchases
+- Execution
+- Custody
+- Compliance and licensing infrastructure
+
+The request explained that Dime Time wants an Acorns-style embedded
+experience with individually owned customer accounts and no custody or
+pooling by Dime Time.
+
+Zero Hash confirmed that an infrastructure specialist will follow up.
+
+Status: AWAITING ZERO HASH RESPONSE
+
+4. STRATEGY B DECISION — RESOLVED
+
+The previous open question about whether to begin embedded-brokerage
+outreach now or wait for launch metrics has been resolved.
+
+Decision:
+
+Begin partner conversations now because sales, compliance, and onboarding
+cycles may take weeks or months. No contract or production commitment
+will be made until Dime Time receives:
+
+- Commercial pricing
+- Setup and monthly minimums
+- Minimum supported purchase amount
+- KYC and compliance responsibilities
+- ACH funding architecture
+- Custody structure
+- Tax-reporting responsibilities
+- Pilot requirements
+- Realistic production timeline
+
+Launch metrics can be supplied later to strengthen negotiations.
+
+5. CURRENT CRYPTO PARTNER PIPELINE
+
+Coinbase:
+- OAuth whitelisting request submitted
+- Potential lower-cost bridge
+- Requires users to have verified Coinbase accounts
+- Approval timeline and fees unknown
+
+Alpaca:
+- Broker API request submitted
+- Potentially startup-friendly
+- Supports embedded fractional crypto
+- Sandbox and commercial terms must be confirmed
+
+Zero Hash:
+- Infrastructure request submitted
+- Strong full-stack regulated crypto candidate
+- Commercial minimums and startup eligibility must be confirmed
+
+6. DO NOT IMPLEMENT REAL CRYPTO YET
+
+Until a provider approves Dime Time and supplies the correct production
+architecture:
+
+- Keep Crypto labeled Preview
+- Keep all purchases simulated
+- Keep all real-crypto feature flags OFF
+- Do not use the existing company Coinbase API key for customers
+- Do not request manual exchange API keys from users
+- Do not hold or pool customer money or cryptocurrency
+- Do not route Stripe ACH proceeds into crypto purchases
+- Do not begin a production OAuth integration
+- Keep the Coinbase price API read-only
+- Keep the 60-second cache and safe price fallbacks
+- Keep /coinbase-callback live as a placeholder
+
+Safe provider-neutral preparation is permitted, but no provider-specific
+real trading should be activated.
+
+7. REMAINING FOUNDER ACTION ITEMS
+
+- Hit Publish on Replit to deploy:
+  - Crypto Preview
+  - Live Coinbase public prices
+  - /coinbase-callback page
+  - Complete AWS code removal
+
+- Complete AWS account cleanup:
+  - Check AWS billing
+  - Delete unused S3 bucket
+  - Delete unused DynamoDB tables:
+    - dime-time-transactions
+    - dime-time-debts
+    - dime-time-crypto-purchases
+  - Delete unused AWS_* secrets from Replit
+  - Close the AWS account after confirming no remaining resources or charges
+
+- Monitor tim@dime-time.com and Spam for:
+  - Coinbase response
+  - Alpaca response
+  - Zero Hash response
+
+- Escalate Plaid Liabilities activation around July 29 if it remains off
+
+- Prepare native build 210 after publishing and verifying the live web release
+
+CURRENT STATUS
+
+Completed:
+- Coinbase request submitted
+- Alpaca request submitted
+- Zero Hash request submitted
+- Strategy B outreach decision resolved
+- Crypto Preview code complete
+- Coinbase callback page complete
+- AWS application dependency removed
+- Stripe bank linking verified
+- Native dependency lockfile verified clean
+
+Still pending:
+- Replit Publish
+- AWS console/account cleanup
+- Plaid Liabilities activation
+- Partner responses
+- Selection of a regulated crypto provider
+- Native build 210

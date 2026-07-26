@@ -8,7 +8,7 @@
 - [App Store demo account](appstore-demo-account.md) — give Apple the founder's prod account (clean sample debts, no bank link); screenshots must come from a real iPhone.
 - [Demo data for review account](demo-review-account.md) — review account populated via client-side sample dataset gated to the review email; real data always wins, never cache demo values.
 - [App Store screenshot prep](appstore-screenshots.md) — SE 1170×2532 → cover-resize to 1290×2796 (6.7"); never fake numbers into images; avoid TestFlight banner in captures.
-- [App Store status & rejection vectors](appstore-rejection-history.md) — LIVE 2026-06-29 (App ID 6755106723); historical rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; BetaModeBanner not flag-gated → 2.2 risk.
+- [App Store status & rejection vectors](appstore-rejection-history.md) — LIVE 2026-06-29; past rejections 4.3(a)/2.2/2.1/2.3.10/1.5/2.3.3; BetaModeBanner not flag-gated → 2.2 risk.
 - [iOS build versioning](ios-build-versioning.md) — Info.plist is ONLY version source of truth; never reintroduce version-overwrite build phases; never set server.url; build+cap sync before CI.
 - [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; mismatch is INTENTIONAL+permanent, never reconcile.
 - [Google Play prep](google-play-prep.md) — versionCode=iOS build number; minimum-permission manifest; env-var-only signing (release fails loudly, debug works); founder steps inside.
@@ -17,11 +17,13 @@
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
-- [AWS fully removed](aws-removed.md) — zero AWS dependency since 2026-07; lingering AWS_* secrets are leftovers, never reintroduce SDKs or S3/Dynamo code.
-- [Automatic debt import](debt-import-feature.md) — Liabilities NOT active yet (2026-07-25): only the link/token/create probe is authoritative — /liabilities/get lies; app auto-flips ≤10 min after Plaid activates.
-- [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — LOOP CLOSED 2026-07-25: full link flow live-verified (idempotent re-link); four 502 failure modes documented inside.
+- [AWS fully removed](aws-removed.md) — zero AWS dependency; account CLOSED 2026-07-26 (0 buckets verified); never reintroduce SDKs or S3/Dynamo code.
+- [Secrets deletion & recovery](replit-secrets-deletion.md) — agent can't delete Secrets; checkpoints don't restore them; deployment store = recovery copy; PLAID_TOKEN_ENCRYPTION_KEY never re-issuable.
+- [Automatic debt import](debt-import-feature.md) — Plaid Liabilities NOT active (2026-07-25); only the link/token/create probe is authoritative — /liabilities/get lies; auto-flips when active.
+- [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — LOOP CLOSED 2026-07-25: link flow live-verified; four 502 failure modes inside.
 - [Stripe payout destination](stripe-payout-destination.md) — payouts land in Stripe Balance storage (fa_ dest), NOT a bank; no external account on file until founder links Mercury.
-- [Crypto preview & Coinbase plan](coinbase-crypto-preview.md) — crypto SIMULATED by design (live prices, fake buys, labeled Preview); real path = per-user OAuth, never custody; OAuth creation partner-gated 2026-07.
+- [Crypto preview & Coinbase plan](coinbase-crypto-preview.md) — SIMULATED by design; company-key trading client REMOVED 2026-07-25 (never re-add); outreach to Coinbase/Alpaca/ZeroHash pending.
+- [Tracked build artifacts](tracked-build-artifacts.md) — server-dist/ is git-tracked and lags source; grep only server/ client/ shared/ as source of truth.
 - [Forced white-text theme](forced-white-text-theme.md) — index.css forces white text + remaps bg-white→lavender; readable inputs need a scoped opt-out (.dt-marketing / .dt-auth).
 - [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab deliberately deleted post go/no-go; verdict logic lives in shared/stripeVerdict.ts; don't re-add.
 - [Subscription billing](subscription-billing.md) — $2.99/mo Stripe Billing; incomplete+past_due ARE entitled (ACH lag); consent row precedes Stripe calls; founder prod-enable checklist inside.
@@ -31,8 +33,8 @@
 - [Founder narrative sourcing](founder-narrative-sourcing.md) — launch-story/pitch source material lives in attached_assets (user-owned), never in memory; use it on request, copy nothing into memory.
 - [GEO guides & crawler files](geo-guides.md) — AI crawlers don't run JS: SEO/GEO content must be static HTML via Express routes; audit public/ before static-mounting.
 - [Slide deck generation](deck-generation.md) — python-pptx decks in attached_assets/<name>-slides/; verify via soffice+pdftoppm render; no emoji (tofu), no partner logos.
-- [Plaid OAuth resume page](plaid-oauth-resume.md) — react-plaid-link fires onExit on init failure too; never navigate unconditionally in onExit — show the recovery card unless it's a real user cancel.
+- [Plaid OAuth resume page](plaid-oauth-resume.md) — react-plaid-link fires onExit on init failure too; never navigate unconditionally in onExit — recovery card unless real user cancel.
 - [iOS universal links](ios-universal-links.md) — AASA + App.entitlements + client listener must stay in lockstep; native redirect URI is rebuilt from pathname+search, never window.location.href.
-- Founder PII policy: dossier/journal/profile files deleted 2026-07-19 before sharing project with engineers/investors. Comms prefs live in replit.md. Never store founder personal/family/financial details in project files.
-- [npm lockfile CI portability](npm-lockfile-ci-portability.md) — Replit installs write package-firewall.replit.local URLs into package-lock.json → Codemagic npm fails; grep lockfile = 0 before any release push.
-- [Android / Google Play launch](android-play-launch.md) — submission kit in attached_assets/play-store-assets/; assetlinks.json MUST wait for Play's app-signing SHA-256 (post-first-upload); keystore founder-run.
+- [Founder PII policy](founder-pii-policy.md) — never store founder personal/family/financial details in project files; comms prefs live in replit.md.
+- [npm lockfile CI portability](npm-lockfile-ci-portability.md) — Replit installs write firewall URLs into package-lock.json → Codemagic fails; grep lockfile = 0 before release push.
+- [Android / Google Play launch](android-play-launch.md) — kit in attached_assets/play-store-assets/; assetlinks.json MUST wait for Play app-signing SHA-256; keystore founder-run.

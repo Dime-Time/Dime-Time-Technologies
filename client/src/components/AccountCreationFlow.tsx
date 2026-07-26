@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { UserPlus, Mail, Lock, User } from "lucide-react";
@@ -10,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Keyboard } from "@capacitor/keyboard";
 import { getApiUrl } from "@/lib/queryClient";
 import { saveAuthToken } from "@/lib/authToken";
+import { markReturningUser } from "@/lib/returningUser";
 
 interface AccountCreationFlowProps {
   onAccountCreated: (userData: any) => void;
@@ -153,6 +155,7 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
 
       // Invalidate auth cache so useAuth refetches /api/user with new session
       await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      markReturningUser();
 
       toast({
         title: "Account Created Successfully!",
@@ -274,9 +277,8 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
               <Label htmlFor="password" className="text-slate-700">Password</Label>
               <div className="relative group">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-dime-purple transition-colors" />
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   placeholder="••••••••"
                   autoComplete="new-password"
                   value={formData.password}
@@ -293,9 +295,8 @@ export function AccountCreationFlow({ onAccountCreated, onCancel }: AccountCreat
               <Label htmlFor="confirmPassword" className="text-slate-700">Confirm Password</Label>
               <div className="relative group">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-dime-purple transition-colors" />
-                <Input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   placeholder="••••••••"
                   autoComplete="new-password"
                   value={formData.confirmPassword}

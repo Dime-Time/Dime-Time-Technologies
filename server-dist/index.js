@@ -1814,6 +1814,24 @@ var DatabaseStorage = class _DatabaseStorage {
     }).returning();
     return result;
   }
+  async getStripeAccountByFcAccountId(fcAccountId) {
+    const [result] = await db.select().from(stripeAccounts).where(eq(stripeAccounts.stripeFcAccountId, fcAccountId));
+    return result;
+  }
+  // Re-link refresh: same FC account linked again → replace the stored
+  // PaymentMethod reference in place. Keeping the SAME row id preserves
+  // everything that points at it (funding-account selection, transfer history).
+  async updateStripeAccountLink(id, data) {
+    const encrypted = encryptToken(data.paymentMethodIdPlaintext);
+    const [result] = await db.update(stripeAccounts).set({
+      stripePaymentMethodEnc: encrypted,
+      stripeCustomerId: data.stripeCustomerId,
+      ...data.institutionName !== void 0 ? { institutionName: data.institutionName } : {},
+      ...data.last4 !== void 0 ? { last4: data.last4 } : {}
+    }).where(eq(stripeAccounts.id, id)).returning();
+    if (!result) throw new Error(`stripe_accounts row not found for re-link: ${id}`);
+    return result;
+  }
   async getStripeAccountById(id) {
     const [result] = await db.select().from(stripeAccounts).where(eq(stripeAccounts.id, id));
     return result;
@@ -2191,7 +2209,7 @@ var dimeTokenService = new DimeTokenService();
 import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
 import bcrypt from "bcrypt";
 import rateLimit4 from "express-rate-limit";
-import { z as z8 } from "zod";
+import { z as z7 } from "zod";
 
 // server/services/plaidService.ts
 import {
@@ -2230,10 +2248,15 @@ function resolvePlaidSecret() {
 }
 function resolvePlaidRedirectUri() {
   const redirectUri = process.env.PLAID_REDIRECT_URI;
+  const env = (process.env.PLAID_ENV || "sandbox").toLowerCase();
   if (!redirectUri || redirectUri.includes("your-domain") || !redirectUri.startsWith("https://")) {
+    if (env === "production") {
+      console.warn(
+        "[PlaidService] PLAID_REDIRECT_URI is missing or malformed in production \u2014 link tokens will be created WITHOUT redirect_uri. OAuth banks (Chase etc.) will fail to link."
+      );
+    }
     return void 0;
   }
-  const env = (process.env.PLAID_ENV || "sandbox").toLowerCase();
   if (env === "production" && !redirectUri.startsWith("https://dime-time.com")) {
     console.warn(
       "[PlaidService] Ignoring PLAID_REDIRECT_URI in production: it is not a https://dime-time.com URL. An unregistered redirect_uri would make Plaid Link fail for every bank."
@@ -2569,169 +2592,93 @@ var plaidService = new PlaidService();
 
 // server/services/coinbaseService.ts
 import axios from "axios";
-import crypto from "crypto";
-import { z } from "zod";
-var accountIdSchema = z.string().min(1);
-var amountSchema = z.string().regex(/^\d+(\.\d+)?$/);
-var currencySchema = z.string().min(1).max(10);
-var CoinbaseApiClient = class {
-  axiosClient;
-  apiKey;
-  apiSecret;
-  passphrase;
-  baseURL = "https://api.coinbase.com";
-  apiVersion = "2021-06-14";
-  constructor(apiKey, apiSecret, passphrase = "") {
-    this.apiKey = apiKey;
-    this.apiSecret = apiSecret;
-    this.passphrase = passphrase;
-    this.axiosClient = axios.create({
-      baseURL: this.baseURL,
-      timeout: 3e4,
-      headers: {
-        "Content-Type": "application/json",
-        "CB-VERSION": this.apiVersion
-      }
-    });
-    this.axiosClient.interceptors.request.use((config) => {
-      const timestamp2 = Math.floor(Date.now() / 1e3).toString();
-      const method = (config.method || "GET").toUpperCase();
-      const requestPath = config.url || "";
-      const body = config.data ? JSON.stringify(config.data) : "";
-      const signature = this.generateSignature(timestamp2, method, requestPath, body);
-      Object.assign(config.headers || {}, {
-        "CB-ACCESS-KEY": this.apiKey,
-        "CB-ACCESS-SIGN": signature,
-        "CB-ACCESS-TIMESTAMP": timestamp2,
-        "CB-ACCESS-PASSPHRASE": this.passphrase
-      });
-      return config;
-    });
-  }
-  /**
-   * Generate HMAC signature for Coinbase API authentication
-   */
-  generateSignature(timestamp2, method, requestPath, body) {
-    try {
-      const message = timestamp2 + method + requestPath + body;
-      const key = Buffer.from(this.apiSecret, "base64");
-      const hmac = crypto.createHmac("sha256", key);
-      const signature = hmac.update(message, "utf8").digest("base64");
-      return signature;
-    } catch (error) {
-      console.error("Error generating HMAC signature:", error);
-      throw new Error("Failed to generate API signature");
-    }
-  }
-  /**
-   * Make authenticated API request
-   */
-  async makeRequest(method, endpoint, data) {
-    try {
-      const config = {
-        method: method.toLowerCase(),
-        url: endpoint
-      };
-      if (data) {
-        config.data = data;
-      }
-      const response = await this.axiosClient.request(config);
-      return response.data.data;
-    } catch (error) {
-      if (error.response) {
-        const errorData = error.response.data;
-        console.error("Coinbase API Error:", {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: errorData
-        });
-        throw new Error(
-          `Coinbase API Error: ${error.response.status} - ${errorData?.message || error.response.statusText}`
-        );
-      } else if (error.request) {
-        console.error("Network Error:", error.message);
-        throw new Error("Network error - Unable to connect to Coinbase API");
-      } else {
-        console.error("Request Error:", error.message);
-        throw new Error(`Request error: ${error.message}`);
-      }
-    }
-  }
-  /**
-   * Get all user accounts
-   */
-  async getAccounts() {
-    return this.makeRequest("GET", "/v2/accounts");
-  }
-  /**
-   * Get specific account by ID
-   */
-  async getAccount(accountId) {
-    const validatedId = accountIdSchema.parse(accountId);
-    return this.makeRequest("GET", `/v2/accounts/${validatedId}`);
-  }
-  /**
-   * Buy cryptocurrency
-   */
-  async buyCrypto(accountId, amount, currency = "USD") {
-    const validatedId = accountIdSchema.parse(accountId);
-    const validatedAmount = amountSchema.parse(amount);
-    const validatedCurrency = currencySchema.parse(currency);
-    const buyData = {
-      amount: validatedAmount,
-      currency: validatedCurrency,
-      commit: true
-    };
-    return this.makeRequest("POST", `/v2/accounts/${validatedId}/buys`, buyData);
-  }
-  /**
-   * Get exchange rates
-   */
-  async getExchangeRates(currency = "BTC") {
-    const validatedCurrency = currencySchema.parse(currency);
-    return this.makeRequest("GET", `/v2/exchange-rates?currency=${validatedCurrency}`);
-  }
-  /**
-   * Get spot price for currency pair
-   */
-  async getSpotPrice(currencyPair = "BTC-USD") {
-    const validatedPair = z.string().min(1).parse(currencyPair);
-    return this.makeRequest("GET", `/v2/prices/${validatedPair}/spot`);
-  }
-  /**
-   * Get account transactions
-   */
-  async getTransactions(accountId) {
-    const validatedId = accountIdSchema.parse(accountId);
-    return this.makeRequest("GET", `/v2/accounts/${validatedId}/transactions`);
-  }
-};
-var CoinbaseService = class {
-  client = null;
-  isConfigured = false;
+var CoinbaseService = class _CoinbaseService {
+  // Purchases are always simulated in Preview. Real crypto will be a new,
+  // provider-approved integration — not a flip of this flag.
   demoMode = true;
-  // Always use demo mode for user safety
+  // Live public market prices (no auth required) so Preview mode shows real
+  // prices while purchases stay simulated. Cached so round-up processing
+  // never waits on repeated price lookups.
+  static FALLBACK_USD_PRICES = {
+    BTC: 43250,
+    ETH: 3200,
+    ADA: 0.38,
+    SOL: 145,
+    XRP: 0.55,
+    LTC: 140
+  };
+  spotPriceCache = /* @__PURE__ */ new Map();
+  static SPOT_CACHE_TTL_MS = 6e4;
+  inflightSpotFetches = /* @__PURE__ */ new Map();
   constructor() {
-    try {
-      if (process.env.COINBASE_API_KEY && process.env.COINBASE_API_SECRET) {
-        this.client = new CoinbaseApiClient(
-          process.env.COINBASE_API_KEY,
-          process.env.COINBASE_API_SECRET,
-          process.env.COINBASE_PASSPHRASE || ""
-        );
-        this.isConfigured = true;
-        console.log("\u2705 Coinbase service initialized with secure API client (DEMO MODE - no real trades)");
-      } else {
-        this.isConfigured = false;
-        console.log("\u26A0\uFE0F  Coinbase service not configured - missing API credentials");
-      }
-    } catch (error) {
-      console.error("Failed to initialize Coinbase service:", error);
-      this.isConfigured = false;
+    console.log("\u2705 Crypto Preview service initialized \u2014 live public prices, simulated purchases, no API credentials used");
+    this.warmSpotPriceCache();
+  }
+  /**
+   * Pre-warm the public price cache for the coins offered in the app so the
+   * first round-up after boot never waits on a network price lookup.
+   */
+  warmSpotPriceCache() {
+    for (const symbol of ["BTC", "ETH", "ADA", "SOL"]) {
+      void this.fetchAndCacheSpotPrice(`${symbol}-USD`);
     }
   }
   /**
-   * Generate a simulated Bitcoin purchase for demo mode
+   * Fetch + cache a live public spot price. Never throws; returns null on
+   * failure. Concurrent calls for the same pair share one request.
+   */
+  fetchAndCacheSpotPrice(pair) {
+    const existing = this.inflightSpotFetches.get(pair);
+    if (existing) {
+      return existing;
+    }
+    const fetchPromise = (async () => {
+      try {
+        const resp = await axios.get(`https://api.coinbase.com/v2/prices/${pair}/spot`, { timeout: 4e3 });
+        const price = parseFloat(resp.data?.data?.amount);
+        if (!Number.isFinite(price) || price <= 0) {
+          throw new Error("Invalid price payload from Coinbase public API");
+        }
+        this.spotPriceCache.set(pair, { price, fetchedAt: Date.now() });
+        return price;
+      } catch (error) {
+        console.warn(`Coinbase public price fetch failed for ${pair}:`, error instanceof Error ? error.message : error);
+        return null;
+      } finally {
+        this.inflightSpotFetches.delete(pair);
+      }
+    })();
+    this.inflightSpotFetches.set(pair, fetchPromise);
+    return fetchPromise;
+  }
+  /**
+   * Live spot price from Coinbase's public (unauthenticated) price API,
+   * used in Preview mode so users see real market prices even though
+   * purchases are simulated. Designed to never block the round-up hot path:
+   * a fresh or stale cached price is returned immediately (stale triggers a
+   * background refresh); only the very first lookup for a pair awaits the
+   * network, and it degrades to a static fallback on failure.
+   */
+  async getPublicSpotPrice(currencyPair) {
+    const pair = currencyPair.toUpperCase();
+    const base = pair.split("-")[0] || "BTC";
+    const formatUsd = (p) => p >= 1 ? p.toFixed(2) : p.toFixed(6);
+    const cached3 = this.spotPriceCache.get(pair);
+    if (cached3) {
+      if (Date.now() - cached3.fetchedAt >= _CoinbaseService.SPOT_CACHE_TTL_MS) {
+        void this.fetchAndCacheSpotPrice(pair);
+      }
+      return { amount: formatUsd(cached3.price), currency: "USD" };
+    }
+    const price = await this.fetchAndCacheSpotPrice(pair);
+    if (price !== null) {
+      return { amount: formatUsd(price), currency: "USD" };
+    }
+    const fallback = _CoinbaseService.FALLBACK_USD_PRICES[base] ?? _CoinbaseService.FALLBACK_USD_PRICES.BTC;
+    return { amount: formatUsd(fallback), currency: "USD" };
+  }
+  /**
+   * Generate a simulated Bitcoin purchase for Preview mode
    */
   generateDemoPurchase(amount, currency = "USD") {
     const btcPrice = 43250;
@@ -2755,464 +2702,87 @@ var CoinbaseService = class {
     };
   }
   async getAccounts() {
-    if (this.demoMode) {
-      return [
-        {
-          id: "demo_btc_account",
-          name: "Bitcoin Wallet",
-          primary: true,
-          type: "wallet",
-          currency: "BTC",
-          balance: { amount: "0.00125000", currency: "BTC" }
-        },
-        {
-          id: "demo_usd_account",
-          name: "USD Wallet",
-          primary: false,
-          type: "fiat",
-          currency: "USD",
-          balance: { amount: "50.00", currency: "USD" }
-        }
-      ];
-    }
-    if (!this.isConfigured || !this.client) {
-      throw new Error("Coinbase service not configured. Please provide COINBASE_API_KEY and COINBASE_API_SECRET environment variables.");
-    }
-    try {
-      const accounts = await this.client.getAccounts();
-      return accounts;
-    } catch (error) {
-      console.error("Error fetching Coinbase accounts:", error);
-      throw error;
-    }
-  }
-  async getAccount(accountId) {
-    if (this.demoMode) {
-      return {
-        id: accountId,
-        name: "Demo Bitcoin Wallet",
+    return [
+      {
+        id: "demo_btc_account",
+        name: "Bitcoin Wallet",
         primary: true,
         type: "wallet",
         currency: "BTC",
         balance: { amount: "0.00125000", currency: "BTC" }
-      };
-    }
-    if (!this.isConfigured || !this.client) {
-      throw new Error("Coinbase service not configured");
-    }
-    try {
-      const account = await this.client.getAccount(accountId);
-      return account;
-    } catch (error) {
-      console.error("Error fetching Coinbase account:", error);
-      throw error;
-    }
+      },
+      {
+        id: "demo_usd_account",
+        name: "USD Wallet",
+        primary: false,
+        type: "fiat",
+        currency: "USD",
+        balance: { amount: "50.00", currency: "USD" }
+      }
+    ];
   }
-  async buyCrypto(accountId, amount, currency = "USD") {
-    if (this.demoMode) {
-      console.log(`[DEMO MODE] Simulating BTC purchase of ${amount} ${currency}`);
-      return this.generateDemoPurchase(amount, currency);
-    }
-    if (!this.isConfigured || !this.client) {
-      throw new Error("Coinbase service not configured");
-    }
-    try {
-      const transaction = await this.client.buyCrypto(accountId, amount, currency);
-      return transaction;
-    } catch (error) {
-      console.error("Error buying crypto:", error);
-      throw error;
-    }
+  async getAccount(accountId) {
+    return {
+      id: accountId,
+      name: "Demo Bitcoin Wallet",
+      primary: true,
+      type: "wallet",
+      currency: "BTC",
+      balance: { amount: "0.00125000", currency: "BTC" }
+    };
+  }
+  async buyCrypto(_accountId, amount, currency = "USD") {
+    console.log(`[PREVIEW] Simulating BTC purchase of ${amount} ${currency} \u2014 no real money moves`);
+    return this.generateDemoPurchase(amount, currency);
   }
   async getExchangeRates(currency = "BTC") {
-    if (this.demoMode) {
-      return {
-        currency,
-        rates: {
-          USD: "43250.00",
-          EUR: "39800.00",
-          GBP: "34100.00"
-        }
-      };
-    }
-    if (!this.isConfigured || !this.client) {
-      throw new Error("Coinbase service not configured");
-    }
-    try {
-      const rates = await this.client.getExchangeRates(currency);
-      return rates;
-    } catch (error) {
-      console.error("Error fetching exchange rates:", error);
-      throw error;
-    }
+    const spot = await this.getPublicSpotPrice(`${currency}-USD`);
+    return {
+      currency,
+      rates: {
+        USD: spot.amount
+      }
+    };
   }
   async getSpotPrice(currencyPair = "BTC-USD") {
-    if (this.demoMode) {
-      return {
-        amount: "43250.00",
-        currency: "USD"
-      };
-    }
-    if (!this.isConfigured || !this.client) {
-      throw new Error("Coinbase service not configured");
-    }
-    try {
-      const price = await this.client.getSpotPrice(currencyPair);
-      return price;
-    } catch (error) {
-      console.error("Error fetching spot price:", error);
-      throw error;
-    }
+    return this.getPublicSpotPrice(currencyPair);
   }
-  async getTransactions(accountId) {
-    if (this.demoMode) {
-      return [
-        {
-          id: "demo_tx_1",
-          type: "buy",
-          status: "completed",
-          amount: { amount: "0.00023100", currency: "BTC" },
-          native_amount: { amount: "10.00", currency: "USD" },
-          description: "Demo round-up purchase",
-          created_at: new Date(Date.now() - 864e5).toISOString(),
-          updated_at: new Date(Date.now() - 864e5).toISOString()
-        },
-        {
-          id: "demo_tx_2",
-          type: "buy",
-          status: "completed",
-          amount: { amount: "0.00011550", currency: "BTC" },
-          native_amount: { amount: "5.00", currency: "USD" },
-          description: "Demo round-up purchase",
-          created_at: new Date(Date.now() - 1728e5).toISOString(),
-          updated_at: new Date(Date.now() - 1728e5).toISOString()
-        }
-      ];
-    }
-    if (!this.isConfigured || !this.client) {
-      throw new Error("Coinbase service not configured");
-    }
-    try {
-      const transactions2 = await this.client.getTransactions(accountId);
-      return transactions2;
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      throw error;
-    }
+  async getTransactions(_accountId) {
+    return [
+      {
+        id: "demo_tx_1",
+        type: "buy",
+        status: "completed",
+        amount: { amount: "0.00023100", currency: "BTC" },
+        native_amount: { amount: "10.00", currency: "USD" },
+        description: "Demo round-up purchase",
+        created_at: new Date(Date.now() - 864e5).toISOString(),
+        updated_at: new Date(Date.now() - 864e5).toISOString()
+      },
+      {
+        id: "demo_tx_2",
+        type: "buy",
+        status: "completed",
+        amount: { amount: "0.00011550", currency: "BTC" },
+        native_amount: { amount: "5.00", currency: "USD" },
+        description: "Demo round-up purchase",
+        created_at: new Date(Date.now() - 1728e5).toISOString(),
+        updated_at: new Date(Date.now() - 1728e5).toISOString()
+      }
+    ];
   }
+  /**
+   * Preview mode needs no credentials, so the service is always "configured".
+   * Kept for call-site compatibility (routes and round-up split gate on it).
+   */
   isServiceConfigured() {
-    return this.isConfigured;
+    return true;
   }
   isDemoMode() {
     return this.demoMode;
   }
 };
 var coinbaseService = new CoinbaseService();
-
-// server/services/s3Service.ts
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-var S3Service = class {
-  client;
-  bucketName;
-  isConfigured = false;
-  constructor() {
-    try {
-      if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_S3_BUCKET_NAME) {
-        this.client = new S3Client({
-          region: process.env.AWS_REGION || "us-east-1",
-          credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-          }
-        });
-        this.bucketName = process.env.AWS_S3_BUCKET_NAME;
-        this.isConfigured = true;
-      } else {
-        this.isConfigured = false;
-      }
-    } catch (error) {
-      console.error("Failed to initialize S3 service:", error);
-      this.isConfigured = false;
-    }
-  }
-  isServiceConfigured() {
-    return this.isConfigured;
-  }
-  async uploadFile(key, buffer, contentType = "application/octet-stream") {
-    if (!this.isConfigured) {
-      throw new Error("S3 service not configured. Please provide AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_S3_BUCKET_NAME environment variables.");
-    }
-    const command = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType
-    });
-    await this.client.send(command);
-    return `https://${this.bucketName}.s3.amazonaws.com/${key}`;
-  }
-  async uploadUserDocument(userId, fileName, buffer, documentType = "other") {
-    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
-    const key = `users/${userId}/${documentType}/${timestamp2}-${fileName}`;
-    const extension = fileName.split(".").pop()?.toLowerCase();
-    let contentType = "application/octet-stream";
-    switch (extension) {
-      case "jpg":
-      case "jpeg":
-        contentType = "image/jpeg";
-        break;
-      case "png":
-        contentType = "image/png";
-        break;
-      case "pdf":
-        contentType = "application/pdf";
-        break;
-      case "txt":
-        contentType = "text/plain";
-        break;
-    }
-    return this.uploadFile(key, buffer, contentType);
-  }
-  async getFileUrl(key, expiresIn = 3600) {
-    if (!this.isConfigured) {
-      throw new Error("S3 service not configured");
-    }
-    const command = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: key
-    });
-    return getSignedUrl(this.client, command, { expiresIn });
-  }
-  async deleteFile(key) {
-    if (!this.isConfigured) {
-      throw new Error("S3 service not configured");
-    }
-    const command = new DeleteObjectCommand({
-      Bucket: this.bucketName,
-      Key: key
-    });
-    await this.client.send(command);
-  }
-  async listUserFiles(userId, documentType) {
-    if (!this.isConfigured) {
-      throw new Error("S3 service not configured");
-    }
-    const prefix = documentType ? `users/${userId}/${documentType}/` : `users/${userId}/`;
-    const command = new ListObjectsV2Command({
-      Bucket: this.bucketName,
-      Prefix: prefix
-    });
-    const response = await this.client.send(command);
-    return response.Contents?.map((obj) => obj.Key || "") || [];
-  }
-  // Backup entire user data to S3
-  async backupUserData(userId, userData) {
-    if (!this.isConfigured) {
-      throw new Error("S3 service not configured");
-    }
-    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
-    const key = `backups/${userId}/${timestamp2}-user-data.json`;
-    const buffer = Buffer.from(JSON.stringify(userData, null, 2));
-    return this.uploadFile(key, buffer, "application/json");
-  }
-};
-var s3Service = new S3Service();
-
-// server/services/dynamoService.ts
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  GetCommand,
-  UpdateCommand,
-  DeleteCommand,
-  QueryCommand
-} from "@aws-sdk/lib-dynamodb";
-var DynamoService = class {
-  client;
-  isConfigured = false;
-  constructor() {
-    try {
-      if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-        const dynamoClient = new DynamoDBClient({
-          region: process.env.AWS_REGION || "us-east-1",
-          credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-          }
-        });
-        this.client = DynamoDBDocumentClient.from(dynamoClient);
-        this.isConfigured = true;
-      } else {
-        this.isConfigured = false;
-      }
-    } catch (error) {
-      console.error("Failed to initialize DynamoDB service:", error);
-      this.isConfigured = false;
-    }
-  }
-  isServiceConfigured() {
-    return this.isConfigured;
-  }
-  // Generic CRUD operations for any table
-  async putItem(tableName, item) {
-    if (!this.isConfigured) {
-      throw new Error("DynamoDB service not configured. Please provide AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables.");
-    }
-    const serializedItem = this.serializeDates(item);
-    const command = new PutCommand({
-      TableName: tableName,
-      Item: serializedItem
-    });
-    await this.client.send(command);
-    return item;
-  }
-  // Helper method to convert Date objects to ISO strings
-  serializeDates(obj) {
-    if (obj instanceof Date) {
-      return obj.toISOString();
-    }
-    if (Array.isArray(obj)) {
-      return obj.map((item) => this.serializeDates(item));
-    }
-    if (obj !== null && typeof obj === "object") {
-      const serialized = {};
-      for (const [key, value] of Object.entries(obj)) {
-        serialized[key] = this.serializeDates(value);
-      }
-      return serialized;
-    }
-    return obj;
-  }
-  async getItem(tableName, key) {
-    if (!this.isConfigured) {
-      throw new Error("DynamoDB service not configured");
-    }
-    const command = new GetCommand({
-      TableName: tableName,
-      Key: key
-    });
-    const response = await this.client.send(command);
-    return response.Item;
-  }
-  async updateItem(tableName, key, updates) {
-    if (!this.isConfigured) {
-      throw new Error("DynamoDB service not configured");
-    }
-    const updateExpression = Object.keys(updates).map((attr, index2) => `#attr${index2} = :val${index2}`).join(", ");
-    const expressionAttributeNames = Object.keys(updates).reduce((acc, attr, index2) => {
-      acc[`#attr${index2}`] = attr;
-      return acc;
-    }, {});
-    const expressionAttributeValues = Object.values(updates).reduce((acc, val, index2) => {
-      acc[`:val${index2}`] = val;
-      return acc;
-    }, {});
-    const command = new UpdateCommand({
-      TableName: tableName,
-      Key: key,
-      UpdateExpression: `SET ${updateExpression}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: "ALL_NEW"
-    });
-    const response = await this.client.send(command);
-    return response.Attributes;
-  }
-  async deleteItem(tableName, key) {
-    if (!this.isConfigured) {
-      throw new Error("DynamoDB service not configured");
-    }
-    const command = new DeleteCommand({
-      TableName: tableName,
-      Key: key
-    });
-    await this.client.send(command);
-  }
-  async queryItems(tableName, keyCondition, expressionAttributeValues, limit) {
-    if (!this.isConfigured) {
-      throw new Error("DynamoDB service not configured");
-    }
-    const command = new QueryCommand({
-      TableName: tableName,
-      KeyConditionExpression: keyCondition,
-      ExpressionAttributeValues: expressionAttributeValues,
-      Limit: limit,
-      ScanIndexForward: false
-      // Sort in descending order (newest first)
-    });
-    const response = await this.client.send(command);
-    return response.Items || [];
-  }
-  // Specific methods for financial data
-  async getTransactionsByUserId(userId, limit) {
-    return this.queryItems(
-      process.env.AWS_DYNAMODB_TRANSACTIONS_TABLE || "dime-time-transactions",
-      "userId = :userId",
-      { ":userId": userId },
-      limit
-    );
-  }
-  async createTransaction(transaction) {
-    const tableName = process.env.AWS_DYNAMODB_TRANSACTIONS_TABLE || "dime-time-transactions";
-    return this.putItem(tableName, {
-      ...transaction,
-      id: transaction.id || `trans-${Date.now()}`,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    });
-  }
-  async getUserDebts(userId) {
-    return this.queryItems(
-      process.env.AWS_DYNAMODB_DEBTS_TABLE || "dime-time-debts",
-      "userId = :userId",
-      { ":userId": userId }
-    );
-  }
-  async createDebt(debt) {
-    const tableName = process.env.AWS_DYNAMODB_DEBTS_TABLE || "dime-time-debts";
-    return this.putItem(tableName, {
-      ...debt,
-      id: debt.id || `debt-${Date.now()}`,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    });
-  }
-  async getUserCryptoPurchases(userId) {
-    return this.queryItems(
-      process.env.AWS_DYNAMODB_CRYPTO_TABLE || "dime-time-crypto-purchases",
-      "userId = :userId",
-      { ":userId": userId }
-    );
-  }
-  async createCryptoPurchase(purchase) {
-    const tableName = process.env.AWS_DYNAMODB_CRYPTO_TABLE || "dime-time-crypto-purchases";
-    return this.putItem(tableName, {
-      ...purchase,
-      id: purchase.id || `crypto-${Date.now()}`,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    });
-  }
-  // Backup and analytics methods
-  async exportUserDataToS3(userId) {
-    if (!this.isConfigured) {
-      throw new Error("DynamoDB service not configured");
-    }
-    const [transactions2, debts2, cryptoPurchases2] = await Promise.all([
-      this.getTransactionsByUserId(userId),
-      this.getUserDebts(userId),
-      this.getUserCryptoPurchases(userId)
-    ]);
-    const userData = {
-      userId,
-      exportDate: (/* @__PURE__ */ new Date()).toISOString(),
-      transactions: transactions2,
-      debts: debts2,
-      cryptoPurchases: cryptoPurchases2
-    };
-    return JSON.stringify(userData);
-  }
-};
-var dynamoService = new DynamoService();
 
 // server/services/axosService.ts
 import axios2 from "axios";
@@ -3393,7 +2963,7 @@ var AxosService = class {
 var axosService = new AxosService();
 
 // server/routes/axosRoutes.ts
-import { z as z2 } from "zod";
+import { z } from "zod";
 
 // server/middleware/authHelper.ts
 import { createHash } from "crypto";
@@ -3530,12 +3100,12 @@ function registerAxosRoutes(app2) {
       if (!axosService.isServiceConfigured()) {
         return res.status(503).json({ message: "Axos service not configured" });
       }
-      const paymentSchema = z2.object({
-        userId: z2.string(),
-        debtAccountId: z2.string(),
-        debtRoutingNumber: z2.string(),
-        amount: z2.string(),
-        debtName: z2.string()
+      const paymentSchema = z.object({
+        userId: z.string(),
+        debtAccountId: z.string(),
+        debtRoutingNumber: z.string(),
+        amount: z.string(),
+        debtName: z.string()
       });
       try {
         payments2.forEach((payment) => paymentSchema.parse(payment));
@@ -3830,17 +3400,17 @@ var MercuryService = class {
 var mercuryService = new MercuryService();
 
 // server/routes/mercuryRoutes.ts
-import { z as z3 } from "zod";
+import { z as z2 } from "zod";
 var MAX_ROUNDUP_DOLLARS = 5;
 var MAX_DEBT_PAYMENT_DOLLARS = 500;
-var collectRoundUpSchema = z3.object({
-  amount: z3.number().positive().max(MAX_ROUNDUP_DOLLARS, `Round-up cannot exceed $${MAX_ROUNDUP_DOLLARS}`),
-  descriptor: z3.string().max(60).optional()
+var collectRoundUpSchema = z2.object({
+  amount: z2.number().positive().max(MAX_ROUNDUP_DOLLARS, `Round-up cannot exceed $${MAX_ROUNDUP_DOLLARS}`),
+  descriptor: z2.string().max(60).optional()
 });
-var payDebtSchema = z3.object({
-  debtId: z3.string().min(1),
-  amount: z3.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS, `Payment cannot exceed $${MAX_DEBT_PAYMENT_DOLLARS}`),
-  descriptor: z3.string().max(60).optional()
+var payDebtSchema = z2.object({
+  debtId: z2.string().min(1),
+  amount: z2.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS, `Payment cannot exceed $${MAX_DEBT_PAYMENT_DOLLARS}`),
+  descriptor: z2.string().max(60).optional()
 });
 function transferLog(correlationId, event, data) {
   setCorrelationTag(correlationId);
@@ -4055,7 +3625,7 @@ function registerMercuryRoutes(app2) {
         });
       }
     } catch (error) {
-      if (error instanceof z3.ZodError) {
+      if (error instanceof z2.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("collect-roundup error:", error?.response?.data || error.message);
@@ -4173,7 +3743,7 @@ function registerMercuryRoutes(app2) {
         mercuryBalance: balance.availableBalance
       });
     } catch (error) {
-      if (error instanceof z3.ZodError) {
+      if (error instanceof z2.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("pay-debt error:", error?.response?.data || error.message);
@@ -4317,7 +3887,7 @@ function registerWebhookRoutes(app2) {
 import express from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { randomUUID as randomUUID3 } from "crypto";
-import { z as z4 } from "zod";
+import { z as z3 } from "zod";
 
 // shared/achAuthorization.ts
 var ACH_AUTHORIZATION_VERSION = "2026-05-29.v1";
@@ -4688,15 +4258,15 @@ var MAX_DEBT_PAYMENT_DOLLARS2 = 500;
 var REAL_FIRST_TRANSFER_MAX_DOLLARS = 1;
 var REAL_DAILY_TOTAL_MAX_DOLLARS = 5;
 var REAL_DAILY_COUNT_MAX = 1;
-var exchangeSchema = z4.object({
-  fcAccountId: z4.string().min(3),
-  customerId: z4.string().min(3)
+var exchangeSchema = z3.object({
+  fcAccountId: z3.string().min(3),
+  customerId: z3.string().min(3)
 });
-var debitSchema = z4.object({
-  stripeAccountId: z4.string().min(1),
-  amount: z4.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS2),
-  debtId: z4.string().min(1).optional(),
-  descriptor: z4.string().max(22).optional()
+var debitSchema = z3.object({
+  stripeAccountId: z3.string().min(1),
+  amount: z3.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS2),
+  debtId: z3.string().min(1).optional(),
+  descriptor: z3.string().max(22).optional()
 });
 function clientIp(req) {
   const fwd = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
@@ -4795,7 +4365,7 @@ function registerStripeRoutes(app2) {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const parsed = z4.object({ stripeAccountId: z4.string().min(1).nullable() }).safeParse(req.body);
+      const parsed = z3.object({ stripeAccountId: z3.string().min(1).nullable() }).safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid request", correlationId });
       }
@@ -4887,6 +4457,14 @@ function registerStripeRoutes(app2) {
       }
       const { fcAccountId, customerId } = exchangeSchema.parse(req.body);
       stripeLog(correlationId, "fc_exchange_start", { userId, fcAccountId });
+      const existing = await storage.getStripeAccountByFcAccountId(fcAccountId);
+      if (existing && existing.userId !== userId) {
+        stripeLog(correlationId, "fc_exchange_conflict", { severity: "ERROR", fcAccountId });
+        return res.status(409).json({
+          message: "This bank account is already linked to a different Dime Time account",
+          correlationId
+        });
+      }
       const user = await storage.getUser(userId);
       const holderName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.email || "Dime Time Customer";
       const { paymentMethodId, last4, institutionName } = await attachFcAccountAsPaymentMethod({
@@ -4894,27 +4472,60 @@ function registerStripeRoutes(app2) {
         customerId,
         holderName
       });
-      const saved = await storage.createStripeAccount({
-        userId,
-        stripeCustomerId: customerId,
-        stripeFcAccountId: fcAccountId,
-        paymentMethodIdPlaintext: paymentMethodId,
-        institutionName,
-        last4
-      });
-      stripeLog(correlationId, "fc_exchange_success", {
+      let saved;
+      let relinked = false;
+      if (existing) {
+        saved = await storage.updateStripeAccountLink(existing.id, {
+          paymentMethodIdPlaintext: paymentMethodId,
+          stripeCustomerId: customerId,
+          institutionName,
+          last4
+        });
+        relinked = true;
+      } else {
+        try {
+          saved = await storage.createStripeAccount({
+            userId,
+            stripeCustomerId: customerId,
+            stripeFcAccountId: fcAccountId,
+            paymentMethodIdPlaintext: paymentMethodId,
+            institutionName,
+            last4
+          });
+        } catch (insertErr) {
+          const isDuplicate = insertErr?.code === "23505" || /stripe_accounts_stripe_fc_account_id_unique/.test(insertErr?.message ?? "");
+          if (!isDuplicate) throw insertErr;
+          const row = await storage.getStripeAccountByFcAccountId(fcAccountId);
+          if (!row || row.userId !== userId) {
+            stripeLog(correlationId, "fc_exchange_conflict", { severity: "ERROR", fcAccountId });
+            return res.status(409).json({
+              message: "This bank account is already linked to a different Dime Time account",
+              correlationId
+            });
+          }
+          saved = await storage.updateStripeAccountLink(row.id, {
+            paymentMethodIdPlaintext: paymentMethodId,
+            stripeCustomerId: customerId,
+            institutionName,
+            last4
+          });
+          relinked = true;
+        }
+      }
+      stripeLog(correlationId, relinked ? "fc_exchange_relinked" : "fc_exchange_success", {
         stripeAccountId: saved.id,
         institutionName
       });
-      return res.status(201).json({
+      return res.status(relinked ? 200 : 201).json({
         success: true,
+        relinked,
         stripeAccountId: saved.id,
         institutionName,
         last4,
         correlationId
       });
     } catch (err) {
-      if (err instanceof z4.ZodError) {
+      if (err instanceof z3.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
       stripeLog(correlationId, "fc_exchange_failed", {
@@ -5183,7 +4794,7 @@ function registerStripeRoutes(app2) {
         return res.status(502).json(failBody);
       }
     } catch (err) {
-      if (err instanceof z4.ZodError) {
+      if (err instanceof z3.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
       const cleanupUserId = getUserIdFromRequest(req);
@@ -5441,7 +5052,7 @@ function registerStripeWebhook(app2) {
 // server/routes/debtImportRoutes.ts
 import rateLimit2, { ipKeyGenerator as ipKeyGenerator2 } from "express-rate-limit";
 import { randomUUID as randomUUID4 } from "crypto";
-import { z as z5 } from "zod";
+import { z as z4 } from "zod";
 
 // server/services/debtImport/sandboxProvider.ts
 var delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -5709,11 +5320,11 @@ function debtImportLog(correlationId, event, data) {
     })
   );
 }
-var consentSchema = z5.object({ consent: z5.literal(true) });
-var exchangeSchema2 = z5.object({
-  publicToken: z5.string().min(1),
-  institutionName: z5.string().max(200).optional(),
-  consent: z5.literal(true)
+var consentSchema = z4.object({ consent: z4.literal(true) });
+var exchangeSchema2 = z4.object({
+  publicToken: z4.string().min(1),
+  institutionName: z4.string().max(200).optional(),
+  consent: z4.literal(true)
 });
 function perUserLimiter(max, action) {
   return rateLimit2({
@@ -6032,21 +5643,21 @@ function registerDebtImportRoutes(app2) {
 // server/routes/subscriptionRoutes.ts
 import rateLimit3, { ipKeyGenerator as ipKeyGenerator3 } from "express-rate-limit";
 import { randomUUID as randomUUID5 } from "crypto";
-import { z as z6 } from "zod";
+import { z as z5 } from "zod";
 
 // shared/subscriptionAuthorization.ts
 var SUBSCRIPTION_CONSENT_VERSION = "2026-07-14.v1";
 var SUBSCRIPTION_CONSENT_TEXT = "By selecting \u201CSubscribe\u201D, you agree to the Dime Time Terms of Service and authorize Dime Time to electronically debit your linked bank account via the ACH network for the recurring monthly subscription fee shown above, on or about the same day each month, beginning today, and, if necessary, to electronically credit your account to correct any erroneous debit. This authorization remains in effect until you cancel your subscription in the app or contact us at tim@dime-time.com. Canceling stops future charges at the end of your current billing period; fees already charged are non-refundable except as required by law. You agree that ACH transactions you authorize comply with applicable U.S. law. Dime Time is a financial technology platform and is not a bank; banking services and payment infrastructure are provided through regulated financial partners.";
 
 // server/routes/subscriptionRoutes.ts
-var subscribeSchema = z6.object({
+var subscribeSchema = z5.object({
   // Explicit re-statement that the user checked the consent box. The
   // authoritative evidence row is written server-side with server-observed
   // IP/UA — the client can't forge those.
-  consentAccepted: z6.literal(true),
+  consentAccepted: z5.literal(true),
   // Optional: pick a specific linked bank account; defaults to the first
   // active linked one.
-  stripeAccountId: z6.string().min(1).optional()
+  stripeAccountId: z5.string().min(1).optional()
 });
 function clientIp2(req) {
   const fwd = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
@@ -6304,10 +5915,10 @@ var SUBSCRIPTION_REQUIRED_RESPONSE = {
 };
 
 // server/routes/adminRoutes.ts
-import { z as z7 } from "zod";
-var realTransfersToggleSchema = z7.object({
-  enabled: z7.boolean(),
-  notes: z7.string().max(500).optional()
+import { z as z6 } from "zod";
+var realTransfersToggleSchema = z6.object({
+  enabled: z6.boolean(),
+  notes: z6.string().max(500).optional()
 });
 function publicUserRealTransferStatus(u) {
   return {
@@ -7592,22 +7203,23 @@ var RoundUpSplitService = class {
    */
   async getCurrentCryptoPrice(cryptoSymbol) {
     try {
-      if (coinbaseService.isServiceConfigured()) {
-        const priceData = await coinbaseService.getSpotPrice(`${cryptoSymbol}-USD`);
-        return parseFloat(priceData.data?.amount || priceData.amount || priceData);
-      } else {
-        const demoPrices = {
-          "BTC": 95e3,
-          "ETH": 3200,
-          "XRP": 0.55,
-          "LTC": 140,
-          "ADA": 0.38
-        };
-        return demoPrices[cryptoSymbol] || 95e3;
+      const priceData = await coinbaseService.getSpotPrice(`${cryptoSymbol}-USD`);
+      const price = parseFloat(priceData.data?.amount || priceData.amount || priceData);
+      if (Number.isFinite(price) && price > 0) {
+        return price;
       }
+      throw new Error(`Invalid spot price for ${cryptoSymbol}`);
     } catch (error) {
       console.error("Error getting crypto price:", error);
-      return 95e3;
+      const fallbackPrices = {
+        "BTC": 43250,
+        "ETH": 3200,
+        "XRP": 0.55,
+        "LTC": 140,
+        "ADA": 0.38,
+        "SOL": 145
+      };
+      return fallbackPrices[cryptoSymbol] || fallbackPrices["BTC"];
     }
   }
   /**
@@ -7631,7 +7243,6 @@ var RoundUpSplitService = class {
 var roundUpSplitService = new RoundUpSplitService();
 
 // server/routes.ts
-import multer from "multer";
 import { randomBytes as randomBytes2 } from "crypto";
 
 // server/services/emailService.ts
@@ -8031,6 +7642,11 @@ async function registerRoutes(app2) {
   };
   app2.get("/.well-known/apple-app-site-association", serveAasa);
   app2.get("/apple-app-site-association", serveAasa);
+  const assetlinksPath = path.join(publicDir, ".well-known", "assetlinks.json");
+  app2.get("/.well-known/assetlinks.json", (_req, res) => {
+    res.type("application/json");
+    res.sendFile(assetlinksPath);
+  });
   app2.use(express2.static(publicDir, { index: false }));
   const guidesDir = path.resolve(process.cwd(), "server", "guides");
   const guideFiles = {
@@ -8402,9 +8018,9 @@ async function registerRoutes(app2) {
         }
         const { turnstileToken: _omit, source: _clientSource, userId: _clientUserId, ...payload } = req.body ?? {};
         const validatedData = insertContactSubmissionSchema.extend({
-          name: z8.string().trim().min(1).max(100),
-          email: z8.string().trim().email().max(254),
-          message: z8.string().trim().min(1).max(5e3)
+          name: z7.string().trim().min(1).max(100),
+          email: z7.string().trim().email().max(254),
+          message: z7.string().trim().min(1).max(5e3)
         }).parse(payload);
         toInsert = { ...validatedData, source: "marketing" };
       }
@@ -8431,7 +8047,7 @@ async function registerRoutes(app2) {
       });
       res.json({ success: true, submission });
     } catch (error) {
-      if (error instanceof z8.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid form data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8481,7 +8097,7 @@ async function registerRoutes(app2) {
       const debt = await storage.createDebt(validatedData);
       res.status(201).json(debt);
     } catch (error) {
-      if (error instanceof z8.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8497,13 +8113,13 @@ async function registerRoutes(app2) {
       if (!debt || debt.userId !== userId) {
         return res.status(404).json({ message: "Debt not found" });
       }
-      const editSchema = z8.object({
-        name: z8.string().trim().min(1).optional(),
-        currentBalance: z8.string().optional(),
-        interestRate: z8.string().optional(),
-        minimumPayment: z8.string().optional(),
-        dueDate: z8.number().int().min(1).max(31).optional(),
-        accountNumber: z8.string().optional()
+      const editSchema = z7.object({
+        name: z7.string().trim().min(1).optional(),
+        currentBalance: z7.string().optional(),
+        interestRate: z7.string().optional(),
+        minimumPayment: z7.string().optional(),
+        dueDate: z7.number().int().min(1).max(31).optional(),
+        accountNumber: z7.string().optional()
       }).refine(
         (d) => d.currentBalance === void 0 || parseFloat(d.currentBalance) > 0 && parseFloat(d.currentBalance) <= 9999999999e-2,
         { message: "Current balance must be between 0.01 and 99,999,999.99", path: ["currentBalance"] }
@@ -8538,7 +8154,7 @@ async function registerRoutes(app2) {
       const updated = await storage.updateDebt(req.params.id, updates);
       res.json(updated);
     } catch (error) {
-      if (error instanceof z8.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8619,7 +8235,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(transaction);
     } catch (error) {
-      if (error instanceof z8.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8717,7 +8333,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(payment);
     } catch (error) {
-      if (error instanceof z8.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid payment data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8905,7 +8521,8 @@ async function registerRoutes(app2) {
         thisMonthPayments: thisMonthPayments.toFixed(2),
         progressPercentage,
         debtFreeDate: debtFreeDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-        debtsCount: debts2.length
+        debtsCount: debts2.length,
+        paidOffCount: debts2.filter((d) => parseFloat(d.currentBalance) <= 0).length
       };
       res.json(summary);
     } catch (error) {
@@ -8957,7 +8574,7 @@ async function registerRoutes(app2) {
             const cryptoResponse = {
               ...purchase,
               coinbaseTransaction,
-              message: "Real crypto purchase completed via Coinbase"
+              message: "Preview purchase recorded \u2014 simulated, no real money moved"
             };
             if (idempotencyKey) {
               await saveIdempotency2(idempotencyKey, userId, "/api/crypto-purchases", 201, cryptoResponse);
@@ -8978,7 +8595,7 @@ async function registerRoutes(app2) {
           res.status(503).json({
             ...purchase,
             error: coinbaseError,
-            message: "Coinbase purchase failed - check API credentials"
+            message: "Crypto Preview simulation failed"
           });
         }
       } else {
@@ -8992,7 +8609,7 @@ async function registerRoutes(app2) {
         });
         const demoResponse = {
           ...purchase,
-          message: "Demo purchase - Add Coinbase credentials for real trading"
+          message: "Preview purchase recorded \u2014 simulated, no real money moved"
         };
         if (idempotencyKey) {
           await saveIdempotency2(idempotencyKey, userId, "/api/crypto-purchases", 201, demoResponse);
@@ -9000,7 +8617,7 @@ async function registerRoutes(app2) {
         res.status(201).json(demoResponse);
       }
     } catch (error) {
-      if (error instanceof z8.ZodError) {
+      if (error instanceof z7.ZodError) {
         return res.status(400).json({ message: "Invalid crypto purchase data", errors: error.errors });
       }
       console.error("Error creating crypto purchase:", error);
@@ -9044,6 +8661,32 @@ async function registerRoutes(app2) {
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
+  });
+  const plaidEventLimiter = rateLimit4({
+    windowMs: 60 * 1e3,
+    max: 20,
+    message: { message: "Too many events." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false }
+  });
+  app2.post("/api/plaid/link-event", plaidEventLimiter, (req, res) => {
+    const userId = getUserIdFromRequest(req) ?? "anonymous";
+    const b = req.body ?? {};
+    const clip = (v, max = 200) => typeof v === "string" ? v.slice(0, max) : void 0;
+    console.log(JSON.stringify({
+      service: "PlaidLinkClient",
+      event: "link_client_event",
+      userId,
+      stage: clip(b.stage, 40),
+      errorType: clip(b.errorType, 60),
+      errorCode: clip(b.errorCode, 60),
+      errorMessage: clip(b.errorMessage),
+      requestId: clip(b.requestId, 60),
+      linkSessionId: clip(b.linkSessionId, 60),
+      platform: clip(b.platform, 20)
+    }));
+    res.status(204).end();
   });
   app2.post("/api/plaid/create-link-token", async (req, res) => {
     try {
@@ -9182,7 +8825,7 @@ async function registerRoutes(app2) {
     try {
       if (!coinbaseService.isServiceConfigured()) {
         return res.status(503).json({
-          message: "Coinbase service not configured. Please provide COINBASE_API_KEY and COINBASE_API_SECRET environment variables.",
+          message: "Crypto Preview service unavailable",
           configured: false
         });
       }
@@ -9236,7 +8879,12 @@ async function registerRoutes(app2) {
         purchasePrice: amount,
         coinbaseOrderId: transaction.id || ""
       });
-      res.json({ success: true, transaction });
+      res.json({
+        success: true,
+        simulated: true,
+        message: "Preview purchase \u2014 simulated, no real money moved",
+        transaction
+      });
     } catch (error) {
       console.error("Error buying crypto:", error);
       res.status(500).json({ message: "Failed to purchase cryptocurrency" });
@@ -9391,156 +9039,6 @@ async function registerRoutes(app2) {
     } catch (error) {
       console.error("Error awarding tokens:", error);
       res.status(500).json({ message: "Failed to award tokens" });
-    }
-  });
-  const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }
-    // 10MB limit
-  });
-  app2.post("/api/aws/upload", upload.single("file"), async (req, res) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const documentType = req.body.documentType || "other";
-      if (!req.file) {
-        return res.status(400).json({ message: "No file provided" });
-      }
-      if (!s3Service.isServiceConfigured()) {
-        return res.status(503).json({
-          message: "S3 service not configured. Please provide AWS credentials.",
-          configured: false
-        });
-      }
-      const fileUrl = await s3Service.uploadUserDocument(
-        userId,
-        req.file.originalname,
-        req.file.buffer,
-        documentType
-      );
-      res.json({
-        success: true,
-        fileUrl,
-        fileName: req.file.originalname,
-        documentType,
-        message: "File uploaded successfully to S3"
-      });
-    } catch (error) {
-      console.error("Error uploading file to S3:", error);
-      res.status(500).json({ message: "Failed to upload file" });
-    }
-  });
-  app2.get("/api/aws/files/:userId", async (req, res) => {
-    try {
-      const authUserId = getUserIdFromRequest(req);
-      if (!authUserId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const { userId } = req.params;
-      if (userId !== authUserId) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-      const documentType = req.query.type;
-      if (!s3Service.isServiceConfigured()) {
-        return res.status(503).json({ message: "S3 service not configured" });
-      }
-      const files = await s3Service.listUserFiles(userId, documentType);
-      res.json({ files });
-    } catch (error) {
-      console.error("Error listing user files:", error);
-      res.status(500).json({ message: "Failed to list files" });
-    }
-  });
-  app2.post("/api/aws/backup-user-data", async (req, res) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      if (!s3Service.isServiceConfigured()) {
-        return res.status(503).json({ message: "S3 service not configured" });
-      }
-      const [debts2, transactions2, payments2, cryptoPurchases2] = await Promise.all([
-        storage.getDebtsByUserId(userId),
-        storage.getTransactionsByUserId(userId),
-        storage.getPaymentsByUserId(userId),
-        storage.getCryptoPurchasesByUserId(userId)
-      ]);
-      const userData = {
-        userId,
-        backupDate: (/* @__PURE__ */ new Date()).toISOString(),
-        data: {
-          debts: debts2,
-          transactions: transactions2,
-          payments: payments2,
-          cryptoPurchases: cryptoPurchases2
-        }
-      };
-      const backupUrl = await s3Service.backupUserData(userId, userData);
-      res.json({
-        success: true,
-        backupUrl,
-        message: "User data backed up successfully to S3"
-      });
-    } catch (error) {
-      console.error("Error backing up user data:", error);
-      res.status(500).json({ message: "Failed to backup user data" });
-    }
-  });
-  app2.post("/api/aws/sync-to-dynamo", async (req, res) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      if (!dynamoService.isServiceConfigured()) {
-        return res.status(503).json({
-          message: "DynamoDB service not configured. Please provide AWS credentials.",
-          configured: false
-        });
-      }
-      const transactions2 = await storage.getTransactionsByUserId(userId);
-      const syncResults = await Promise.all(
-        transactions2.map(
-          (transaction) => dynamoService.createTransaction(transaction)
-        )
-      );
-      res.json({
-        success: true,
-        syncedCount: syncResults.length,
-        message: "Financial data synced to DynamoDB successfully"
-      });
-    } catch (error) {
-      console.error("Error syncing to DynamoDB:", error);
-      res.status(500).json({ message: "Failed to sync data to DynamoDB" });
-    }
-  });
-  app2.get("/api/aws/service-status", async (req, res) => {
-    try {
-      const status = {
-        s3: {
-          configured: s3Service.isServiceConfigured(),
-          status: s3Service.isServiceConfigured() ? "ready" : "missing_credentials"
-        },
-        dynamodb: {
-          configured: dynamoService.isServiceConfigured(),
-          status: dynamoService.isServiceConfigured() ? "ready" : "missing_credentials"
-        },
-        plaid: {
-          configured: plaidService.isServiceConfigured(),
-          status: plaidService.isServiceConfigured() ? "ready" : "missing_credentials"
-        },
-        coinbase: {
-          configured: coinbaseService.isServiceConfigured(),
-          status: coinbaseService.isServiceConfigured() ? "ready" : "missing_credentials"
-        }
-      };
-      res.json(status);
-    } catch (error) {
-      console.error("Error checking AWS service status:", error);
-      res.status(500).json({ message: "Failed to check AWS service status" });
     }
   });
   registerAxosRoutes(app2);
@@ -9863,6 +9361,9 @@ var allowedOriginsProd = [
   "https://dime-time-2sdmp44chp.replit.app",
   "https://dime-time-fintech-debt-reduction-app-bobbyhiddn.replit.app",
   "capacitor://localhost",
+  // iOS native WebView origin
+  "https://localhost",
+  // Android native WebView origin (androidScheme: "https")
   "ionic://localhost"
 ];
 var allowedOriginsDev = [
@@ -9871,6 +9372,9 @@ var allowedOriginsDev = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "capacitor://localhost",
+  // iOS native WebView origin
+  "https://localhost",
+  // Android native WebView origin (androidScheme: "https")
   "ionic://localhost"
 ];
 var corsOptions = {

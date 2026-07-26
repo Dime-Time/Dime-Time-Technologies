@@ -108,6 +108,7 @@ export interface IStorage {
 
   // Debt methods
   getDebtsByUserId(userId: string): Promise<Debt[]>;
+  getArchivedDebtsByUserId(userId: string): Promise<Debt[]>;
   getDebt(id: string): Promise<Debt | undefined>;
   createDebt(debt: InsertDebt): Promise<Debt>;
   updateDebt(id: string, updates: Partial<Debt>): Promise<Debt | undefined>;
@@ -1083,6 +1084,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.debts.values()).filter(debt => debt.userId === userId && debt.isActive);
   }
 
+  async getArchivedDebtsByUserId(userId: string): Promise<Debt[]> {
+    return Array.from(this.debts.values()).filter(debt => debt.userId === userId && !debt.isActive);
+  }
+
   async getDebt(id: string): Promise<Debt | undefined> {
     return this.debts.get(id);
   }
@@ -1800,6 +1805,11 @@ export class DatabaseStorage implements IStorage {
     // Only active debts — soft-deleted debts (isActive=false) are hidden here
     // but their rows (and any FK-linked payment history) are preserved.
     return await db.select().from(debts).where(and(eq(debts.userId, userId), eq(debts.isActive, true)));
+  }
+
+  async getArchivedDebtsByUserId(userId: string): Promise<Debt[]> {
+    // Soft-deleted debts only — the restore flow flips isActive back to true.
+    return await db.select().from(debts).where(and(eq(debts.userId, userId), eq(debts.isActive, false)));
   }
 
   async getDebt(id: string): Promise<Debt | undefined> {

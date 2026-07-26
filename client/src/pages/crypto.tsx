@@ -263,7 +263,7 @@ export default function CryptoPage() {
                     </div>
                     <ul className="text-sm font-medium text-slate-600 space-y-2 ml-8 list-disc pl-2">
                       <li>Round-ups are automatically split between debt payments and crypto</li>
-                      <li>Crypto purchases are made through Coinbase's secure API</li>
+                      <li>During Preview, crypto purchases are simulated — no real money moves</li>
                       <li>You maintain full control and can change allocation anytime</li>
                       <li>View your crypto portfolio growth alongside debt reduction</li>
                     </ul>
@@ -341,7 +341,7 @@ export default function CryptoPage() {
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-xl flex items-center justify-center">
                   <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
                 </div>
-                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">Coinbase</span>
+                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">Preview</span>
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-500 mb-1">Last Purchase</p>
@@ -490,11 +490,11 @@ export default function CryptoPage() {
                   <ul className="text-base font-medium text-slate-600 space-y-2.5">
                     <li className="flex items-start gap-2">
                       <span className="text-dime-purple mt-0.5">•</span>
-                      <span>Purchases made through Coinbase's secure API</span>
+                      <span>Preview purchases are simulated — no real money moves</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-dime-purple mt-0.5">•</span>
-                      <span>You maintain full ownership of your crypto</span>
+                      <span>Practice tracking a portfolio before real investing arrives</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-dime-purple mt-0.5">•</span>
