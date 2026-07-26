@@ -1201,7 +1201,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const payment = await storage.createPayment(validatedData);
 
       // Update debt balance
-      const newBalance = (parseFloat(debt.currentBalance) - paymentAmount).toFixed(2);
+      // Clamp at 0 so an overpayment can't drive the balance negative
+      // (progress > 100%) — matches makeAcceleratedPayment in both storages.
+      const newBalance = Math.max(0, parseFloat(debt.currentBalance) - paymentAmount).toFixed(2);
       await storage.updateDebt(validatedData.debtId, {
         currentBalance: newBalance,
       });
@@ -1411,7 +1413,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Update debt balance
-      const newBalance = (parseFloat(debt.currentBalance) - roundUpAmount).toFixed(2);
+      // Clamp at 0 — a round-up larger than the remaining balance must not
+      // drive currentBalance negative (progress > 100%).
+      const newBalance = Math.max(0, parseFloat(debt.currentBalance) - roundUpAmount).toFixed(2);
       await storage.updateDebt(debtId, {
         currentBalance: newBalance,
       });

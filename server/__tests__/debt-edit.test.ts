@@ -155,3 +155,72 @@ test("manual debt: userEditedFields is never set", () => {
   const updates = buildDebtEditUpdates(makeDebt(), debtEditSchema.parse({ currentBalance: "100" }));
   assert.equal(updates.userEditedFields, undefined);
 });
+
+// ---- Invariant 6: import-refresh path applies the bump rule ----
+
+function makeLiability(overrides: Partial<import("../services/debtImport/types").NormalizedLiability> = {}) {
+  return {
+    provider: "sandbox",
+    providerAccountId: "acct-1",
+    institutionName: "Test Bank",
+    creditorName: "Test Card",
+    accountType: "credit_card",
+    mask: "1234",
+    currentBalance: 500,
+    interestRateApr: 19.99,
+    minimumPayment: 25,
+    dueDate: 15,
+    ...overrides,
+  };
+}
+
+test("import refresh: balance above originalBalance bumps originalBalance (progress resets to 0%)", async () => {
+  const storage = new MemStorage();
+  const first = await storage.importDebtsFromProvider("user-1", "sandbox", [makeLiability({ currentBalance: 500 })]);
+  assert.equal(first.imported, 1);
+  assert.equal(first.debts[0].originalBalance, "500.00");
+
+  // Provider now reports a HIGHER balance (new spending on the card).
+  const refresh = await storage.importDebtsFromProvider("user-1", "sandbox", [makeLiability({ currentBalance: 750.5 })]);
+  assert.equal(refresh.updated, 1);
+  const debt = refresh.debts[0];
+  assert.equal(debt.currentBalance, "750.50");
+  assert.equal(debt.originalBalance, "750.50", "originalBalance must bump to match");
+  assert.ok(parseFloat(debt.originalBalance) >= parseFloat(debt.currentBalance), "progress can never be negative");
+});
+
+test("import refresh: lower balance leaves originalBalance untouched (progress advances)", async () => {
+  const storage = new MemStorage();
+  await storage.importDebtsFromProvider("user-1", "sandbox", [makeLiability({ currentBalance: 500 })]);
+  const refresh = await storage.importDebtsFromProvider("user-1", "sandbox", [makeLiability({ currentBalance: 300 })]);
+  const debt = refresh.debts[0];
+  assert.equal(debt.currentBalance, "300.00");
+  assert.equal(debt.originalBalance, "500.00");
+});
+
+test("import refresh: user-edited currentBalance is not clobbered and original not bumped", async () => {
+  const storage = new MemStorage();
+  const first = await storage.importDebtsFromProvider("user-1", "sandbox", [makeLiability({ currentBalance: 500 })]);
+  const id = first.debts[0].id;
+  await storage.updateDebt(id, { currentBalance: "400.00", userEditedFields: ["currentBalance"] });
+  const refresh = await storage.importDebtsFromProvider("user-1", "sandbox", [makeLiability({ currentBalance: 900 })]);
+  const debt = refresh.debts[0];
+  assert.equal(debt.currentBalance, "400.00");
+  assert.equal(debt.originalBalance, "500.00");
+});
+
+test("accelerated overpayment clamps balance at 0 (progress can never exceed 100%)", async () => {
+  const storage = new MemStorage();
+  const debt = await storage.createDebt({
+    userId: "user-1",
+    name: "Small Loan",
+    accountNumber: "9999",
+    originalBalance: "100.00",
+    currentBalance: "50.00",
+    interestRate: "5.00",
+    minimumPayment: "10.00",
+    dueDate: 1,
+  } as any);
+  const { updatedDebt } = await storage.makeAcceleratedPayment("user-1", debt.id, "75.00");
+  assert.equal(updatedDebt.currentBalance, "0.00");
+});

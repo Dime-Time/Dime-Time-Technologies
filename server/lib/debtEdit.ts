@@ -77,3 +77,18 @@ export function buildDebtEditUpdates(debt: Debt, parsed: DebtEditInput): Partial
 
   return updates;
 }
+
+/**
+ * Canonical bump rule for ANY code path that writes currentBalance outside
+ * PATCH /api/debts/:id (provider import refresh, etc.). If the new balance
+ * exceeds the stored originalBalance, returns the bumped originalBalance
+ * (formatted to 2 decimals) so payoff progress resets to 0% instead of going
+ * negative; returns undefined when no bump is needed.
+ */
+export function bumpedOriginalBalance(originalBalance: string, newCurrentBalance: string): string | undefined {
+  const next = parseFloat(newCurrentBalance);
+  if (Number.isFinite(next) && next > parseFloat(originalBalance)) {
+    return next.toFixed(2);
+  }
+  return undefined;
+}

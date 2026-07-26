@@ -83,6 +83,7 @@ import {
 } from "@shared/schema";
 
 import type { NormalizedLiability } from "./services/debtImport/types";
+import { bumpedOriginalBalance } from "./lib/debtEdit";
 import { encryptToken, decryptToken } from "./services/encryptionService";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -1153,7 +1154,13 @@ export class MemStorage implements IStorage {
         next.availableCredit = availableCredit;
         next.lastImportedAt = new Date();
         if (!edited.includes("name")) next.name = lib.creditorName;
-        if (!edited.includes("currentBalance")) next.currentBalance = balance;
+        if (!edited.includes("currentBalance")) {
+          next.currentBalance = balance;
+          // Canonical rule (server/lib/debtEdit.ts): a refreshed balance above
+          // originalBalance bumps the original so progress can't go negative.
+          const bumped = bumpedOriginalBalance(existing.originalBalance, balance);
+          if (bumped !== undefined) next.originalBalance = bumped;
+        }
         if (!edited.includes("minimumPayment")) next.minimumPayment = minPay;
         if (!edited.includes("interestRate")) next.interestRate = apr;
         if (!edited.includes("dueDate")) next.dueDate = lib.dueDate;
@@ -1863,7 +1870,13 @@ export class DatabaseStorage implements IStorage {
           lastImportedAt: new Date(),
         };
         if (!edited.includes("name")) set.name = lib.creditorName;
-        if (!edited.includes("currentBalance")) set.currentBalance = balance;
+        if (!edited.includes("currentBalance")) {
+          set.currentBalance = balance;
+          // Canonical rule (server/lib/debtEdit.ts): a refreshed balance above
+          // originalBalance bumps the original so progress can't go negative.
+          const bumped = bumpedOriginalBalance(existing.originalBalance, balance);
+          if (bumped !== undefined) set.originalBalance = bumped;
+        }
         if (!edited.includes("minimumPayment")) set.minimumPayment = minPay;
         if (!edited.includes("interestRate")) set.interestRate = apr;
         if (!edited.includes("dueDate")) set.dueDate = lib.dueDate;
@@ -1984,7 +1997,9 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Debt not found or unauthorized");
     }
     
-    const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
+    // Clamp at 0 — MUST match MemStorage.makeAcceleratedPayment. An
+    // overpayment must not drive currentBalance negative (progress > 100%).
+    const newBalance = Math.max(0, parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
     const payment = await this.createPayment({
       userId,
       debtId,
