@@ -1743,7 +1743,9 @@ export class MemStorage implements IStorage {
       endDate,
       status: staking.status || "active",
       rewardsEarned: staking.rewardsEarned || "0.00000000",
-      lastRewardCalculation: new Date(),
+      // Schema default is NULL — DatabaseStorage leaves this unset on create,
+      // so MemStorage must too (parity-tested in storage-parity-db.test.ts).
+      lastRewardCalculation: null,
       createdAt: new Date(),
     };
     this.dttStakingMap.set(id, newStaking);

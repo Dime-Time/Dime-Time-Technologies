@@ -16,7 +16,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { MemStorage, storage as dbStorage, type IStorage } from "../storage";
-import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings, notificationSettings, dttHoldings } from "../../shared/schema";
+import { users, debts, transactions, cryptoPurchases, payments, roundUpSettings, notificationSettings, dttHoldings, dttRewards, dttStaking } from "../../shared/schema";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -99,6 +99,8 @@ async function cleanupDb(userId: string): Promise<void> {
   await db.delete(roundUpSettings).where(eq(roundUpSettings.userId, userId));
   await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
   await db.delete(dttHoldings).where(eq(dttHoldings.userId, userId));
+  await db.delete(dttRewards).where(eq(dttRewards.userId, userId));
+  await db.delete(dttStaking).where(eq(dttStaking.userId, userId));
   await db.delete(cryptoPurchases).where(eq(cryptoPurchases.userId, userId));
   await db.delete(transactions).where(eq(transactions.userId, userId));
   await db.delete(debts).where(eq(debts.userId, userId));
@@ -514,6 +516,122 @@ test("parity: DTT holdings defaults and partial updates match in MemStorage and 
 
     // Full parity across every observed column.
     assert.deepEqual(dbObs, memObs, "DTT holdings observations must match exactly");
+  } finally {
+    await cleanupDb(dbUser.id);
+  }
+});
+
+/**
+ * DTT rewards + staking create parity (sibling tables to DTT holdings):
+ *   createDttReward — MemStorage hardcodes status "completed" and nulls
+ *   optional fields inline; DatabaseStorage relies on schema defaults.
+ *   createDttStaking — both compute endDate from duration inline, plus
+ *   status/rewardsEarned/lastRewardCalculation defaults. Observes the FULL
+ *   row from a minimal-payload create in each implementation (ids/userIds
+ *   normalized away; timestamps normalized to "stamped"; endDate normalized
+ *   to a duration-days check against startDate).
+ */
+async function observeDttRewardsAndStaking(s: IStorage, userId: string) {
+  // 1. Minimal reward payload — status/optional columns must all default.
+  const reward = await s.createDttReward({
+    userId,
+    action: "round_up",
+    amount: "1.23456789",
+  });
+
+  // 2. Minimal staking payload — endDate is computed from duration by both
+  //    implementations (the passed endDate is deliberately bogus so the test
+  //    fails if either implementation ever starts trusting it).
+  const duration = 30;
+  const staking = await s.createDttStaking({
+    userId,
+    amount: "10.00000000",
+    duration,
+    apy: "8.50",
+    endDate: new Date("2000-01-01T00:00:00Z"),
+  });
+
+  const rewardsList = await s.getDttRewardsByUserId(userId);
+  const stakingList = await s.getDttStakingByUserId(userId);
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  return {
+    reward: {
+      action: reward.action,
+      amount: reward.amount,
+      status: reward.status,
+      transactionId: reward.transactionId,
+      paymentId: reward.paymentId,
+      transactionHash: reward.transactionHash,
+      metadata: reward.metadata,
+      createdAtStamped: reward.createdAt != null,
+    },
+    staking: {
+      amount: staking.amount,
+      duration: staking.duration,
+      apy: staking.apy,
+      status: staking.status,
+      rewardsEarned: staking.rewardsEarned,
+      lastRewardCalculation: staking.lastRewardCalculation,
+      startDateStamped: staking.startDate != null,
+      createdAtStamped: staking.createdAt != null,
+      // endDate must be exactly duration days after startDate.
+      endDateDurationDays:
+        (staking.endDate.getTime() - staking.startDate.getTime()) / dayMs,
+    },
+    rewardCount: rewardsList.length,
+    stakingCount: stakingList.length,
+  };
+}
+
+test("parity: DTT reward and staking creates match in MemStorage and DatabaseStorage", async () => {
+  const mem = new MemStorage();
+  const memUser = await mem.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  const memObs = await observeDttRewardsAndStaking(mem, memUser.id);
+
+  const dbUser = await dbStorage.createUser({
+    email: `parity-${randomUUID()}@example.com`,
+    firstName: "Parity",
+    lastName: "Test",
+  });
+  try {
+    const dbObs = await observeDttRewardsAndStaking(dbStorage, dbUser.id);
+
+    // Pin the expected defaulted rows explicitly so a failure names the
+    // drifted field (and so schema-default changes are caught deliberately).
+    const expectedReward = {
+      action: "round_up",
+      amount: "1.23456789",
+      status: "completed",
+      transactionId: null,
+      paymentId: null,
+      transactionHash: null,
+      metadata: null,
+      createdAtStamped: true,
+    };
+    assert.deepEqual(memObs.reward, expectedReward, "MemStorage: minimal-payload reward defaults");
+    assert.deepEqual(dbObs.reward, expectedReward, "DatabaseStorage: minimal-payload reward defaults");
+
+    const expectedStaking = {
+      amount: "10.00000000",
+      duration: 30,
+      apy: "8.50",
+      status: "active",
+      rewardsEarned: "0.00000000",
+      lastRewardCalculation: null,
+      startDateStamped: true,
+      createdAtStamped: true,
+      endDateDurationDays: 30,
+    };
+    assert.deepEqual(memObs.staking, expectedStaking, "MemStorage: minimal-payload staking defaults + computed endDate");
+    assert.deepEqual(dbObs.staking, expectedStaking, "DatabaseStorage: minimal-payload staking defaults + computed endDate");
+
+    // Full parity across every observed column.
+    assert.deepEqual(dbObs, memObs, "DTT reward/staking observations must match exactly");
   } finally {
     await cleanupDb(dbUser.id);
   }
