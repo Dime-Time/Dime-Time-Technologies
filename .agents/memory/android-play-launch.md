@@ -16,7 +16,7 @@ Google rejected v209 solely because the Sign-in-details credentials didn't authe
 **Lessons:** (1) reviewer credentials must be entered on DESKTOP, or retyped character-by-character — never trust a phone keyboard for console credential fields; unambiguous-character passwords (no O/0/l/1/I, no smart-punctuation-able chars) de-risk reviewer hand-typing too; (2) login email lookup is exact-match case-sensitive — keep reviewer email lowercase; (3) client shows the SAME "Invalid email or password" for 401/429/network errors (Login.tsx throws on any !ok) — misleading in reviewer evidence; candidate UX fix for build ≥210, not urgent; (4) fix path = incognito login test typing the exact strings → Play Console → App content → App access → pencil edit → resubmit from Publishing overview; any founder-password rotation must same-day update BOTH App Store Connect and Play Console. No new .aab, no appeal — administrative rejection, not a policy strike.
 
 ## Post-approval follow-ups (pending)
-1. Rotate founder's prod password (was briefly exposed in chat screenshots, files deleted) → update reviewer-account credentials in BOTH App Store Connect and Play Console.
+1. Rotate founder's prod password (exposed in chat screenshots TWICE — 2026-07 pre-launch and again 2026-07-27 in a Play Console form screenshot; exposed files deleted both times) → after rotation update reviewer-account credentials in BOTH App Store Connect and Play Console the same day.
 2. Keystore cleanup (see below) once founder confirms 2 backups.
 
 ## Submission package
