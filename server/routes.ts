@@ -1,6 +1,8 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
+import fs from "fs";
+import { SPA_META_PAGES, applySpaMeta } from "./spaMeta";
 import { storage } from "./storage";
 
 declare module 'express-session' {
@@ -310,6 +312,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!file) return next();
     res.sendFile(path.join(guidesDir, file));
   });
+
+  // ── SPA public pages: crawler-correct metadata (production only) ────
+  // /privacy, /terms and /delete-account are SPA routes, so crawlers see
+  // only the shell's <head> — which carries the HOMEPAGE's title and
+  // canonical. In production, serve the built index.html with each page's
+  // own metadata swapped in (see server/spaMeta.ts); the SPA boots
+  // unchanged. In development the Vite catch-all serves the default shell,
+  // which only crawlers care about — and they never see dev.
+  if (process.env.NODE_ENV === "production") {
+    const spaShellPath = path.resolve(import.meta.dirname, "public", "index.html");
+    for (const [route, meta] of Object.entries(SPA_META_PAGES)) {
+      app.get(route, async (_req: Request, res: Response, next) => {
+        try {
+          const html = await fs.promises.readFile(spaShellPath, "utf-8");
+          res.status(200).type("html").send(applySpaMeta(html, meta));
+        } catch {
+          next(); // shell unreadable — fall through to the normal SPA catch-all
+        }
+      });
+    }
+  }
 
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

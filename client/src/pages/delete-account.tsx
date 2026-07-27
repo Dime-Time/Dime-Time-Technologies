@@ -1,8 +1,16 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import logoUrl from "@/assets/dime-time-app-icon.png";
 
 export default function DeleteAccount() {
+  useEffect(() => {
+    document.title = "Delete Your Account | Dime Time";
+    return () => {
+      document.title = "Dime Time | Round-Up App to Pay Off Debt With Spare Change";
+    };
+  }, []);
+
   return (
     <div className="dt-marketing min-h-screen bg-white text-slate-900 antialiased">
       {/* Header */}

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, FileText } from "lucide-react";
 import logoUrl from "@/assets/dime-time-app-icon.png";
@@ -6,6 +7,13 @@ import logoUrl from "@/assets/dime-time-app-icon.png";
 const EFFECTIVE_DATE = "May 27, 2026";
 
 export default function Terms() {
+  useEffect(() => {
+    document.title = "Terms of Service | Dime Time";
+    return () => {
+      document.title = "Dime Time | Round-Up App to Pay Off Debt With Spare Change";
+    };
+  }, []);
+
   return (
     <div className="dt-marketing min-h-screen bg-white text-slate-900 antialiased">
       {/* Header */}

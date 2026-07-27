@@ -317,6 +317,77 @@ import cors from "cors";
 import express2 from "express";
 import { createServer } from "http";
 import path from "path";
+import fs from "fs";
+
+// server/spaMeta.ts
+var SPA_META_PAGES = {
+  "/privacy": {
+    title: "Privacy Policy | Dime Time",
+    description: "How Dime Time collects, uses, and protects your information \u2014 the plain-language privacy policy for the Dime Time debt payoff app.",
+    canonical: "https://dime-time.com/privacy"
+  },
+  "/terms": {
+    title: "Terms of Service | Dime Time",
+    description: "The terms that govern your use of Dime Time's round-up debt payoff app and website.",
+    canonical: "https://dime-time.com/terms"
+  },
+  "/delete-account": {
+    title: "Delete Your Account | Dime Time",
+    description: "How to permanently delete your Dime Time account and associated data.",
+    canonical: "https://dime-time.com/delete-account",
+    // Required to stay live for app-store compliance, but it is a utility
+    // page — keep it out of search results.
+    robots: "noindex, follow"
+  }
+};
+var replaceTag = (html, pattern, replacement) => pattern.test(html) ? html.replace(pattern, replacement) : html;
+function applySpaMeta(html, meta) {
+  let out = html;
+  out = replaceTag(out, /<title>[\s\S]*?<\/title>/, `<title>${meta.title}</title>`);
+  out = replaceTag(
+    out,
+    /<meta name="description"[^>]*>/,
+    `<meta name="description" content="${meta.description}">`
+  );
+  out = replaceTag(
+    out,
+    /<link rel="canonical"[^>]*\/?>/,
+    `<link rel="canonical" href="${meta.canonical}" />`
+  );
+  out = replaceTag(
+    out,
+    /<meta property="og:title"[^>]*\/?>/,
+    `<meta property="og:title" content="${meta.title}" />`
+  );
+  out = replaceTag(
+    out,
+    /<meta property="og:description"[^>]*\/?>/,
+    `<meta property="og:description" content="${meta.description}" />`
+  );
+  out = replaceTag(
+    out,
+    /<meta property="og:url"[^>]*\/?>/,
+    `<meta property="og:url" content="${meta.canonical}" />`
+  );
+  out = replaceTag(
+    out,
+    /<meta name="twitter:title"[^>]*\/?>/,
+    `<meta name="twitter:title" content="${meta.title}" />`
+  );
+  out = replaceTag(
+    out,
+    /<meta name="twitter:description"[^>]*\/?>/,
+    `<meta name="twitter:description" content="${meta.description}" />`
+  );
+  if (meta.robots) {
+    out = replaceTag(
+      out,
+      /<meta name="robots"[^>]*\/?>/,
+      `<meta name="robots" content="${meta.robots}" />`
+    );
+  }
+  return out;
+}
 
 // shared/schema.ts
 var schema_exports = {};
@@ -437,6 +508,14 @@ var debts = pgTable("debts", {
   dueDate: integer("due_date").notNull(),
   // day of month
   isActive: boolean("is_active").default(true).notNull(),
+  // When the debt was archived (soft-deleted). Set when isActive flips to
+  // false; cleared on restore. For paid-off debts this is the payoff date.
+  archivedAt: timestamp("archived_at"),
+  // Exact moment currentBalance FIRST reached zero. Stamped once by the
+  // storage layer whenever a balance update brings currentBalance <= 0 and
+  // cleared if the balance goes back above zero — the celebration date must
+  // never be inferred from (possibly missing) payment history.
+  paidOffAt: timestamp("paid_off_at"),
   payeeAccountNumber: text("payee_account_number"),
   // Creditor's bank account number for ACH payment (set by admin)
   payeeRoutingNumber: text("payee_routing_number"),
@@ -837,6 +916,8 @@ var insertUserSchema = createInsertSchema(users).omit({
 var insertDebtSchema = createInsertSchema(debts).omit({
   id: true,
   createdAt: true,
+  // Server-owned payoff bookkeeping — stamped by the storage layer only.
+  paidOffAt: true,
   // Provider/import-owned columns are set SERVER-SIDE ONLY. Omitting them from
   // the public insert schema prevents mass-assignment (e.g. a user forging an
   // "imported from Chase" debt via POST /api/debts).
@@ -1137,6 +1218,65 @@ var insertEmailVerificationTokenSchema = createInsertSchema(emailVerificationTok
   usedAt: true
 });
 
+// server/lib/debtEdit.ts
+import { z } from "zod";
+var debtEditSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  currentBalance: z.string().optional(),
+  interestRate: z.string().optional(),
+  minimumPayment: z.string().optional(),
+  dueDate: z.number().int().min(1).max(31).optional(),
+  accountNumber: z.string().optional()
+}).refine(
+  (d) => d.currentBalance === void 0 || parseFloat(d.currentBalance) > 0 && parseFloat(d.currentBalance) <= 9999999999e-2,
+  { message: "Current balance must be between 0.01 and 99,999,999.99", path: ["currentBalance"] }
+).refine(
+  (d) => d.interestRate === void 0 || parseFloat(d.interestRate) >= 0 && parseFloat(d.interestRate) <= 999.99,
+  { message: "Interest rate must be between 0 and 999.99", path: ["interestRate"] }
+).refine(
+  (d) => d.minimumPayment === void 0 || parseFloat(d.minimumPayment) >= 0 && parseFloat(d.minimumPayment) <= 9999999999e-2,
+  { message: "Minimum payment must be between 0 and 99,999,999.99", path: ["minimumPayment"] }
+);
+function canAccessDebt(debt, userId) {
+  return !!debt && debt.userId === userId;
+}
+function buildDebtEditUpdates(debt, parsed) {
+  const updates = {};
+  if (parsed.name !== void 0) updates.name = parsed.name.trim();
+  if (parsed.currentBalance !== void 0) {
+    const newCurrent = parseFloat(parsed.currentBalance);
+    updates.currentBalance = newCurrent.toFixed(2);
+    if (newCurrent > parseFloat(debt.originalBalance)) {
+      updates.originalBalance = newCurrent.toFixed(2);
+    }
+  }
+  if (parsed.interestRate !== void 0) updates.interestRate = parseFloat(parsed.interestRate).toFixed(2);
+  if (parsed.minimumPayment !== void 0) updates.minimumPayment = parseFloat(parsed.minimumPayment).toFixed(2);
+  if (parsed.dueDate !== void 0) updates.dueDate = parsed.dueDate;
+  if (parsed.accountNumber !== void 0) {
+    const acct = String(parsed.accountNumber).trim();
+    updates.accountNumber = acct !== "" ? acct : "\u2014";
+  }
+  if (debt.source === "imported") {
+    const refreshTracked = ["name", "currentBalance", "interestRate", "minimumPayment", "dueDate"];
+    const changed = refreshTracked.filter(
+      (f) => updates[f] !== void 0 && String(updates[f]) !== String(debt[f])
+    );
+    if (changed.length > 0) {
+      const existingEdited = debt.userEditedFields ?? [];
+      updates.userEditedFields = Array.from(/* @__PURE__ */ new Set([...existingEdited, ...changed]));
+    }
+  }
+  return updates;
+}
+function bumpedOriginalBalance(originalBalance, newCurrentBalance) {
+  const next = parseFloat(newCurrentBalance);
+  if (Number.isFinite(next) && next > parseFloat(originalBalance)) {
+    return next.toFixed(2);
+  }
+  return void 0;
+}
+
 // server/services/encryptionService.ts
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 var ALGORITHM = "aes-256-gcm";
@@ -1202,6 +1342,21 @@ var db = drizzle({ client: pool, schema: schema_exports });
 
 // server/storage.ts
 import { eq, desc, and, sql as sql2, inArray, gte } from "drizzle-orm";
+async function computeDashboardSummary(storage2, userId) {
+  const debts2 = await storage2.getUserDebts(userId);
+  const transactions2 = await storage2.getUserTransactions(userId);
+  const cryptoPurchases2 = await storage2.getUserCryptoPurchases(userId);
+  const totalDebt = debts2.reduce((sum, debt) => sum + parseFloat(debt.currentBalance), 0);
+  const totalRoundUps = transactions2.reduce((sum, trans) => sum + parseFloat(trans.roundUpAmount || "0"), 0);
+  const totalCrypto = cryptoPurchases2.reduce((sum, purchase) => sum + parseFloat(purchase.amountUsd), 0);
+  return {
+    totalDebt: totalDebt.toFixed(2),
+    totalRoundUps: totalRoundUps.toFixed(2),
+    totalCrypto: totalCrypto.toFixed(2),
+    debtCount: debts2.length,
+    transactionCount: transactions2.length
+  };
+}
 var DatabaseStorage = class _DatabaseStorage {
   // User methods
   async getUser(id) {
@@ -1236,6 +1391,9 @@ var DatabaseStorage = class _DatabaseStorage {
   async getDebtsByUserId(userId) {
     return await db.select().from(debts).where(and(eq(debts.userId, userId), eq(debts.isActive, true)));
   }
+  async getArchivedDebtsByUserId(userId) {
+    return await db.select().from(debts).where(and(eq(debts.userId, userId), eq(debts.isActive, false)));
+  }
   async getDebt(id) {
     const [debt] = await db.select().from(debts).where(eq(debts.id, id));
     return debt;
@@ -1246,8 +1404,40 @@ var DatabaseStorage = class _DatabaseStorage {
     return result;
   }
   async updateDebt(id, updates) {
+    if (updates.archivedAt === void 0) {
+      if (updates.isActive === false) {
+        const existing = await this.getDebt(id);
+        if (existing?.isActive) {
+          updates = { ...updates, archivedAt: /* @__PURE__ */ new Date() };
+        }
+      } else if (updates.isActive === true) {
+        updates = { ...updates, archivedAt: null };
+      }
+    }
+    if (updates.currentBalance !== void 0 && updates.paidOffAt === void 0) {
+      const existing = await this.getDebt(id);
+      if (existing) {
+        const newBalance = parseFloat(updates.currentBalance);
+        if (newBalance <= 0) {
+          if (!existing.paidOffAt && parseFloat(existing.currentBalance) > 0) {
+            updates = { ...updates, paidOffAt: /* @__PURE__ */ new Date() };
+          }
+        } else if (existing.paidOffAt) {
+          updates = { ...updates, paidOffAt: null };
+        }
+      }
+    }
     const [result] = await db.update(debts).set(updates).where(eq(debts.id, id)).returning();
     return result;
+  }
+  async deleteDebtPermanently(id) {
+    await db.transaction(async (tx) => {
+      await tx.delete(payments).where(eq(payments.debtId, id));
+      await tx.delete(distributionPayments).where(eq(distributionPayments.debtId, id));
+      await tx.update(weeklyDispersals).set({ targetDebtId: null }).where(eq(weeklyDispersals.targetDebtId, id));
+      await tx.update(roundUpSettings).set({ targetDebtId: null }).where(eq(roundUpSettings.targetDebtId, id));
+      await tx.delete(debts).where(eq(debts.id, id));
+    });
   }
   async importDebtsFromProvider(userId, provider, liabilities) {
     let imported = 0;
@@ -1277,7 +1467,18 @@ var DatabaseStorage = class _DatabaseStorage {
           lastImportedAt: /* @__PURE__ */ new Date()
         };
         if (!edited.includes("name")) set.name = lib.creditorName;
-        if (!edited.includes("currentBalance")) set.currentBalance = balance;
+        if (!edited.includes("currentBalance")) {
+          set.currentBalance = balance;
+          const bumped = bumpedOriginalBalance(existing.originalBalance, balance);
+          if (bumped !== void 0) set.originalBalance = bumped;
+          if (parseFloat(balance) <= 0) {
+            if (!existing.paidOffAt && parseFloat(existing.currentBalance) > 0) {
+              set.paidOffAt = /* @__PURE__ */ new Date();
+            }
+          } else if (existing.paidOffAt) {
+            set.paidOffAt = null;
+          }
+        }
         if (!edited.includes("minimumPayment")) set.minimumPayment = minPay;
         if (!edited.includes("interestRate")) set.interestRate = apr;
         if (!edited.includes("dueDate")) set.dueDate = lib.dueDate;
@@ -1296,6 +1497,9 @@ var DatabaseStorage = class _DatabaseStorage {
           minimumPayment: minPay,
           dueDate: lib.dueDate,
           isActive: true,
+          // Never backfill: an imported debt that arrives already at zero
+          // was paid off on an unknown earlier day.
+          paidOffAt: null,
           source: "imported",
           provider,
           providerAccountId: lib.providerAccountId,
@@ -1368,7 +1572,7 @@ var DatabaseStorage = class _DatabaseStorage {
     if (!debt || debt.userId !== userId || debt.isActive === false) {
       throw new Error("Debt not found or unauthorized");
     }
-    const newBalance = (parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
+    const newBalance = Math.max(0, parseFloat(debt.currentBalance) - parseFloat(amount)).toFixed(2);
     const payment = await this.createPayment({
       userId,
       debtId,
@@ -1462,7 +1666,7 @@ var DatabaseStorage = class _DatabaseStorage {
   async createOrUpdateDttHoldings(holdings) {
     const existing = await this.getDttHoldings(holdings.userId);
     if (existing) {
-      const [updated] = await db.update(dttHoldings).set(holdings).where(eq(dttHoldings.userId, holdings.userId)).returning();
+      const [updated] = await db.update(dttHoldings).set({ ...holdings, lastActivity: /* @__PURE__ */ new Date() }).where(eq(dttHoldings.userId, holdings.userId)).returning();
       return updated;
     }
     const id = randomUUID();
@@ -1515,8 +1719,7 @@ var DatabaseStorage = class _DatabaseStorage {
       const [updated] = await db.update(dttTokenInfo).set({ ...info, lastUpdated: /* @__PURE__ */ new Date() }).where(eq(dttTokenInfo.id, existing.id)).returning();
       return updated;
     }
-    const id = randomUUID();
-    const [result] = await db.insert(dttTokenInfo).values({ ...info, id }).returning();
+    const [result] = await db.insert(dttTokenInfo).values({ ...info }).returning();
     return result;
   }
   // Notification methods
@@ -1561,6 +1764,21 @@ var DatabaseStorage = class _DatabaseStorage {
   // Alias for interface compatibility
   async getUserNotifications(userId, limit) {
     return this.getNotificationsByUserId(userId, limit);
+  }
+  async getAllUsers() {
+    return await db.select().from(users);
+  }
+  async getUserTransactions(userId, limit) {
+    return this.getTransactionsByUserId(userId, limit);
+  }
+  async getUserDebts(userId) {
+    return this.getDebtsByUserId(userId);
+  }
+  async getUserCryptoPurchases(userId) {
+    return this.getCryptoPurchasesByUserId(userId);
+  }
+  async getDashboardSummary(userId) {
+    return computeDashboardSummary(this, userId);
   }
   // Contact submission methods
   async createContactSubmission(submission) {
@@ -2209,7 +2427,7 @@ var dimeTokenService = new DimeTokenService();
 import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
 import bcrypt from "bcrypt";
 import rateLimit4 from "express-rate-limit";
-import { z as z7 } from "zod";
+import { z as z8 } from "zod";
 
 // server/services/plaidService.ts
 import {
@@ -2963,7 +3181,7 @@ var AxosService = class {
 var axosService = new AxosService();
 
 // server/routes/axosRoutes.ts
-import { z } from "zod";
+import { z as z2 } from "zod";
 
 // server/middleware/authHelper.ts
 import { createHash } from "crypto";
@@ -3100,12 +3318,12 @@ function registerAxosRoutes(app2) {
       if (!axosService.isServiceConfigured()) {
         return res.status(503).json({ message: "Axos service not configured" });
       }
-      const paymentSchema = z.object({
-        userId: z.string(),
-        debtAccountId: z.string(),
-        debtRoutingNumber: z.string(),
-        amount: z.string(),
-        debtName: z.string()
+      const paymentSchema = z2.object({
+        userId: z2.string(),
+        debtAccountId: z2.string(),
+        debtRoutingNumber: z2.string(),
+        amount: z2.string(),
+        debtName: z2.string()
       });
       try {
         payments2.forEach((payment) => paymentSchema.parse(payment));
@@ -3400,17 +3618,17 @@ var MercuryService = class {
 var mercuryService = new MercuryService();
 
 // server/routes/mercuryRoutes.ts
-import { z as z2 } from "zod";
+import { z as z3 } from "zod";
 var MAX_ROUNDUP_DOLLARS = 5;
 var MAX_DEBT_PAYMENT_DOLLARS = 500;
-var collectRoundUpSchema = z2.object({
-  amount: z2.number().positive().max(MAX_ROUNDUP_DOLLARS, `Round-up cannot exceed $${MAX_ROUNDUP_DOLLARS}`),
-  descriptor: z2.string().max(60).optional()
+var collectRoundUpSchema = z3.object({
+  amount: z3.number().positive().max(MAX_ROUNDUP_DOLLARS, `Round-up cannot exceed $${MAX_ROUNDUP_DOLLARS}`),
+  descriptor: z3.string().max(60).optional()
 });
-var payDebtSchema = z2.object({
-  debtId: z2.string().min(1),
-  amount: z2.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS, `Payment cannot exceed $${MAX_DEBT_PAYMENT_DOLLARS}`),
-  descriptor: z2.string().max(60).optional()
+var payDebtSchema = z3.object({
+  debtId: z3.string().min(1),
+  amount: z3.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS, `Payment cannot exceed $${MAX_DEBT_PAYMENT_DOLLARS}`),
+  descriptor: z3.string().max(60).optional()
 });
 function transferLog(correlationId, event, data) {
   setCorrelationTag(correlationId);
@@ -3625,7 +3843,7 @@ function registerMercuryRoutes(app2) {
         });
       }
     } catch (error) {
-      if (error instanceof z2.ZodError) {
+      if (error instanceof z3.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("collect-roundup error:", error?.response?.data || error.message);
@@ -3743,7 +3961,7 @@ function registerMercuryRoutes(app2) {
         mercuryBalance: balance.availableBalance
       });
     } catch (error) {
-      if (error instanceof z2.ZodError) {
+      if (error instanceof z3.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("pay-debt error:", error?.response?.data || error.message);
@@ -3887,7 +4105,7 @@ function registerWebhookRoutes(app2) {
 import express from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { randomUUID as randomUUID3 } from "crypto";
-import { z as z3 } from "zod";
+import { z as z4 } from "zod";
 
 // shared/achAuthorization.ts
 var ACH_AUTHORIZATION_VERSION = "2026-05-29.v1";
@@ -4258,15 +4476,15 @@ var MAX_DEBT_PAYMENT_DOLLARS2 = 500;
 var REAL_FIRST_TRANSFER_MAX_DOLLARS = 1;
 var REAL_DAILY_TOTAL_MAX_DOLLARS = 5;
 var REAL_DAILY_COUNT_MAX = 1;
-var exchangeSchema = z3.object({
-  fcAccountId: z3.string().min(3),
-  customerId: z3.string().min(3)
+var exchangeSchema = z4.object({
+  fcAccountId: z4.string().min(3),
+  customerId: z4.string().min(3)
 });
-var debitSchema = z3.object({
-  stripeAccountId: z3.string().min(1),
-  amount: z3.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS2),
-  debtId: z3.string().min(1).optional(),
-  descriptor: z3.string().max(22).optional()
+var debitSchema = z4.object({
+  stripeAccountId: z4.string().min(1),
+  amount: z4.number().positive().max(MAX_DEBT_PAYMENT_DOLLARS2),
+  debtId: z4.string().min(1).optional(),
+  descriptor: z4.string().max(22).optional()
 });
 function clientIp(req) {
   const fwd = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
@@ -4365,7 +4583,7 @@ function registerStripeRoutes(app2) {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const parsed = z3.object({ stripeAccountId: z3.string().min(1).nullable() }).safeParse(req.body);
+      const parsed = z4.object({ stripeAccountId: z4.string().min(1).nullable() }).safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid request", correlationId });
       }
@@ -4525,7 +4743,7 @@ function registerStripeRoutes(app2) {
         correlationId
       });
     } catch (err) {
-      if (err instanceof z3.ZodError) {
+      if (err instanceof z4.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
       stripeLog(correlationId, "fc_exchange_failed", {
@@ -4794,7 +5012,7 @@ function registerStripeRoutes(app2) {
         return res.status(502).json(failBody);
       }
     } catch (err) {
-      if (err instanceof z3.ZodError) {
+      if (err instanceof z4.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
       const cleanupUserId = getUserIdFromRequest(req);
@@ -5052,7 +5270,7 @@ function registerStripeWebhook(app2) {
 // server/routes/debtImportRoutes.ts
 import rateLimit2, { ipKeyGenerator as ipKeyGenerator2 } from "express-rate-limit";
 import { randomUUID as randomUUID4 } from "crypto";
-import { z as z4 } from "zod";
+import { z as z5 } from "zod";
 
 // server/services/debtImport/sandboxProvider.ts
 var delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -5320,11 +5538,11 @@ function debtImportLog(correlationId, event, data) {
     })
   );
 }
-var consentSchema = z4.object({ consent: z4.literal(true) });
-var exchangeSchema2 = z4.object({
-  publicToken: z4.string().min(1),
-  institutionName: z4.string().max(200).optional(),
-  consent: z4.literal(true)
+var consentSchema = z5.object({ consent: z5.literal(true) });
+var exchangeSchema2 = z5.object({
+  publicToken: z5.string().min(1),
+  institutionName: z5.string().max(200).optional(),
+  consent: z5.literal(true)
 });
 function perUserLimiter(max, action) {
   return rateLimit2({
@@ -5643,21 +5861,21 @@ function registerDebtImportRoutes(app2) {
 // server/routes/subscriptionRoutes.ts
 import rateLimit3, { ipKeyGenerator as ipKeyGenerator3 } from "express-rate-limit";
 import { randomUUID as randomUUID5 } from "crypto";
-import { z as z5 } from "zod";
+import { z as z6 } from "zod";
 
 // shared/subscriptionAuthorization.ts
 var SUBSCRIPTION_CONSENT_VERSION = "2026-07-14.v1";
 var SUBSCRIPTION_CONSENT_TEXT = "By selecting \u201CSubscribe\u201D, you agree to the Dime Time Terms of Service and authorize Dime Time to electronically debit your linked bank account via the ACH network for the recurring monthly subscription fee shown above, on or about the same day each month, beginning today, and, if necessary, to electronically credit your account to correct any erroneous debit. This authorization remains in effect until you cancel your subscription in the app or contact us at tim@dime-time.com. Canceling stops future charges at the end of your current billing period; fees already charged are non-refundable except as required by law. You agree that ACH transactions you authorize comply with applicable U.S. law. Dime Time is a financial technology platform and is not a bank; banking services and payment infrastructure are provided through regulated financial partners.";
 
 // server/routes/subscriptionRoutes.ts
-var subscribeSchema = z5.object({
+var subscribeSchema = z6.object({
   // Explicit re-statement that the user checked the consent box. The
   // authoritative evidence row is written server-side with server-observed
   // IP/UA — the client can't forge those.
-  consentAccepted: z5.literal(true),
+  consentAccepted: z6.literal(true),
   // Optional: pick a specific linked bank account; defaults to the first
   // active linked one.
-  stripeAccountId: z5.string().min(1).optional()
+  stripeAccountId: z6.string().min(1).optional()
 });
 function clientIp2(req) {
   const fwd = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
@@ -5915,10 +6133,10 @@ var SUBSCRIPTION_REQUIRED_RESPONSE = {
 };
 
 // server/routes/adminRoutes.ts
-import { z as z6 } from "zod";
-var realTransfersToggleSchema = z6.object({
-  enabled: z6.boolean(),
-  notes: z6.string().max(500).optional()
+import { z as z7 } from "zod";
+var realTransfersToggleSchema = z7.object({
+  enabled: z7.boolean(),
+  notes: z7.string().max(500).optional()
 });
 function publicUserRealTransferStatus(u) {
   return {
@@ -7663,6 +7881,19 @@ async function registerRoutes(app2) {
     if (!file) return next();
     res.sendFile(path.join(guidesDir, file));
   });
+  if (process.env.NODE_ENV === "production") {
+    const spaShellPath = path.resolve(import.meta.dirname, "public", "index.html");
+    for (const [route, meta] of Object.entries(SPA_META_PAGES)) {
+      app2.get(route, async (_req, res, next) => {
+        try {
+          const html = await fs.promises.readFile(spaShellPath, "utf-8");
+          res.status(200).type("html").send(applySpaMeta(html, meta));
+        } catch {
+          next();
+        }
+      });
+    }
+  }
   const authLimiter = rateLimit4({
     windowMs: 15 * 60 * 1e3,
     max: 10,
@@ -8018,9 +8249,9 @@ async function registerRoutes(app2) {
         }
         const { turnstileToken: _omit, source: _clientSource, userId: _clientUserId, ...payload } = req.body ?? {};
         const validatedData = insertContactSubmissionSchema.extend({
-          name: z7.string().trim().min(1).max(100),
-          email: z7.string().trim().email().max(254),
-          message: z7.string().trim().min(1).max(5e3)
+          name: z8.string().trim().min(1).max(100),
+          email: z8.string().trim().email().max(254),
+          message: z8.string().trim().min(1).max(5e3)
         }).parse(payload);
         toInsert = { ...validatedData, source: "marketing" };
       }
@@ -8047,7 +8278,7 @@ async function registerRoutes(app2) {
       });
       res.json({ success: true, submission });
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid form data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8097,7 +8328,7 @@ async function registerRoutes(app2) {
       const debt = await storage.createDebt(validatedData);
       res.status(201).json(debt);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8110,51 +8341,15 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const debt = await storage.getDebt(req.params.id);
-      if (!debt || debt.userId !== userId) {
+      if (!canAccessDebt(debt, userId)) {
         return res.status(404).json({ message: "Debt not found" });
       }
-      const editSchema = z7.object({
-        name: z7.string().trim().min(1).optional(),
-        currentBalance: z7.string().optional(),
-        interestRate: z7.string().optional(),
-        minimumPayment: z7.string().optional(),
-        dueDate: z7.number().int().min(1).max(31).optional(),
-        accountNumber: z7.string().optional()
-      }).refine(
-        (d) => d.currentBalance === void 0 || parseFloat(d.currentBalance) > 0 && parseFloat(d.currentBalance) <= 9999999999e-2,
-        { message: "Current balance must be between 0.01 and 99,999,999.99", path: ["currentBalance"] }
-      ).refine(
-        (d) => d.interestRate === void 0 || parseFloat(d.interestRate) >= 0 && parseFloat(d.interestRate) <= 999.99,
-        { message: "Interest rate must be between 0 and 999.99", path: ["interestRate"] }
-      ).refine(
-        (d) => d.minimumPayment === void 0 || parseFloat(d.minimumPayment) >= 0 && parseFloat(d.minimumPayment) <= 9999999999e-2,
-        { message: "Minimum payment must be between 0 and 99,999,999.99", path: ["minimumPayment"] }
-      );
-      const parsed = editSchema.parse(req.body);
-      const updates = {};
-      if (parsed.name !== void 0) updates.name = parsed.name.trim();
-      if (parsed.currentBalance !== void 0) updates.currentBalance = parseFloat(parsed.currentBalance).toFixed(2);
-      if (parsed.interestRate !== void 0) updates.interestRate = parseFloat(parsed.interestRate).toFixed(2);
-      if (parsed.minimumPayment !== void 0) updates.minimumPayment = parseFloat(parsed.minimumPayment).toFixed(2);
-      if (parsed.dueDate !== void 0) updates.dueDate = parsed.dueDate;
-      if (parsed.accountNumber !== void 0) {
-        const acct = String(parsed.accountNumber).trim();
-        updates.accountNumber = acct !== "" ? acct : "\u2014";
-      }
-      if (debt.source === "imported") {
-        const refreshTracked = ["name", "currentBalance", "interestRate", "minimumPayment", "dueDate"];
-        const changed = refreshTracked.filter(
-          (f) => updates[f] !== void 0 && String(updates[f]) !== String(debt[f])
-        );
-        if (changed.length > 0) {
-          const existingEdited = debt.userEditedFields ?? [];
-          updates.userEditedFields = Array.from(/* @__PURE__ */ new Set([...existingEdited, ...changed]));
-        }
-      }
+      const parsed = debtEditSchema.parse(req.body);
+      const updates = buildDebtEditUpdates(debt, parsed);
       const updated = await storage.updateDebt(req.params.id, updates);
       res.json(updated);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid debt data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8167,11 +8362,61 @@ async function registerRoutes(app2) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const debt = await storage.getDebt(req.params.id);
-      if (!debt || debt.userId !== userId) {
+      if (!canAccessDebt(debt, userId)) {
         return res.status(404).json({ message: "Debt not found" });
       }
       await storage.updateDebt(req.params.id, { isActive: false });
       res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.delete("/api/debts/:id/permanent", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const debt = await storage.getDebt(req.params.id);
+      if (!canAccessDebt(debt, userId)) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      if (debt.isActive) {
+        return res.status(400).json({ message: "Debt must be archived before it can be permanently deleted" });
+      }
+      await storage.deleteDebtPermanently(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.get("/api/debts/archived", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const archived = await storage.getArchivedDebtsByUserId(userId);
+      res.json(archived);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.post("/api/debts/:id/restore", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const debt = await storage.getDebt(req.params.id);
+      if (!debt || debt.userId !== userId) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      if (debt.isActive) {
+        return res.status(400).json({ message: "Debt is not archived" });
+      }
+      const restored = await storage.updateDebt(req.params.id, { isActive: true });
+      res.json(restored);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -8235,7 +8480,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(transaction);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8319,7 +8564,7 @@ async function registerRoutes(app2) {
         return res.status(404).json({ message: "Debt not found" });
       }
       const payment = await storage.createPayment(validatedData);
-      const newBalance = (parseFloat(debt.currentBalance) - paymentAmount).toFixed(2);
+      const newBalance = Math.max(0, parseFloat(debt.currentBalance) - paymentAmount).toFixed(2);
       await storage.updateDebt(validatedData.debtId, {
         currentBalance: newBalance
       });
@@ -8333,7 +8578,7 @@ async function registerRoutes(app2) {
       }
       res.status(201).json(payment);
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid payment data", errors: error.errors });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -8481,7 +8726,7 @@ async function registerRoutes(app2) {
         amount: roundUpAmount.toFixed(2),
         source: "round_up"
       });
-      const newBalance = (parseFloat(debt.currentBalance) - roundUpAmount).toFixed(2);
+      const newBalance = Math.max(0, parseFloat(debt.currentBalance) - roundUpAmount).toFixed(2);
       await storage.updateDebt(debtId, {
         currentBalance: newBalance
       });
@@ -8617,7 +8862,7 @@ async function registerRoutes(app2) {
         res.status(201).json(demoResponse);
       }
     } catch (error) {
-      if (error instanceof z7.ZodError) {
+      if (error instanceof z8.ZodError) {
         return res.status(400).json({ message: "Invalid crypto purchase data", errors: error.errors });
       }
       console.error("Error creating crypto purchase:", error);
@@ -9084,7 +9329,7 @@ async function registerRoutes(app2) {
 
 // server/vite.ts
 import express3 from "express";
-import fs from "fs";
+import fs2 from "fs";
 import path3 from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 
@@ -9200,7 +9445,7 @@ async function setupVite(app2, server) {
         "client",
         "index.html"
       );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -9215,7 +9460,7 @@ async function setupVite(app2, server) {
 }
 function serveStatic(app2) {
   const distPath = path3.resolve(import.meta.dirname, "public");
-  if (!fs.existsSync(distPath)) {
+  if (!fs2.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
@@ -9505,11 +9750,11 @@ app.use((req, res, next) => {
       await setupVite(app, server);
     } else {
       const path4 = await import("path");
-      const fs2 = await import("fs");
+      const fs3 = await import("fs");
       const distPath = path4.default.resolve(process.cwd(), "server-dist", "public");
       console.log("Production static path:", distPath);
       const indexHtmlPath = path4.default.resolve(distPath, "index.html");
-      if (fs2.default.existsSync(indexHtmlPath)) {
+      if (fs3.default.existsSync(indexHtmlPath)) {
         console.log("Found static files at:", distPath);
         app.use(express4.static(distPath));
         app.use("*", (_req, res) => {

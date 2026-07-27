@@ -14,3 +14,9 @@ description: Why marketing guides are static HTML served by Express (not SPA rou
 **Why:** GEO visibility (ChatGPT/Claude/Perplexity citing dime-time.com for debt questions) was a founder request 2026-07-14; JS-invisible content and broken robots/sitemap silently defeat it.
 
 **How to apply:** when adding marketing/SEO content, add static HTML under `server/guides/`, register the slug in the whitelist map in `server/routes.ts`, add it to `public/sitemap.xml`, and curl-verify content types.
+
+## SEO fix batch (2026-07-27)
+- The homepage `<title>` string is TRIPLE-coupled: `client/index.html`, the unmount-restore in privacy/terms/delete-account pages, and the spa-meta tests all assert the exact string. Change all in lockstep or tests fail.
+- SPA public pages (/privacy, /terms, /delete-account) get crawler-correct meta via PROD-ONLY server-side tag swapping — dev preview intentionally shows the default shell, so verify this only on the published site (curl the prod URL), never in dev.
+- /delete-account is deliberately noindexed but must stay LIVE (app-store compliance).
+- Social share card = `public/og-image.png` (1200×630), referenced by every page; regenerate with ImageMagick (`magick`, DejaVu fonts available in this env) — don't reference the square app icon as og:image.
