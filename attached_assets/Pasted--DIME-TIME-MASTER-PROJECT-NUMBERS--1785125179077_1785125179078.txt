@@ -1,0 +1,1514 @@
+================================================================
+DIME TIME — MASTER PROJECT NUMBERS & METRICS
+Prepared: July 27, 2026
+Company: Dime Time Technologies LLC
+Founder: Tim Carlisle
+Website: dime-time.com
+Purpose: Consolidated numerical reference for project analysis,
+pitch decks, milestone timelines, investor materials, social posts,
+valuation discussions, and historical documentation.
+================================================================
+
+IMPORTANT DATA RULES
+
+1. Preserve every number exactly as written.
+2. Do not combine verified production metrics with goals, estimates,
+   forecasts, or historical snapshots.
+3. Clearly label numbers as:
+   - VERIFIED CURRENT
+   - VERIFIED HISTORICAL
+   - FOUNDER ESTIMATE
+   - TARGET
+   - PROJECTION
+   - APPROXIMATE
+4. Dime Time is a financial technology platform, not a bank.
+5. Do not invent users, payments, revenue, ratings, downloads,
+   transaction volume, or financial outcomes.
+6. Production money movement is gated behind an allowlist.
+7. Zero production round-ups and zero production payments as of
+   July 27, 2026 are intentional pre-rollout conditions, not evidence
+   that the underlying payment infrastructure does not work.
+8. Historical bank-to-bank payment tests must be described separately
+   from ordinary user production activity.
+
+================================================================
+SECTION 1 — COMPANY IDENTITY
+================================================================
+
+Company:
+- Dime Time Technologies LLC
+
+Company formation:
+- Montana limited liability company
+
+Founder:
+- Tim Carlisle
+
+Founder structure:
+- 1 solo founder
+- Non-technical founder
+- AI-assisted development using Replit Agent
+
+Founder background:
+- 1 founder
+- 4 years of U.S. Navy service: 2003–2007
+- 2 Iraq deployments
+- 1 bachelor’s degree
+- 2 graduate degrees:
+  - MBA
+  - Master of Information Systems
+- 1 sommelier certification
+
+D-U-N-S number:
+- 128458968
+
+Website:
+- dime-time.com
+
+Primary product:
+- Round-up debt-payoff application
+
+Core round-up example:
+- $4.30 purchase
+- Rounded to $5.00
+- $0.70 spare change
+
+Primary subscription price currently referenced:
+- $2.99 per month
+- $35.88 per year per continuously subscribed user
+
+Previously discussed product-tier structure:
+- $2.99/month debt tier
+- $3.99/month Bitcoin tier
+- $4.99/month split-allocation tier
+
+IMPORTANT:
+- The $3.99 and $4.99 tiers have been discussed as product strategy.
+- Do not present unavailable tiers as currently live.
+- Do not mention crypto in public app-store copy until the feature
+  is live and approved for listing.
+
+================================================================
+SECTION 2 — MASTER DEVELOPMENT TIMELINE
+================================================================
+
+Project start / first commit:
+- August 3, 2025
+
+Measurement date:
+- July 27, 2026
+
+Elapsed time:
+- 358 calendar days
+- 6 days short of 1 full year
+
+Active build days:
+- 126 days
+
+Build-day frequency:
+- Commits occurred on approximately 1 of every 3 calendar days
+
+Founder development-hours estimate based on active sessions:
+- Approximately 400–500 hours
+- Assumption: approximately 3–4 hours per active session
+
+Broader founder-effort estimate previously discussed:
+- Founder believes total effort may exceed 2,000 hours when including:
+  - Software development supervision
+  - Product design
+  - Testing
+  - Compliance work
+  - Plaid onboarding
+  - Stripe onboarding
+  - Meetings
+  - App Store submissions
+  - Google Play submissions
+  - Business development
+  - Marketing
+  - Investor preparation
+  - Patent work
+  - Website work
+  - Documentation
+  - Customer support
+  - Operations
+
+IMPORTANT:
+- 400–500 hours is the code-session-based estimate.
+- 2,000+ hours is a founder estimate for total company-building effort.
+- These are different scopes and must not be presented as equivalent.
+
+Earlier development snapshot:
+- Approximately 600 in-workspace hours had previously been estimated
+  before the July 27 code-history calculation was produced.
+
+IMPORTANT:
+- The earlier 600-hour estimate and later 400–500-hour estimate use
+  different methodologies.
+- Do not claim either is an audited time log.
+
+================================================================
+SECTION 3 — SOURCE CODE METRICS
+================================================================
+
+Verified hand-written TypeScript:
+- 40,026 lines
+
+TypeScript file count:
+- 192 files
+
+Client-side TypeScript:
+- 22,408 lines
+
+Server-side TypeScript:
+- 15,687 lines
+
+Shared TypeScript:
+- 1,931 lines
+
+Approximate total source including guides and CSS:
+- Approximately 41,000 lines
+
+Average output per active build day:
+- Approximately 318 lines per active day
+
+Calculation:
+- 40,026 lines ÷ 126 active days ≈ 317.67
+- Displayed project figure: approximately 318 lines per active day
+
+Automated tests:
+- 79 tests
+
+Test files:
+- 13 files
+
+Average automated tests per test file:
+- Approximately 6.08 tests per file
+- Derived: 79 ÷ 13
+
+Average TypeScript lines per file:
+- Approximately 208.47 lines per file
+- Derived: 40,026 ÷ 192
+
+Client share of TypeScript:
+- Approximately 55.98%
+- Derived: 22,408 ÷ 40,026
+
+Server share of TypeScript:
+- Approximately 39.19%
+- Derived: 15,687 ÷ 40,026
+
+Shared-code share of TypeScript:
+- Approximately 4.82%
+- Derived: 1,931 ÷ 40,026
+
+================================================================
+SECTION 4 — GIT AND DEVELOPMENT ACTIVITY
+================================================================
+
+Total git commits as of July 27, 2026:
+- 1,490 commits
+
+Commits during the most recent 30 days:
+- 549 commits
+
+Percentage of total commits made during the last 30 days:
+- 37%
+
+More precise calculated percentage:
+- Approximately 36.85%
+- Derived: 549 ÷ 1,490
+
+Commits before the most recent 30-day period:
+- 941 commits
+- Derived: 1,490 - 549
+
+Average commits per active build day:
+- Approximately 11.83
+- Derived: 1,490 ÷ 126
+
+Average commits per calendar day:
+- Approximately 4.16
+- Derived: 1,490 ÷ 358
+
+Average commits per day during the latest 30 days:
+- Approximately 18.3
+- Derived: 549 ÷ 30
+
+Busiest recorded day:
+- July 23, 2026
+
+Commits on busiest day:
+- 91 commits
+
+Busiest-day share of all commits:
+- Approximately 6.11%
+- Derived: 91 ÷ 1,490
+
+Project tasks executed:
+- 57 tasks
+
+Tasks merged in a single day:
+- 24 tasks
+
+Single-day merged-task share:
+- Approximately 42.11%
+- Derived: 24 ÷ 57
+
+Separate July 26, 2026 shipping snapshot:
+- 18 merges
+- 2 zero-downtime production database migrations
+- 6 publishes
+- 0 reported user-facing downtime
+
+================================================================
+SECTION 5 — PRODUCT SURFACE
+================================================================
+
+Application pages:
+- 31 pages
+
+Reusable components:
+- 77 components
+
+API endpoints:
+- 54 endpoints
+
+Database tables:
+- 36 tables
+
+Supported platforms:
+- 3 platforms
+
+Platforms:
+1. Web
+2. iOS
+3. Android
+
+Codebase structure:
+- 1 shared codebase serving 3 platforms
+
+Open-source libraries:
+- 121 total libraries
+
+Runtime libraries:
+- 100
+
+Development libraries:
+- 21
+
+Runtime-library share:
+- Approximately 82.64%
+- Derived: 100 ÷ 121
+
+Development-library share:
+- Approximately 17.36%
+- Derived: 21 ÷ 121
+
+Average components per page:
+- Approximately 2.48
+- Derived: 77 ÷ 31
+
+Average API endpoints per page:
+- Approximately 1.74
+- Derived: 54 ÷ 31
+
+Average API endpoints per database table:
+- 1.5
+- Derived: 54 ÷ 36
+
+Average TypeScript lines per application page:
+- Approximately 1,291.16
+- Derived: 40,026 ÷ 31
+- Contextual ratio only; not literal code assigned to each page
+
+Average TypeScript lines per API endpoint:
+- Approximately 741.22
+- Derived: 40,026 ÷ 54
+- Contextual ratio only
+
+Average TypeScript lines per database table:
+- Approximately 1,111.83
+- Derived: 40,026 ÷ 36
+- Contextual ratio only
+
+================================================================
+SECTION 6 — TECHNICAL ARCHITECTURE
+================================================================
+
+Frontend:
+- React
+- TypeScript
+
+Native wrapper:
+- Capacitor
+
+Backend:
+- Express
+- Node.js
+
+Database:
+- PostgreSQL
+
+Database ORM:
+- Drizzle
+
+Encryption:
+- AES-256-GCM
+
+Password hashing:
+- Bcrypt cost factor 12
+
+Additional hashing/migration reference:
+- SHA-256 migration
+
+Production database migrations in July 26 shipping snapshot:
+- 2 migrations
+- 0 user-facing downtime
+
+Technical controls referenced:
+- Rate limiting
+- Idempotency controls
+- HMAC verification
+- Reconciliation logs
+- Audit trails
+- Per-user transaction limits
+- Feature flags
+- User allowlist
+
+================================================================
+SECTION 7 — APPLE APP STORE HISTORY
+================================================================
+
+Apple App Store app ID:
+- 6755106723
+
+Initial TestFlight milestone:
+- Build 106
+- Date: April 12, 2026
+
+App Store rejection:
+- Version 1.0.3
+- Rejection date: June 9, 2026
+- Referenced guideline: 4.3
+
+Resubmission:
+- June 12, 2026
+
+Initial iOS public launch:
+- June 29, 2026
+
+Days live as of July 27, 2026:
+- 28 days
+
+iOS version 1.0.4:
+- Submitted July 8, 2026
+- Later approved and released
+
+iOS version 1.0.5:
+- Build 207
+- Approved and live July 21, 2026
+
+Current verified iOS build:
+- Build 207
+
+Current verified iOS public status:
+- LIVE
+
+Time between initial public launch and version 1.0.5 release:
+- 22 days
+- June 29 to July 21, 2026
+
+Time between version 1.0.5 release and July 27 measurement:
+- 6 days
+
+================================================================
+SECTION 8 — GOOGLE PLAY / ANDROID HISTORY
+================================================================
+
+Android package:
+- com.dimetime.app
+
+Google Play version name:
+- 1.0.5
+
+Google Play version code:
+- 209
+
+First production submission:
+- July 23, 2026
+
+Approximate submission time:
+- 11:21 PM Central Time
+
+Status as of July 27, 2026:
+- In Google Play production review
+
+Days in review as of July 27:
+- Approximately 4 calendar days
+
+Google Play launch geography:
+- 1 country
+
+Launch country:
+- United States only
+
+Managed publishing:
+- OFF
+
+Approval behavior:
+- Automatic publication upon approval
+
+Previously stated expected first-review range:
+- 1–7 days
+
+Google Play store assets:
+- 1 app icon
+- 1 feature graphic
+- 5 phone screenshots
+
+Phone screenshot dimensions:
+- 1,080 × 1,920 pixels
+
+Tablet listing slots populated:
+- 7-inch tablet slot
+- 10-inch tablet slot
+
+App-name character allowance:
+- 30 characters maximum
+
+Current app name:
+- Dime Time: Debt Payoff
+
+Short-description allowance:
+- 80 characters maximum
+
+Current short description:
+- 77 characters according to the prepared listing pack
+
+Full-description allowance:
+- 4,000 characters maximum
+
+Prepared Google Play full description:
+- 2,817 characters according to the listing pack
+
+================================================================
+SECTION 9 — WEB, SEO, AND AEO
+================================================================
+
+Web app:
+- LIVE
+
+Production deployment:
+- Autoscaling cloud deployment
+
+Production database:
+- Managed PostgreSQL
+
+Sitemap URLs:
+- 7 URLs
+
+SEO/AEO-optimized guides:
+- 4 guides
+
+LinkedIn website/content visibility snapshot:
+- Approximately 460 views
+
+App Store promotional-text allowance:
+- 170 characters maximum
+
+Prepared promotional text:
+- 155 characters according to the listing pack
+
+App Store subtitle allowance:
+- 30 characters maximum
+
+Subtitle option A:
+- 29 characters according to the listing pack
+
+Subtitle option B:
+- 27 characters according to the listing pack
+
+App Store keyword-field allowance:
+- 100 characters maximum
+
+Prepared keyword field:
+- 92 characters according to the listing pack
+
+App Store long-description allowance:
+- 4,000 characters maximum
+
+Prepared iOS description:
+- 2,889 characters according to the listing pack
+
+AEO rollout sequence:
+1. Promotional text immediately
+2. Google Play full description after the current review verdict
+3. iOS description, subtitle, and keywords with the next iOS version
+
+================================================================
+SECTION 10 — PRODUCTION ACCOUNT AND DATABASE METRICS
+================================================================
+
+Measurement date:
+- July 27, 2026
+
+Registered accounts:
+- 18 accounts
+
+IMPORTANT:
+- The 18 accounts include:
+  - Founder accounts
+  - Test accounts
+  - Apple review accounts
+- Do not represent all 18 as independent customers.
+
+Earlier historical account snapshots:
+- 15 registered users
+- Later 17 registered users
+- Current July 27 verified count: 18 accounts
+
+Growth from 15-account snapshot to 18-account snapshot:
+- 3 additional accounts
+- 20% increase
+- Derived: 3 ÷ 15
+
+Growth from 17-account snapshot to 18-account snapshot:
+- 1 additional account
+- Approximately 5.88% increase
+- Derived: 1 ÷ 17
+
+Debts tracked:
+- 9 debts
+
+Bank accounts linked:
+- 2 accounts
+
+Contact-form submissions:
+- 16 submissions
+
+Production round-ups:
+- 0
+
+Production user payments processed:
+- 0
+
+Reason for zero production round-ups and payments:
+- Real-money functionality remains gated behind a rollout allowlist
+
+Average tracked debts per registered account:
+- 0.5
+- Derived: 9 ÷ 18
+- This is a database-wide ratio, not an active-user engagement claim.
+
+Linked-bank-account ratio to registered accounts:
+- Approximately 11.11%
+- Derived: 2 ÷ 18
+- This is not a validated conversion rate because accounts include
+  founder, test, and review accounts.
+
+Tracked-debt ratio to registered accounts:
+- 50%
+- Derived: 9 ÷ 18
+- This is not necessarily 9 distinct users.
+
+Contact-form submissions per registered account:
+- Approximately 0.89
+- Derived: 16 ÷ 18
+- The groups may not represent the same people.
+
+================================================================
+SECTION 11 — MONEY-MOVEMENT VALIDATION
+================================================================
+
+Verified historical ACH test:
+- $1.00 ACH debt payment
+- Completed/settled July 8, 2026
+
+Verified payout test:
+- $0.99 payout
+- Landed in the Mercury business account
+
+Combined value of the 2 referenced validation transactions:
+- $1.99
+- Derived: $1.00 + $0.99
+
+IMPORTANT:
+- These were infrastructure validation transactions.
+- They are not ordinary customer transaction volume.
+- Do not add the $1.00 and $0.99 tests to production GMV.
+- Production user round-ups remained 0 as of July 27, 2026.
+
+Real ACH transfers:
+- Feature-flagged
+- Allowlisted
+- Subject to strict per-user limits
+- Recorded through audit trails
+
+Stripe bank-linking registration:
+- Approved by July 24, 2026
+- Verified live on the founder’s phone
+- Final referenced validation step took approximately 2 minutes
+
+Plaid Liabilities production access:
+- Approved July 18, 2026
+
+Plaid Growth Plan start/reference:
+- April 1, 2026
+
+Plaid Growth Plan cost:
+- $1,000 per month
+
+Plaid payment status reference:
+- Overdue July 2, 2026
+- Follow-up July 11, 2026
+
+Mercury business bank approval:
+- March 27, 2026
+
+================================================================
+SECTION 12 — PRICING AND SUBSCRIPTION ECONOMICS
+================================================================
+
+Primary subscription price:
+- $2.99 per month
+
+Annualized revenue per continuously subscribed user:
+- $35.88 per year
+
+Calculation:
+- $2.99 × 12 = $35.88
+
+Monthly revenue scenarios at $2.99:
+
+1 subscriber:
+- $2.99 MRR
+- $35.88 annualized revenue
+
+10 subscribers:
+- $29.90 MRR
+- $358.80 annualized revenue
+
+18 subscribers, if every registered account paid:
+- $53.82 MRR
+- $645.84 annualized revenue
+- HYPOTHETICAL ONLY
+- Do not report as actual revenue.
+
+25 subscribers:
+- $74.75 MRR
+- $897.00 ARR
+
+50 subscribers:
+- $149.50 MRR
+- $1,794.00 ARR
+
+100 subscribers:
+- $299 MRR
+- $3,588 ARR
+
+250 subscribers:
+- $747.50 MRR
+- $8,970 ARR
+
+500 subscribers:
+- $1,495 MRR
+- $17,940 ARR
+
+1,000 subscribers:
+- $2,990 MRR
+- $35,880 ARR
+
+2,500 subscribers:
+- $7,475 MRR
+- $89,700 ARR
+
+5,000 subscribers:
+- $14,950 MRR
+- $179,400 ARR
+
+10,000 subscribers:
+- $29,900 MRR
+- $358,800 ARR
+
+25,000 subscribers:
+- $74,750 MRR
+- $897,000 ARR
+
+50,000 subscribers:
+- $149,500 MRR
+- $1,794,000 ARR
+
+100,000 subscribers:
+- $299,000 MRR
+- $3,588,000 ARR
+
+Approximate subscribers required for selected MRR levels:
+
+$1,000 MRR:
+- Approximately 335 subscribers
+- Derived: $1,000 ÷ $2.99
+
+$5,000 MRR:
+- Approximately 1,673 subscribers
+
+$10,000 MRR:
+- Approximately 3,345 subscribers
+
+$25,000 MRR:
+- Approximately 8,362 subscribers
+
+$50,000 MRR:
+- Approximately 16,723 subscribers
+
+$100,000 MRR:
+- Approximately 33,445 subscribers
+
+Approximate subscribers required for selected ARR levels:
+
+$100,000 ARR:
+- Approximately 2,787 subscribers
+- Derived: $100,000 ÷ $35.88
+
+$250,000 ARR:
+- Approximately 6,968 subscribers
+
+$500,000 ARR:
+- Approximately 13,936 subscribers
+
+$1,000,000 ARR:
+- Approximately 27,871 subscribers
+
+$5,000,000 ARR:
+- Approximately 139,354 subscribers
+
+IMPORTANT:
+- These figures assume every subscriber pays $2.99 every month for
+  a full 12 months.
+- They exclude:
+  - App-store commissions
+  - Payment-processing costs
+  - Refunds
+  - Discounts
+  - Free trials
+  - Taxes
+  - Churn
+  - Failed payments
+  - Promotional pricing
+- These are gross annualized subscription figures, not net revenue.
+
+================================================================
+SECTION 13 — COSTS AND INFRASTRUCTURE OBLIGATIONS
+================================================================
+
+Plaid Growth Plan:
+- $1,000 per month
+- $12,000 annualized if maintained for 12 months
+
+Replit run-cost threshold:
+- Raised to $200
+
+Subscription price compared with Plaid monthly cost:
+
+Subscribers needed to produce $1,000 gross MRR:
+- Approximately 335 subscribers
+
+Exact gross revenue at 334 subscribers:
+- $998.66 MRR
+
+Exact gross revenue at 335 subscribers:
+- $1,001.65 MRR
+
+IMPORTANT:
+- This does not represent company break-even.
+- It covers only the nominal $1,000 Plaid monthly fee before store
+  commissions, hosting, compliance, taxes, support, and other costs.
+
+Plaid annual cost divided by subscriber annual revenue:
+- Approximately 334.45 annual subscribers
+- Derived: $12,000 ÷ $35.88
+- Operationally requires at least 335 full-year subscribers before
+  deductions to equal the annualized Plaid fee.
+
+================================================================
+SECTION 14 — PATENT AND INTELLECTUAL PROPERTY
+================================================================
+
+Initial provisional patent filing:
+- April 26, 2026
+
+Additional patent claims:
+- May 2, 2026
+
+Days between initial filing and additional claims:
+- 6 days
+
+Patent status:
+- Patent pending
+
+Approved investor-deck structures:
+- 14-slide core deck
+- 17-slide version including 3 IP appendix slides
+
+Difference between deck versions:
+- 3 slides
+
+University speaking deck:
+- 21 slides total
+
+University deck structure:
+- 18 core slides
+- 3 appendix slides
+- Appendix A
+- Appendix B
+- Appendix C
+
+University presentation timing plans:
+- 20-minute format
+- 45-minute format
+- 60-minute format
+
+================================================================
+SECTION 15 — RELEASE AND SHIPPING VELOCITY
+================================================================
+
+July 26, 2026 delivery snapshot:
+- 18 merges
+- 2 production database migrations
+- 6 publishes
+- 0 user-facing downtime
+
+Single-day project-task snapshot:
+- 57 tasks executed
+- 24 merged in one day
+
+Peak commit day:
+- 91 commits
+
+Recent 30-day commit output:
+- 549 commits
+
+Recent 30-day share of annual commit output:
+- 37%
+
+Commits outside the latest 30 days:
+- 941 commits
+
+Ratio of latest-30-day commits to prior commits:
+- Approximately 0.58
+- Derived: 549 ÷ 941
+
+This means:
+- The latest 30 days produced approximately 58.34% as many commits
+  as all preceding project history combined.
+
+================================================================
+SECTION 16 — HISTORICAL PRODUCT MILESTONES
+================================================================
+
+Project start:
+- August 3, 2025
+
+Mercury approval:
+- March 27, 2026
+
+Plaid Growth Plan:
+- April 1, 2026
+
+TestFlight Build 106:
+- April 12, 2026
+
+Provisional patent:
+- April 26, 2026
+
+Additional patent claims:
+- May 2, 2026
+
+App Store rejection:
+- June 9, 2026
+
+App Store resubmission:
+- June 12, 2026
+
+Initial iOS public launch:
+- June 29, 2026
+
+Plaid payment overdue reference:
+- July 2, 2026
+
+First settled $1.00 ACH test:
+- July 8, 2026
+
+iOS version 1.0.4 submitted:
+- July 8, 2026
+
+Plaid follow-up:
+- July 11, 2026
+
+Plaid Liabilities production approval:
+- July 18, 2026
+
+iOS version 1.0.5 / build 207 live:
+- July 21, 2026
+
+Google Play production submission:
+- July 23, 2026
+- Approximately 11:21 PM CT
+
+Peak 91-commit day:
+- July 23, 2026
+
+Stripe bank-linking status verified:
+- July 24, 2026
+
+Major shipping day:
+- July 26, 2026
+- 18 merges
+- 2 database migrations
+- 6 publishes
+
+Current master measurement:
+- July 27, 2026
+- 358 days since first commit
+
+================================================================
+SECTION 17 — MARKETING, USER, AND GROWTH TARGETS
+================================================================
+
+Earlier September user target:
+- 1,000 users
+
+Target date:
+- September 19, 2026
+
+Founder birthday referenced:
+- September 19
+
+Later year-end target:
+- 5,000 users across iPhone and Android
+
+Target timing:
+- End of 2026
+
+IMPORTANT:
+- Clarify whether “5,000 users on both iPhone and Android” means:
+  A. 5,000 total combined users, or
+  B. 5,000 users on each platform / 10,000 total.
+- Prior language is ambiguous.
+- Do not select an interpretation without founder confirmation.
+
+Potential subscriber revenue at 5,000 paying subscribers:
+- $14,950 MRR
+- $179,400 ARR
+
+Potential subscriber revenue at 10,000 paying subscribers:
+- $29,900 MRR
+- $358,800 ARR
+
+IMPORTANT:
+- User goals and paying-subscriber counts are not interchangeable.
+- Do not apply subscription revenue to every projected user unless
+  an assumed paid conversion rate is explicitly stated.
+
+LinkedIn network snapshot:
+- 643 connections
+
+LinkedIn visibility snapshot:
+- Approximately 460 views
+
+Initial user-count snapshots:
+- 15 accounts
+- 17 accounts
+- 18 accounts current as of July 27
+
+Marketing channels discussed:
+- LinkedIn
+- TikTok
+- Instagram
+- University speaking
+- PPC
+- AI-generated video
+
+Marketing collaborator snapshot:
+- 1 coworker discussed for AI videos
+- 1 advisor discussed for PPC
+
+Estimated customer-acquisition-cost range previously discussed:
+- $50–$100 per acquired customer
+
+IMPORTANT:
+- This was an estimate, not a verified blended CAC.
+- Dime Time does not yet have enough paid-acquisition data to claim
+  a measured CAC.
+
+Illustrative acquisition spend at estimated CAC:
+
+100 customers:
+- $5,000–$10,000
+
+1,000 customers:
+- $50,000–$100,000
+
+5,000 customers:
+- $250,000–$500,000
+
+10,000 customers:
+- $500,000–$1,000,000
+
+IMPORTANT:
+- These figures illustrate why the $50–$100 estimate may be
+  economically challenging at a $2.99 monthly price unless retention,
+  organic acquisition, referrals, upsells, or lower CAC materially
+  improve unit economics.
+
+Gross annual subscription revenue per user:
+- $35.88
+
+CAC payback before deductions at $50 CAC:
+- Approximately 16.72 months
+- Derived: $50 ÷ $2.99
+
+CAC payback before deductions at $100 CAC:
+- Approximately 33.44 months
+- Derived: $100 ÷ $2.99
+
+IMPORTANT:
+- Actual payback would be longer after platform fees, churn, taxes,
+  and operating costs.
+
+================================================================
+SECTION 18 — FUNDRAISING AND VALUATION REFERENCES
+================================================================
+
+SBA lender-match application date:
+- May 1, 2026
+
+SBA funding target discussed:
+- $250,000–$500,000
+
+Later operational SBA target:
+- $100,000–$250,000
+
+Planned evidence period before later SBA request:
+- 90 days of transactions
+
+First planned hire:
+- 1 developer
+
+Founder full-time runway goal:
+- 6 months
+
+Pre-seed valuation target discussed:
+- Approximately $4.0 million
+
+IMPORTANT:
+- $4.0 million was a founder target, not an independent valuation.
+- Dime Time was pre-revenue or effectively pre-revenue when discussed.
+- Do not apply ARR multiples before recurring revenue exists.
+- Any valuation must be shown as a speculative range based on:
+  - Product completion
+  - Regulatory readiness
+  - User growth
+  - Retention
+  - Revenue
+  - Transaction activity
+  - Team risk
+  - Distribution
+  - Comparable financing conditions
+
+================================================================
+SECTION 19 — DEBT, BANK, AND PAYMENT PRODUCT FEATURES
+================================================================
+
+Round-up increment:
+- Purchase rounded to the next $1.00
+
+Illustrative purchase:
+- $4.30
+
+Illustrative round-up:
+- $0.70
+
+Optional round-up multipliers:
+- 2×
+- 3×
+
+Referenced payment frequency:
+- Weekly sweep
+
+Referenced fixed subscription billing-date example:
+- 15th day of each month
+
+Multi-destination allocation:
+- Percentage-based slider
+
+Previously discussed destinations:
+- Debt
+- Savings
+- Bitcoin
+
+IMPORTANT:
+- Debt is the current public core.
+- Do not list savings or Bitcoin as live unless verified in production.
+
+Debt categories referenced:
+1. Credit cards
+2. Student loans
+3. Auto loans
+4. Personal loans
+5. Medical bills
+
+Number of explicitly listed debt categories:
+- 5
+
+================================================================
+SECTION 20 — SECURITY AND USER CONTROL NUMBERS
+================================================================
+
+Encryption standard:
+- AES-256-GCM
+- 256-bit encryption reference
+
+Bcrypt work factor:
+- 12
+
+Round-up multipliers:
+- 2×
+- 3×
+
+User authorization model:
+- User approves:
+  1. Destination
+  2. Schedule
+  3. Every individual payment
+
+Number of explicitly stated approval dimensions:
+- 3
+
+Deletion control:
+- Account and data can be deleted in-app
+
+Authentication controls referenced:
+- PIN lock
+- Biometric lock
+- Automatic locking
+
+Number of explicitly referenced app-lock controls:
+- 3
+
+================================================================
+SECTION 21 — APP-STORE LISTING NUMBERS
+================================================================
+
+Google Play app-name limit:
+- 30 characters
+
+Google Play short-description limit:
+- 80 characters
+
+Prepared Google Play short description:
+- 77 characters
+
+Remaining short-description capacity:
+- 3 characters
+
+Google Play full-description limit:
+- 4,000 characters
+
+Prepared Google Play full description:
+- 2,817 characters
+
+Remaining Google Play description capacity:
+- 1,183 characters
+
+App Store promotional-text limit:
+- 170 characters
+
+Prepared promotional text:
+- 155 characters
+
+Remaining promotional-text capacity:
+- 15 characters
+
+App Store subtitle limit:
+- 30 characters
+
+Subtitle A:
+- 29 characters
+- 1 character remaining
+
+Subtitle B:
+- 27 characters
+- 3 characters remaining
+
+App Store keyword limit:
+- 100 characters
+
+Prepared keyword field:
+- 92 characters
+
+Remaining keyword capacity:
+- 8 characters
+
+App Store description limit:
+- 4,000 characters
+
+Prepared iOS description:
+- 2,889 characters
+
+Remaining iOS description capacity:
+- 1,111 characters
+
+Store screenshot count:
+- 5 phone screenshots
+
+Screenshot dimensions:
+- 1,080 × 1,920
+
+Pixel count per screenshot:
+- 2,073,600 pixels
+- Derived: 1,080 × 1,920
+
+Combined pixels across 5 screenshots:
+- 10,368,000 pixels
+- Derived: 2,073,600 × 5
+
+Feature graphic dimensions:
+- 1,024 × 500 pixels
+
+Feature graphic pixel count:
+- 512,000 pixels
+
+App icon dimensions:
+- 512 × 512 pixels
+
+App icon pixel count:
+- 262,144 pixels
+
+================================================================
+SECTION 22 — INVESTOR AND SPEAKING MATERIALS
+================================================================
+
+Investor pitch deck:
+- 14-slide core version
+
+Investor pitch deck with IP appendix:
+- 17-slide expanded version
+
+IP appendix:
+- 3 slides
+
+University founder-journey deck:
+- 21 slides
+
+University core slides:
+- 18 slides
+
+University appendix slides:
+- 3 slides
+
+University delivery formats:
+- 20 minutes
+- 45 minutes
+- 60 minutes
+
+Number of targeted university examples previously discussed:
+- 4 institutions
+
+Institutions:
+1. SMU
+2. TCU
+3. UNT
+4. UNLV
+
+================================================================
+SECTION 23 — FOUNDER AND OPERATING TARGETS
+================================================================
+
+Desired full-time Dime Time focus period:
+- 6 months
+
+Proposed transaction-history period before SBA application:
+- 90 days
+
+First intended hire:
+- 1 developer
+
+Target platform count:
+- 3:
+  - Web
+  - iOS
+  - Android
+
+Public launch geography:
+- 1 country initially:
+  - United States
+
+Target valuation previously discussed:
+- Approximately $4.0 million
+
+Funding ranges discussed:
+- $100,000–$250,000
+- $250,000–$500,000
+
+Combined outer bounds of discussed funding targets:
+- Minimum: $100,000
+- Maximum: $500,000
+
+================================================================
+SECTION 24 — CURRENT STATUS SNAPSHOT
+================================================================
+
+As of July 27, 2026:
+
+Company:
+- 1 solo founder
+
+Project age:
+- 358 days
+
+Active build days:
+- 126
+
+TypeScript:
+- 40,026 lines
+
+Approximate total source:
+- 41,000 lines
+
+Files:
+- 192 TypeScript files
+
+Commits:
+- 1,490 total
+- 549 in the latest 30 days
+- 91 on the busiest day
+
+Tests:
+- 79 tests
+- 13 test files
+
+Product:
+- 31 pages
+- 77 components
+- 54 API endpoints
+- 36 database tables
+- 121 libraries
+- 3 platforms
+
+iOS:
+- Build 207
+- Live for 28 days
+
+Android:
+- Build 209
+- In Google Play review
+
+Web:
+- Live
+
+SEO/AEO:
+- 7 sitemap URLs
+- 4 optimized guides
+
+Production database:
+- 18 registered accounts
+- 9 debts tracked
+- 2 bank accounts linked
+- 16 contact-form submissions
+- 0 production round-ups
+- 0 production user payments
+
+Payment validation:
+- 1 settled $1.00 ACH test
+- 1 verified $0.99 payout
+- $1.99 combined infrastructure-validation amount
+
+Subscription:
+- $2.99/month
+- $35.88/year per continuously subscribed user
+
+Current actual recurring revenue:
+- Do not state unless verified from billing records
+- The project materials supplied here do not establish paying
+  subscriber count or current MRR.
+
+================================================================
+SECTION 25 — PUNCHY VERIFIED STAT LINES
+================================================================
+
+Use these only with the qualifications preserved:
+
+1. Dime Time went from its first commit to a live three-platform
+   fintech product in 358 days.
+
+2. One solo, non-technical founder directed the creation of 40,026
+   lines of TypeScript across 192 files.
+
+3. The project accumulated 1,490 commits, with 549—37% of the total—
+   completed during the latest 30 days.
+
+4. Dime Time’s product surface includes 31 pages, 77 components,
+   54 API endpoints, and 36 database tables.
+
+5. A single shared codebase supports web, iOS, and Android.
+
+6. The iOS app reached the public App Store on June 29, 2026, and
+   build 207 was live by July 21.
+
+7. Android build 209 entered Google Play production review on
+   July 23, 2026.
+
+8. Dime Time validated its payment infrastructure with a settled
+   $1.00 ACH debt-payment test and a separate $0.99 payout.
+
+9. Production money movement remains intentionally allowlisted:
+   0 ordinary user round-ups and 0 ordinary user payments had been
+   processed as of July 27, 2026.
+
+10. At $2.99 per month, 1,000 continuously paying subscribers would
+    represent $2,990 in gross MRR and $35,880 in gross ARR before
+    commissions, churn, taxes, refunds, and operating costs.
+
+11. At $2.99 per month, 10,000 continuously paying subscribers would
+    represent $29,900 in gross MRR and $358,800 in gross ARR before
+    deductions.
+
+12. On July 26 alone, the project recorded 18 merges, 2 zero-downtime
+    production database migrations, and 6 publishes with no reported
+    user-facing downtime.
+
+================================================================
+SECTION 26 — NUMBERS THAT MUST NOT BE MISREPRESENTED
+================================================================
+
+Do not claim:
+- 18 paying customers
+- 18 independent organic customers
+- 9 users with debts
+- 2 converted banking customers
+- Any positive MRR without Stripe billing verification
+- Any production GMV based on the $1.00 and $0.99 test transactions
+- 2,000 audited development hours
+- 400–500 audited total-company hours
+- 5,000 paying subscribers as an achieved result
+- $4.0 million as an independently established valuation
+- $50–$100 as a measured CAC
+- 0 payments as evidence that the payment system is unfinished
+- Any bank, lender, or FDIC-insured status
+- Any live crypto feature unless separately verified
+
+Correct framing:
+- 18 registered accounts, including founder, test, and review accounts
+- 9 debts recorded in the production database
+- 2 bank accounts linked
+- 0 ordinary production round-ups and payments because rollout remains gated
+- Payment rails validated through controlled test transactions
+- Approximately 400–500 coding-session hours by one methodology
+- 2,000+ total founder hours as a broader founder estimate
+- 5,000 users as a goal
+- Approximately $4.0 million as a founder valuation target
+- $50–$100 CAC as an early planning estimate
+
+================================================================
+END OF DIME TIME MASTER PROJECT NUMBERS
+================================================================
