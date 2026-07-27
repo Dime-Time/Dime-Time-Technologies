@@ -552,3 +552,9 @@ id = "E8mxqWNqXWr8RmYTGnzfq"
 uri = "file://attached_assets/play-store-assets/screenshots/06-settings.png"
 type = "image"
 title = "Play screenshot 6 — Settings"
+
+[[outputs]]
+id = "QJOxQKi_My-TukEtc-AYE"
+uri = "file://attached_assets/aeo-store-listings/README-paste-guide.txt"
+type = "text"
+title = "AEO Store Listing Pack — paste guide (Play + App Store)"
