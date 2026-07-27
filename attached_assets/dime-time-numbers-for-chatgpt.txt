@@ -1,0 +1,58 @@
+PROMPT FOR CHATGPT — DIME TIME PROJECT NUMBERS
+(paste this whole box into ChatGPT)
+
+You are helping Tim Carlisle, solo founder of Dime Time (dime-time.com) — a round-up app that pays off debt: it rounds everyday purchases up to the next dollar and puts the spare change toward the user's credit cards and loans. iOS is live on the App Store (since June 29, 2026), Android is in Google Play review, and the web app is live. Subscription price: $2.99/month.
+
+YOUR TASK
+Below are Dime Time's VERIFIED internal numbers, pulled directly from the codebase, git history, and production database on July 27, 2026. Add the external numbers around them:
+
+1. MARKET NUMBERS — US consumer debt total, average credit card balance and APR, how many Americans carry card debt, size/growth of the personal-finance and debt-payoff app market. Use 2025–2026 data and cite a source + year for every figure.
+2. BENCHMARK NUMBERS — what it typically costs to have an agency or dev team build a comparable fintech app (3 platforms, bank connections, payments, 40k lines of code); typical timelines; how a 1-year solo-founder build compares; subscription-app conversion and month-1 traction norms for bootstrapped apps.
+3. VALUE CONTEXT — what $2.99/mo implies at different subscriber counts (math is below), and what revenue multiples early fintech/subscription apps typically see. Give RANGES with stated assumptions, clearly labeled as speculative — never a single made-up valuation.
+4. STORY NUMBERS — combine everything into 5–8 punchy stat lines Tim can use in a pitch deck, social post, or investor conversation.
+
+RULES
+- The internal numbers below are ground truth. Do not change, round differently, or "correct" them.
+- Every external number needs a source and year. If you cannot source it, say "unsourced" instead of guessing.
+- If a comparison would flatter unfairly, say so. Tim wants honest ammo, not fluff.
+
+=== VERIFIED DIME TIME NUMBERS (July 27, 2026) ===
+
+TIMELINE
+- First commit: Aug 3, 2025 → today = 358 days (6 days shy of 1 year)
+- 126 active build days (commits on 1 of every ~3 days)
+- Hours not logged; at 3–4 h/session that's ~400–500 hours (founder estimate)
+
+CODE (hand-written source; build artifacts excluded)
+- 40,026 lines of TypeScript in 192 files (client 22,408 / server 15,687 / shared 1,931)
+- ~41,000 total lines incl. SEO guide pages + CSS
+- ~318 lines per active day; 79 automated tests; 13 test files
+
+ACTIVITY
+- 1,490 git commits; 549 in the last 30 days (37% of the year's output)
+- Busiest day: 91 commits (July 23, 2026)
+- 57 project tasks executed; 24 merged in a single day
+
+PRODUCT SURFACE
+- 31 app pages, 77 components, 54 API endpoints, 36 database tables
+- 3 platforms from one codebase: web, iOS, Android
+- 121 open-source libraries (100 runtime + 21 dev)
+
+RELEASES
+- iOS build 207 — LIVE 28 days (since June 29, 2026)
+- Android build 209 — in Google Play review now
+- 7 sitemap URLs, 4 SEO/AEO-optimized guides
+
+PRODUCTION TRACTION (live database, July 27, 2026)
+- 18 registered accounts (includes founder/test/Apple-review accounts)
+- 9 debts tracked, 2 bank accounts linked, 16 contact-form submissions
+- 0 round-ups / 0 payments processed SO FAR — accurate and intentional: the real-money rails are built and tested but gated behind a rollout allowlist that hasn't been opened yet. Do not frame this as failure; frame it as pre-launch of the money feature.
+
+REVENUE MATH ($2.99/month = $35.88/year per subscriber)
+- 100 subscribers = $299 MRR / $3,588 ARR
+- 1,000 subscribers = $2,990 MRR / $35,880 ARR
+- 10,000 subscribers = $29,900 MRR / $358,800 ARR
+
+CONTEXT
+- Solo non-technical founder building with Replit Agent (AI pair-engineer)
+- Fintech compliance posture: Dime Time is a financial technology platform, NOT a bank; payments are user-authorized only; no invented statistics may be attributed to Dime Time itself.
