@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { RoundUpPausedBanner } from "@/components/RoundUpPausedBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate, formatTime } from "@/lib/calculations";
 import { Coffee, Car, ShoppingBag, DollarSign, Plus, Receipt, History } from "lucide-react";
@@ -70,6 +71,8 @@ export default function Transactions() {
           Add Manual
         </Button>
       </div>
+
+      <RoundUpPausedBanner />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-fade-in-up">
