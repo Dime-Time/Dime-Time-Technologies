@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,38 @@ type AllocationMode = 'debt' | 'bitcoin' | 'both';
 interface BankSetupFlowProps {
   onComplete: () => void;
   onSkip?: () => void;
+}
+
+// Dedicated launcher, mounted fresh per link token (same pattern as
+// ImportDebtsModal). Guards open() with a ref because react-plaid-link's
+// `open` is not referentially stable — an unguarded [ready, open] effect can
+// stack a duplicate Link iframe (frozen inputs + Plaid's "embedded more than
+// once" warning). Mounting per token also avoids the stale-handler race where
+// an effect sees the new token with the previous instance's ready/open.
+function PlaidLinkAutoLauncher({
+  token,
+  onSuccess,
+  onExit,
+}: {
+  token: string;
+  onSuccess: (publicToken: string, metadata: any) => void;
+  onExit: () => void;
+}) {
+  const { open, ready } = usePlaidLink({
+    token,
+    onSuccess: (publicToken, metadata) => onSuccess(publicToken, metadata),
+    onExit: () => onExit(),
+  });
+
+  const openedRef = useRef(false);
+  useEffect(() => {
+    if (ready && !openedRef.current) {
+      openedRef.current = true;
+      open();
+    }
+  }, [ready, open]);
+
+  return null;
 }
 
 export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps) {
@@ -111,6 +143,7 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
 
   const handlePlaidSuccess = useCallback(
     async (publicToken: string, metadata: any) => {
+      setLinkToken(null);
       setIsLoading(true);
       try {
         const response = await fetch("/api/plaid/exchange-token", {
@@ -143,17 +176,11 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
     [toast, refetchAccounts]
   );
 
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: handlePlaidSuccess,
-    onExit: () => console.log("Plaid link exited"),
-  });
-
-  useEffect(() => {
-    if (linkToken && ready) {
-      open();
-    }
-  }, [linkToken, ready, open]);
+  const handlePlaidExit = useCallback(() => {
+    // Clear the token so the launcher unmounts; the next "Connect with Plaid"
+    // click mints a fresh token and a fresh launcher.
+    setLinkToken(null);
+  }, []);
 
   const steps = [
     { id: "connect", title: "Connect", subtitle: "Link your bank" },
@@ -573,6 +600,15 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
   };
 
   return (
+    <>
+      {linkToken && (
+        <PlaidLinkAutoLauncher
+          key={linkToken}
+          token={linkToken}
+          onSuccess={handlePlaidSuccess}
+          onExit={handlePlaidExit}
+        />
+      )}
     <Card className="max-w-2xl mx-auto shadow-card border-0 ring-1 ring-slate-100 bg-white">
       <CardHeader className="border-b border-slate-50 pb-6">
         <div className="flex justify-between mb-2 px-1 text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -628,5 +664,6 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

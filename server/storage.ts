@@ -1495,6 +1495,24 @@ export class MemStorage implements IStorage {
   }
 
   async createBankAccount(account: InsertBankAccount): Promise<BankAccount> {
+    // Upsert per (plaidItemId, accountId) — parity with DatabaseStorage's
+    // onConflictDoUpdate: re-linking the same bank refreshes token + metadata.
+    const existing = Array.from(this.bankAccounts.values()).find(
+      a => a.plaidItemId === account.plaidItemId && a.accountId === account.accountId,
+    );
+    if (existing) {
+      const updated: BankAccount = {
+        ...existing,
+        plaidAccessToken: account.plaidAccessToken,
+        accountName: account.accountName,
+        accountType: account.accountType,
+        institutionName: account.institutionName,
+        mask: account.mask ?? null,
+        isActive: account.isActive ?? true,
+      };
+      this.bankAccounts.set(existing.id, updated);
+      return updated;
+    }
     const id = randomUUID();
     const bankAccount: BankAccount = {
       ...account,
@@ -2239,7 +2257,22 @@ export class DatabaseStorage implements IStorage {
   async createBankAccount(account: InsertBankAccount): Promise<BankAccount> {
     const id = randomUUID();
     const encrypted = encryptToken(account.plaidAccessToken);
-    const [result] = await db.insert(bankAccounts).values({ ...account, id, plaidAccessToken: encrypted }).returning();
+    // Upsert per (plaidItemId, accountId): re-linking the same bank refreshes
+    // the access token and metadata instead of failing on the unique constraint.
+    const [result] = await db.insert(bankAccounts)
+      .values({ ...account, id, plaidAccessToken: encrypted })
+      .onConflictDoUpdate({
+        target: [bankAccounts.plaidItemId, bankAccounts.accountId],
+        set: {
+          plaidAccessToken: encrypted,
+          accountName: account.accountName,
+          accountType: account.accountType,
+          institutionName: account.institutionName,
+          mask: account.mask ?? null,
+          isActive: account.isActive ?? true,
+        },
+      })
+      .returning();
     return { ...result, plaidAccessToken: '[encrypted]' };
   }
 

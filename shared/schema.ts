@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb, uniqueIndex, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -165,7 +165,9 @@ export const cryptoPurchases = pgTable("crypto_purchases", {
 export const bankAccounts = pgTable("bank_accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  plaidItemId: text("plaid_item_id").notNull().unique(),
+  // One Plaid Item spans MANY accounts — uniqueness must be per (item, account),
+  // not per item, or linking any multi-account bank fails on the second insert.
+  plaidItemId: text("plaid_item_id").notNull(),
   plaidAccessToken: text("plaid_access_token").notNull(),
   accountId: text("account_id").notNull(),
   accountName: text("account_name").notNull(),
@@ -174,7 +176,9 @@ export const bankAccounts = pgTable("bank_accounts", {
   mask: text("mask"), // last 4 digits
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  unique("bank_accounts_item_account_unique").on(table.plaidItemId, table.accountId),
+]);
 
 export const userSessions = pgTable("user_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
