@@ -5,7 +5,11 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
-## Multi-bank connections (2026-07-28)
+## Multi-bank connections (2026-07-28) — LIVE-PROVEN
+Founder linked USAA alongside Chase in production the same day (Amex-via-USAA debt imported,
+both connections active, item-keyed). Lesson from the first failed attempt: a schema.ts index
+change is invisible to the Publish migration diff until `npm run db:push` applies it to the
+DEV database — always push dev before telling the user to publish a schema change.
 Debt-import connections are now one row per (user, provider, provider_item_id) — a user can
 link multiple banks (e.g. Chase AND USAA). Rules future work must respect:
 - Never upsert a debt_provider_connections row without providerItemId for the Plaid provider —
