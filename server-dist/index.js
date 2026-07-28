@@ -558,7 +558,10 @@ var debtProviderConnections = pgTable("debt_provider_connections", {
   lastSyncAt: timestamp("last_sync_at"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => [
-  uniqueIndex("debt_provider_conn_user_provider_uq").on(table.userId, table.provider)
+  uniqueIndex("debt_provider_conn_user_provider_item_uq").on(table.userId, table.provider, table.providerItemId),
+  // Postgres treats NULLs as distinct in unique indexes, so itemless rows
+  // (sandbox provider) need their own partial index to stay one-per-user.
+  uniqueIndex("debt_provider_conn_user_provider_nullitem_uq").on(table.userId, table.provider).where(sql`provider_item_id IS NULL`)
 ]);
 var debtImportAuditLogs = pgTable("debt_import_audit_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1521,11 +1524,15 @@ var DatabaseStorage = class _DatabaseStorage {
     return { imported, updated, debts: resultDebts };
   }
   async getDebtProviderConnection(userId, provider) {
-    const [conn] = await db.select().from(debtProviderConnections).where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider)));
-    return conn;
+    const conns = await this.getDebtProviderConnections(userId, provider);
+    return conns.find((c) => c.status === "active") ?? conns[0];
+  }
+  async getDebtProviderConnections(userId, provider) {
+    return db.select().from(debtProviderConnections).where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider))).orderBy(debtProviderConnections.createdAt);
   }
   async upsertDebtProviderConnection(data) {
-    const existing = await this.getDebtProviderConnection(data.userId, data.provider);
+    const all = await this.getDebtProviderConnections(data.userId, data.provider);
+    const existing = data.providerItemId ? all.find((c) => c.providerItemId === data.providerItemId) : all.find((c) => !c.providerItemId);
     if (existing) {
       const [row2] = await db.update(debtProviderConnections).set({
         providerItemId: data.providerItemId ?? existing.providerItemId,
@@ -5483,6 +5490,17 @@ var plaidLiabilityProvider = {
     },
     async completeLink(userId, publicToken, institutionName) {
       const { accessToken, itemId } = await plaidService.exchangePublicToken(publicToken);
+      const legacy = (await storage.getDebtProviderConnections(userId, PROVIDER)).filter(
+        (c) => !c.providerItemId && c.status === "active"
+      );
+      for (const row of legacy) {
+        await storage.upsertDebtProviderConnection({
+          userId,
+          provider: PROVIDER,
+          providerItemId: null,
+          status: "disconnected"
+        });
+      }
       await storage.upsertDebtProviderConnection({
         userId,
         provider: PROVIDER,
@@ -5497,38 +5515,75 @@ var plaidLiabilityProvider = {
     }
   },
   async initializeConnection(userId) {
-    const conn = await storage.getDebtProviderConnection(userId, PROVIDER);
-    if (!conn || conn.status !== "active" || !conn.accessTokenEnc) {
+    const conns = (await storage.getDebtProviderConnections(userId, PROVIDER)).filter(
+      (c) => c.status === "active" && c.accessTokenEnc
+    );
+    if (conns.length === 0) {
       throw new LinkRequiredError();
     }
-    return { status: "active", institutionName: conn.institutionName ?? void 0 };
+    const names = conns.map((c) => c.institutionName).filter(Boolean);
+    return { status: "active", institutionName: names.join(", ") || void 0 };
   },
+  /**
+   * Fetch liabilities across ALL active connections (a user may have linked
+   * multiple banks, e.g. Chase and USAA). Per-connection reauth failures don't
+   * sink the whole import: that connection is flipped to "error" and skipped;
+   * we only throw LinkRequiredError when NO connection produced data.
+   */
   async fetchLiabilities(userId) {
-    const conn = await storage.getDebtProviderConnection(userId, PROVIDER);
-    if (!conn || conn.status !== "active" || !conn.accessTokenEnc) {
+    const conns = (await storage.getDebtProviderConnections(userId, PROVIDER)).filter(
+      (c) => c.status === "active" && c.accessTokenEnc
+    );
+    if (conns.length === 0) {
       throw new LinkRequiredError();
     }
-    const accessToken = decryptToken(conn.accessTokenEnc);
-    let data;
-    try {
-      data = await plaidService.getLiabilities(accessToken);
-    } catch (err) {
-      if (isReauthRequired(err)) {
-        throw new LinkRequiredError(
-          "Your bank connection needs attention. Please reconnect to refresh your debts."
-        );
+    const out = [];
+    let reauthNeeded = 0;
+    for (const conn of conns) {
+      const accessToken = decryptToken(conn.accessTokenEnc);
+      try {
+        const data = await plaidService.getLiabilities(accessToken);
+        out.push(...mapLiabilities(data, conn.institutionName ?? "Linked account"));
+        await storage.upsertDebtProviderConnection({
+          userId,
+          provider: PROVIDER,
+          providerItemId: conn.providerItemId,
+          status: "active",
+          lastSyncAt: /* @__PURE__ */ new Date()
+        });
+      } catch (err) {
+        if (isReauthRequired(err)) {
+          reauthNeeded++;
+          await storage.upsertDebtProviderConnection({
+            userId,
+            provider: PROVIDER,
+            providerItemId: conn.providerItemId,
+            status: "error"
+          });
+          continue;
+        }
+        if (isLiabilitiesNotEnabled(err)) {
+          throw new LiabilitiesNotEnabledError();
+        }
+        throw err;
       }
-      if (isLiabilitiesNotEnabled(err)) {
-        throw new LiabilitiesNotEnabledError();
-      }
-      throw err;
     }
-    return mapLiabilities(data, conn.institutionName ?? "Linked account");
+    if (out.length === 0 && reauthNeeded > 0) {
+      throw new LinkRequiredError(
+        "Your bank connection needs attention. Please reconnect to refresh your debts."
+      );
+    }
+    return out;
   },
   async disconnect(userId) {
-    const conn = await storage.getDebtProviderConnection(userId, PROVIDER);
-    if (conn?.accessTokenEnc) {
-      await plaidService.removeItem(decryptToken(conn.accessTokenEnc));
+    const conns = await storage.getDebtProviderConnections(userId, PROVIDER);
+    for (const conn of conns) {
+      if (conn.accessTokenEnc) {
+        try {
+          await plaidService.removeItem(decryptToken(conn.accessTokenEnc));
+        } catch {
+        }
+      }
     }
   }
 };
@@ -5611,14 +5666,16 @@ async function runImport(userId, action, correlationId) {
   const provider = getLiabilityProvider();
   try {
     const conn = await provider.initializeConnection(userId);
-    await storage.upsertDebtProviderConnection({
-      userId,
-      provider: provider.name,
-      institutionName: conn.institutionName ?? null,
-      status: "active",
-      consentAt: /* @__PURE__ */ new Date(),
-      lastSyncAt: /* @__PURE__ */ new Date()
-    });
+    if (!provider.linkFlow) {
+      await storage.upsertDebtProviderConnection({
+        userId,
+        provider: provider.name,
+        institutionName: conn.institutionName ?? null,
+        status: "active",
+        consentAt: /* @__PURE__ */ new Date(),
+        lastSyncAt: /* @__PURE__ */ new Date()
+      });
+    }
     const liabilities = await provider.fetchLiabilities(userId);
     const result = await storage.importDebtsFromProvider(userId, provider.name, liabilities);
     await storage.createDebtImportAuditLog({
@@ -5830,19 +5887,30 @@ function registerDebtImportRoutes(app2) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     const provider = getLiabilityProvider();
-    const conn = await storage.getDebtProviderConnection(userId, provider.name);
-    const connected = !!conn && conn.status === "active";
+    const conns = await storage.getDebtProviderConnections(userId, provider.name);
+    const active = conns.filter((c) => c.status === "active");
+    const connected = active.length > 0;
+    const first = active[0] ?? conns[0];
     res.json({
       connected,
       // True when the provider needs a client-side connect step and the user
       // isn't connected yet — the client uses this to launch the Link flow.
       requiresLink: !!provider.linkFlow && !connected,
+      // True when the provider supports linking additional banks on top of the
+      // existing connection(s) — drives the "Add another bank" client action.
+      canLinkAnother: !!provider.linkFlow,
       // False while the upstream Liabilities entitlement is pending (e.g. Plaid
       // production before approval) — the client shows "coming soon" up front.
       liabilitiesAvailable: await isLiabilitiesAvailable(provider, userId),
       provider: provider.name,
-      institutionName: conn?.institutionName ?? null,
-      lastSyncAt: conn?.lastSyncAt ?? null
+      institutionName: first?.institutionName ?? null,
+      lastSyncAt: first?.lastSyncAt ?? null,
+      // One entry per linked bank so the client can list them.
+      institutions: conns.map((c) => ({
+        institutionName: c.institutionName,
+        status: c.status,
+        lastSyncAt: c.lastSyncAt
+      }))
     });
   });
   app2.delete("/api/debts/provider", disconnectLimiter, async (req, res) => {
