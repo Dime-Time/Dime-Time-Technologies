@@ -22,15 +22,23 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const response = await fetch(getApiUrl("/api/login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-        credentials: "include",
-      });
+      let response: Response;
+      try {
+        response = await fetch(getApiUrl("/api/login"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(credentials),
+          credentials: "include",
+        });
+      } catch {
+        throw new Error("network");
+      }
 
       if (!response.ok) {
-        throw new Error("Invalid credentials");
+        if (response.status === 429) {
+          throw new Error("rate_limited");
+        }
+        throw new Error("invalid_credentials");
       }
 
       return response.json();
@@ -44,8 +52,14 @@ export default function Login() {
       markReturningUser();
       setLocation("/dashboard");
     },
-    onError: () => {
-      setFormError("Invalid email or password. Please try again.");
+    onError: (error: Error) => {
+      if (error.message === "rate_limited") {
+        setFormError("Too many attempts — please wait a few minutes and try again.");
+      } else if (error.message === "network") {
+        setFormError("Connection problem — please check your internet and try again.");
+      } else {
+        setFormError("Invalid email or password. Please try again.");
+      }
     },
   });
 
