@@ -34,6 +34,12 @@ interface AuthContextType {
    * before the bootstrap arrives or when the user is unauthenticated.
    */
   flags: FlagMap;
+  /**
+   * True once the server-resolved `_flags` envelope has been applied.
+   * Until then, `flags` holds compile-time defaults — deep links and other
+   * flag-sensitive one-shot actions should wait for this to be true.
+   */
+  flagsLoaded: boolean;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => void;
@@ -58,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // server still sent a flag map). Seeded with compile-time defaults so
   // useFlag never returns undefined.
   const [flags, setFlags] = useState<FlagMap>(DEFAULT_FLAGS);
+  const [flagsLoaded, setFlagsLoaded] = useState(false);
 
   const {
     data: user,
@@ -119,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
           if (_flags && typeof _flags === "object") {
             setFlags({ ...DEFAULT_FLAGS, ..._flags });
+            setFlagsLoaded(true);
           }
           if ("user" in userOnly) {
             const u = (userOnly as { user: User }).user;
@@ -183,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: user || null, flags, isLoading, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user: user || null, flags, flagsLoaded, isLoading, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

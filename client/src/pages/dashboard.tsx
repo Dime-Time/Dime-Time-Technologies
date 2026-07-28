@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { RoundUpPausedBanner } from "@/components/RoundUpPausedBanner";
+import GetStartedCard from "@/components/GetStartedCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PaymentModal } from "@/components/payment-modal";
 import { formatCurrency, formatTime, formatDate, calculateDebtProgress } from "@/lib/calculations";
@@ -175,6 +176,8 @@ export default function Dashboard() {
       </header>
 
       <RoundUpPausedBanner />
+
+      <GetStartedCard />
 
       {/* 2. Today's/This Month Progress (Hero Card) */}
       <section className="mb-6">

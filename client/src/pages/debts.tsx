@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { StripeAchPayButton } from "@/components/StripeAchPayButton";
 import { useFlag } from "@/hooks/useFlag";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isDemoUser, applyDemoSummary } from "@/lib/demoData";
@@ -63,6 +64,23 @@ export default function Debts() {
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Debt | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const debtImportEnabled = useFlag("ENABLE_DEBT_IMPORT");
+  const { flagsLoaded } = useAuth();
+
+  // Deep link: /debts?import=1 (e.g. from the dashboard Get Started card)
+  // auto-opens the import dialog once, then strips the param from the URL.
+  // Waits for the real flag map from /api/user — the build-time default for
+  // ENABLE_DEBT_IMPORT is false, so acting early would open the wrong dialog.
+  useEffect(() => {
+    if (!flagsLoaded) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("import") === "1") {
+      if (debtImportEnabled) setShowImportModal(true);
+      else setShowAddDebtModal(true);
+      params.delete("import");
+      const qs = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+  }, [flagsLoaded, debtImportEnabled]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
