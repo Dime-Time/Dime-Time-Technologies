@@ -1,0 +1,91 @@
+FOUNDER TIME ESTIMATION REQUEST — DIME TIME (August 2025 → July 2026)
+
+I want you to independently estimate the TOTAL number of founder hours I have invested into Dime Time since the project began on August 3, 2025.
+
+Do NOT limit your estimate to coding or time spent inside Replit.
+
+Instead, estimate the total founder effort required to reach where Dime Time is today.
+
+Include ALL categories of work, including but not limited to:
+
+• Coding and software development
+• Prompt engineering with AI agents
+• Architecture and system design
+• Debugging and troubleshooting
+• Testing (manual and automated)
+• Regression testing
+• QA across web, iPhone, and Android
+• Feature planning and brainstorming
+• UI/UX revisions
+• Website development and updates
+• Database design and migrations
+• Backend and frontend development
+• API integrations
+• Stripe integration
+• Plaid integration
+• Mercury banking setup
+• Coinbase integration work
+• Authentication
+• Security implementation (AES-256, bcrypt, rate limiting, idempotency, etc.)
+• Production deployments
+• DevOps and infrastructure
+• Apple App Store preparation and submissions
+• Google Play preparation and submissions
+• Store screenshots and metadata
+• Production verification
+• Real-world money movement testing
+• Real-world bank testing
+• Company formation
+• Montana LLC creation
+• EIN registration
+• D-U-N-S registration
+• Business banking
+• Patent preparation and filing
+• Legal and compliance research
+• Financial planning
+• Meetings and emails with Stripe
+• Meetings and emails with Plaid
+• Meetings with other vendors
+• Business development
+• Marketing preparation
+• Investor materials
+• Pitch deck creation
+• University presentation preparation
+• Documentation
+• Product strategy
+• Competitive research
+• Fintech research
+• ACH research
+• Banking compliance research
+• KYC/AML research
+• Product management
+• Roadmap planning
+• Late-night brainstorming sessions
+• Everything else required to build and launch a fintech startup.
+
+Current state of the company:
+
+- Started August 3, 2025
+- Approximately 44,400 lines of code
+- Live on the Apple App Store
+- Live web application
+- Android currently under Google Play review
+- Real Stripe ACH money movement proven
+- Plaid integrated
+- Multi-bank debt import working
+- Production PostgreSQL database
+- Approximately 1,400+ git commits
+- Solo founder
+- Non-technical founder directing AI agents throughout development
+
+YOUR TASK
+
+Based on everything you know about this project—including the repository, commits, checkpoints, prompts, conversations, architecture, deployments, production testing, and business milestones—estimate:
+
+1. Hours spent in each major category.
+2. A conservative estimate.
+3. A most likely estimate.
+4. An aggressive upper-bound estimate.
+5. What number you believe is the most accurate and defensible if I were speaking with investors.
+
+Do not simply count coding time. Estimate the TOTAL founder investment required to build Dime Time into its current production state.
