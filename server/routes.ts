@@ -1876,7 +1876,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allTransactions = [];
       for (const account of bankAccounts) {
         try {
-          const transactions = await plaidService.getTransactions(account.plaidAccessToken, startDate, endDate);
+          const token = await storage.getPlaidAccessToken(account.id);
+          if (!token) continue;
+          const transactions = await plaidService.getTransactions(token, startDate, endDate);
           allTransactions.push(...transactions);
         } catch (error) {
           console.error(`Error fetching transactions for account ${account.accountId}:`, error);
@@ -1909,7 +1911,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allBalances = [];
       for (const account of bankAccounts) {
         try {
-          const balances = await plaidService.getBalance(account.plaidAccessToken);
+          const token = await storage.getPlaidAccessToken(account.id);
+          if (!token) continue;
+          const balances = await plaidService.getBalance(token);
           allBalances.push(...balances);
         } catch (error) {
           console.error(`Error fetching balance for account ${account.accountId}:`, error);

@@ -1853,7 +1853,10 @@ export class MemStorage implements IStorage {
   async getRecentStripeWebhookEvents(_limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>> { return []; }
   async getTransferByStripePaymentIntentId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getTransferByStripeChargeId(_id: string): Promise<Transfer | undefined> { return undefined; }
-  async getPlaidAccessToken(_bankAccountId: string): Promise<string | undefined> { return undefined; }
+  async getPlaidAccessToken(bankAccountId: string): Promise<string | undefined> {
+    // MemStorage keeps tokens in plaintext — return the stored value directly.
+    return this.bankAccounts.get(bankAccountId)?.plaidAccessToken;
+  }
   async createStripeAccount(_data: any): Promise<StripeAccount> { throw new Error('MemStorage does not support Stripe accounts'); }
   async getStripeAccountByFcAccountId(_fcAccountId: string): Promise<StripeAccount | undefined> { return undefined; }
   async updateStripeAccountLink(_id: string, _data: any): Promise<StripeAccount> { throw new Error('MemStorage does not support Stripe accounts'); }

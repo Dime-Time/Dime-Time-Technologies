@@ -16,6 +16,7 @@
 - [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic before declaring done.
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
+- [Masked Plaid token contract](masked-plaid-tokens.md) — listed bank accounts carry '[encrypted]' placeholder tokens; live Plaid calls must use getPlaidAccessToken(id) or they silently fail.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
 - [Auto-sweep removed](auto-sweep-removed.md) — dormant sweep engine deliberately deleted 2026-07-26; flag+schema vestigial; live round-up system is separate, untouched.
 - [Task-agent merge verification](task-merge-verification.md) — agents snapshot current main (dup tasks merge as no-ops); after every Apply: stat + sentinel greps + suite + restart + live probe.
