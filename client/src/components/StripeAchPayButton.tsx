@@ -135,7 +135,7 @@ export function StripeAchPayButton({ debt }: { debt: Debt }) {
       <Button
         type="button"
         variant="outline"
-        className="flex-1"
+        className="w-full sm:flex-1 sm:w-auto min-w-0 whitespace-normal h-auto py-2"
         disabled={!account || payMutation.isPending}
         onClick={() => setOpen(true)}
         data-testid={`button-stripe-pay-${debt.id}`}

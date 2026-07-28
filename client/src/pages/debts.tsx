@@ -496,7 +496,7 @@ export default function Debts() {
                   <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
                     {!paidOff && (
                       <Button 
-                        className="bg-dime-purple hover:bg-dime-purple/90 text-white font-semibold shadow-sm press-scale px-6"
+                        className="w-full sm:w-auto bg-dime-purple hover:bg-dime-purple/90 text-white font-semibold shadow-sm press-scale px-6"
                         onClick={() => openPaymentModal(debt.id)}
                         data-testid={`button-make-payment-${debt.id}`}
                       >

@@ -115,7 +115,7 @@ export function AcceleratedPayment({ debt, className = "" }: AcceleratedPaymentP
                   </div>
                   {isAffordable && (
                     <div className="text-xs text-muted-foreground">
-                      Save ~{monthsReduced || 1} month{monthsReduced !== 1 ? 's' : ''}
+                      Save ~{Math.max(1, monthsReduced)} month{Math.max(1, monthsReduced) !== 1 ? 's' : ''}
                     </div>
                   )}
                   {!isAffordable && (
