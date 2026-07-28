@@ -166,6 +166,39 @@ class PlaidService {
     }
   }
 
+  /**
+   * Link token for Plaid "update mode" — re-authenticates an EXISTING item
+   * whose access token stopped working (ITEM_LOGIN_REQUIRED etc.). Passing
+   * access_token (and no products) tells Plaid to repair the item instead of
+   * creating a new one.
+   */
+  async createUpdateLinkToken(userId: string, accessToken: string) {
+    if (!this.isConfigured) {
+      throw new Error(plaidNotConfiguredMessage());
+    }
+
+    try {
+      const linkTokenRequest: any = {
+        user: { client_user_id: userId },
+        client_name: 'Dime Time',
+        country_codes: [CountryCode.Us],
+        language: 'en',
+        access_token: accessToken,
+      };
+
+      const redirectUri = resolvePlaidRedirectUri();
+      if (redirectUri) {
+        linkTokenRequest.redirect_uri = redirectUri;
+      }
+
+      const response = await this.getClient().linkTokenCreate(linkTokenRequest);
+      return response.data.link_token;
+    } catch (error) {
+      console.error('Error creating update link token:', this.redactPlaidError(error));
+      throw error;
+    }
+  }
+
   async exchangePublicToken(publicToken: string) {
     if (!this.isConfigured) {
       throw new Error('Plaid service not configured');

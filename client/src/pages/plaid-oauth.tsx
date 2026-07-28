@@ -64,6 +64,14 @@ export default function PlaidOauthPage() {
             queryClient.invalidateQueries({ queryKey: ["/api/debts"] }),
             queryClient.invalidateQueries({ queryKey: ["/api/debts/import/status"] }),
           ]);
+        } else if (state?.flow === "relink") {
+          // Update mode: the existing access token was repaired in place —
+          // there is no public token to exchange. Just refetch bank data.
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["/api/plaid/accounts"] }),
+            queryClient.invalidateQueries({ queryKey: ["/api/plaid/balances"] }),
+            queryClient.invalidateQueries({ queryKey: ["/api/plaid/transactions"] }),
+          ]);
         } else {
           await apiRequest("POST", "/api/plaid/exchange-token", { publicToken });
           await Promise.all([
@@ -176,12 +184,18 @@ export default function PlaidOauthPage() {
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-              {state?.flow === "debt_import" ? "Debts imported" : "Bank connected"}
+              {state?.flow === "debt_import"
+                ? "Debts imported"
+                : state?.flow === "relink"
+                  ? "Bank reconnected"
+                  : "Bank connected"}
             </h1>
             <p className="text-slate-600 mt-2 font-medium">
               {state?.flow === "debt_import"
                 ? "Your debts were imported successfully."
-                : "Your bank account is now linked to Dime Time."}
+                : state?.flow === "relink"
+                  ? "Your bank connection has been restored."
+                  : "Your bank account is now linked to Dime Time."}
             </p>
             <Button
               className="w-full mt-6 bg-dime-purple hover:bg-dime-purple/90 text-white font-bold h-12 text-lg rounded-xl"

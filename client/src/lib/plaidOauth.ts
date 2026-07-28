@@ -18,7 +18,7 @@ const STORAGE_KEY = "dimetime_plaid_oauth";
 /** Ignore stored state older than 30 minutes — Link sessions won't resume cleanly. */
 const MAX_AGE_MS = 30 * 60 * 1000;
 
-export type PlaidOauthFlow = "bank" | "debt_import";
+export type PlaidOauthFlow = "bank" | "debt_import" | "relink";
 
 export interface PlaidOauthState {
   linkToken: string;
@@ -42,7 +42,7 @@ export function loadPlaidOauthState(): PlaidOauthState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PlaidOauthState;
     if (!parsed || typeof parsed.linkToken !== "string" || !parsed.linkToken) return null;
-    if (parsed.flow !== "bank" && parsed.flow !== "debt_import") return null;
+    if (parsed.flow !== "bank" && parsed.flow !== "debt_import" && parsed.flow !== "relink") return null;
     if (typeof parsed.ts !== "number" || Date.now() - parsed.ts > MAX_AGE_MS) {
       clearPlaidOauthState();
       return null;

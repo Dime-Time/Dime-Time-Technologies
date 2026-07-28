@@ -1853,6 +1853,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * Per-account Plaid failure surfaced to the client instead of being
+   * swallowed. `needsRelink` means the stored token can no longer reach the
+   * bank and the fix is Plaid update mode (Reconnect), not a retry.
+   */
+  interface PlaidAccountError {
+    bankAccountId: string;
+    accountId: string;
+    errorCode: string;
+    needsRelink: boolean;
+  }
+
+  const PLAID_RELINK_ERROR_CODES = new Set([
+    'ITEM_LOGIN_REQUIRED',
+    'PENDING_EXPIRATION',
+    'PENDING_DISCONNECT',
+    'ITEM_NOT_FOUND',
+    'ACCESS_NOT_GRANTED',
+    'INVALID_ACCESS_TOKEN',
+  ]);
+
+  function toPlaidAccountError(account: { id: string; accountId: string }, error: unknown): PlaidAccountError {
+    const errorCode: string =
+      (error as any)?.response?.data?.error_code || 'UNKNOWN_ERROR';
+    return {
+      bankAccountId: account.id,
+      accountId: account.accountId,
+      errorCode,
+      needsRelink: PLAID_RELINK_ERROR_CODES.has(errorCode),
+    };
+  }
+
+  // Plaid update mode: repairs an existing item whose login stopped working.
+  app.post("/api/plaid/create-update-link-token", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const { bankAccountId } = req.body || {};
+      if (!bankAccountId || typeof bankAccountId !== 'string') {
+        return res.status(400).json({ message: "bankAccountId is required" });
+      }
+      if (!plaidService.isServiceConfigured()) {
+        return res.status(503).json({ message: "Plaid service not configured" });
+      }
+
+      // Ownership check: the account must belong to the requesting user.
+      const bankAccounts = await storage.getBankAccountsByUserId(userId);
+      const account = bankAccounts.find((a) => a.id === bankAccountId);
+      if (!account) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+
+      const accessToken = await storage.getPlaidAccessToken(account.id);
+      if (!accessToken) {
+        return res.status(409).json({
+          message: "No usable bank credentials for this account. Please remove it and connect the bank again.",
+        });
+      }
+
+      const linkToken = await plaidService.createUpdateLinkToken(userId, accessToken);
+      res.json({ linkToken });
+    } catch (error) {
+      console.error('Error creating Plaid update link token:', error);
+      res.status(500).json({ message: "Failed to create update link token" });
+    }
+  });
+
   app.get("/api/plaid/transactions", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
@@ -1862,7 +1931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bankAccounts = await storage.getBankAccountsByUserId(userId);
       
       if (bankAccounts.length === 0) {
-        return res.json([]);
+        return res.json({ transactions: [], accountErrors: [] });
       }
 
       if (!plaidService.isServiceConfigured()) {
@@ -1874,18 +1943,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
       const allTransactions = [];
+      const accountErrors: PlaidAccountError[] = [];
       for (const account of bankAccounts) {
         try {
           const token = await storage.getPlaidAccessToken(account.id);
-          if (!token) continue;
+          if (!token) {
+            accountErrors.push({
+              bankAccountId: account.id,
+              accountId: account.accountId,
+              errorCode: 'TOKEN_MISSING',
+              needsRelink: true,
+            });
+            continue;
+          }
           const transactions = await plaidService.getTransactions(token, startDate, endDate);
           allTransactions.push(...transactions);
         } catch (error) {
           console.error(`Error fetching transactions for account ${account.accountId}:`, error);
+          accountErrors.push(toPlaidAccountError(account, error));
         }
       }
 
-      res.json(allTransactions);
+      res.json({ transactions: allTransactions, accountErrors });
     } catch (error) {
       console.error('Error fetching Plaid transactions:', error);
       res.status(500).json({ message: "Failed to fetch transactions" });
@@ -1901,7 +1980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bankAccounts = await storage.getBankAccountsByUserId(userId);
       
       if (bankAccounts.length === 0) {
-        return res.json([]);
+        return res.json({ balances: [], accountErrors: [] });
       }
 
       if (!plaidService.isServiceConfigured()) {
@@ -1909,18 +1988,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBalances = [];
+      const accountErrors: PlaidAccountError[] = [];
       for (const account of bankAccounts) {
         try {
           const token = await storage.getPlaidAccessToken(account.id);
-          if (!token) continue;
+          if (!token) {
+            accountErrors.push({
+              bankAccountId: account.id,
+              accountId: account.accountId,
+              errorCode: 'TOKEN_MISSING',
+              needsRelink: true,
+            });
+            continue;
+          }
           const balances = await plaidService.getBalance(token);
           allBalances.push(...balances);
         } catch (error) {
           console.error(`Error fetching balance for account ${account.accountId}:`, error);
+          accountErrors.push(toPlaidAccountError(account, error));
         }
       }
 
-      res.json(allBalances);
+      res.json({ balances: allBalances, accountErrors });
     } catch (error) {
       console.error('Error fetching account balances:', error);
       res.status(500).json({ message: "Failed to fetch balances" });

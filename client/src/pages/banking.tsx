@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PlaidLink } from "@/components/PlaidLink";
+import { PlaidReconnectButton } from "@/components/PlaidReconnectButton";
+import { AlertTriangle } from "lucide-react";
 import { StripeConnectButton } from "@/components/StripeConnectButton";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, DollarSign, CreditCard, Building2, ArrowUpRight, ArrowDownRight, ShieldCheck, Zap } from "lucide-react";
@@ -17,13 +19,21 @@ export default function Banking() {
     queryKey: ['/api/plaid/accounts'],
   });
 
-  const { data: balances = [], isLoading: balancesLoading } = useQuery<any[]>({
+  const { data: balancesData, isLoading: balancesLoading } = useQuery<any>({
     queryKey: ['/api/plaid/balances'],
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery<any[]>({
+  const { data: transactionsData, isLoading: transactionsLoading } = useQuery<any>({
     queryKey: ['/api/plaid/transactions'],
   });
+
+  const balances: any[] = balancesData?.balances ?? [];
+  const transactions: any[] = transactionsData?.transactions ?? [];
+  // Per-account Plaid failures reported by the server (instead of silent $N/A).
+  const accountErrors: any[] = [
+    ...(balancesData?.accountErrors ?? []),
+    ...(transactionsData?.accountErrors ?? []),
+  ];
 
   const { data: mercuryStatus } = useQuery<any>({
     queryKey: ['/api/mercury/status'],
@@ -222,6 +232,8 @@ export default function Banking() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {bankAccounts.map((account: any) => {
               const accountBalance = balances?.find((bal: any) => bal.account_id === account.accountId);
+              const accountError = accountErrors.find((err: any) => err.bankAccountId === account.id);
+              const needsRelink = !!accountError?.needsRelink;
               return (
                 <Card key={account.id} data-testid={`account-card-${account.id}`} className="shadow-card hover:shadow-card-hover transition-shadow duration-200">
                   <CardHeader className="pb-3 border-b border-slate-50">
@@ -238,12 +250,27 @@ export default function Banking() {
                   </CardHeader>
                   <CardContent className="pt-4">
                     <div className="space-y-3">
-                      <div>
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Current Balance</span>
-                        <span className="text-2xl font-bold text-slate-900 tabular-nums block" data-testid={`balance-${account.id}`}>
-                          ${accountBalance?.balances?.current?.toFixed(2) || 'N/A'}
-                        </span>
-                      </div>
+                      {needsRelink ? (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3" data-testid={`relink-prompt-${account.id}`}>
+                          <div className="flex items-start gap-2 mb-3">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                            <p className="text-sm font-medium text-amber-800">
+                              This bank connection needs attention. Reconnect to keep your balances and round-ups up to date.
+                            </p>
+                          </div>
+                          <PlaidReconnectButton
+                            bankAccountId={account.id}
+                            onReconnected={handlePlaidSuccess}
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Current Balance</span>
+                          <span className="text-2xl font-bold text-slate-900 tabular-nums block" data-testid={`balance-${account.id}`}>
+                            ${accountBalance?.balances?.current?.toFixed(2) || 'N/A'}
+                          </span>
+                        </div>
+                      )}
                       {accountBalance?.balances?.available && (
                         <div className="flex justify-between items-center bg-slate-50 rounded-md p-2 px-3">
                           <span className="text-xs font-medium text-slate-600">Available</span>
