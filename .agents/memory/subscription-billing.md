@@ -36,6 +36,19 @@ the round-up gates (transaction split, round-up-settings enable, apply-round-ups
 are no-ops until launch. Client paywall UI is likewise driven by `_flags` +
 `/api/subscription` `entitled` — flag OFF renders nothing.
 
+## Launch verification (2026-07-28) — CLOSED
+Founder's first live subscribe verified in prod (read-only): consent row written
+before the Stripe call, subscription row `active` via upsertSubscription, and
+`customer.subscription.created` webhook delivered + deduped in
+`stripe_webhook_events` (signature-verified, no 400) — proving live-dashboard
+subscription-event registration works. `invoice.paid` won't arrive until the
+first ACH debit settles (2–4 business days) — its absence right after subscribe
+is NOT a failure. Gate verified in dev: entitled user access=true, non-subscriber
+=false, full status matrix per subscriptionPlans. One pre-launch user has
+round-ups enabled with no subscription → hits the silent-skip path (transaction
+recorded, split skipped); Settings shows the "Unlock round-up automation"
+banner, but nothing surfaces per-transaction.
+
 ## Founder-run steps before enabling in production (agent never does these)
 1. In BOTH Stripe dashboards (test + live), add these events to the existing
    webhook endpoint: `customer.subscription.created`, `customer.subscription.updated`,
