@@ -1,0 +1,399 @@
+DIME TIME — ALPACA EMBEDDED CRYPTO CONCEPT
+Date: July 28, 2026
+Purpose: Product and technical briefing for Replit
+Status: Discovery only — do not implement yet
+
+==================================================
+EXECUTIVE SUMMARY
+==================================================
+
+Dime Time should continue exploring Alpaca Broker API as a possible
+long-term provider for real crypto round-ups.
+
+The proposed experience:
+
+- Dime Time calculates purchase round-ups
+- Users choose an optional crypto allocation
+- Crypto portions accumulate until reaching a purchase threshold
+- Dime Time instructs Alpaca to make the purchase
+- Alpaca handles customer accounts, execution and custody
+- The user owns the cryptocurrency
+- Dime Time displays the account and purchase information through Alpaca APIs
+
+This could create an Acorns-style embedded experience where users buy
+crypto inside Dime Time without needing an existing Coinbase account.
+
+IMPORTANT:
+
+This is a product concept under investigation. No real Alpaca integration
+should be implemented until Alpaca confirms pricing, funding architecture,
+compliance responsibilities and startup eligibility.
+
+==================================================
+EXPLAINED SIMPLY
+==================================================
+
+Example:
+
+1. The user buys coffee for $4.25.
+2. Dime Time rounds the purchase up to $5.00.
+3. The total round-up is $0.75.
+4. The user selected 20% of round-ups for crypto.
+5. Dime Time allocates:
+   - $0.60 toward debt
+   - $0.15 toward crypto
+6. Dime Time continues tracking future crypto allocations.
+7. When the crypto allocation reaches a threshold—such as $5—Dime Time
+   sends Alpaca a purchase instruction.
+8. Alpaca deducts its disclosed transaction fee or spread.
+9. Alpaca purchases the selected fractional cryptocurrency.
+10. Alpaca holds the crypto in an individually owned custodial account
+    for that user.
+11. Dime Time receives the transaction details through Alpaca's APIs.
+12. Dime Time displays the user's balance and purchase history.
+
+Example purchase:
+
+- Accumulated crypto allocation: $5.00
+- Hypothetical Alpaca fee: $0.05
+- Crypto purchased: $4.95
+
+The actual fees remain unknown and must be confirmed with Alpaca.
+
+==================================================
+RESPONSIBILITY DIVISION
+==================================================
+
+DIME TIME WOULD:
+
+- Track eligible transactions
+- Calculate purchase round-ups
+- Apply the user's debt-versus-crypto allocation
+- Accumulate pending crypto allocations in its ledger
+- Enforce thresholds and purchase limits
+- Send authorized purchase instructions
+- Display balances, activity and purchase history
+- Provide pause and allocation controls
+- Maintain internal audit and reconciliation records
+- Prevent duplicate purchase instructions
+- Keep debt payoff as the primary product
+
+ALPACA WOULD IDEALLY:
+
+- Create individually owned customer accounts
+- Perform customer onboarding and KYC
+- Perform sanctions and compliance screening
+- Receive or pull the customer's crypto funding
+- Execute fractional cryptocurrency purchases
+- Custody the purchased cryptocurrency
+- Maintain official positions and account records
+- Provide transaction and order information
+- Provide trade confirmations
+- Maintain tax and cost-basis records
+- Supply required customer documents
+
+The exact division of responsibility must be confirmed in writing.
+
+THE USER WOULD:
+
+- Choose whether to enable crypto
+- Choose the supported cryptocurrency
+- Choose the allocation percentage
+- Approve the standing purchase instructions
+- Own the purchased cryptocurrency
+- Be able to pause or disable future crypto purchases
+
+==================================================
+IMPORTANT CUSTODY DISTINCTION
+==================================================
+
+Dime Time should calculate and track the round-ups, but it should not
+physically hold the money designated for crypto.
+
+Dime Time should never:
+
+- Pool customer crypto money
+- Receive crypto funds into a company account
+- Purchase crypto through the founder's Coinbase account
+- Hold customer cryptocurrency
+- Store manual exchange API keys supplied by users
+- Control a shared customer wallet
+- Route Stripe ACH proceeds into crypto without provider approval
+
+The preferred architecture:
+
+- Money flows directly into the user's individually owned Alpaca account
+- Alpaca executes the purchase
+- Alpaca Crypto holds the assets for the individual user
+- Dime Time acts as the software interface and instruction layer
+
+The account may look like a wallet inside Dime Time, but Alpaca would
+maintain the official account and custody behind the scenes.
+
+==================================================
+FUNDING QUESTION — NOT YET RESOLVED
+==================================================
+
+The most important unresolved question is how the $5 reaches Alpaca.
+
+Possible model A:
+
+- The user maintains a cash balance in their Alpaca account
+- Dime Time triggers a purchase using the available balance
+
+Possible model B:
+
+- Alpaca pulls the accumulated purchase amount directly from the user's
+  linked bank account when the threshold is reached
+
+Possible model C:
+
+- The user periodically funds their Alpaca account manually
+
+Dime Time should prefer Model B if it can be implemented legally,
+economically and with proper standing authorization.
+
+Do not assume Dime Time's existing Plaid or Stripe bank connection can
+be reused. Alpaca may require users to link or verify their bank again.
+
+==================================================
+SUBSCRIPTION CONCEPT
+==================================================
+
+Possible customer price:
+
+Dime Time Plus — $3.99/month
+
+The subscription could include:
+
+- Automated debt round-ups
+- Optional crypto allocation
+- Crypto threshold controls
+- Purchase tracking
+- Portfolio display
+- Integrated reporting and insights
+
+Important pricing distinction:
+
+- The $3.99 subscription pays Dime Time for its software and automation
+- Alpaca's trading spread, funding fee or transaction charge is separate
+- All fees must be clearly disclosed
+- Dime Time must determine whether to pass through or absorb provider fees
+
+Do not lock the $3.99 price until Alpaca provides:
+
+- Monthly platform minimum
+- Setup fee
+- Per-account fee
+- KYC charges
+- ACH funding fees
+- Trading fees or spreads
+- Custody fees
+- Minimum supported order size
+
+If provider costs are high, $3.99 may not be profitable at low volume.
+
+==================================================
+WHY THIS MAY BE WORTH PURSUING
+==================================================
+
+- It preserves the original crypto-round-up product vision
+- Users would not need an existing Coinbase account
+- Users could remain inside the Dime Time experience
+- Dime Time would not hold cryptocurrency
+- Alpaca could provide regulated infrastructure
+- Alpaca openly supports fintech startups and digital wallets
+- Alpaca offers Broker API and development resources
+- Alpaca already powers consumer financial applications
+- Alpaca's Director of Sales responded quickly
+- Alpaca appears more attainable than Zero Hash
+
+Zero Hash indicated that its platform starts around $25,000 per month and
+targets approximately $10–15 million in monthly volume. That is not
+appropriate for Dime Time's current stage.
+
+==================================================
+CURRENT ALPACA STATUS
+==================================================
+
+- Dime Time submitted the official Alpaca Broker API contact form
+- Alpaca's Director of Sales requested an introductory call
+- Alpaca is now a warm lead
+- No pricing has been received
+- No technical architecture has been approved
+- No commercial agreement has been signed
+- No production implementation has started
+
+Relevant product:
+
+https://alpaca.markets/broker
+
+==================================================
+PRIMARY QUESTION FOR ALPACA
+==================================================
+
+“Can Alpaca support individually owned, crypto-only customer accounts
+funded by accumulated round-ups, beginning with a small controlled US
+pilot?”
+
+==================================================
+QUESTIONS FOR THE INTRODUCTORY CALL
+==================================================
+
+COMMERCIAL:
+
+1. Does Alpaca accept early-stage or pre-revenue fintechs?
+2. What is the implementation or setup fee?
+3. What is the monthly platform minimum?
+4. Is there a minimum trading-volume requirement?
+5. Can Dime Time begin with a 100-user pilot?
+6. Can minimum fees be waived during the pilot?
+7. Is sandbox access free?
+8. What fees apply per customer account?
+9. What fees apply per KYC attempt?
+10. Are rejected or abandoned KYC applications charged?
+11. What crypto spreads or commissions apply?
+12. Can Dime Time receive a disclosed revenue share?
+13. Is a long-term contract or exclusivity required?
+
+MICRO-PURCHASES:
+
+14. What is the smallest supported crypto order?
+15. Are $1 or $5 purchases supported?
+16. Is there a fixed minimum fee per transaction?
+17. Can round-ups accumulate into one weekly purchase?
+18. Can purchases execute automatically under standing instructions?
+19. Does the user need to confirm every purchase?
+20. Can users establish weekly and monthly limits?
+
+FUNDING:
+
+21. Can Alpaca directly pull money from a user's linked bank account?
+22. Does Alpaca support ACH funding for crypto-only accounts?
+23. Can Dime Time's existing Plaid or Stripe connection be reused?
+24. Must users link their bank again through Alpaca?
+25. Who legally receives the customer funds?
+26. Who originates the ACH debit?
+27. Who handles ACH returns and insufficient funds?
+28. Who absorbs fraud losses and negative balances?
+29. How long must funds settle before a purchase can occur?
+
+COMPLIANCE:
+
+30. Who performs KYC?
+31. Who performs OFAC and sanctions screening?
+32. Who monitors transactions?
+33. Who files required regulatory reports?
+34. Who holds the cryptocurrency?
+35. Who provides trade confirmations?
+36. Who maintains cost-basis records?
+37. Who issues Form 1099-DA or other tax documents?
+38. What licenses or registrations must Dime Time hold?
+39. What customer disclosures must Dime Time display?
+40. Does Alpaca review and approve the crypto user interface?
+
+TECHNICAL:
+
+41. Does Broker API support crypto-only accounts?
+42. Which APIs create and fund customer accounts?
+43. Which APIs submit crypto orders?
+44. Are webhooks provided for KYC, funding, orders, fills and failures?
+45. What idempotency protections exist?
+46. What is the sandbox-to-production certification process?
+47. What integration engineering support is provided?
+48. What is the expected implementation timeline?
+
+CUSTOMER EXPERIENCE:
+
+49. Can Dime Time retain its branding?
+50. Is Alpaca co-branding required?
+51. Can onboarding happen inside Dime Time?
+52. Does the user leave Dime Time for a hosted Alpaca screen?
+53. Who provides first-line customer support?
+54. Can users sell or withdraw their crypto?
+55. Can users transfer crypto to an external wallet?
+56. What happens to customer assets if Dime Time leaves Alpaca?
+
+==================================================
+GO / NO-GO CRITERIA
+==================================================
+
+PROCEED IF:
+
+- Alpaca supports individually owned crypto accounts
+- Alpaca accepts Dime Time's current size
+- A small controlled pilot is available
+- Monthly minimums are affordable
+- $5 purchases remain economical
+- Alpaca handles execution and custody
+- Funding does not pass through Dime Time
+- Compliance responsibilities are clearly divided
+- No unaffordable independent licensing is required
+- Users can authorize recurring purchases
+- Integration does not delay the core debt-payoff launch
+
+POSTPONE OR DECLINE IF:
+
+- Alpaca requires substantial minimum volume
+- Monthly fees are unaffordable
+- Fixed fees consume too much of each micro-purchase
+- Dime Time must hold or pool customer money
+- Dime Time must custody crypto
+- Users must manually fund every purchase
+- Dime Time inherits significant licensing obligations
+- A long exclusive contract is required
+- Integration would distract from acquiring and retaining debt users
+
+==================================================
+REPLIT INSTRUCTIONS
+==================================================
+
+DO NOT IMPLEMENT THIS YET.
+
+Until Alpaca supplies its actual API contract and approves the model:
+
+- Keep Crypto labeled Preview
+- Keep all crypto purchases simulated
+- Keep all real-crypto execution disabled
+- Do not add Alpaca production credentials
+- Do not build provider-specific database tables
+- Do not build speculative webhook handlers
+- Do not change the existing Stripe ACH flow
+- Do not route customer funds toward crypto
+- Do not advertise an Alpaca partnership
+- Do not add the Alpaca logo
+- Do not change legal disclosures based on assumptions
+
+Safe work can begin only after the founder receives:
+
+- Commercial terms
+- Approved funding architecture
+- Compliance responsibility matrix
+- Supported transaction minimums
+- Sandbox documentation
+- Written approval for a pilot
+
+==================================================
+RECOMMENDATION
+==================================================
+
+Pursue the Alpaca introductory call.
+
+The goal is discovery, not immediate implementation or commitment.
+
+Request:
+
+- Complete preliminary pricing
+- Startup eligibility confirmation
+- Crypto-only account confirmation
+- ACH funding explanation
+- Compliance responsibility breakdown
+- Free sandbox access
+- A 100-user controlled pilot
+- Estimated timeline from sandbox to production
+
+Alpaca is currently Dime Time's most promising embedded-crypto lead, but
+the decision depends on economics, funding flow and regulatory allocation.
+
+The feature remains a simulated Preview until all requirements are known,
+a commercial agreement is signed and the integration is fully tested.
