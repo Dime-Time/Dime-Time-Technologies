@@ -62,6 +62,7 @@ const NAV_LINKS = [
   { label: "Home", href: "#home" },
   { label: "About", href: "#about" },
   { label: "How It Works", href: "#how-it-works" },
+  { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
   { label: "Contact", href: "#contact" },
 ];
@@ -85,7 +86,7 @@ const FAQS = [
   },
   {
     q: "Does Dime Time cost anything to use?",
-    a: "Creating an account is free. Some advanced features may have a small subscription fee, which will always be clearly disclosed before you sign up.",
+    a: "Creating an account, tracking your debts, and seeing payoff projections are free. Automatic round-up collection and debt payments are part of the Dime Time Debt plan at $2.99/month — cancel anytime.",
   },
   {
     q: "How do I cancel or delete my account?",
@@ -494,6 +495,100 @@ export default function LandingPage() {
                 <h3 className="text-sm font-semibold text-slate-900">{label}</h3>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ─────────────────────────────────────────────────────── */}
+      <section
+        id="pricing"
+        className="px-4 sm:px-6 lg:px-8 py-20 bg-slate-50 border-y border-slate-200"
+      >
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
+              Simple Pricing
+            </h2>
+            <p className="mt-4 text-slate-600">
+              Start free. Upgrade when you're ready to put your debt payoff on
+              autopilot.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Free plan */}
+            <div
+              className="bg-white rounded-2xl border border-slate-200 p-8 flex flex-col"
+              data-testid="card-pricing-free"
+            >
+              <h3 className="text-lg font-semibold text-slate-900">Free</h3>
+              <p className="mt-2 text-4xl font-bold text-slate-900">
+                $0
+                <span className="text-base font-medium text-slate-500">
+                  /month
+                </span>
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-slate-600 flex-1">
+                {[
+                  "Track all your debts in one place",
+                  "Payoff projections & progress insights",
+                  "Secure bank connections",
+                  "Automatic debt import from your bank",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-dime-purple mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8">
+                <GetStartedCTA
+                  className="w-full border border-dime-purple bg-white text-dime-purple hover:bg-dime-purple/5"
+                  testId="button-pricing-free"
+                />
+              </div>
+            </div>
+
+            {/* Dime Time Debt plan */}
+            <div
+              className="bg-white rounded-2xl border-2 border-dime-purple p-8 flex flex-col relative"
+              data-testid="card-pricing-debt"
+            >
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-dime-purple text-white text-xs font-semibold px-3 py-1 rounded-full">
+                Most Popular
+              </span>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Dime Time Debt
+              </h3>
+              <p className="mt-2 text-4xl font-bold text-slate-900">
+                $2.99
+                <span className="text-base font-medium text-slate-500">
+                  /month
+                </span>
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-slate-600 flex-1">
+                {[
+                  "Everything in Free",
+                  "Automatic round-up collection on every purchase",
+                  "Round-up multipliers (2x, 3x) to accelerate payoff",
+                  "Round-ups applied automatically to the debts you choose",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <Zap className="w-4 h-4 text-dime-purple mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8">
+                <GetStartedCTA
+                  className="w-full bg-dime-purple text-white hover:bg-dime-purple/90"
+                  testId="button-pricing-debt"
+                />
+                <p className="mt-3 text-xs text-slate-500 text-center">
+                  Billed via bank transfer (ACH). Cancel anytime.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

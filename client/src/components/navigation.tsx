@@ -12,6 +12,7 @@ import {
   Landmark,
   CreditCard,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -79,6 +80,18 @@ export function Navigation() {
                   aria-label="Notifications"
                 >
                   <Bell className="w-6 h-6" />
+                </Button>
+              </Link>
+
+              <Link href="/subscription" className="hidden md:block">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-slate-500 hover:text-slate-900 h-11 w-11 min-h-[44px] min-w-[44px]"
+                  data-testid="button-subscription"
+                  aria-label="Subscription"
+                >
+                  <Sparkles className="w-6 h-6" />
                 </Button>
               </Link>
 
@@ -164,6 +177,20 @@ export function Navigation() {
                     })}
 
                     <div className="border-t border-border pt-4 mt-4">
+                      <Link
+                        href="/subscription"
+                        onClick={closeMenu}
+                        className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                          location === "/subscription"
+                            ? "bg-accent text-dime-accent font-semibold"
+                            : "text-slate-600 hover:bg-muted"
+                        }`}
+                        data-testid="link-menu-subscription"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        <span className="font-medium">Subscription</span>
+                      </Link>
+
                       <Link
                         href="/notifications"
                         onClick={closeMenu}
