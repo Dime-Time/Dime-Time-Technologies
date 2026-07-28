@@ -21,7 +21,7 @@
 - [Task-agent merge verification](task-merge-verification.md) — agents snapshot current main (dup tasks merge as no-ops); after every Apply: stat + sentinel greps + suite + restart + live probe.
 - [AWS fully removed](aws-removed.md) — zero AWS dependency; account CLOSED 2026-07-26 (0 buckets verified); never reintroduce SDKs or S3/Dynamo code.
 - [Secrets deletion & recovery](replit-secrets-deletion.md) — agent can't delete Secrets; checkpoints don't restore them; deployment store = recovery copy; PLAID_TOKEN_ENCRYPTION_KEY never re-issuable.
-- [Automatic debt import](debt-import-feature.md) — Plaid Liabilities NOT active (2026-07-25); only the link/token/create probe is authoritative — /liabilities/get lies; auto-flips when active.
+- [Automatic debt import](debt-import-feature.md) — Plaid Liabilities ACTIVE 2026-07-28 (probe verified); app auto-lit via 10-min capability cache; founder must run first import on WEB.
 - [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — LOOP CLOSED 2026-07-25: link flow live-verified; four 502 failure modes inside.
 - [Stripe payout destination](stripe-payout-destination.md) — CLOSED 2026-07-21: Stripe→Mercury auto-payouts live, $0.99 confirmed in bank; fa_ payout pattern = "transfer to financial account" radio setting.
 - [Crypto preview & Coinbase plan](coinbase-crypto-preview.md) — SIMULATED by design; company-key trading client REMOVED 2026-07-25 (never re-add); outreach to Coinbase/Alpaca/ZeroHash pending.

@@ -5,6 +5,16 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
+## Status update 2026-07-28: Liabilities ENTITLEMENT ACTIVE in production
+Authoritative probe (`link/token/create` with `products:["liabilities"]` against
+production.plaid.com using PLAID_SECRET_PRODUCTION) returned a link_token on 2026-07-28 —
+no INVALID_PRODUCT. Plaid flipped the entitlement ~2 business days after the Order Form was
+countersigned (2026-07-24). No escalation to rep Melanie needed. The app's process-wide
+capability cache (10-min TTL, same link-token probe) lights the feature up automatically —
+zero code/flag/republish work. Remaining step is founder-run: first real end-to-end import
+on WEB (dime-time.com), NOT the native app (Chase OAuth resume on native needs build ≥210).
+Only after that end-to-end success is LinkedIn milestone #2 (debt import live) met.
+
 ## Status update 2026-07-25 (CORRECTED): entitlement only PARTIALLY active — Link gate still closed
 Morning `/liabilities/get` probe (fake token) newly returned INVALID_ACCESS_TOKEN instead of
 INVALID_PRODUCT and was misread as "Liabilities LIVE". The founder's real import attempt at
