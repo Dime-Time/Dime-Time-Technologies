@@ -1782,19 +1782,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get account information
       const accounts = await plaidService.getAccounts(accessToken);
-      
-      // Store bank account information in storage
-      for (const account of accounts) {
-        await storage.createBankAccount({
-          userId,
-          plaidItemId: itemId,
-          plaidAccessToken: accessToken,
-          accountId: account.account_id,
-          accountName: account.name,
-          accountType: account.type,
-          institutionName: account.name, // You might want to fetch institution details
-          mask: account.mask || '',
-        });
+
+      // One stored connection per Plaid item (plaid_item_id is unique).
+      // A single bank login often returns multiple accounts (checking + loans);
+      // we store the primary depository account and return the full list.
+      const primary = accounts.find(a => a.type === 'depository') ?? accounts[0];
+      if (!primary) {
+        return res.status(502).json({ message: "No accounts returned by the bank" });
+      }
+
+      const details = {
+        plaidAccessToken: accessToken,
+        accountId: primary.account_id,
+        accountName: primary.name,
+        accountType: primary.type,
+        institutionName: primary.name,
+        mask: primary.mask || '',
+      };
+
+      // Re-linking the same bank login (e.g. it was already connected for
+      // debt import) must refresh the existing row, not insert a duplicate.
+      const existing = await storage.getBankAccountByPlaidItemId(itemId);
+      if (existing) {
+        if (existing.userId !== userId) {
+          return res.status(409).json({ message: "This bank connection belongs to a different account" });
+        }
+        await storage.refreshBankAccount(existing.id, details);
+      } else {
+        try {
+          await storage.createBankAccount({ userId, plaidItemId: itemId, ...details });
+        } catch (err) {
+          // Narrow race: two concurrent exchanges for the same brand-new item.
+          // Re-read and refresh instead of surfacing a duplicate-key 500.
+          const raced = await storage.getBankAccountByPlaidItemId(itemId);
+          if (!raced) throw err;
+          if (raced.userId !== userId) {
+            return res.status(409).json({ message: "This bank connection belongs to a different account" });
+          }
+          await storage.refreshBankAccount(raced.id, details);
+        }
       }
 
       res.json({ 

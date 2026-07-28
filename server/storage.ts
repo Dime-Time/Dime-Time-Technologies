@@ -182,6 +182,8 @@ export interface IStorage {
   createBankAccount(account: InsertBankAccount): Promise<BankAccount>;
   getBankAccountByPlaidItemId(itemId: string): Promise<BankAccount | undefined>;
   updateBankAccountStatus(id: string, isActive: boolean): Promise<BankAccount | undefined>;
+  /** Refresh a re-linked bank connection (same Plaid item): new token + account details, reactivated. */
+  refreshBankAccount(id: string, updates: { plaidAccessToken: string; accountId: string; accountName: string; accountType: string; institutionName: string; mask: string | null }): Promise<BankAccount | undefined>;
 
   // User session methods
   createUserSession(session: InsertUserSession): Promise<UserSession>;
@@ -1518,6 +1520,15 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
+  async refreshBankAccount(id: string, updates: { plaidAccessToken: string; accountId: string; accountName: string; accountType: string; institutionName: string; mask: string | null }): Promise<BankAccount | undefined> {
+    const account = this.bankAccounts.get(id);
+    if (!account) return undefined;
+
+    const updated: BankAccount = { ...account, ...updates, isActive: true };
+    this.bankAccounts.set(id, updated);
+    return updated;
+  }
+
   async createUserSession(session: InsertUserSession): Promise<UserSession> {
     const id = randomUUID();
     const userSession: UserSession = {
@@ -2215,7 +2226,9 @@ export class DatabaseStorage implements IStorage {
 
   // Bank account methods — access tokens are encrypted at rest
   async getBankAccountsByUserId(userId: string): Promise<BankAccount[]> {
-    const rows = await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+    // Active connections only — parity with MemStorage (deactivated links stay hidden).
+    const rows = await db.select().from(bankAccounts)
+      .where(and(eq(bankAccounts.userId, userId), eq(bankAccounts.isActive, true)));
     // Return accounts with tokens masked — callers must use getPlaidAccessToken() for the live token
     return rows.map(a => ({ ...a, plaidAccessToken: '[encrypted]' }));
   }
@@ -2235,6 +2248,15 @@ export class DatabaseStorage implements IStorage {
 
   async updateBankAccountStatus(id: string, isActive: boolean): Promise<BankAccount | undefined> {
     const [result] = await db.update(bankAccounts).set({ isActive }).where(eq(bankAccounts.id, id)).returning();
+    if (!result) return undefined;
+    return { ...result, plaidAccessToken: '[encrypted]' };
+  }
+
+  async refreshBankAccount(id: string, updates: { plaidAccessToken: string; accountId: string; accountName: string; accountType: string; institutionName: string; mask: string | null }): Promise<BankAccount | undefined> {
+    const [result] = await db.update(bankAccounts)
+      .set({ ...updates, plaidAccessToken: encryptToken(updates.plaidAccessToken), isActive: true })
+      .where(eq(bankAccounts.id, id))
+      .returning();
     if (!result) return undefined;
     return { ...result, plaidAccessToken: '[encrypted]' };
   }
