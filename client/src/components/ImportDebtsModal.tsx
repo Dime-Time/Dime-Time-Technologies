@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePlaidLink } from "react-plaid-link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -69,8 +69,15 @@ function PlaidLinkLauncher({
     onExit: () => onExit(),
   });
 
+  // Guard against duplicate open() calls: react-plaid-link's `open` is not
+  // referentially stable across re-renders, so an unguarded [ready, open]
+  // effect can stack a second Link iframe on top of the first (frozen inputs).
+  const openedRef = useRef(false);
   useEffect(() => {
-    if (ready) open();
+    if (ready && !openedRef.current) {
+      openedRef.current = true;
+      open();
+    }
   }, [ready, open]);
 
   return null;
@@ -186,30 +193,33 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
     setPhase("consent");
   };
 
-  // While Plaid Link is open, our dialog must give up its modal behaviors:
-  // Radix's focus trap steals keystrokes from Plaid's iframe (user can't type),
-  // and clicks inside Plaid's iframe count as "outside" this dialog, closing it
-  // and unmounting Link mid-flow. modal={false} disables both while linking.
-  const plaidActive = phase === "linking";
+  // While Plaid Link's own window is on screen, our Radix dialog must be fully
+  // closed: its focus trap steals keyboard focus from Plaid's iframe (inputs
+  // freeze) and clicks on Plaid's overlay register as outside-clicks that
+  // dismiss the dialog. The launcher renders nothing, so it lives OUTSIDE the
+  // dialog and stays mounted while the dialog is hidden. (This supersedes an
+  // earlier modal={false} approach on main — fully closing the dialog is the
+  // variant verified end-to-end in production.)
+  const plaidLinkActive = phase === "linking" && linkToken !== null;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange} modal={!plaidActive}>
+    <>
+      {open && plaidLinkActive && (
+        <PlaidLinkLauncher token={linkToken!} onSuccess={onPlaidSuccess} onExit={onPlaidExit} />
+      )}
+    <Dialog open={open && !plaidLinkActive} onOpenChange={handleOpenChange}>
       <DialogContent
         className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden p-0"
         data-testid="modal-import-debts"
         onInteractOutside={(e) => {
-          if (plaidActive || phase === "importing") e.preventDefault();
+          if (phase === "importing") e.preventDefault();
         }}
         onEscapeKeyDown={(e) => {
-          if (plaidActive || phase === "importing") e.preventDefault();
+          if (phase === "importing") e.preventDefault();
         }}
       >
         <div className="h-2 w-full bg-dime-purple"></div>
         <div className="p-6">
-          {phase === "linking" && linkToken && (
-            <PlaidLinkLauncher token={linkToken} onSuccess={onPlaidSuccess} onExit={onPlaidExit} />
-          )}
-
           {(phase === "unavailable" || (phase === "consent" && status?.liabilitiesAvailable === false)) && (
             <div className="space-y-6" data-testid="state-import-unavailable">
               <div className="flex flex-col items-center text-center">
@@ -355,5 +365,6 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

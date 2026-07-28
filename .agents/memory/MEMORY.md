@@ -35,7 +35,7 @@
 - [Founder narrative sourcing](founder-narrative-sourcing.md) — launch-story/pitch source material lives in attached_assets (user-owned), never in memory; use it on request, copy nothing into memory.
 - [GEO guides & crawler files](geo-guides.md) — AI crawlers don't run JS: SEO/GEO content must be static HTML via Express routes; audit public/ before static-mounting.
 - [Slide deck generation](deck-generation.md) — python-pptx decks in attached_assets/<name>-slides/; verify via soffice+pdftoppm render; no emoji (tofu), no partner logos.
-- [Plaid Link inside dialogs](plaid-link-in-dialogs.md) — never open Link while a Radix Dialog is modal: focus trap blocks typing, outside-click closes Link; use modal={false} + preventDefault pattern.
+- [Radix Dialog vs Plaid Link](radix-dialog-plaid-focus.md) — a Radix modal must fully close while Plaid Link is on screen (focus trap freezes Plaid inputs); guard Link open() with a ref. Supersedes the modal={false} approach.
 - [Plaid OAuth resume page](plaid-oauth-resume.md) — react-plaid-link fires onExit on init failure too; never navigate unconditionally in onExit — recovery card unless real user cancel.
 - [iOS universal links](ios-universal-links.md) — AASA + App.entitlements + client listener must stay in lockstep; native redirect URI is rebuilt from pathname+search, never window.location.href.
 - [Founder PII policy](founder-pii-policy.md) — never store founder personal/family/financial details in project files; comms prefs live in replit.md.

@@ -140,8 +140,15 @@ export default function PlaidOauthPage() {
     onExit,
   });
 
+  // Guard against duplicate open() calls: react-plaid-link's `open` is not
+  // referentially stable, so an unguarded effect can stack a second Link
+  // iframe on top of the first (frozen inputs).
+  const openedRef = useRef(false);
   useEffect(() => {
-    if (state && ready) open();
+    if (state && ready && !openedRef.current) {
+      openedRef.current = true;
+      open();
+    }
   }, [state, ready, open]);
 
   return (
