@@ -5,6 +5,20 @@ description: How the flag-gated debt-import feature is wired and the constraints
 
 # Automatic debt import
 
+## Multi-bank connections (2026-07-28)
+Debt-import connections are now one row per (user, provider, provider_item_id) — a user can
+link multiple banks (e.g. Chase AND USAA). Rules future work must respect:
+- Never upsert a debt_provider_connections row without providerItemId for the Plaid provider —
+  the unkeyed upsert path is reserved for non-linkFlow providers (sandbox) and matches only
+  itemless rows. An unkeyed upsert used to silently overwrite the first bank's token.
+- fetchLiabilities aggregates across ALL active connections; a per-connection reauth failure
+  flips only that row to status 'error' and continues — LinkRequiredError only when nothing
+  succeeded. completeLink retires legacy itemless active rows.
+- A partial unique index covers (user, provider) WHERE provider_item_id IS NULL because
+  Postgres treats NULLs as distinct in the composite unique index.
+- Client: ImportDebtsModal shows connected banks + "Add another bank" (launches Plaid Link even
+  when already connected); status endpoint returns institutions[] and canLinkAnother.
+
 ## Status update 2026-07-28: Liabilities ENTITLEMENT ACTIVE in production
 Authoritative probe (`link/token/create` with `products:["liabilities"]` against
 production.plaid.com using PLAID_SECRET_PRODUCTION) returned a link_token on 2026-07-28 —

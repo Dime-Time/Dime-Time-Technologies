@@ -79,7 +79,8 @@ export const debts = pgTable("debts", {
   uniqueIndex("debts_provider_account_uq").on(table.userId, table.provider, table.providerAccountId),
 ]);
 
-// A user's connection to a liability-data provider (one row per user+provider).
+// A user's connection to a liability-data provider (one row per user+provider+item,
+// so a user can import debts from multiple banks — e.g. Chase AND USAA).
 // Holds the encrypted access token (same AES-256-GCM scheme as Plaid/Stripe)
 // plus the consent timestamp for compliance.
 export const debtProviderConnections = pgTable("debt_provider_connections", {
@@ -94,7 +95,12 @@ export const debtProviderConnections = pgTable("debt_provider_connections", {
   lastSyncAt: timestamp("last_sync_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
-  uniqueIndex("debt_provider_conn_user_provider_uq").on(table.userId, table.provider),
+  uniqueIndex("debt_provider_conn_user_provider_item_uq").on(table.userId, table.provider, table.providerItemId),
+  // Postgres treats NULLs as distinct in unique indexes, so itemless rows
+  // (sandbox provider) need their own partial index to stay one-per-user.
+  uniqueIndex("debt_provider_conn_user_provider_nullitem_uq")
+    .on(table.userId, table.provider)
+    .where(sql`provider_item_id IS NULL`),
 ]);
 
 // Append-only audit trail for every import / refresh / disconnect (compliance).

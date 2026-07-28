@@ -19,9 +19,11 @@ type Phase = "consent" | "linking" | "importing" | "complete" | "error" | "unava
 interface ImportStatus {
   connected: boolean;
   requiresLink: boolean;
+  canLinkAnother?: boolean;
   liabilitiesAvailable?: boolean;
   provider: string;
   institutionName?: string | null;
+  institutions?: Array<{ institutionName: string | null; status: string; lastSyncAt: string | null }>;
 }
 
 function parseErrorMessage(err: unknown): string {
@@ -274,6 +276,21 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
                 </span>
               </label>
 
+              {status?.connected && (status.institutions?.length ?? 0) > 0 && (
+                <div className="rounded-xl border border-slate-200 p-3 space-y-1" data-testid="list-connected-banks">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Connected banks</p>
+                  {status.institutions!.map((inst, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <Landmark className="w-4 h-4 text-dime-purple shrink-0" />
+                      <span>{inst.institutionName ?? "Linked bank"}</span>
+                      {inst.status !== "active" && (
+                        <span className="text-xs text-amber-600 font-semibold">needs reconnect</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
@@ -294,6 +311,18 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
                   {statusLoading ? "Loading…" : status?.requiresLink ? "Connect & Import" : "Import Now"}
                 </Button>
               </div>
+              {status?.connected && status?.canLinkAnother && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full font-semibold text-dime-purple hover:text-dime-purple/90"
+                  disabled={!consented || statusLoading}
+                  onClick={startLinkFlow}
+                  data-testid="button-import-add-bank"
+                >
+                  + Add another bank
+                </Button>
+              )}
             </div>
           )}
 

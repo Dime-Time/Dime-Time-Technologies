@@ -128,14 +128,19 @@ async function runImport(
   const provider = getLiabilityProvider();
   try {
     const conn = await provider.initializeConnection(userId);
-    await storage.upsertDebtProviderConnection({
-      userId,
-      provider: provider.name,
-      institutionName: conn.institutionName ?? null,
-      status: "active",
-      consentAt: new Date(),
-      lastSyncAt: new Date(),
-    });
+    if (!provider.linkFlow) {
+      // Providers without a Link step (sandbox) keep a single connection row.
+      // Link-based providers (Plaid) manage their per-bank rows themselves —
+      // an unkeyed upsert here would corrupt the first bank's row.
+      await storage.upsertDebtProviderConnection({
+        userId,
+        provider: provider.name,
+        institutionName: conn.institutionName ?? null,
+        status: "active",
+        consentAt: new Date(),
+        lastSyncAt: new Date(),
+      });
+    }
     const liabilities = await provider.fetchLiabilities(userId);
     const result = await storage.importDebtsFromProvider(userId, provider.name, liabilities);
     await storage.createDebtImportAuditLog({
@@ -362,19 +367,30 @@ export function registerDebtImportRoutes(app: Express): void {
       return res.status(401).json({ message: "Not authenticated" });
     }
     const provider = getLiabilityProvider();
-    const conn = await storage.getDebtProviderConnection(userId, provider.name);
-    const connected = !!conn && conn.status === "active";
+    const conns = await storage.getDebtProviderConnections(userId, provider.name);
+    const active = conns.filter((c) => c.status === "active");
+    const connected = active.length > 0;
+    const first = active[0] ?? conns[0];
     res.json({
       connected,
       // True when the provider needs a client-side connect step and the user
       // isn't connected yet — the client uses this to launch the Link flow.
       requiresLink: !!provider.linkFlow && !connected,
+      // True when the provider supports linking additional banks on top of the
+      // existing connection(s) — drives the "Add another bank" client action.
+      canLinkAnother: !!provider.linkFlow,
       // False while the upstream Liabilities entitlement is pending (e.g. Plaid
       // production before approval) — the client shows "coming soon" up front.
       liabilitiesAvailable: await isLiabilitiesAvailable(provider, userId),
       provider: provider.name,
-      institutionName: conn?.institutionName ?? null,
-      lastSyncAt: conn?.lastSyncAt ?? null,
+      institutionName: first?.institutionName ?? null,
+      lastSyncAt: first?.lastSyncAt ?? null,
+      // One entry per linked bank so the client can list them.
+      institutions: conns.map((c) => ({
+        institutionName: c.institutionName,
+        status: c.status,
+        lastSyncAt: c.lastSyncAt,
+      })),
     });
   });
 

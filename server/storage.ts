@@ -154,6 +154,7 @@ export interface IStorage {
   // Debt import (provider-agnostic) methods
   importDebtsFromProvider(userId: string, provider: string, liabilities: NormalizedLiability[]): Promise<{ imported: number; updated: number; debts: Debt[] }>;
   getDebtProviderConnection(userId: string, provider: string): Promise<DebtProviderConnection | undefined>;
+  getDebtProviderConnections(userId: string, provider: string): Promise<DebtProviderConnection[]>;
   upsertDebtProviderConnection(data: InsertDebtProviderConnection): Promise<DebtProviderConnection>;
   disconnectDebtProvider(userId: string, provider: string): Promise<void>;
   createDebtImportAuditLog(entry: InsertDebtImportAuditLog): Promise<void>;
@@ -1315,11 +1316,20 @@ export class MemStorage implements IStorage {
   }
 
   async getDebtProviderConnection(userId: string, provider: string): Promise<DebtProviderConnection | undefined> {
-    return this.debtProviderConnectionsMap.get(`${userId}:${provider}`);
+    const conns = await this.getDebtProviderConnections(userId, provider);
+    return conns.find((c) => c.status === "active") ?? conns[0];
+  }
+
+  async getDebtProviderConnections(userId: string, provider: string): Promise<DebtProviderConnection[]> {
+    return Array.from(this.debtProviderConnectionsMap.values())
+      .filter((c) => c.userId === userId && c.provider === provider)
+      .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
   }
 
   async upsertDebtProviderConnection(data: InsertDebtProviderConnection): Promise<DebtProviderConnection> {
-    const key = `${data.userId}:${data.provider}`;
+    // Keyed by (user, provider, item) so one user can connect multiple banks.
+    // A missing providerItemId (e.g. sandbox provider) collapses to a single row.
+    const key = `${data.userId}:${data.provider}:${data.providerItemId ?? ""}`;
     const existing = this.debtProviderConnectionsMap.get(key);
     const conn: DebtProviderConnection = {
       id: existing?.id ?? randomUUID(),
@@ -1338,10 +1348,10 @@ export class MemStorage implements IStorage {
   }
 
   async disconnectDebtProvider(userId: string, provider: string): Promise<void> {
-    const key = `${userId}:${provider}`;
-    const existing = this.debtProviderConnectionsMap.get(key);
-    if (existing) {
-      this.debtProviderConnectionsMap.set(key, { ...existing, status: "disconnected" });
+    for (const [key, existing] of Array.from(this.debtProviderConnectionsMap.entries())) {
+      if (existing.userId === userId && existing.provider === provider) {
+        this.debtProviderConnectionsMap.set(key, { ...existing, status: "disconnected" });
+      }
     }
   }
 
@@ -2115,15 +2125,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDebtProviderConnection(userId: string, provider: string): Promise<DebtProviderConnection | undefined> {
-    const [conn] = await db
+    const conns = await this.getDebtProviderConnections(userId, provider);
+    return conns.find((c) => c.status === "active") ?? conns[0];
+  }
+
+  async getDebtProviderConnections(userId: string, provider: string): Promise<DebtProviderConnection[]> {
+    return db
       .select()
       .from(debtProviderConnections)
-      .where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider)));
-    return conn;
+      .where(and(eq(debtProviderConnections.userId, userId), eq(debtProviderConnections.provider, provider)))
+      .orderBy(debtProviderConnections.createdAt);
   }
 
   async upsertDebtProviderConnection(data: InsertDebtProviderConnection): Promise<DebtProviderConnection> {
-    const existing = await this.getDebtProviderConnection(data.userId, data.provider);
+    // Keyed by (user, provider, item) so one user can connect multiple banks.
+    // A missing providerItemId (e.g. sandbox provider) matches the first row,
+    // preserving the old single-connection behavior for providers without Link.
+    const all = await this.getDebtProviderConnections(data.userId, data.provider);
+    const existing = data.providerItemId
+      ? all.find((c) => c.providerItemId === data.providerItemId)
+      : all.find((c) => !c.providerItemId);
     if (existing) {
       const [row] = await db
         .update(debtProviderConnections)
