@@ -36,14 +36,22 @@ export default function Signup() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(getApiUrl("/api/signup"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ firstName, lastName, email, password }),
-      });
+      let response: Response;
+      try {
+        response = await fetch(getApiUrl("/api/signup"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ firstName, lastName, email, password }),
+        });
+      } catch {
+        throw new Error("Connection problem — please check your internet and try again.");
+      }
 
       if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Too many attempts — please wait a few minutes and try again.");
+        }
         const err = await response.json().catch(() => ({}));
         throw new Error(err.message || "Signup failed");
       }

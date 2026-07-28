@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, getApiErrorMessage } from "@/lib/queryClient";
+import { apiRequest, getApiErrorMessage, type ApiError } from "@/lib/queryClient";
 import { LogoWithText } from "@/components/logo";
 
 export default function ForgotPassword() {
@@ -21,12 +21,22 @@ export default function ForgotPassword() {
       setSubmitted(true);
     },
     onError: (err: unknown) => {
-      toast({
-        title: "Couldn't send reset link",
-        description: getApiErrorMessage(
+      let description: string;
+      const status = (err as ApiError)?.status;
+      if (status === 429) {
+        description = "Too many attempts — please wait a few minutes and try again.";
+      } else if (err instanceof TypeError) {
+        // fetch() itself failed — no HTTP response at all.
+        description = "Connection problem — please check your internet and try again.";
+      } else {
+        description = getApiErrorMessage(
           err,
           "We couldn't send the reset email right now. Please try again in a few minutes.",
-        ),
+        );
+      }
+      toast({
+        title: "Couldn't send reset link",
+        description,
         variant: "destructive",
       });
     },

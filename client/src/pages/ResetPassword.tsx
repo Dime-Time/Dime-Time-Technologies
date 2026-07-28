@@ -30,13 +30,21 @@ export default function ResetPassword() {
 
   const mutation = useMutation({
     mutationFn: async (payload: { token: string; password: string }) => {
-      const response = await fetch(getApiUrl("/api/auth/reset-password"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
+      let response: Response;
+      try {
+        response = await fetch(getApiUrl("/api/auth/reset-password"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "include",
+        });
+      } catch {
+        throw new Error("Connection problem — please check your internet and try again.");
+      }
       if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Too many attempts — please wait a few minutes and try again.");
+        }
         const body = await response.json().catch(() => ({}));
         throw new Error(body.message || "Unable to reset password");
       }
