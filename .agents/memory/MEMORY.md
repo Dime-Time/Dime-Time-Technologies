@@ -41,4 +41,5 @@
 - [Founder PII policy](founder-pii-policy.md) — never store founder personal/family/financial details in project files; comms prefs live in replit.md.
 - [npm lockfile CI portability](npm-lockfile-ci-portability.md) — Replit installs write firewall URLs into package-lock.json → Codemagic fails; grep lockfile = 0 before release push.
 - [Android / Google Play launch](android-play-launch.md) — kit in attached_assets/play-store-assets/; assetlinks.json MUST wait for Play app-signing SHA-256; keystore founder-run.
+- [Client component testing](client-component-testing.md) — interactive React tests under tsx --test: happy-dom + fetch mock + asset-stub loader; no vitest/jsdom.
 - [Store listing AEO](store-listing-aeo.md) — paste-ready Play/iOS AEO pack in attached_assets/aeo-store-listings/; NEVER paste Play listing edits mid-review; iOS promo text = only no-review field.
