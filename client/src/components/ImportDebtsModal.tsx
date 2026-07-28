@@ -186,9 +186,24 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
     setPhase("consent");
   };
 
+  // While Plaid Link is open, our dialog must give up its modal behaviors:
+  // Radix's focus trap steals keystrokes from Plaid's iframe (user can't type),
+  // and clicks inside Plaid's iframe count as "outside" this dialog, closing it
+  // and unmounting Link mid-flow. modal={false} disables both while linking.
+  const plaidActive = phase === "linking";
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden p-0" data-testid="modal-import-debts">
+    <Dialog open={open} onOpenChange={handleOpenChange} modal={!plaidActive}>
+      <DialogContent
+        className="sm:max-w-md border-0 shadow-xl rounded-2xl overflow-hidden p-0"
+        data-testid="modal-import-debts"
+        onInteractOutside={(e) => {
+          if (plaidActive || phase === "importing") e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (plaidActive || phase === "importing") e.preventDefault();
+        }}
+      >
         <div className="h-2 w-full bg-dime-purple"></div>
         <div className="p-6">
           {phase === "linking" && linkToken && (
