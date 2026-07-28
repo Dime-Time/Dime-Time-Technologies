@@ -13,3 +13,6 @@ The iOS build talks to the PRODUCTION API, and the agent's DB tools are read-onl
 - Gating is by review email only; never enable for arbitrary users.
 
 **Why:** this is the App-Store-legitimate alternative to pixel-editing fake numbers onto screenshots (which violates Apple accuracy rule 2.3). It also gives reviewers a non-empty app, which Apple expects.
+
+## 2026-07-28 decision
+Founder confirmed the Insights numbers were sample data and chose to KEEP the injection until Apple approves build 210, then remove it (tracked as a project task). Do not remove earlier.
