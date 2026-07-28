@@ -55,6 +55,7 @@ interface RoundUpSettings {
   id: string;
   userId: string;
   isEnabled: boolean;
+  targetDebtId: string | null;
   multiplier: string;
   autoApplyThreshold: string;
   cryptoEnabled: boolean;
@@ -176,6 +177,12 @@ export default function Settings() {
   const { data: roundUpSettings } = useQuery<RoundUpSettings>({
     queryKey: ["/api/round-up-settings"],
   });
+
+  // Active debts — needed so the user can pick which debt round-ups attack.
+  const { data: debts = [] } = useQuery<Array<{ id: string; name: string; currentBalance: string; isActive: boolean }>>({
+    queryKey: ["/api/debts"],
+  });
+  const activeDebts = debts.filter((d) => d.isActive !== false && parseFloat(d.currentBalance) > 0);
 
   // Premium gate: when subscriptions are live, round-up automation requires
   // an active plan. Flag OFF → no query, no banner, everything unlocked.
@@ -452,6 +459,29 @@ export default function Settings() {
                     <SelectItem value="100.00">$100</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-slate-700 text-xs font-semibold uppercase tracking-wider">Target Debt</Label>
+                <Select
+                  value={roundUpSettings?.targetDebtId ?? ""}
+                  onValueChange={(value) => handleRoundUpToggle("targetDebtId", value)}
+                >
+                  <SelectTrigger className="border-slate-200 focus:ring-dime-purple" data-testid="select-target-debt">
+                    <SelectValue placeholder="Choose which debt your round-ups pay down" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeDebts.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name} — ${parseFloat(d.currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!roundUpSettings?.targetDebtId && (
+                  <p className="text-xs text-amber-600 font-medium" data-testid="text-no-target-debt">
+                    No target debt selected — round-ups will collect but won't be applied until you choose one.
+                  </p>
+                )}
               </div>
             </div>
           </Row>
