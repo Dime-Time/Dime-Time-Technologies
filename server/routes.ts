@@ -30,6 +30,7 @@ import { registerSubscriptionRoutes } from "./routes/subscriptionRoutes";
 import { hasRoundUpAutomationAccess, SUBSCRIPTION_REQUIRED_RESPONSE } from "./lib/subscriptionGate";
 import { cancelSubscriptionImmediately } from "./services/subscriptionService";
 import { isSubscriptionTerminal } from "@shared/subscriptionPlans";
+import { findDuplicateDebtPairs } from "@shared/debtDuplicates";
 import { assertStripeKeyModeSafeOnBoot } from "./services/stripeService";
 import { registerAdminRoutes } from "./routes/adminRoutes";
 import { isAdminUserId } from "./lib/admin";
@@ -1010,6 +1011,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Likely duplicate pairs between MANUAL and IMPORTED debts — owner only.
+  // Pure detection over the user's active debts (see shared/debtDuplicates.ts);
+  // returns pairs plus a human-readable reason. Powers the merge prompt on
+  // the Debts page after an import.
+  app.get("/api/debts/duplicates", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const debts = await storage.getDebtsByUserId(userId);
+      res.json(findDuplicateDebtPairs(debts));
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Merge a MANUAL debt into an IMPORTED duplicate — owner only. The manual
+  // entry is ARCHIVED (soft-deleted, never hard-deleted) so its payment
+  // history survives; mergedIntoDebtId records where it went. If the user's
+  // round-up target pointed at the manual debt, it is repointed to the
+  // imported one so round-ups keep flowing to the same real card.
+  app.post("/api/debts/:id/merge", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const importedDebtId = typeof req.body?.importedDebtId === "string" ? req.body.importedDebtId : null;
+      if (!importedDebtId) {
+        return res.status(400).json({ message: "importedDebtId is required" });
+      }
+
+      const manual = await storage.getDebt(req.params.id);
+      if (!canAccessDebt(manual, userId)) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      const imported = await storage.getDebt(importedDebtId);
+      if (!canAccessDebt(imported, userId)) {
+        return res.status(404).json({ message: "Imported debt not found" });
+      }
+      if (manual.source !== "manual" || imported.source !== "imported") {
+        return res.status(400).json({ message: "Merge must archive a manual debt into an imported one" });
+      }
+      if (!manual.isActive || !imported.isActive) {
+        return res.status(400).json({ message: "Both debts must be active to merge" });
+      }
+
+      // Repoint the round-up target BEFORE archiving so there is never a
+      // window where round-ups aim at an archived debt.
+      const roundUp = await storage.getRoundUpSettings(userId);
+      if (roundUp?.targetDebtId === manual.id) {
+        await storage.createOrUpdateRoundUpSettings({ ...roundUp, targetDebtId: imported.id });
+      }
+
+      const archived = await storage.updateDebt(manual.id, {
+        isActive: false,
+        mergedIntoDebtId: imported.id,
+      });
+      res.json({ success: true, archivedDebt: archived, importedDebtId: imported.id });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // "Keep both" — owner only. Records that an imported debt is NOT a
+  // duplicate of this manual debt so the detector stops flagging the pair.
+  app.post("/api/debts/:id/dismiss-duplicate", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const importedDebtId = typeof req.body?.importedDebtId === "string" ? req.body.importedDebtId : null;
+      if (!importedDebtId) {
+        return res.status(400).json({ message: "importedDebtId is required" });
+      }
+
+      const manual = await storage.getDebt(req.params.id);
+      if (!canAccessDebt(manual, userId)) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+
+      const existing = manual.notDuplicateOf ?? [];
+      if (!existing.includes(importedDebtId)) {
+        await storage.updateDebt(manual.id, { notDuplicateOf: [...existing, importedDebtId] });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // List archived (soft-deleted) debts — owner only. Powers the "Archived
   // Debts" section on /debts and lifetime paid-off wins on Insights.
   app.get("/api/debts/archived", async (req: Request, res: Response) => {
@@ -1043,7 +1140,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Debt is not archived" });
       }
 
-      const restored = await storage.updateDebt(req.params.id, { isActive: true });
+      // Restoring un-merges: clear the merge marker so the debt comes back
+      // as a normal manual entry (the duplicate prompt may reappear).
+      const restored = await storage.updateDebt(req.params.id, { isActive: true, mergedIntoDebtId: null });
       res.json(restored);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });

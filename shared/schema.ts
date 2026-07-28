@@ -72,6 +72,14 @@ export const debts = pgTable("debts", {
   // Fields the user manually overrode after import — refresh skips these so a
   // re-import never clobbers the user's edits.
   userEditedFields: text("user_edited_fields").array().default(sql`'{}'::text[]`).notNull(),
+  // --- Duplicate handling (manual debt vs imported debt) ---
+  // When a manual debt is merged into an imported duplicate, it is archived
+  // (isActive=false) and this records which imported debt absorbed it —
+  // restore clears it. Never a hard delete: payment history stays attached.
+  mergedIntoDebtId: varchar("merged_into_debt_id"),
+  // Imported debt ids the user explicitly said are NOT duplicates of this
+  // manual debt ("keep both") — the duplicate detector skips these pairs.
+  notDuplicateOf: text("not_duplicate_of").array().default(sql`'{}'::text[]`).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   // Duplicate detection: one row per (user, provider, provider account).

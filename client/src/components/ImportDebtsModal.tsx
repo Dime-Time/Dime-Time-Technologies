@@ -121,6 +121,7 @@ export function ImportDebtsModal({ open, onOpenChange }: ImportDebtsModalProps) 
     });
     setPhase("complete");
     queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/debts/duplicates"] });
     queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
     queryClient.invalidateQueries({ queryKey: ["/api/debts/import/status"] });
     toast({

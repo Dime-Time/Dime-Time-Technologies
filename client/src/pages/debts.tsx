@@ -30,6 +30,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isDemoUser, applyDemoSummary } from "@/lib/demoData";
 import type { Debt, Payment } from "@shared/schema";
+import type { DuplicateDebtPair } from "@shared/debtDuplicates";
+import { Copy } from "lucide-react";
 
 type DashboardSummary = {
   totalDebt: string;
@@ -82,6 +84,65 @@ export default function Debts() {
   const { data: summary } = useQuery<DashboardSummary>({
     queryKey: ["/api/dashboard-summary"],
   });
+
+  const { data: duplicatePairs = [] } = useQuery<DuplicateDebtPair[]>({
+    queryKey: ["/api/debts/duplicates"],
+  });
+
+  const invalidateDebtQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/debts/archived"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/debts/duplicates"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
+  };
+
+  const mergeDuplicateMutation = useMutation({
+    mutationFn: async ({ manualDebtId, importedDebtId }: DuplicateDebtPair) => {
+      return apiRequest("POST", `/api/debts/${manualDebtId}/merge`, { importedDebtId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Debts Merged",
+        description:
+          "The manual entry was archived — its payment history is preserved and your totals now count this card once.",
+      });
+      invalidateDebtQueries();
+    },
+    onError: () => {
+      toast({
+        title: "Couldn't Merge",
+        description: "There was an error merging these debts. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const dismissDuplicateMutation = useMutation({
+    mutationFn: async ({ manualDebtId, importedDebtId }: DuplicateDebtPair) => {
+      return apiRequest("POST", `/api/debts/${manualDebtId}/dismiss-duplicate`, { importedDebtId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Keeping Both",
+        description: "Got it — we won't flag these two as duplicates again.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/debts/duplicates"] });
+    },
+    onError: () => {
+      toast({
+        title: "Couldn't Save Choice",
+        description: "There was an error saving your choice. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const debtById = new Map(debts.map((d) => [d.id, d]));
+  // Only show pairs whose two debts are still in the active list (queries can
+  // briefly disagree right after a merge).
+  const visibleDuplicatePairs = duplicatePairs.filter(
+    (p) => debtById.has(p.manualDebtId) && debtById.has(p.importedDebtId)
+  );
 
   const roundUpBalance = summary ? parseFloat(summary.totalRoundUps) : 0;
 
@@ -329,6 +390,70 @@ export default function Debts() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Possible duplicate debts (manual + imported) */}
+      {visibleDuplicatePairs.length > 0 && (
+        <Card
+          className="shadow-card border-0 ring-1 ring-amber-300 bg-amber-50/70 animate-fade-in"
+          data-testid="card-duplicate-debts"
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold text-amber-900 flex items-center gap-2">
+              <Copy className="w-4 h-4" />
+              Possible duplicate debt{visibleDuplicatePairs.length === 1 ? "" : "s"}
+            </CardTitle>
+            <CardDescription className="text-amber-800/80 font-medium">
+              These manually added debts look like the same account as one you imported from your bank. Merging
+              archives the manual entry (its payment history is kept) so your total isn't counted twice.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-0">
+            {visibleDuplicatePairs.map((pair) => {
+              const manual = debtById.get(pair.manualDebtId)!;
+              const imported = debtById.get(pair.importedDebtId)!;
+              return (
+                <div
+                  key={`${pair.manualDebtId}-${pair.importedDebtId}`}
+                  className="rounded-xl border border-amber-200 bg-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  data-testid={`row-duplicate-${pair.manualDebtId}`}
+                >
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-900">
+                      {manual.name} <span className="text-slate-400 font-medium">(added manually,{" "}
+                      {formatCurrency(manual.currentBalance)})</span>
+                    </p>
+                    <p className="text-sm font-medium text-slate-600">
+                      looks like {imported.name}
+                      {imported.institutionName ? ` from ${imported.institutionName}` : ""} (
+                      {formatCurrency(imported.currentBalance)}, imported)
+                    </p>
+                    <p className="text-xs font-medium text-amber-700 mt-1">{pair.reason}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                      disabled={mergeDuplicateMutation.isPending || dismissDuplicateMutation.isPending}
+                      onClick={() => mergeDuplicateMutation.mutate(pair)}
+                      data-testid={`button-merge-duplicate-${pair.manualDebtId}`}
+                    >
+                      {mergeDuplicateMutation.isPending ? "Merging..." : "Merge"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="bg-white font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                      disabled={mergeDuplicateMutation.isPending || dismissDuplicateMutation.isPending}
+                      onClick={() => dismissDuplicateMutation.mutate(pair)}
+                      data-testid={`button-keep-both-${pair.manualDebtId}`}
+                    >
+                      Keep both
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Debt Cards */}
       <div className="space-y-6">

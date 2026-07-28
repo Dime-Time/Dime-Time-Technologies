@@ -439,6 +439,8 @@ export class MemStorage implements IStorage {
         lastImportedAt: null,
         isHidden: false,
         userEditedFields: [],
+        mergedIntoDebtId: null,
+        notDuplicateOf: [],
         createdAt: new Date("2024-01-01"),
       },
       {
@@ -467,6 +469,8 @@ export class MemStorage implements IStorage {
         lastImportedAt: null,
         isHidden: false,
         userEditedFields: [],
+        mergedIntoDebtId: null,
+        notDuplicateOf: [],
         createdAt: new Date("2024-01-01"),
       },
       {
@@ -495,6 +499,8 @@ export class MemStorage implements IStorage {
         lastImportedAt: null,
         isHidden: false,
         userEditedFields: [],
+        mergedIntoDebtId: null,
+        notDuplicateOf: [],
         createdAt: new Date("2024-01-01"),
       },
     ];
@@ -1175,6 +1181,8 @@ export class MemStorage implements IStorage {
       lastImportedAt: null,
       isHidden: false,
       userEditedFields: [],
+      mergedIntoDebtId: null,
+      notDuplicateOf: [],
       createdAt: new Date(),
     };
     this.debts.set(id, debt);
@@ -1305,6 +1313,8 @@ export class MemStorage implements IStorage {
           lastImportedAt: new Date(),
           isHidden: false,
           userEditedFields: [],
+          mergedIntoDebtId: null,
+          notDuplicateOf: [],
           createdAt: new Date(),
         };
         this.debts.set(id, debt);
