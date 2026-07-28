@@ -464,7 +464,7 @@ __export(schema_exports, {
   weeklyDistributions: () => weeklyDistributions
 });
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, boolean, integer, index, jsonb, uniqueIndex, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 var sessions = pgTable(
   "sessions",
@@ -629,7 +629,9 @@ var cryptoPurchases = pgTable("crypto_purchases", {
 var bankAccounts = pgTable("bank_accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  plaidItemId: text("plaid_item_id").notNull().unique(),
+  // One Plaid Item spans MANY accounts — uniqueness must be per (item, account),
+  // not per item, or linking any multi-account bank fails on the second insert.
+  plaidItemId: text("plaid_item_id").notNull(),
   plaidAccessToken: text("plaid_access_token").notNull(),
   accountId: text("account_id").notNull(),
   accountName: text("account_name").notNull(),
@@ -640,7 +642,9 @@ var bankAccounts = pgTable("bank_accounts", {
   // last 4 digits
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
-});
+}, (table) => [
+  unique("bank_accounts_item_account_unique").on(table.plaidItemId, table.accountId)
+]);
 var userSessions = pgTable("user_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -1613,13 +1617,23 @@ var DatabaseStorage = class _DatabaseStorage {
   }
   // Bank account methods — access tokens are encrypted at rest
   async getBankAccountsByUserId(userId) {
-    const rows = await db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+    const rows = await db.select().from(bankAccounts).where(and(eq(bankAccounts.userId, userId), eq(bankAccounts.isActive, true)));
     return rows.map((a) => ({ ...a, plaidAccessToken: "[encrypted]" }));
   }
   async createBankAccount(account) {
     const id = randomUUID();
     const encrypted = encryptToken(account.plaidAccessToken);
-    const [result] = await db.insert(bankAccounts).values({ ...account, id, plaidAccessToken: encrypted }).returning();
+    const [result] = await db.insert(bankAccounts).values({ ...account, id, plaidAccessToken: encrypted }).onConflictDoUpdate({
+      target: [bankAccounts.plaidItemId, bankAccounts.accountId],
+      set: {
+        plaidAccessToken: encrypted,
+        accountName: account.accountName,
+        accountType: account.accountType,
+        institutionName: account.institutionName,
+        mask: account.mask ?? null,
+        isActive: account.isActive ?? true
+      }
+    }).returning();
     return { ...result, plaidAccessToken: "[encrypted]" };
   }
   async getBankAccountByPlaidItemId(itemId) {
@@ -1629,6 +1643,11 @@ var DatabaseStorage = class _DatabaseStorage {
   }
   async updateBankAccountStatus(id, isActive) {
     const [result] = await db.update(bankAccounts).set({ isActive }).where(eq(bankAccounts.id, id)).returning();
+    if (!result) return void 0;
+    return { ...result, plaidAccessToken: "[encrypted]" };
+  }
+  async refreshBankAccount(id, updates) {
+    const [result] = await db.update(bankAccounts).set({ ...updates, plaidAccessToken: encryptToken(updates.plaidAccessToken), isActive: true }).where(eq(bankAccounts.id, id)).returning();
     if (!result) return void 0;
     return { ...result, plaidAccessToken: "[encrypted]" };
   }
@@ -8967,18 +8986,35 @@ async function registerRoutes(app2) {
       }
       const { accessToken, itemId } = await plaidService.exchangePublicToken(publicToken);
       const accounts = await plaidService.getAccounts(accessToken);
-      for (const account of accounts) {
-        await storage.createBankAccount({
-          userId,
-          plaidItemId: itemId,
-          plaidAccessToken: accessToken,
-          accountId: account.account_id,
-          accountName: account.name,
-          accountType: account.type,
-          institutionName: account.name,
-          // You might want to fetch institution details
-          mask: account.mask || ""
-        });
+      const primary = accounts.find((a) => a.type === "depository") ?? accounts[0];
+      if (!primary) {
+        return res.status(502).json({ message: "No accounts returned by the bank" });
+      }
+      const details = {
+        plaidAccessToken: accessToken,
+        accountId: primary.account_id,
+        accountName: primary.name,
+        accountType: primary.type,
+        institutionName: primary.name,
+        mask: primary.mask || ""
+      };
+      const existing = await storage.getBankAccountByPlaidItemId(itemId);
+      if (existing) {
+        if (existing.userId !== userId) {
+          return res.status(409).json({ message: "This bank connection belongs to a different account" });
+        }
+        await storage.refreshBankAccount(existing.id, details);
+      } else {
+        try {
+          await storage.createBankAccount({ userId, plaidItemId: itemId, ...details });
+        } catch (err) {
+          const raced = await storage.getBankAccountByPlaidItemId(itemId);
+          if (!raced) throw err;
+          if (raced.userId !== userId) {
+            return res.status(409).json({ message: "This bank connection belongs to a different account" });
+          }
+          await storage.refreshBankAccount(raced.id, details);
+        }
       }
       res.json({
         success: true,
@@ -9026,7 +9062,9 @@ async function registerRoutes(app2) {
       const allTransactions = [];
       for (const account of bankAccounts2) {
         try {
-          const transactions2 = await plaidService.getTransactions(account.plaidAccessToken, startDate, endDate);
+          const token = await storage.getPlaidAccessToken(account.id);
+          if (!token) continue;
+          const transactions2 = await plaidService.getTransactions(token, startDate, endDate);
           allTransactions.push(...transactions2);
         } catch (error) {
           console.error(`Error fetching transactions for account ${account.accountId}:`, error);
@@ -9054,7 +9092,9 @@ async function registerRoutes(app2) {
       const allBalances = [];
       for (const account of bankAccounts2) {
         try {
-          const balances = await plaidService.getBalance(account.plaidAccessToken);
+          const token = await storage.getPlaidAccessToken(account.id);
+          if (!token) continue;
+          const balances = await plaidService.getBalance(token);
           allBalances.push(...balances);
         } catch (error) {
           console.error(`Error fetching balance for account ${account.accountId}:`, error);

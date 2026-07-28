@@ -8,6 +8,12 @@
     <link rel="canonical" href="https://dime-time.com/" />
     <link rel="icon" type="image/png" href="/app-icon.png" />
     <link rel="apple-touch-icon" href="/app-icon.png" />
+
+    <!-- Plaid Link, embedded exactly once. react-plaid-link (checkForExisting)
+         reuses this tag instead of injecting its own; without it, React
+         StrictMode's double-mounted effect injects the script twice and Plaid
+         warns "link-initialize.js embedded more than once". -->
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     
     <!-- Open Graph Meta Tags for Link Previews -->
     <meta property="og:title" content="Dime Time - Get Out of Debt One Dime at a Time" />
@@ -115,8 +121,8 @@
       ]
     }
     </script>
-    <script type="module" crossorigin src="/assets/index-ElCldF5W.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-563wClaF.css">
+    <script type="module" crossorigin src="/assets/index-BvJfZ90Y.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CpLjkVD_.css">
   </head>
   <body>
     <div id="root"></div>
