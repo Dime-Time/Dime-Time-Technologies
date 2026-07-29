@@ -121,3 +121,62 @@ test("DB: user-edited currentBalance is not clobbered and originalBalance not bu
     await cleanup(userId);
   }
 });
+
+test("DB: merge marker and keep-both dismissal survive a provider refresh", async () => {
+  const userId = await makeUser();
+  try {
+    // Two imported cards + a manual entry the user typed in earlier.
+    const first = await storage.importDebtsFromProvider(userId, "sandbox", [
+      makeLiability({ providerAccountId: "acct-merge", mask: "4321", currentBalance: 3843.25 }),
+      makeLiability({ providerAccountId: "acct-keep", mask: "9876", currentBalance: 1200 }),
+    ]);
+    assert.equal(first.imported, 2);
+    const importedMerge = first.debts.find((d) => d.providerAccountId === "acct-merge")!;
+    const importedKeep = first.debts.find((d) => d.providerAccountId === "acct-keep")!;
+
+    const manual = await storage.createDebt({
+      userId,
+      name: "JP Morgan Credit Card",
+      accountNumber: "****4321",
+      originalBalance: "4000.00",
+      currentBalance: "3600.00",
+      interestRate: "22.99",
+      minimumPayment: "35.00",
+      dueDate: 15,
+    } as any);
+
+    // What the merge and dismiss-duplicate routes persist:
+    await storage.updateDebt(manual.id, { isActive: false, mergedIntoDebtId: importedMerge.id });
+    const manual2 = await storage.createDebt({
+      userId,
+      name: "Other Card",
+      accountNumber: "****9876",
+      originalBalance: "1300.00",
+      currentBalance: "1250.00",
+      interestRate: "19.99",
+      minimumPayment: "25.00",
+      dueDate: 5,
+    } as any);
+    await storage.updateDebt(manual2.id, { notDuplicateOf: [importedKeep.id] });
+
+    // Provider refresh with new balances.
+    const refresh = await storage.importDebtsFromProvider(userId, "sandbox", [
+      makeLiability({ providerAccountId: "acct-merge", mask: "4321", currentBalance: 3700 }),
+      makeLiability({ providerAccountId: "acct-keep", mask: "9876", currentBalance: 1150 }),
+    ]);
+    assert.equal(refresh.imported, 0, "refresh must update in place, never insert new rows");
+    assert.equal(refresh.updated, 2);
+
+    // Merged manual debt stays archived with its marker (persisted, not just returned).
+    const [mergedRow] = await db.select().from(debts).where(eq(debts.id, manual.id));
+    assert.equal(mergedRow.isActive, false, "refresh must not resurrect a merged manual debt");
+    assert.equal(mergedRow.mergedIntoDebtId, importedMerge.id);
+
+    // Keep-both dismissal persists.
+    const [keepRow] = await db.select().from(debts).where(eq(debts.id, manual2.id));
+    assert.deepEqual(keepRow.notDuplicateOf, [importedKeep.id], "refresh must not clear notDuplicateOf");
+    assert.equal(keepRow.isActive, true);
+  } finally {
+    await cleanup(userId);
+  }
+});

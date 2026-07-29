@@ -238,6 +238,9 @@ export default function Debts() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/debts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/debts/archived"] });
+      // Restoring un-merges the debt, so the duplicate prompt may need to
+      // reappear for the restored manual + still-active imported pair.
+      queryClient.invalidateQueries({ queryKey: ["/api/debts/duplicates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard-summary"] });
     },
     onError: () => {
