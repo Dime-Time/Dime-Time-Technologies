@@ -15,6 +15,7 @@
 - [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
 - [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic before declaring done.
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
+- [Maintenance-phase spend directive](spend-freeze-2026-07.md) — 2026-07-29: no tasks/optional dev without explicit ask; backlog-only suggestions; approval = spending real money.
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
 - [Masked Plaid token contract](masked-plaid-tokens.md) — listed bank accounts carry '[encrypted]' placeholder tokens; live Plaid calls must use getPlaidAccessToken(id) or they silently fail.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.

@@ -1,20 +1,28 @@
 ---
-name: Cash-preservation directive (2026-07-28)
-description: Founder froze optional dev spend to protect $1,000 rent; only outage/security/data-loss/store-rejection/user-blocking work allowed until lifted.
+name: Maintenance-phase spend directive
+description: Standing founder directive (2026-07-29) — maintenance/launch phase; no optional dev work or tasks without explicit authorization
 ---
 
-# Cash-preservation directive — effective 2026-07-28
+# Maintenance-phase spend directive (supersedes the 2026-07-28 freeze)
 
-The founder directed an immediate freeze on optional development and nonessential paid usage
-(subagents, background tasks, speculative features, redesigns, integrations).
+Founder directive 2026-07-29 after July billing hit ~$1,118 (usage invoices bill as accrued; a $267.69 invoice overdrew his bank account). The earlier "freeze" failed because approved tasks still ran — treat approval as spending.
 
-**Allowed work only:** production outage, security vulnerability, data-loss or money-movement
-risk, a store rejection blocking launch, or a verified user-blocking defect.
+**The rule:** codebase is in maintenance + launch phase, NOT feature development.
 
-**Release plan under freeze:** wait for Google Play verdict on build 209 → verify public
-release → build 210 contains ONLY already-merged changes (no new features) → Codemagic
-submission timed so it never threatens rent.
+Only surface work in these categories:
+- Critical production bugs preventing app use
+- Security vulnerabilities / compliance issues
+- Apple App Store or Google Play review requirements
+- Real-user-reported bugs materially affecting UX
+- Data loss, failed money movement, or broken bank connection risks
 
-**How to apply:** default to NO new tasks, NO code-review/testing subagent rounds, minimal
-verification, until the founder explicitly lifts the freeze. Do not assume incoming revenue
-before rent is due.
+Everything else (UI polish, cleanup, refactors, perf, enhancements, architecture, feature ideas) goes in a **written backlog summary only** — never as proposed tasks, never as prompts to spend.
+
+**How to apply:**
+- Do NOT create or propose project tasks / follow-up tasks unless explicitly asked.
+- Do NOT run optional subagent rounds (code review, testing, design) — minimal verification only.
+- Default every decision to minimizing paid agent work.
+- Founder decides later, based on user traction/revenue, what leaves the backlog.
+- His priorities: 1) stability, 2) launch, 3) real users, 4) learn before building.
+
+Cost facts for context: quiet-month floor is ~$10–50/mo (hosting + prod DB); everything above is agent usage. Budget cap + alerts recommended in Account → Usage.
