@@ -558,3 +558,21 @@ id = "QJOxQKi_My-TukEtc-AYE"
 uri = "file://attached_assets/aeo-store-listings/README-paste-guide.txt"
 type = "text"
 title = "AEO Store Listing Pack — paste guide (Play + App Store)"
+
+[[outputs]]
+id = "IRvDXZvOHQgq7eX3AFU5W"
+uri = "file://attached_assets/generated_images/pin_periwinkle_enamel.png"
+type = "image"
+title = "Pin concept 1 — Periwinkle enamel"
+
+[[outputs]]
+id = "9aOiaRnS7SSc6tKv_UHQ8"
+uri = "file://attached_assets/generated_images/pin_brushed_aluminum.png"
+type = "image"
+title = "Pin concept 2 — Brushed aluminum"
+
+[[outputs]]
+id = "rK-6hicEbZCwquX6m0XQl"
+uri = "file://attached_assets/generated_images/pin_silver_periwinkle.png"
+type = "image"
+title = "Pin concept 3 — Silver + periwinkle"
