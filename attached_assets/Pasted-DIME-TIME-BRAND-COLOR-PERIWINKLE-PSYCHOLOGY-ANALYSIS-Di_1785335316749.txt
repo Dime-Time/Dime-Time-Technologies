@@ -1,0 +1,39 @@
+DIME TIME BRAND COLOR — PERIWINKLE PSYCHOLOGY ANALYSIS
+
+Dime Time’s official primary brand color is:
+
+HEX: #918EF4
+COLOR FAMILY: Periwinkle
+RGB: 145, 142, 244
+
+Dime Time is a fintech app that helps users pay down debt through spare-change round-ups and automated payments. The brand is intended to feel trustworthy, modern, supportive, intelligent, and distinct from traditional banks.
+
+Please analyze the psychology behind the color periwinkle and explain what #918EF4 communicates specifically for Dime Time.
+
+Please address:
+
+1. The psychological meaning of periwinkle.
+2. How periwinkle combines the qualities of blue and purple.
+3. The emotions and associations the color may create for users.
+4. How the color can communicate:
+   - Trust
+   - Security
+   - Calmness
+   - Compassion
+   - Optimism
+   - Innovation
+   - Intelligence
+   - Financial progress
+5. Why periwinkle may be appropriate for a debt-payoff application, especially for users who may feel anxiety, stress, guilt, or shame around debt.
+6. How #918EF4 differentiates Dime Time from financial companies that primarily use dark blue, green, black, or red.
+7. How the color supports Dime Time’s three defining characteristics:
+   - Altruism: helping people improve their financial lives.
+   - Benevolence: treating users with empathy and without judgment.
+   - Juggernaut: relentlessly attacking the debt problem through disciplined technology and execution.
+8. The potential strengths and weaknesses of using a soft periwinkle as the primary color for a serious fintech company.
+9. Accessibility considerations, including contrast, text readability, buttons, backgrounds, dark mode, and recommended supporting colors.
+10. A concise brand-positioning statement describing what Dime Time’s periwinkle communicates to users.
+
+Do not make any changes to the app, website, code, styles, theme, or brand assets.
+
+This is an analysis-only request. Respond with detailed psychology and branding notes, practical recommendations, and a concise conclusion about what periwinkle means for Dime Time.
