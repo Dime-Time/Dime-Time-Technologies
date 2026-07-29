@@ -1,0 +1,179 @@
+DIME TIME — AUTHENTICATION STRATEGY REVIEW
+EMAIL VERIFICATION vs SMS (2FA) VERIFICATION
+
+Context:
+
+While preparing Build 210 for public launch, we've identified the email verification step as one of the largest potential onboarding friction points.
+
+Current authentication flow:
+
+- User creates an account
+- Verification email is sent
+- User leaves the app
+- Opens their email
+- Finds the verification message
+- Clicks the verification link
+- Returns to Dime Time
+- Continues onboarding
+
+Our concern is that this may become one of the biggest abandonment points, especially among first-time users.
+
+I'm considering replacing email verification with SMS verification using a one-time passcode (OTP), where the user enters their mobile number and receives a six-digit verification code by text message.
+
+I want you to evaluate this idea based on Dime Time's existing architecture—not as a hypothetical greenfield redesign.
+
+==================================================
+YOUR TASK
+==================================================
+
+Perform a complete technical, product, UX, security, and business analysis of replacing email verification with SMS verification.
+
+Assume Build 210 is our first major public launch.
+
+Evaluate whether SMS authentication would meaningfully improve:
+
+• onboarding completion
+• user activation
+• account verification success
+• first-session completion
+• bank-link completion
+• debt import completion
+• overall conversion
+• user trust
+
+==================================================
+TECHNICAL REVIEW
+==================================================
+
+Review our current authentication system and answer:
+
+1. How difficult would it be to replace email verification with SMS OTP?
+
+2. Could SMS become the primary verification method while still collecting an email address?
+
+3. Would you recommend:
+   • SMS only
+   • Email only
+   • SMS + Email
+   • User chooses either method
+
+Explain why.
+
+==================================================
+SECURITY REVIEW
+==================================================
+
+Analyze:
+
+• account security
+• fraud prevention
+• identity verification
+• account recovery
+• SIM-swap risks
+• phishing risks
+• brute-force protection
+• OTP expiration
+• rate limiting
+• replay attack prevention
+
+Would SMS verification reduce or increase our overall security?
+
+What additional safeguards would be required?
+
+==================================================
+USER EXPERIENCE REVIEW
+==================================================
+
+Would SMS verification:
+
+• reduce onboarding friction?
+• improve completion rates?
+• make Dime Time feel more modern?
+• improve user confidence?
+
+Where might SMS introduce new friction?
+
+==================================================
+COST REVIEW
+==================================================
+
+Estimate:
+
+• implementation effort
+• infrastructure changes
+• ongoing SMS costs
+• scalability
+• maintenance burden
+
+Would the conversion improvements likely justify the ongoing operational cost?
+
+==================================================
+FINTECH BENCHMARKING
+==================================================
+
+Compare Dime Time's authentication strategy against modern consumer fintech apps such as:
+
+• Acorns
+• Rocket Money
+• Monarch Money
+• Credit Karma
+• Chime
+• SoFi
+• Robinhood
+• Cash App
+• Venmo
+
+How do they typically balance:
+
+• onboarding speed
+• security
+• trust
+• compliance
+• account recovery
+
+What lessons should we apply?
+
+==================================================
+RECOMMENDATION
+==================================================
+
+Considering Dime Time's current stage as an early-stage fintech startup with limited development resources, which authentication strategy would you recommend?
+
+Option A
+Keep email verification.
+
+Option B
+Replace email verification with SMS OTP.
+
+Option C
+Use SMS OTP for verification while collecting email for account recovery and important communications.
+
+Option D
+Allow users to choose SMS or email verification.
+
+If you recommend another approach, explain it.
+
+==================================================
+IMPLEMENTATION PLAN
+==================================================
+
+If you recommend changing authentication, provide:
+
+• estimated development effort
+• implementation steps
+• required third-party services (e.g., Twilio, Stripe Identity, Firebase Authentication, etc.)
+• expected onboarding improvement
+• expected security impact
+• expected ongoing cost
+• rollout strategy
+• migration considerations for existing users
+
+==================================================
+FINAL QUESTION
+==================================================
+
+If your goal were to maximize Build 210's onboarding completion rate while maintaining an appropriate level of security and trust for a consumer fintech application, would you keep the current email verification system or migrate to SMS verification?
+
+Do not simply tell me what is technically possible.
+
+Tell me what you believe is the best long-term product decision for Dime Time based on our current codebase, architecture, growth stage, budget, and the user experience we want to deliver.
