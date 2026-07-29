@@ -594,3 +594,15 @@ id = "tohyNNMPPbgy4JPXrLgWa"
 uri = "file://attached_assets/generated_images/official_pin_silver_periwinkle.png"
 type = "image"
 title = "Official pin — brushed aluminum + periwinkle logo"
+
+[[outputs]]
+id = "O8YFQKTmI_auVaTO7BWl3"
+uri = "file://attached_assets/generated_images/diecut_pin_lapel.png"
+type = "image"
+title = "Die-cut logo pin — worn on lapel"
+
+[[outputs]]
+id = "NDO-B_Fs37k27B7M5Zm8a"
+uri = "file://attached_assets/generated_images/diecut_pin_marble.png"
+type = "image"
+title = "Die-cut logo pin — studio shot with backing"
