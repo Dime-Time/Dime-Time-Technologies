@@ -1,0 +1,311 @@
+DIME TIME — BUILD 210 FINAL PRE-LAUNCH STRATEGY REVIEW
+SECOND OPINION & EXECUTION PLAN
+
+Context:
+
+I asked for an independent review of Build 210 after completing a comprehensive pre-launch audit. Build 210 will be the first version I actively promote to coworkers, friends, family, LinkedIn, and eventually the general public.
+
+Current status:
+- iOS live on the Apple App Store
+- Web app live
+- Android Build 209 under Google Play review
+- Build 210 includes:
+  • Multi-bank debt import
+  • Target debt selection
+  • Duplicate debt detection
+  • New-user "Get Started" onboarding card
+  • Numerous UX improvements
+
+Current App Store Analytics:
+- 82 impressions
+- 0 downloads
+- 0 crashes
+
+The goal of Build 210 is to become the strongest possible foundation before acquiring our first 100 real users.
+
+==========================================================
+UPDATED PRIORITY ORDER
+==========================================================
+
+🔴 PRIORITY 1 — VERIFY EMAIL DELIVERY
+
+This remains the highest priority.
+
+Before inviting anyone to test:
+
+- Verify emails arrive quickly.
+- Test Gmail.
+- Test Outlook.
+- Test Yahoo if possible.
+- Check spam folders.
+- Measure delivery time.
+- Confirm users can verify accounts without confusion.
+
+If signup fails, nothing else matters.
+
+==========================================================
+🔴 PRIORITY 2 — WATCH A COMPLETE FIRST-TIME USER
+
+Don't only verify email.
+
+Watch ONE coworker complete the ENTIRE production experience without coaching.
+
+The test should include:
+
+• Account creation
+• Email verification
+• Login
+• Plaid bank connection
+• Debt import
+• Target debt selection
+• Round-up configuration
+• Dashboard arrival
+
+Do not help unless absolutely necessary.
+
+Observe every hesitation.
+
+Write down:
+
+- Questions they ask
+- Places they stop
+- Buttons they miss
+- Moments of confusion
+- Screens they reread
+- Anything they expect but don't see
+
+This is the single most valuable usability test before inviting more users.
+
+==========================================================
+🔴 PRIORITY 3 — DECIDE THE SUBSCRIPTION POLICY
+
+The biggest trust risk isn't charging $2.99/month.
+
+The biggest trust risk is surprising people.
+
+Be transparent before they reach the paywall.
+
+Suggested wording:
+
+"Thanks for helping me test Dime Time. One thing you'll notice is that automatic round-ups are part of the $2.99/month subscription. I intentionally left it this way because I'd really like your honest opinion about whether the pricing feels fair and whether the experience is worth it. Please don't be polite—if something feels confusing or overpriced, tell me."
+
+This frames the subscription as something being evaluated rather than sold.
+
+==========================================================
+🟠 PRIORITY 4 — APP STORE OPTIMIZATION
+
+Before LinkedIn marketing begins:
+
+Review:
+
+• App title
+• Subtitle
+• Keywords
+• Description
+• Screenshot order
+• Screenshot messaging
+• "What's New"
+• App Preview video opportunities
+
+The App Store page is the landing page for everyone coming from LinkedIn.
+
+==========================================================
+🟠 PRIORITY 5 — HIDE THE CRYPTO TAB
+
+Recommendation:
+
+Temporarily disable the Crypto preview.
+
+Reason:
+
+The launch message should remain extremely simple:
+
+"Dime Time helps people pay off debt automatically."
+
+Introducing Bitcoin at launch creates unnecessary cognitive load and may reduce trust among users whose immediate goal is debt reduction.
+
+Crypto can return later after trust has been established.
+
+==========================================================
+WHAT IS MISSING?
+
+I believe one important UX opportunity remains.
+
+==========================================================
+1. THE EXPECTATION GAP
+
+After onboarding finishes, users should immediately understand what happens next.
+
+Many people have never used an automated fintech app.
+
+The dashboard should clearly explain:
+
+✓ Bank connected
+
+✓ Debt imported
+
+✓ Target debt selected
+
+✓ Round-ups enabled
+
+✓ Waiting for your next eligible purchase
+
+The final message is especially important.
+
+It tells users that nothing is broken—they simply haven't made another qualifying purchase yet.
+
+==========================================================
+2. THE "NOTHING HAPPENED" PROBLEM
+
+Many fintech apps appear inactive immediately after setup.
+
+Avoid this.
+
+Once onboarding finishes, the dashboard should reassure users that the system is actively waiting for their next purchase.
+
+Users should never wonder:
+
+"Did it actually work?"
+
+or
+
+"Is anything happening?"
+
+==========================================================
+USER TESTING BEST PRACTICES
+
+Ask open-ended questions before specific questions.
+
+Instead of:
+
+"Was it easy?"
+
+Ask:
+
+"What do you think this screen is asking you to do?"
+
+"What do you think happens if you press this button?"
+
+"What were you expecting to happen?"
+
+These questions reveal far more than satisfaction scores.
+
+==========================================================
+DO NOT HELP DURING OBSERVATION
+
+If someone gets stuck...
+
+Stay silent.
+
+Observe.
+
+Only after the task ask:
+
+"What were you expecting?"
+
+The moments where users hesitate are usually the highest-value UX improvements.
+
+==========================================================
+SEPARATE BUGS FROM UX
+
+Maintain two lists.
+
+BUGS
+- Crash
+- Doesn't work
+- Import failure
+- Incorrect calculations
+- Login problems
+
+UX
+- Confusing wording
+- Didn't notice button
+- Didn't trust Plaid
+- Didn't know they were finished
+- Didn't understand what happened next
+
+These should be prioritized separately.
+
+==========================================================
+ASK ONE FINAL QUESTION
+
+At the end of every beta session ask:
+
+"If Dime Time disappeared tomorrow, would you miss it? Why or why not?"
+
+If users say yes...
+
+Learn why.
+
+If users say no...
+
+That answer is equally valuable.
+
+==========================================================
+RECOMMENDED BETA STRATEGY
+
+Instead of inviting everyone immediately:
+
+Wave 1
+2–3 coworkers
+
+↓
+
+Fix issues
+
+↓
+
+Wave 2
+Another 3–5 coworkers
+
+↓
+
+Fix issues
+
+↓
+
+Wave 3
+Larger rollout
+
+This prevents one bug from affecting every tester and creates faster iteration.
+
+==========================================================
+OVERALL ASSESSMENT
+
+Technical Readiness:
+9/10
+
+Product Direction:
+9/10
+
+Onboarding Confidence:
+Approximately 7.5–8/10 until one complete unassisted production walkthrough succeeds.
+
+Marketing Readiness:
+Approximately 8.5/10 assuming:
+- Build 210 ships correctly
+- App Store listing is improved
+- The onboarding experience proves successful with real users
+
+==========================================================
+FINAL REQUEST
+
+Review this strategy against the current Build 210 codebase.
+
+Tell me whether you agree or disagree with each recommendation.
+
+Challenge any assumptions.
+
+If there are additional UX improvements, onboarding improvements, trust improvements, App Store optimization opportunities, or conversion improvements that should be made before I begin acquiring users, identify them.
+
+Think like:
+
+- Head of Product
+- Senior UX Designer
+- Consumer Fintech Founder
+- QA Lead
+- Growth Lead
+
+The objective is simple:
+
+Make Build 210 the strongest possible launch version before I begin inviting coworkers, collecting App Store reviews, posting on LinkedIn, and acquiring the first 100 real users.
