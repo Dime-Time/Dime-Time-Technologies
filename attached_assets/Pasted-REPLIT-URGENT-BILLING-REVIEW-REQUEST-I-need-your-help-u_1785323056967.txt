@@ -1,0 +1,41 @@
+REPLIT — URGENT BILLING REVIEW REQUEST
+
+I need your help understanding a billing issue.
+
+Today I was charged approximately $267 by Replit, and the charge overdrew my bank account.
+
+This is especially concerning because I intentionally entered a spending freeze to protect my rent and other essential expenses while continuing development on Dime Time.
+
+Please perform a complete audit of my Replit usage and billing.
+
+Specifically, I want to know:
+
+1. Exactly what generated this $267 charge.
+2. Provide a complete line-item breakdown of every charge included.
+3. Was this from AI agent usage, Autoscale hosting, deployments, PostgreSQL, storage, bandwidth, compute, outbound networking, or another service?
+4. Was this a recurring monthly charge or usage-based billing?
+5. Which projects, services, or deployments generated the costs?
+6. On what dates and times did the usage occur?
+7. Were there any unusual spikes in usage?
+8. Did any background services, deployments, or agents continue running that I may not have realized were incurring costs?
+9. Were any spending limits, alerts, or budget thresholds exceeded?
+10. Could this charge have been prevented with different billing settings?
+
+Please also review my current infrastructure and answer:
+
+- Which services are costing me the most money?
+- Which services are essential for Dime Time to remain operational?
+- Which services could be reduced, paused, downgraded, or optimized without affecting production?
+- Are there any idle resources or unnecessary expenses?
+- What is my current estimated monthly run rate if I make no changes?
+- What would my estimated monthly run rate be after applying your recommended optimizations?
+
+Finally, recommend a cost-control strategy so this never happens again.
+
+Specifically, tell me:
+- Which budget limits I should configure.
+- Which billing alerts I should enable.
+- Whether there are any autoscaling or AI usage settings I should change.
+- Any best practices for keeping Dime Time online while minimizing unexpected charges.
+
+Please be as detailed as possible and identify the exact source of the $267 charge. If there were multiple contributing factors, break down each one individually and explain why those charges occurred.
