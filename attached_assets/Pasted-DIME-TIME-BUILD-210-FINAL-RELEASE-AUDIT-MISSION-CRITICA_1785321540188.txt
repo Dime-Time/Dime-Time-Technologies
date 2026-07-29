@@ -1,0 +1,166 @@
+DIME TIME — BUILD 210 FINAL RELEASE AUDIT
+MISSION-CRITICAL PRE-LAUNCH REVIEW
+
+Context:
+
+I am the solo founder of Dime Time, a consumer fintech debt-payoff app that rounds up everyday purchases and applies spare change toward users' debts.
+
+Current status:
+- iOS live in the Apple App Store
+- Web app live
+- Android Build 209 currently under Google Play review
+- Build 210 will become the first version that I actively promote to real users, coworkers, friends, family, LinkedIn, and the public.
+
+This is the build that transitions Dime Time from a technically proven product into a product intended for real user growth.
+
+Current App Store Analytics (July 20–26):
+- 82 App Store impressions
+- 0 downloads
+- 0 crashes
+- No marketing has been performed yet.
+
+Immediately after Build 210 is approved I plan to:
+- Recruit 5–10 coworkers as beta testers.
+- Observe them using the app without coaching them.
+- Collect honest feedback.
+- Ask for authentic App Store reviews if they genuinely find the app useful.
+- Begin LinkedIn marketing.
+- Begin founder-story marketing.
+- Begin acquiring users outside my personal network.
+
+Because of this, I want Build 210 to be the best user experience we can reasonably deliver before introducing Dime Time to larger audiences.
+
+YOUR TASK
+
+Perform a complete audit of Build 210 and the current codebase.
+
+Do not assume Build 210 is ready simply because it works technically.
+
+Evaluate it from the perspective of a first-time user who has never heard of Dime Time.
+
+I want you to aggressively critique every aspect of the experience.
+
+Review:
+
+• onboarding
+• registration
+• authentication
+• navigation
+• dashboard
+• debt import
+• multi-bank support
+• target debt selection
+• round-up setup
+• settings
+• profile
+• loading states
+• empty states
+• success states
+• confirmation dialogs
+• error messages
+• typography
+• spacing
+• animations
+• accessibility
+• responsiveness
+• performance
+• security messaging
+• Plaid trust
+• Stripe trust
+• visual polish
+• production readiness
+
+Specifically answer:
+
+1. Is Build 210 intuitive for someone who has never used a fintech app?
+
+2. Does every screen clearly communicate what the user should do next?
+
+3. Are there moments where users may become confused?
+
+4. Where are users most likely to abandon onboarding?
+
+5. Is the first five-minute experience excellent?
+
+6. Is the app simple enough that my coworkers can complete setup without me helping them?
+
+7. If not, exactly what needs to change?
+
+8. What are the biggest UX weaknesses?
+
+9. What visual improvements would significantly increase trust?
+
+10. Does the onboarding create confidence around connecting a bank account?
+
+11. Are there unnecessary taps?
+
+12. Are there unnecessary screens?
+
+13. Are there opportunities to simplify language?
+
+14. Are loading states reassuring?
+
+15. Does every success screen clearly explain what happens next?
+
+16. Does the dashboard immediately communicate value?
+
+17. Does the app feel premium?
+
+18. Does it feel trustworthy enough for someone to connect their bank?
+
+19. Would you personally release Build 210?
+
+20. If not, why not?
+
+I also want a complete conversion optimization review.
+
+Review everything that could improve:
+
+• App Store conversion
+• onboarding completion
+• bank-link completion
+• debt-import completion
+• first-session completion
+• return sessions
+• retention
+• App Store reviews
+• referrals
+• long-term engagement
+
+Prioritize every recommendation using this framework:
+
+🔴 Critical
+Must be fixed before launch because it will likely reduce trust, cause abandonment, or prevent successful onboarding.
+
+🟠 High
+Should be fixed before broad marketing because it will noticeably improve activation, usability, or retention.
+
+🟡 Medium
+Helpful improvements that can wait until after launch.
+
+🟢 Low
+Nice-to-have polish.
+
+Finally, answer these strategic questions:
+
+• If Build 210 launched today, what is your confidence (0–100%) that a first-time user could successfully complete onboarding without assistance?
+
+• What is your confidence (0–100%) that my coworkers will recommend the app after using it?
+
+• What are the top 10 improvements that would have the greatest impact on increasing:
+  - App Store downloads
+  - User activation
+  - Bank-link completion
+  - Debt imports
+  - Session count
+  - Retention
+  - App Store ratings
+  - Overall user satisfaction
+
+Do not protect my feelings.
+
+Treat this as if you were the Head of Product, Head of UX, Head of Growth, and QA Lead preparing a fintech app for public launch.
+
+If you believe something should be changed before Build 210 is released, tell me directly and explain why.
+
+The goal is for Build 210 to become the strongest possible foundation for acquiring our first 100 real users and turning them into engaged, satisfied customers.
