@@ -576,3 +576,21 @@ id = "rK-6hicEbZCwquX6m0XQl"
 uri = "file://attached_assets/generated_images/pin_silver_periwinkle.png"
 type = "image"
 title = "Pin concept 3 — Silver + periwinkle"
+
+[[outputs]]
+id = "fv9idvH-PmPffP_nD1Mq0"
+uri = "file://attached_assets/generated_images/official_pin_periwinkle.png"
+type = "image"
+title = "Official pin — periwinkle enamel, official logo"
+
+[[outputs]]
+id = "s9mXZa5UZKeaOmqZW4oHB"
+uri = "file://attached_assets/generated_images/official_pin_aluminum.png"
+type = "image"
+title = "Official pin — brushed aluminum, engraved logo"
+
+[[outputs]]
+id = "tohyNNMPPbgy4JPXrLgWa"
+uri = "file://attached_assets/generated_images/official_pin_silver_periwinkle.png"
+type = "image"
+title = "Official pin — brushed aluminum + periwinkle logo"
