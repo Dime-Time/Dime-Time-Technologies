@@ -1,0 +1,91 @@
+DIME TIME — FIRST REAL-WORLD USER TESTING PLAN (POST BUILD 210)
+
+I think we have a unique opportunity immediately after Build 210 launches.
+
+Because I work as a sommelier/server at Delilah, I have direct access to dozens of coworkers who fit our ideal customer profile. Several of them carry credit card debt, and at least one coworker approached me on her own asking about Dime Time because she has approximately $5,000 in credit card debt and wanted to download the app to help test it.
+
+Rather than trying to immediately acquire random users, I want to intentionally use my coworkers as our first structured beta cohort.
+
+Objectives:
+- Validate the complete onboarding experience.
+- Identify confusing screens.
+- Find bugs before scaling.
+- Observe real users using the app.
+- Increase App Store downloads.
+- Collect honest product feedback.
+- Improve retention before broader marketing.
+
+My proposed workflow:
+
+1. Release Build 210.
+
+2. Post a message in our 7shifts employee forum inviting coworkers to help test Dime Time.
+
+3. Ask volunteers to:
+   - Download the app.
+   - Create an account.
+   - Link their bank (if comfortable).
+   - Import their debts.
+   - Navigate through the entire onboarding flow.
+   - Use the app naturally.
+
+4. Because I work with these people every week, I can gather feedback in person instead of waiting for emails or support tickets.
+
+Questions I want answered:
+- What confused you?
+- Where did you hesitate?
+- Did anything feel unclear?
+- Did anything fail?
+- What would make you actually use this every week?
+- Would you recommend it to a friend?
+- What feature is missing?
+
+If possible, I'd also like to watch a few coworkers use the app without giving them instructions. Every question they ask or every place they hesitate identifies UX friction that we should eliminate.
+
+Examples:
+- "What does this button do?"
+- "Am I finished?"
+- "Is this safe?"
+- "What happens next?"
+
+Every hesitation is an opportunity to improve the onboarding experience.
+
+I also want to create an internal feedback process inside Dime Time.
+
+Please design:
+- An in-app feedback button.
+- Bug reporting.
+- Feature requests.
+- Optional screenshots.
+- Device information.
+- Build number.
+- Logs (if appropriate).
+- User journey information to help reproduce issues.
+
+Additionally, help me design a structured beta testing checklist so every volunteer completes the same evaluation.
+
+Example sections:
+- Account creation
+- Bank linking
+- Debt import
+- Navigation
+- Performance
+- Visual design
+- Trust/security
+- Ease of use
+- Overall satisfaction
+- Feature requests
+- Bug reports
+
+Finally, identify any additional analytics events we should capture during this testing phase so we can measure:
+- Onboarding completion rate
+- Bank-link completion rate
+- Debt import success rate
+- Time to first successful debt import
+- User drop-off points
+- Session duration
+- Return sessions
+- Feature usage
+- Error rates
+
+The goal is to use this first group of real users to polish the product before scaling marketing. Since I interact with these coworkers every week, this gives us an unusually fast and high-quality feedback loop that can significantly improve Dime Time before we begin acquiring larger numbers of users.
