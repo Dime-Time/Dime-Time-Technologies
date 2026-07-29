@@ -1,0 +1,89 @@
+DIME TIME — BUILD 210 GROWTH STRATEGY REQUEST
+
+Context:
+Dime Time is a live fintech debt-payoff app that rounds up purchases and applies spare change toward debt. The app is live on the Apple App Store, the web is live, and Android is under Google Play review. Build 210 is our next major release.
+
+Current App Store Analytics (July 20–26, 2026):
+- Impressions: 82
+- App Units: 0
+- Sessions: 5 (+67%)
+- Crashes: 0
+
+I want Build 210 to dramatically improve growth. Please analyze the entire codebase, current App Store listing, onboarding flow, user experience, analytics, marketing opportunities, and product strategy, then produce a detailed execution plan.
+
+Specifically, identify everything we can do to increase:
+
+• App Store impressions
+• Product page views
+• Conversion rate (page views → downloads)
+• App installs
+• Session count
+• User retention
+• App Store ratings and reviews
+• Organic App Store ranking (ASO)
+• User referrals
+• Overall growth
+
+Please evaluate the following areas:
+
+1. APP STORE OPTIMIZATION (ASO)
+- Improve title, subtitle, keywords, description, and screenshot messaging.
+- Recommend new screenshot concepts and captions.
+- Recommend an App Preview video script.
+- Rewrite the "What's New" section for Build 210 to maximize interest.
+
+2. ONBOARDING
+Analyze every screen from first launch through first successful debt import.
+Identify friction points that could reduce activation.
+Recommend ways to get a new user connected and seeing their debts in under five minutes.
+
+3. USER EXPERIENCE
+Identify opportunities to:
+- reduce confusion
+- increase trust
+- simplify navigation
+- increase engagement
+- increase return sessions
+
+4. RATINGS & REVIEWS
+Recommend the optimal point in the user journey to trigger Apple's in-app review prompt.
+Determine which user milestones should trigger review requests.
+
+5. ANALYTICS
+Recommend additional analytics events we should capture.
+Identify key funnel metrics we should monitor.
+
+6. GROWTH
+Recommend built-in viral or referral mechanisms.
+Suggest ways to increase word-of-mouth.
+Recommend incentives that comply with App Store guidelines.
+
+7. RETENTION
+Recommend notifications, reminders, progress indicators, streaks, milestones, achievements, or other engagement systems that encourage users to return without becoming annoying.
+
+8. TRUST
+Review onboarding, security messaging, Plaid integration, Stripe integration, and financial explanations.
+Recommend ways to improve credibility and increase bank-link completion rates.
+
+9. BUILD 210 FEATURE IDEAS
+Identify quick wins that could significantly improve:
+- downloads
+- activation
+- retention
+- user satisfaction
+
+Prioritize features by:
+- Development effort
+- Expected impact
+- Return on investment
+
+10. 30-DAY EXECUTION PLAN
+Create a ranked roadmap of the highest-impact improvements we should implement immediately after Build 210.
+
+For every recommendation include:
+- Expected impact (High / Medium / Low)
+- Estimated implementation effort
+- Why it matters
+- Suggested implementation approach
+
+The goal is to increase impressions from dozens per week into the hundreds, improve conversion rates, acquire our first 100+ active users, collect authentic App Store reviews, and build a repeatable growth engine while maintaining a stable, trustworthy fintech experience.
