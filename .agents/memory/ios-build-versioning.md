@@ -14,3 +14,5 @@ description: Info.plist is the ONLY version source of truth; historical overwrit
 **Capacitor cold-start rule:** NEVER set `server.url` in `capacitor.config.ts` — it makes the iOS WebView download the entire Vite bundle from https://dime-time.com on every cold launch (~10s delay observed in TestFlight). Bundled assets must ship inside the IPA (`webDir: 'dist/public'` → `ios/App/App/public/`); API calls route to production via `Capacitor.isNativePlatform()` in `client/src/lib/queryClient.ts`. **Before each Codemagic build:** `npm run build && npx cap sync ios` so `ios/App/App/public/` has a fresh bundle (otherwise stale placeholders ship).
 
 Deployment chain: Codemagic CI/CD (Mac mini M2) → App Store Connect (TestFlight → App Store), Apple Developer certs.
+
+**Approved version closes the train (2026-07-30):** once Apple approves a marketing version (CFBundleShortVersionString), that train is CLOSED — altool rejects any new build for it (errors 90062/90186). A new upload needs BOTH a higher marketing version and a new build number; bump Android versionCode/versionName in lockstep.
