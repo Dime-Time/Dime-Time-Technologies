@@ -88,7 +88,7 @@ workflows:
 
           # Hard guard against shipping a build <= the last one Apple has on
           # file. Update LAST_ACCEPTED_BY_APPLE whenever a build is accepted.
-          LAST_ACCEPTED_BY_APPLE=210
+          LAST_ACCEPTED_BY_APPLE=211
           if [ "$CURRENT_BUILD_NUMBER" -le "$LAST_ACCEPTED_BY_APPLE" ]; then
             echo "FATAL: CFBundleVersion ($CURRENT_BUILD_NUMBER) must be strictly greater than the last value Apple accepted ($LAST_ACCEPTED_BY_APPLE)."
             echo "       Bump CFBundleVersion in ios/App/App/Info.plist, commit, push, and re-trigger."
@@ -146,7 +146,7 @@ workflows:
           echo "    CFBundleShortVersionString = $IPA_SHORT_VERSION"
           echo "    CFBundleVersion            = $IPA_BUILD_NUMBER"
 
-          LAST_ACCEPTED_BY_APPLE=210
+          LAST_ACCEPTED_BY_APPLE=211
           if [ "$IPA_BUILD_NUMBER" -le "$LAST_ACCEPTED_BY_APPLE" ]; then
             echo "FATAL: Final IPA CFBundleVersion ($IPA_BUILD_NUMBER) is not strictly greater than the last value Apple accepted ($LAST_ACCEPTED_BY_APPLE)."
             echo "       Apple WILL reject this upload. Aborting before we waste an altool round-trip."
