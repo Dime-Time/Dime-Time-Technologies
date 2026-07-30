@@ -29,8 +29,10 @@ import {
   PieChart,
   Lightbulb
 } from "lucide-react";
+import { X, Copy } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Transaction, Debt } from "@shared/schema";
+import type { DuplicateDebtPair } from "@shared/debtDuplicates";
 import {
   getCachedSummary,
   getCachedDebts,
@@ -127,6 +129,31 @@ export default function Dashboard() {
     }
   }, [debts, debtsFetched]);
 
+  // ── Possible duplicate debts (manual + imported) ──────────────────────────
+  // The inflated total is most visible here on the dashboard, so surface a
+  // compact notice linking to /debts where the merge/dismiss actions live.
+  const { data: duplicatePairs = [] } = useQuery<DuplicateDebtPair[]>({
+    queryKey: ["/api/debts/duplicates"],
+  });
+  // Dismissal is per-session only: if pairs still exist next visit, the
+  // total is still inflated and the notice should come back.
+  const [duplicateNoticeDismissed, setDuplicateNoticeDismissed] = useState(
+    () => sessionStorage.getItem("dashboardDuplicateNoticeDismissed") === "1"
+  );
+  const dismissDuplicateNotice = () => {
+    sessionStorage.setItem("dashboardDuplicateNoticeDismissed", "1");
+    setDuplicateNoticeDismissed(true);
+  };
+  // Only count pairs whose two debts are still in the active list (queries
+  // can briefly disagree right after a merge on the Debts page).
+  const debtIds = new Set(debts.map((d) => d.id));
+  const visibleDuplicatePairs =
+    debts.length > 0
+      ? duplicatePairs.filter(
+          (p) => debtIds.has(p.manualDebtId) && debtIds.has(p.importedDebtId)
+        )
+      : duplicatePairs;
+
   // ── Derived values ─────────────────────────────────────────────────────────
   const activeSummary = summary ?? EMPTY_SUMMARY;
   const recentTransactions = transactions.slice(0, 4);
@@ -178,6 +205,38 @@ export default function Dashboard() {
       <RoundUpPausedBanner />
 
       <GetStartedCard />
+
+      {/* Possible duplicate debts — compact notice linking to the Debts page */}
+      {!duplicateNoticeDismissed && visibleDuplicatePairs.length > 0 && (
+        <div
+          className="mb-6 flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3"
+          data-testid="banner-duplicate-debts"
+        >
+          <Copy className="w-4 h-4 text-amber-600 shrink-0" />
+          <p className="text-sm text-amber-900 flex-1 min-w-0">
+            {visibleDuplicatePairs.length === 1
+              ? "1 debt may be a duplicate"
+              : `${visibleDuplicatePairs.length} debts may be duplicates`}{" "}
+            — your total could be inflated.{" "}
+            <Link
+              href="/debts"
+              className="font-semibold underline underline-offset-2 hover:text-amber-700"
+              data-testid="link-review-duplicates"
+            >
+              Review
+            </Link>
+          </p>
+          <button
+            type="button"
+            onClick={dismissDuplicateNotice}
+            className="shrink-0 rounded-full p-1 text-amber-500 hover:text-amber-800 hover:bg-amber-100 transition-colors"
+            aria-label="Dismiss duplicate notice"
+            data-testid="button-dismiss-duplicate-notice"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Today's/This Month Progress (Hero Card) */}
       <section className="mb-6">
