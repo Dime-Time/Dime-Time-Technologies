@@ -10,7 +10,7 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "test": "tsx --test $(find client server shared -path '*__tests__*' -name '*.test.ts' ! -name '*-db.test.ts' ! -name 'real-transfer-gate.test.ts' | sort)",
-    "test:db": "drizzle-kit push --force && tsx --test server/__tests__/debt-import-db.test.ts server/__tests__/real-transfer-gate.test.ts server/__tests__/storage-parity-db.test.ts"
+    "test:db": "drizzle-kit push --force && tsx --test server/__tests__/debt-import-db.test.ts server/__tests__/debt-provider-connection-db.test.ts server/__tests__/real-transfer-gate.test.ts server/__tests__/storage-parity-db.test.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",
