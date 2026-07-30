@@ -538,6 +538,14 @@ var debts = pgTable("debts", {
   // Fields the user manually overrode after import — refresh skips these so a
   // re-import never clobbers the user's edits.
   userEditedFields: text("user_edited_fields").array().default(sql`'{}'::text[]`).notNull(),
+  // --- Duplicate handling (manual debt vs imported debt) ---
+  // When a manual debt is merged into an imported duplicate, it is archived
+  // (isActive=false) and this records which imported debt absorbed it —
+  // restore clears it. Never a hard delete: payment history stays attached.
+  mergedIntoDebtId: varchar("merged_into_debt_id"),
+  // Imported debt ids the user explicitly said are NOT duplicates of this
+  // manual debt ("keep both") — the duplicate detector skips these pairs.
+  notDuplicateOf: text("not_duplicate_of").array().default(sql`'{}'::text[]`).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => [
   // Duplicate detection: one row per (user, provider, provider account).
@@ -2581,6 +2589,35 @@ var PlaidService = class {
       return response.data.link_token;
     } catch (error) {
       console.error("Error creating link token:", this.redactPlaidError(error));
+      throw error;
+    }
+  }
+  /**
+   * Link token for Plaid "update mode" — re-authenticates an EXISTING item
+   * whose access token stopped working (ITEM_LOGIN_REQUIRED etc.). Passing
+   * access_token (and no products) tells Plaid to repair the item instead of
+   * creating a new one.
+   */
+  async createUpdateLinkToken(userId, accessToken) {
+    if (!this.isConfigured) {
+      throw new Error(plaidNotConfiguredMessage());
+    }
+    try {
+      const linkTokenRequest = {
+        user: { client_user_id: userId },
+        client_name: "Dime Time",
+        country_codes: [CountryCode.Us],
+        language: "en",
+        access_token: accessToken
+      };
+      const redirectUri = resolvePlaidRedirectUri();
+      if (redirectUri) {
+        linkTokenRequest.redirect_uri = redirectUri;
+      }
+      const response = await this.getClient().linkTokenCreate(linkTokenRequest);
+      return response.data.link_token;
+    } catch (error) {
+      console.error("Error creating update link token:", this.redactPlaidError(error));
       throw error;
     }
   }
@@ -6219,6 +6256,104 @@ var SUBSCRIPTION_REQUIRED_RESPONSE = {
   code: "subscription_required"
 };
 
+// shared/debtDuplicates.ts
+var FILLER_WORDS = /* @__PURE__ */ new Set(["the", "of", "and", "my", "a", "an", "account", "acct"]);
+var INSTITUTION_ALIASES = [
+  ["chase", "jpmorgan", "jpmorganchase", "jpm", "jp", "morgan"],
+  ["amex", "american", "express", "americanexpress"],
+  ["boa", "bofa", "bankofamerica"],
+  ["citi", "citibank", "citigroup"],
+  ["wellsfargo", "wells", "fargo", "wf"],
+  ["capitalone", "capital"],
+  ["usbank", "us"],
+  ["navyfederal", "navy", "nfcu"]
+];
+function canonicalToken(token) {
+  for (const group of INSTITUTION_ALIASES) {
+    if (group.includes(token)) return group[0];
+  }
+  return token;
+}
+function tokenize(...texts) {
+  const tokens = /* @__PURE__ */ new Set();
+  for (const text2 of texts) {
+    if (!text2) continue;
+    for (const raw of text2.toLowerCase().split(/[^a-z0-9]+/)) {
+      if (raw.length < 2 || FILLER_WORDS.has(raw)) continue;
+      tokens.add(canonicalToken(raw));
+    }
+  }
+  return tokens;
+}
+function tokensOverlap(a, b) {
+  for (const t of a) if (b.has(t)) return true;
+  return false;
+}
+function lastFour(accountNumber) {
+  if (!accountNumber) return null;
+  const digits = accountNumber.replace(/\D/g, "");
+  return digits.length >= 4 ? digits.slice(-4) : null;
+}
+function debtDismissalFingerprint(d) {
+  const mask = lastFour(d.accountNumber);
+  const instTokens = [...tokenize(d.institutionName)].sort().join(".");
+  const tokens = instTokens || [...tokenize(d.name)].sort().join(".");
+  if (!mask && !tokens) return null;
+  return `fp:${mask ?? ""}:${tokens}`;
+}
+function balancesAreClose(a, b) {
+  const balA = parseFloat(a);
+  const balB = parseFloat(b);
+  if (!Number.isFinite(balA) || !Number.isFinite(balB)) return false;
+  if (balA <= 0 || balB <= 0) return false;
+  const diff = Math.abs(balA - balB);
+  const larger = Math.max(balA, balB);
+  return diff <= 300 || diff / larger <= 0.15;
+}
+function findDuplicateDebtPairs(debts2) {
+  const active = debts2.filter((d) => d.isActive);
+  const manuals = active.filter((d) => d.source === "manual");
+  const imports = active.filter((d) => d.source === "imported");
+  if (manuals.length === 0 || imports.length === 0) return [];
+  const pairs = [];
+  for (const manual of manuals) {
+    const dismissed = new Set(manual.notDuplicateOf ?? []);
+    const manualTokens = tokenize(manual.name, manual.institutionName);
+    const manualMask = lastFour(manual.accountNumber);
+    let best = null;
+    for (const imported of imports) {
+      if (dismissed.has(imported.id)) continue;
+      const fp = debtDismissalFingerprint(imported);
+      if (fp && dismissed.has(fp)) continue;
+      const importedMask = lastFour(imported.accountNumber);
+      const maskMatch = !!manualMask && !!importedMask && manualMask === importedMask;
+      const importedTokens = tokenize(imported.name, imported.institutionName);
+      const nameMatch = tokensOverlap(manualTokens, importedTokens);
+      const balanceClose = balancesAreClose(manual.currentBalance, imported.currentBalance);
+      let score = 0;
+      let reason = "";
+      if (maskMatch) {
+        score = 3;
+        reason = "Account numbers end in the same four digits";
+      } else if (balanceClose && nameMatch) {
+        score = 2;
+        reason = "Similar name or institution with a close balance";
+      } else {
+        continue;
+      }
+      if (!best || score > best.score) best = { imported, score, reason };
+    }
+    if (best) {
+      pairs.push({
+        manualDebtId: manual.id,
+        importedDebtId: best.imported.id,
+        reason: best.reason
+      });
+    }
+  }
+  return pairs;
+}
+
 // server/routes/adminRoutes.ts
 import { z as z7 } from "zod";
 var realTransfersToggleSchema = z7.object({
@@ -8477,6 +8612,83 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+  app2.get("/api/debts/duplicates", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const debts2 = await storage.getDebtsByUserId(userId);
+      res.json(findDuplicateDebtPairs(debts2));
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.post("/api/debts/:id/merge", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const importedDebtId = typeof req.body?.importedDebtId === "string" ? req.body.importedDebtId : null;
+      if (!importedDebtId) {
+        return res.status(400).json({ message: "importedDebtId is required" });
+      }
+      const manual = await storage.getDebt(req.params.id);
+      if (!canAccessDebt(manual, userId)) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      const imported = await storage.getDebt(importedDebtId);
+      if (!canAccessDebt(imported, userId)) {
+        return res.status(404).json({ message: "Imported debt not found" });
+      }
+      if (manual.source !== "manual" || imported.source !== "imported") {
+        return res.status(400).json({ message: "Merge must archive a manual debt into an imported one" });
+      }
+      if (!manual.isActive || !imported.isActive) {
+        return res.status(400).json({ message: "Both debts must be active to merge" });
+      }
+      const roundUp = await storage.getRoundUpSettings(userId);
+      if (roundUp?.targetDebtId === manual.id) {
+        await storage.createOrUpdateRoundUpSettings({ ...roundUp, targetDebtId: imported.id });
+      }
+      const archived = await storage.updateDebt(manual.id, {
+        isActive: false,
+        mergedIntoDebtId: imported.id
+      });
+      res.json({ success: true, archivedDebt: archived, importedDebtId: imported.id });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.post("/api/debts/:id/dismiss-duplicate", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const importedDebtId = typeof req.body?.importedDebtId === "string" ? req.body.importedDebtId : null;
+      if (!importedDebtId) {
+        return res.status(400).json({ message: "importedDebtId is required" });
+      }
+      const manual = await storage.getDebt(req.params.id);
+      if (!canAccessDebt(manual, userId)) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      const imported = await storage.getDebt(importedDebtId);
+      const fingerprint = canAccessDebt(imported, userId) ? debtDismissalFingerprint(imported) : null;
+      const existing = manual.notDuplicateOf ?? [];
+      const additions = [importedDebtId, ...fingerprint ? [fingerprint] : []].filter(
+        (k) => !existing.includes(k)
+      );
+      if (additions.length > 0) {
+        await storage.updateDebt(manual.id, { notDuplicateOf: [...existing, ...additions] });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
   app2.get("/api/debts/archived", async (req, res) => {
     try {
       const userId = getUserIdFromRequest(req);
@@ -8502,7 +8714,7 @@ async function registerRoutes(app2) {
       if (debt.isActive) {
         return res.status(400).json({ message: "Debt is not archived" });
       }
-      const restored = await storage.updateDebt(req.params.id, { isActive: true });
+      const restored = await storage.updateDebt(req.params.id, { isActive: true, mergedIntoDebtId: null });
       res.json(restored);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
@@ -9112,6 +9324,54 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Failed to fetch bank accounts" });
     }
   });
+  const PLAID_RELINK_ERROR_CODES = /* @__PURE__ */ new Set([
+    "ITEM_LOGIN_REQUIRED",
+    "PENDING_EXPIRATION",
+    "PENDING_DISCONNECT",
+    "ITEM_NOT_FOUND",
+    "ACCESS_NOT_GRANTED",
+    "INVALID_ACCESS_TOKEN"
+  ]);
+  function toPlaidAccountError(account, error) {
+    const errorCode = error?.response?.data?.error_code || "UNKNOWN_ERROR";
+    return {
+      bankAccountId: account.id,
+      accountId: account.accountId,
+      errorCode,
+      needsRelink: PLAID_RELINK_ERROR_CODES.has(errorCode)
+    };
+  }
+  app2.post("/api/plaid/create-update-link-token", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const { bankAccountId } = req.body || {};
+      if (!bankAccountId || typeof bankAccountId !== "string") {
+        return res.status(400).json({ message: "bankAccountId is required" });
+      }
+      if (!plaidService.isServiceConfigured()) {
+        return res.status(503).json({ message: "Plaid service not configured" });
+      }
+      const bankAccounts2 = await storage.getBankAccountsByUserId(userId);
+      const account = bankAccounts2.find((a) => a.id === bankAccountId);
+      if (!account) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      const accessToken = await storage.getPlaidAccessToken(account.id);
+      if (!accessToken) {
+        return res.status(409).json({
+          message: "No usable bank credentials for this account. Please remove it and connect the bank again."
+        });
+      }
+      const linkToken = await plaidService.createUpdateLinkToken(userId, accessToken);
+      res.json({ linkToken });
+    } catch (error) {
+      console.error("Error creating Plaid update link token:", error);
+      res.status(500).json({ message: "Failed to create update link token" });
+    }
+  });
   app2.get("/api/plaid/transactions", async (req, res) => {
     try {
       const userId = getUserIdFromRequest(req);
@@ -9120,7 +9380,7 @@ async function registerRoutes(app2) {
       }
       const bankAccounts2 = await storage.getBankAccountsByUserId(userId);
       if (bankAccounts2.length === 0) {
-        return res.json([]);
+        return res.json({ transactions: [], accountErrors: [] });
       }
       if (!plaidService.isServiceConfigured()) {
         return res.status(503).json({ message: "Plaid service not configured" });
@@ -9128,17 +9388,27 @@ async function registerRoutes(app2) {
       const endDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0];
       const allTransactions = [];
+      const accountErrors = [];
       for (const account of bankAccounts2) {
         try {
           const token = await storage.getPlaidAccessToken(account.id);
-          if (!token) continue;
+          if (!token) {
+            accountErrors.push({
+              bankAccountId: account.id,
+              accountId: account.accountId,
+              errorCode: "TOKEN_MISSING",
+              needsRelink: true
+            });
+            continue;
+          }
           const transactions2 = await plaidService.getTransactions(token, startDate, endDate);
           allTransactions.push(...transactions2);
         } catch (error) {
           console.error(`Error fetching transactions for account ${account.accountId}:`, error);
+          accountErrors.push(toPlaidAccountError(account, error));
         }
       }
-      res.json(allTransactions);
+      res.json({ transactions: allTransactions, accountErrors });
     } catch (error) {
       console.error("Error fetching Plaid transactions:", error);
       res.status(500).json({ message: "Failed to fetch transactions" });
@@ -9152,23 +9422,33 @@ async function registerRoutes(app2) {
       }
       const bankAccounts2 = await storage.getBankAccountsByUserId(userId);
       if (bankAccounts2.length === 0) {
-        return res.json([]);
+        return res.json({ balances: [], accountErrors: [] });
       }
       if (!plaidService.isServiceConfigured()) {
         return res.status(503).json({ message: "Plaid service not configured" });
       }
       const allBalances = [];
+      const accountErrors = [];
       for (const account of bankAccounts2) {
         try {
           const token = await storage.getPlaidAccessToken(account.id);
-          if (!token) continue;
+          if (!token) {
+            accountErrors.push({
+              bankAccountId: account.id,
+              accountId: account.accountId,
+              errorCode: "TOKEN_MISSING",
+              needsRelink: true
+            });
+            continue;
+          }
           const balances = await plaidService.getBalance(token);
           allBalances.push(...balances);
         } catch (error) {
           console.error(`Error fetching balance for account ${account.accountId}:`, error);
+          accountErrors.push(toPlaidAccountError(account, error));
         }
       }
-      res.json(allBalances);
+      res.json({ balances: allBalances, accountErrors });
     } catch (error) {
       console.error("Error fetching account balances:", error);
       res.status(500).json({ message: "Failed to fetch balances" });
