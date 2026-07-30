@@ -135,24 +135,47 @@ export default function Dashboard() {
   const { data: duplicatePairs = [] } = useQuery<DuplicateDebtPair[]>({
     queryKey: ["/api/debts/duplicates"],
   });
-  // Dismissal is per-session only: if pairs still exist next visit, the
-  // total is still inflated and the notice should come back.
-  const [duplicateNoticeDismissed, setDuplicateNoticeDismissed] = useState(
-    () => sessionStorage.getItem("dashboardDuplicateNoticeDismissed") === "1"
-  );
-  const dismissDuplicateNotice = () => {
-    sessionStorage.setItem("dashboardDuplicateNoticeDismissed", "1");
-    setDuplicateNoticeDismissed(true);
-  };
+  // Dismissal is per-session only AND per-pair: we store the keys of the
+  // pairs that existed when the user dismissed, so a NEW duplicate pair
+  // appearing later in the same session (e.g. another bank import) brings
+  // the notice back. Next session everything resets — if pairs still exist,
+  // the total is still inflated and the notice should come back.
+  const duplicatePairKey = (p: DuplicateDebtPair) =>
+    `${p.manualDebtId}:${p.importedDebtId}`;
+  const [dismissedDuplicatePairKeys, setDismissedDuplicatePairKeys] = useState<
+    Set<string>
+  >(() => {
+    try {
+      const raw = sessionStorage.getItem("dashboardDuplicateNoticeDismissedPairs");
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      return new Set(
+        Array.isArray(parsed) ? parsed.filter((k) => typeof k === "string") : []
+      );
+    } catch {
+      return new Set();
+    }
+  });
   // Only count pairs whose two debts are still in the active list (queries
   // can briefly disagree right after a merge on the Debts page).
   const debtIds = new Set(debts.map((d) => d.id));
-  const visibleDuplicatePairs =
+  const currentDuplicatePairs =
     debts.length > 0
       ? duplicatePairs.filter(
           (p) => debtIds.has(p.manualDebtId) && debtIds.has(p.importedDebtId)
         )
       : duplicatePairs;
+  const visibleDuplicatePairs = currentDuplicatePairs.filter(
+    (p) => !dismissedDuplicatePairKeys.has(duplicatePairKey(p))
+  );
+  const dismissDuplicateNotice = () => {
+    const next = new Set(dismissedDuplicatePairKeys);
+    for (const p of currentDuplicatePairs) next.add(duplicatePairKey(p));
+    sessionStorage.setItem(
+      "dashboardDuplicateNoticeDismissedPairs",
+      JSON.stringify([...next])
+    );
+    setDismissedDuplicatePairKeys(next);
+  };
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const activeSummary = summary ?? EMPTY_SUMMARY;
@@ -207,7 +230,7 @@ export default function Dashboard() {
       <GetStartedCard />
 
       {/* Possible duplicate debts — compact notice linking to the Debts page */}
-      {!duplicateNoticeDismissed && visibleDuplicatePairs.length > 0 && (
+      {visibleDuplicatePairs.length > 0 && (
         <div
           className="mb-6 flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3"
           data-testid="banner-duplicate-debts"
