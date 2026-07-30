@@ -68,6 +68,29 @@ function lastFour(accountNumber: string | null | undefined): string | null {
   return digits.length >= 4 ? digits.slice(-4) : null;
 }
 
+/**
+ * Stable dismissal fingerprint for an imported debt.
+ *
+ * "Keep both" dismissals are stored in manual.notDuplicateOf. Storing only the
+ * imported debt's row id breaks when a bank is disconnected and relinked: the
+ * re-import creates NEW rows (a new Plaid Item yields new account ids), so the
+ * user would be re-prompted about pairs they already answered. The fingerprint
+ * is built from what actually identifies the card to the detector — the
+ * account's last four digits plus the canonicalized institution (falling back
+ * to name tokens when no institution is present) — which survive a relink.
+ *
+ * Returns null when the debt carries no identifying signal at all.
+ */
+export function debtDismissalFingerprint(d: Pick<Debt, "accountNumber" | "institutionName" | "name">): string | null {
+  const mask = lastFour(d.accountNumber);
+  const instTokens = [...tokenize(d.institutionName)].sort().join(".");
+  // Institution is the stable text across relinks; only fall back to the
+  // display name when the provider gave us no institution.
+  const tokens = instTokens || [...tokenize(d.name)].sort().join(".");
+  if (!mask && !tokens) return null;
+  return `fp:${mask ?? ""}:${tokens}`;
+}
+
 export function balancesAreClose(a: string, b: string): boolean {
   const balA = parseFloat(a);
   const balB = parseFloat(b);
@@ -98,6 +121,8 @@ export function findDuplicateDebtPairs(debts: Debt[]): DuplicateDebtPair[] {
     let best: { imported: Debt; score: number; reason: string } | null = null;
     for (const imported of imports) {
       if (dismissed.has(imported.id)) continue;
+      const fp = debtDismissalFingerprint(imported);
+      if (fp && dismissed.has(fp)) continue;
 
       const importedMask = lastFour(imported.accountNumber);
       const maskMatch = !!manualMask && !!importedMask && manualMask === importedMask;

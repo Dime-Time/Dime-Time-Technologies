@@ -33,6 +33,7 @@ import { registerRoutes } from "../routes";
 import { storage, MemStorage } from "../storage";
 import type { NormalizedLiability } from "../services/debtImport/types";
 import type { Debt } from "@shared/schema";
+import { debtDismissalFingerprint } from "@shared/debtDuplicates";
 
 // ---------------------------------------------------------------------------
 // Storage singleton → in-memory fake (no DB touched)
@@ -237,10 +238,13 @@ test("keep both (dismiss) persists across refreshes and re-reads", async () => {
   assert.deepEqual(dups.body, []);
 
   // Refresh must not clear notDuplicateOf (it lives on the manual debt,
-  // which the provider refresh never touches).
+  // which the provider refresh never touches). The dismissal stores the id
+  // PLUS a stable fingerprint so it survives a disconnect + relink.
   await refresh(3900.0);
   const manualAfter = await mem.getDebt(manual.id);
-  assert.deepEqual(manualAfter!.notDuplicateOf, [imported.id]);
+  const fp = debtDismissalFingerprint(imported);
+  assert.ok(fp, "imported debt must have a dismissal fingerprint");
+  assert.deepEqual(manualAfter!.notDuplicateOf, [imported.id, fp]);
 
   // A fresh read (what a re-login does) still shows no duplicates and both debts.
   dups = await api("GET", "/api/debts/duplicates");
@@ -251,7 +255,34 @@ test("keep both (dismiss) persists across refreshes and re-reads", async () => {
   await api("POST", `/api/debts/${manual.id}/dismiss-duplicate`, {
     importedDebtId: imported.id,
   });
-  assert.deepEqual((await mem.getDebt(manual.id))!.notDuplicateOf, [imported.id]);
+  assert.deepEqual((await mem.getDebt(manual.id))!.notDuplicateOf, [imported.id, fp]);
+});
+
+// ---- Invariant 4b: keep both survives a bank disconnect + relink ----
+
+test("keep both survives disconnect + relink (new row ids, new provider account ids)", async () => {
+  const dismiss = await api("POST", `/api/debts/${manual.id}/dismiss-duplicate`, {
+    importedDebtId: imported.id,
+  });
+  assert.equal(dismiss.status, 200);
+  assert.deepEqual((await api("GET", "/api/debts/duplicates")).body, []);
+
+  // Disconnect: the imported row disappears entirely (worst case — hard
+  // delete). A relink with a new Plaid Item then re-imports the SAME card
+  // under a brand-new provider account id, creating a NEW row with a new id.
+  await mem.deleteDebtPermanently(imported.id);
+  const relinked = await mem.importDebtsFromProvider(USER, "plaid", [
+    { ...chaseLiability(3843.25), providerAccountId: "acct-chase-cc-NEW-ITEM" },
+  ]);
+  assert.equal(relinked.imported, 1, "relink must create a fresh imported row");
+  const reimported = relinked.debts[0];
+  assert.notEqual(reimported.id, imported.id);
+
+  // The old dismissal must still silence the prompt: the stored fingerprint
+  // (last-four + institution) identifies the same physical card.
+  const dups = await api("GET", "/api/debts/duplicates");
+  assert.deepEqual(dups.body, [], "user must not be re-asked about a pair they already answered");
+  assert.equal((await activeDebts()).length, 2, "both debts stay active after relink");
 });
 
 // ---- Invariant 5: restore un-merges and re-triggers the prompt ----

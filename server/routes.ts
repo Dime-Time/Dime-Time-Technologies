@@ -30,7 +30,7 @@ import { registerSubscriptionRoutes } from "./routes/subscriptionRoutes";
 import { hasRoundUpAutomationAccess, SUBSCRIPTION_REQUIRED_RESPONSE } from "./lib/subscriptionGate";
 import { cancelSubscriptionImmediately } from "./services/subscriptionService";
 import { isSubscriptionTerminal } from "@shared/subscriptionPlans";
-import { findDuplicateDebtPairs } from "@shared/debtDuplicates";
+import { findDuplicateDebtPairs, debtDismissalFingerprint } from "@shared/debtDuplicates";
 import { assertStripeKeyModeSafeOnBoot } from "./services/stripeService";
 import { registerAdminRoutes } from "./routes/adminRoutes";
 import { isAdminUserId } from "./lib/admin";
@@ -1097,9 +1097,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Debt not found" });
       }
 
+      // Store BOTH the row id and a stable fingerprint of the imported card:
+      // the id alone breaks when a bank is disconnected and relinked (the
+      // re-import creates new rows with new ids), which would re-prompt the
+      // user about pairs they already answered.
+      const imported = await storage.getDebt(importedDebtId);
+      const fingerprint = canAccessDebt(imported, userId) ? debtDismissalFingerprint(imported!) : null;
+
       const existing = manual.notDuplicateOf ?? [];
-      if (!existing.includes(importedDebtId)) {
-        await storage.updateDebt(manual.id, { notDuplicateOf: [...existing, importedDebtId] });
+      const additions = [importedDebtId, ...(fingerprint ? [fingerprint] : [])].filter(
+        (k) => !existing.includes(k),
+      );
+      if (additions.length > 0) {
+        await storage.updateDebt(manual.id, { notDuplicateOf: [...existing, ...additions] });
       }
       res.json({ success: true });
     } catch (error) {
