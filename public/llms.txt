@@ -1,0 +1,29 @@
+# Dime Time
+
+> Dime Time is a round-up debt payoff app. It links your bank accounts, rounds up everyday purchases to the nearest dollar, and applies that spare change toward paying down your debts — credit cards, student loans, and more.
+
+Dime Time is available on the web at https://dime-time.com, on the Apple App Store, and on Google Play.
+
+## How it works
+
+- Connect your bank securely (via Plaid) so Dime Time can see everyday transactions.
+- Each purchase is rounded up to the nearest dollar; the spare change accumulates.
+- Round-ups are directed toward the debts you choose, helping you pay them down steadily.
+- You can also import debts automatically from linked accounts and track payoff progress.
+
+## Guides
+
+- [Guides index](https://dime-time.com/guides): All Dime Time educational guides.
+- [Best round-up apps for debt payoff](https://dime-time.com/guides/round-up-apps-for-debt): How round-up apps work and how to choose one for debt payoff.
+- [How to pay off credit card debt](https://dime-time.com/guides/how-to-pay-off-credit-card-debt): Avalanche vs. snowball methods, with worked payoff examples.
+- [Spare change: debt or savings?](https://dime-time.com/guides/spare-change-debt-or-savings): When micro-amounts are better used against debt vs. saved.
+
+## Policies
+
+- [Privacy policy](https://dime-time.com/privacy)
+- [Terms of service](https://dime-time.com/terms)
+
+## Notes
+
+- Dime Time is not a lender, credit counselor, or financial advisor; content is educational, not financial advice.
+- Contact: use the contact form at https://dime-time.com.
