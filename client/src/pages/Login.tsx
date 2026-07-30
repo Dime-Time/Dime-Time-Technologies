@@ -9,6 +9,7 @@ import { LogoWithText } from "@/components/logo";
 import { saveAuthToken } from "@/lib/authToken";
 import { PasswordInput } from "@/components/ui/password-input";
 import { isReturningUser, markReturningUser } from "@/lib/returningUser";
+import { RATE_LIMIT_MESSAGE, authFetch } from "@/lib/authErrors";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -22,23 +23,18 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      let response: Response;
-      try {
-        response = await fetch(getApiUrl("/api/login"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(credentials),
-          credentials: "include",
-        });
-      } catch {
-        throw new Error("network");
-      }
+      const response = await authFetch(getApiUrl("/api/login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+        credentials: "include",
+      });
 
       if (!response.ok) {
         if (response.status === 429) {
-          throw new Error("rate_limited");
+          throw new Error(RATE_LIMIT_MESSAGE);
         }
-        throw new Error("invalid_credentials");
+        throw new Error("Invalid email or password. Please try again.");
       }
 
       return response.json();
@@ -53,13 +49,7 @@ export default function Login() {
       setLocation("/dashboard");
     },
     onError: (error: Error) => {
-      if (error.message === "rate_limited") {
-        setFormError("Too many attempts — please wait a few minutes and try again.");
-      } else if (error.message === "network") {
-        setFormError("Connection problem — please check your internet and try again.");
-      } else {
-        setFormError("Invalid email or password. Please try again.");
-      }
+      setFormError(error.message || "Invalid email or password. Please try again.");
     },
   });
 

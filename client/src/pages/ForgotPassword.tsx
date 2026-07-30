@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, getApiErrorMessage, type ApiError } from "@/lib/queryClient";
 import { LogoWithText } from "@/components/logo";
+import { RATE_LIMIT_MESSAGE, NETWORK_MESSAGE } from "@/lib/authErrors";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -24,10 +25,10 @@ export default function ForgotPassword() {
       let description: string;
       const status = (err as ApiError)?.status;
       if (status === 429) {
-        description = "Too many attempts — please wait a few minutes and try again.";
+        description = RATE_LIMIT_MESSAGE;
       } else if (err instanceof TypeError) {
         // fetch() itself failed — no HTTP response at all.
-        description = "Connection problem — please check your internet and try again.";
+        description = NETWORK_MESSAGE;
       } else {
         description = getApiErrorMessage(
           err,

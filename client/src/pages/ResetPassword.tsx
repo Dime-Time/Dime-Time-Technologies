@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/queryClient";
 import { LogoWithText } from "@/components/logo";
+import { authFetch, authErrorFromResponse } from "@/lib/authErrors";
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
@@ -30,23 +31,14 @@ export default function ResetPassword() {
 
   const mutation = useMutation({
     mutationFn: async (payload: { token: string; password: string }) => {
-      let response: Response;
-      try {
-        response = await fetch(getApiUrl("/api/auth/reset-password"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          credentials: "include",
-        });
-      } catch {
-        throw new Error("Connection problem — please check your internet and try again.");
-      }
+      const response = await authFetch(getApiUrl("/api/auth/reset-password"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
       if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error("Too many attempts — please wait a few minutes and try again.");
-        }
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.message || "Unable to reset password");
+        throw await authErrorFromResponse(response, "Unable to reset password");
       }
       return response.json();
     },
