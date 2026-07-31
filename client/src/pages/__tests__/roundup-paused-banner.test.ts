@@ -127,6 +127,12 @@ async function renderBanner(scenario: Scenario) {
     // Let the /api/user bootstrap + dependent queries settle.
     await new Promise((r) => setTimeout(r, 30));
   });
+  // Under full-suite load the dependent queries (/api/subscription,
+  // /api/round-up-settings) can commit after the first tick — give them a
+  // second, longer settle pass (same pattern as the dashboard tests).
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 150));
+  });
 }
 
 function banner(): Element | null {
