@@ -8095,6 +8095,9 @@ async function registerRoutes(app2) {
     "how-to-pay-off-credit-card-debt": "how-to-pay-off-credit-card-debt.html",
     "spare-change-debt-or-savings": "spare-change-debt-or-savings.html"
   };
+  app2.get(["/support", "/contact", "/help"], (_req, res) => {
+    res.redirect(301, "/#contact");
+  });
   app2.get("/guides", (_req, res) => {
     res.sendFile(path.join(guidesDir, "index.html"));
   });

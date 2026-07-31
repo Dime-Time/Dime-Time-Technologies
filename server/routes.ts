@@ -305,6 +305,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "how-to-pay-off-credit-card-debt": "how-to-pay-off-credit-card-debt.html",
     "spare-change-debt-or-savings": "spare-change-debt-or-savings.html",
   };
+  // ── App Store "App Support" / support links ─────────────────────────
+  // App Store Connect points users at dime-time.com/support; there is no
+  // dedicated SPA route, so send them to the landing page contact form.
+  app.get(["/support", "/contact", "/help"], (_req: Request, res: Response) => {
+    res.redirect(301, "/#contact");
+  });
+
   app.get("/guides", (_req: Request, res: Response) => {
     res.sendFile(path.join(guidesDir, "index.html"));
   });
