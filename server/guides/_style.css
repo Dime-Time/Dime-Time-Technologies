@@ -43,3 +43,6 @@ footer.site .wrap { max-width: 760px; margin: 0 auto; padding: 24px 20px 36px; f
 .card p { margin: 0 0 8px; color: var(--muted); font-size: 15px; }
 .card a.read { font-weight: 600; text-decoration: none; }
 @media (max-width: 480px) { h1 { font-size: 25px; } header.site nav a { margin-left: 12px; } }
+
+.cta a.btn { display: inline-flex; align-items: center; gap: 8px; }
+.btn-icon { flex: none; }
