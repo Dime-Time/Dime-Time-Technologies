@@ -11,8 +11,8 @@ android {
         // version and versionCode aligned with the iOS build number
         // (ios/App/App/Info.plist). Google Play requires versionCode to
         // strictly increase on every upload — never reuse or lower it.
-        versionCode 211
-        versionName "1.0.6"
+        versionCode 212
+        versionName "1.0.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
