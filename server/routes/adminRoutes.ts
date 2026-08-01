@@ -24,16 +24,17 @@ const realTransfersToggleSchema = z.object({
 
 function publicUserRealTransferStatus(u: {
   id: string;
-  realTransfersEnabled: boolean;
-  realTransfersEnabledAt: Date | null;
-  realTransfersEnabledBy: string | null;
+  realTransfersBlocked: boolean;
+  realTransfersBlockedAt: Date | null;
+  realTransfersBlockedBy: string | null;
   realTransfersNotes: string | null;
 }) {
   return {
     userId: u.id,
-    realTransfersEnabled: u.realTransfersEnabled,
-    realTransfersEnabledAt: u.realTransfersEnabledAt,
-    realTransfersEnabledBy: u.realTransfersEnabledBy,
+    // Enabled by default for everyone; false only when an admin has blocked.
+    realTransfersEnabled: u.realTransfersBlocked !== true,
+    realTransfersBlockedAt: u.realTransfersBlockedAt,
+    realTransfersBlockedBy: u.realTransfersBlockedBy,
     realTransfersNotes: u.realTransfersNotes,
   };
 }
@@ -94,7 +95,7 @@ export function registerAdminRoutes(app: Express): void {
   });
 
   // Emergency enable/disable a single user's real ACH access (write).
-  // The debit gate re-reads `users.realTransfersEnabled` live inside its
+  // The debit gate re-reads `users.realTransfersBlocked` live inside its
   // transaction, so disabling here revokes access on the very next attempt —
   // no cache, no restart required. Every flip is audited transactionally.
   app.post("/api/admin/users/:id/real-transfers", requireAdmin, async (req: Request, res: Response) => {

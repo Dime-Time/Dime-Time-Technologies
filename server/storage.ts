@@ -402,9 +402,9 @@ export class MemStorage implements IStorage {
       lastName: "User",
       profileImageUrl: null,
       emailVerifiedAt: null,
-      realTransfersEnabled: false,
-      realTransfersEnabledAt: null,
-      realTransfersEnabledBy: null,
+      realTransfersBlocked: false,
+      realTransfersBlockedAt: null,
+      realTransfersBlockedBy: null,
       realTransfersNotes: null,
       createdAt: new Date("2024-01-01"),
       updatedAt: new Date("2024-01-01"),
@@ -1098,9 +1098,9 @@ export class MemStorage implements IStorage {
       lastName: insertUser.lastName ?? null,
       profileImageUrl: insertUser.profileImageUrl ?? null,
       emailVerifiedAt: null,
-      realTransfersEnabled: false,
-      realTransfersEnabledAt: null,
-      realTransfersEnabledBy: null,
+      realTransfersBlocked: false,
+      realTransfersBlockedAt: null,
+      realTransfersBlockedBy: null,
       realTransfersNotes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1134,9 +1134,9 @@ export class MemStorage implements IStorage {
         lastName: userData.lastName ?? null,
         profileImageUrl: userData.profileImageUrl ?? null,
         emailVerifiedAt: null,
-        realTransfersEnabled: false,
-        realTransfersEnabledAt: null,
-        realTransfersEnabledBy: null,
+        realTransfersBlocked: false,
+        realTransfersBlockedAt: null,
+        realTransfersBlockedBy: null,
         realTransfersNotes: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -3054,10 +3054,12 @@ export class DatabaseStorage implements IStorage {
         return { ok: false, httpStatus, reason, message, auditId };
       };
 
-      // 1. User exists + is on the allowlist (the instantly-revocable lever).
+      // 1. User exists + is not admin-blocked (the instantly-effective lever).
+      // Every user may transfer by default; an admin block is re-read live
+      // here, so it takes effect on the very next attempt.
       const [user] = await tx.select().from(users).where(eq(users.id, userId));
       if (!user) return block(404, "user_not_found", "User not found");
-      allowlistEnabled = user.realTransfersEnabled === true;
+      allowlistEnabled = user.realTransfersBlocked !== true;
       if (!allowlistEnabled) {
         return block(403, "not_allowlisted", "Real transfers are not enabled for this account.");
       }
@@ -3160,16 +3162,16 @@ export class DatabaseStorage implements IStorage {
     notes?: string,
   ): Promise<User | undefined> {
     return await db.transaction(async (tx) => {
-      // Serialize allowlist flips with reserveRealStripeAchDebit (SAME lock key)
-      // so a revoke can never race past an in-flight reservation that already
-      // read realTransfersEnabled=true. Once this commits, the next reservation
-      // to acquire the lock observes the new value — revoke is effective on the
-      // very next debit attempt.
+      // Serialize block flips with reserveRealStripeAchDebit (SAME lock key)
+      // so a block can never race past an in-flight reservation that already
+      // read realTransfersBlocked=false. Once this commits, the next
+      // reservation to acquire the lock observes the new value — a block is
+      // effective on the very next debit attempt.
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
       const [updated] = await tx.update(users).set({
-        realTransfersEnabled: enabled,
-        realTransfersEnabledAt: enabled ? new Date() : null,
-        realTransfersEnabledBy: enabled ? adminUserId : null,
+        realTransfersBlocked: !enabled,
+        realTransfersBlockedAt: !enabled ? new Date() : null,
+        realTransfersBlockedBy: !enabled ? adminUserId : null,
         realTransfersNotes: notes ?? null,
         updatedAt: new Date(),
       }).where(eq(users.id, userId)).returning();

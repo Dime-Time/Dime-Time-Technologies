@@ -292,8 +292,8 @@ function WebhooksTab() {
 type RealTransferStatus = {
   userId: string;
   realTransfersEnabled: boolean;
-  realTransfersEnabledAt: string | null;
-  realTransfersEnabledBy: string | null;
+  realTransfersBlockedAt: string | null;
+  realTransfersBlockedBy: string | null;
   realTransfersNotes: string | null;
 };
 
@@ -324,7 +324,7 @@ function UserRealMoneyControl({
     mutationFn: async (enabled: boolean) => {
       const res = await adminFetch(`/api/admin/users/${encodeURIComponent(userId)}/real-transfers`, {
         method: "POST",
-        body: { enabled, notes: enabled ? "Approved via admin UI" : "Revoked via admin UI" },
+        body: { enabled, notes: enabled ? "Unblocked via admin UI" : "Blocked via admin UI" },
       });
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
@@ -335,9 +335,9 @@ function UserRealMoneyControl({
     onSuccess: (data) => {
       queryClient.setQueryData(statusKey, data);
       toast({
-        title: data.realTransfersEnabled ? "Approved for real money" : "Real-money access revoked",
+        title: data.realTransfersEnabled ? "Real-money access restored" : "Real-money access blocked",
         description: data.realTransfersEnabled
-          ? "This user can now make real ACH transfers — still capped by the safety limits."
+          ? "This user can make real ACH transfers — still capped by the safety limits."
           : "This user can no longer make real ACH transfers.",
       });
     },
@@ -350,7 +350,8 @@ function UserRealMoneyControl({
     },
   });
 
-  const enabled = statusQuery.data?.realTransfersEnabled ?? false;
+  // Everyone is enabled by default; false only when an admin has blocked.
+  const enabled = statusQuery.data?.realTransfersEnabled ?? true;
 
   return (
     <div className="space-y-2" data-testid={`admin-realmoney-${userId}`}>
@@ -377,11 +378,11 @@ function UserRealMoneyControl({
         )}
       </div>
 
-      {statusQuery.data && (statusQuery.data.realTransfersEnabledAt || statusQuery.data.realTransfersNotes) && (
+      {statusQuery.data && (statusQuery.data.realTransfersBlockedAt || statusQuery.data.realTransfersNotes) && (
         <div className="text-xs text-slate-500 space-y-0.5">
-          {statusQuery.data.realTransfersEnabledAt && <div>since {fmt(statusQuery.data.realTransfersEnabledAt)}</div>}
-          {statusQuery.data.realTransfersEnabledBy && (
-            <div className="break-all">by {statusQuery.data.realTransfersEnabledBy}</div>
+          {statusQuery.data.realTransfersBlockedAt && <div>blocked since {fmt(statusQuery.data.realTransfersBlockedAt)}</div>}
+          {statusQuery.data.realTransfersBlockedBy && (
+            <div className="break-all">by {statusQuery.data.realTransfersBlockedBy}</div>
           )}
           {statusQuery.data.realTransfersNotes && <div>note: {statusQuery.data.realTransfersNotes}</div>}
         </div>
@@ -395,18 +396,18 @@ function UserRealMoneyControl({
             disabled={toggle.isPending || statusQuery.isLoading || statusQuery.isError}
             data-testid={`admin-realmoney-toggle-${userId}`}
           >
-            {toggle.isPending ? "Saving…" : enabled ? "Revoke real-money access" : "Approve for real money"}
+            {toggle.isPending ? "Saving…" : enabled ? "Block real-money access" : "Unblock real-money access"}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {enabled ? "Revoke real-money access?" : "Approve for real money?"}
+              {enabled ? "Block real-money access?" : "Unblock real-money access?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {enabled
-                ? `This immediately stops ${title} from making real ACH transfers — it takes effect on their very next attempt.`
-                : `This lets ${title} move REAL money via ACH (real funds leave a real bank account). It stays capped by the safety limits: first transfer ≤ $1, ≤ $5/day, 1 per day. You can revoke instantly at any time.`}
+                ? `This immediately blocks ${title} from making real ACH transfers — it takes effect on their very next attempt.`
+                : `This restores ${title}'s ability to move REAL money via ACH (real funds leave a real bank account). It stays capped by the safety limits: first transfer ≤ $1, ≤ $5/day, 1 per day. You can block instantly at any time.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -416,7 +417,7 @@ function UserRealMoneyControl({
               className={enabled ? undefined : "bg-amber-600 hover:bg-amber-700 focus:ring-amber-600"}
               data-testid={`admin-realmoney-confirm-${userId}`}
             >
-              {enabled ? "Yes, revoke" : "Yes, approve real money"}
+              {enabled ? "Yes, block" : "Yes, unblock"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -432,9 +433,9 @@ function RealMoneyTab({ selfUserId, selfEmail }: { selfUserId: string; selfEmail
   return (
     <div className="space-y-4">
       <div className="text-sm text-slate-700 border rounded-md bg-amber-50 border-amber-200 p-3">
-        Approving a user lets them make <strong>real</strong> ACH transfers — but only inside the built-in safety
-        limits (first transfer ≤ $1, ≤ $5/day, 1 transfer/day, no duplicate pending). You can revoke instantly at any
-        time. Real money also still requires the master switch (<code>ENABLE_REAL_TRANSFERS</code>) to be on.
+        Every user can make <strong>real</strong> ACH transfers by default — always inside the built-in safety
+        limits (first transfer ≤ $1, ≤ $5/day, 1 transfer/day, no duplicate pending). Use this tab to block a
+        suspicious user instantly. Real money also still requires the master switch (<code>ENABLE_REAL_TRANSFERS</code>) to be on.
       </div>
 
       <Card>
@@ -448,7 +449,7 @@ function RealMoneyTab({ selfUserId, selfEmail }: { selfUserId: string; selfEmail
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Approve another user</CardTitle>
+          <CardTitle className="text-base">Look up / block a user</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2 items-end">

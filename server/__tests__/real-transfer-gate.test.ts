@@ -26,7 +26,7 @@ const LIMITS = { firstTransferMaxDollars: 1, dailyTotalMaxDollars: 5, dailyCount
 
 async function makeUser(enabled: boolean): Promise<string> {
   const userId = "gate-reg-" + randomUUID();
-  await db.insert(users).values({ id: userId, email: userId + "@example.com", realTransfersEnabled: enabled });
+  await db.insert(users).values({ id: userId, email: userId + "@example.com", realTransfersBlocked: !enabled });
   return userId;
 }
 
@@ -73,7 +73,7 @@ test("emergency revoke blocks the next reservation immediately", async () => {
       idempotencyKey: randomUUID(),
       correlationId: randomUUID(),
     });
-    assert.equal(ok.ok, true, "allowlisted first $1 should be approved");
+    assert.equal(ok.ok, true, "default-enabled first $1 should be approved");
 
     await storage.setUserRealTransfersEnabled(userId, false, "tester", "revoke");
 
@@ -131,7 +131,7 @@ test("setUserRealTransfersEnabled serializes on the per-user advisory lock", asy
     assert.equal(revokeDone, true);
 
     const [row] = await db.select().from(users).where(eq(users.id, userId));
-    assert.equal(row.realTransfersEnabled, false);
+    assert.equal(row.realTransfersBlocked, true);
   } finally {
     if (releaseHeld) releaseHeld();
     await holder.catch(() => {});

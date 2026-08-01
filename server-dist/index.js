@@ -484,14 +484,15 @@ var users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   emailVerifiedAt: timestamp("email_verified_at"),
-  // Real-money ACH rollout allowlist (operator-controlled, instantly revocable).
-  // The hot-path gate for live transfers — a user must be explicitly enabled
-  // here before any real Stripe ACH debit can be created, even when the
-  // ENABLE_REAL_TRANSFERS master switch is ON. Toggled only via the admin
-  // surface; never settable through user-facing inserts.
-  realTransfersEnabled: boolean("real_transfers_enabled").default(false).notNull(),
-  realTransfersEnabledAt: timestamp("real_transfers_enabled_at"),
-  realTransfersEnabledBy: varchar("real_transfers_enabled_by"),
+  // Real-money ACH block list (operator-controlled, instantly effective).
+  // Every user may create real Stripe ACH debits by default (subject to the
+  // conservative launch limits enforced in the gate). An admin can block a
+  // specific user here — the hot-path gate re-reads this live, so a block is
+  // effective on the very next attempt. Toggled only via the admin surface;
+  // never settable through user-facing inserts.
+  realTransfersBlocked: boolean("real_transfers_blocked").default(false).notNull(),
+  realTransfersBlockedAt: timestamp("real_transfers_blocked_at"),
+  realTransfersBlockedBy: varchar("real_transfers_blocked_by"),
   realTransfersNotes: text("real_transfers_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
@@ -923,9 +924,9 @@ var insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
   // Operator-only — never settable through user-facing signup/profile inserts.
-  realTransfersEnabled: true,
-  realTransfersEnabledAt: true,
-  realTransfersEnabledBy: true,
+  realTransfersBlocked: true,
+  realTransfersBlockedAt: true,
+  realTransfersBlockedBy: true,
   realTransfersNotes: true
 });
 var insertDebtSchema = createInsertSchema(debts).omit({
@@ -2215,7 +2216,7 @@ var DatabaseStorage = class _DatabaseStorage {
       };
       const [user] = await tx.select().from(users).where(eq(users.id, userId));
       if (!user) return block(404, "user_not_found", "User not found");
-      allowlistEnabled = user.realTransfersEnabled === true;
+      allowlistEnabled = user.realTransfersBlocked !== true;
       if (!allowlistEnabled) {
         return block(403, "not_allowlisted", "Real transfers are not enabled for this account.");
       }
@@ -2305,9 +2306,9 @@ var DatabaseStorage = class _DatabaseStorage {
     return await db.transaction(async (tx) => {
       await tx.execute(sql2`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
       const [updated] = await tx.update(users).set({
-        realTransfersEnabled: enabled,
-        realTransfersEnabledAt: enabled ? /* @__PURE__ */ new Date() : null,
-        realTransfersEnabledBy: enabled ? adminUserId : null,
+        realTransfersBlocked: !enabled,
+        realTransfersBlockedAt: !enabled ? /* @__PURE__ */ new Date() : null,
+        realTransfersBlockedBy: !enabled ? adminUserId : null,
         realTransfersNotes: notes ?? null,
         updatedAt: /* @__PURE__ */ new Date()
       }).where(eq(users.id, userId)).returning();
@@ -6363,9 +6364,10 @@ var realTransfersToggleSchema = z7.object({
 function publicUserRealTransferStatus(u) {
   return {
     userId: u.id,
-    realTransfersEnabled: u.realTransfersEnabled,
-    realTransfersEnabledAt: u.realTransfersEnabledAt,
-    realTransfersEnabledBy: u.realTransfersEnabledBy,
+    // Enabled by default for everyone; false only when an admin has blocked.
+    realTransfersEnabled: u.realTransfersBlocked !== true,
+    realTransfersBlockedAt: u.realTransfersBlockedAt,
+    realTransfersBlockedBy: u.realTransfersBlockedBy,
     realTransfersNotes: u.realTransfersNotes
   };
 }
