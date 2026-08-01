@@ -1,0 +1,168 @@
+DIME TIME — APPLE APPROVAL LAUNCH PLAYBOOK
+(ROLL-OUT CHECKLIST FOR REPLIT)
+
+Context:
+Apple approval is expected any day. Android is already live. This is the most important launch day in Dime Time's history so far. I want a production-grade rollout plan that minimizes risk while maximizing downloads and conversions.
+
+Please produce a detailed launch checklist and identify anything I may have overlooked.
+
+==================================================
+PHASE 0 — PRE-LAUNCH (COMPLETE BEFORE APPLE APPROVES)
+==================================================
+
+Verify every production system is healthy:
+
+□ Website loads quickly on desktop and mobile
+□ App Store badge appears automatically when iOS is live
+□ Google Play badge still functions correctly
+□ Every CTA opens the correct store listing
+□ No broken links
+□ No 404 pages
+□ SSL certificates valid
+□ Robots.txt and sitemap working
+□ SEO metadata correct
+□ Open Graph preview correct
+□ Twitter/X preview correct
+□ Favicon and app icons correct
+
+Analytics:
+
+□ Google Analytics firing
+□ Conversion tracking working
+□ Page views tracked
+□ App download click events tracked
+□ UTM support available if needed
+
+Backend:
+
+□ Production server healthy
+□ Database healthy
+□ No migration pending
+□ Stripe healthy
+□ Plaid healthy
+□ Email delivery healthy
+□ Error logging healthy
+□ Monitoring healthy
+
+==================================================
+PHASE 1 — THE MOMENT APPLE APPROVES
+==================================================
+
+Immediately verify:
+
+□ App Store page is live
+□ Correct screenshots
+□ Correct description
+□ Correct pricing
+□ Subscription working
+□ Website updated
+□ App Store badge enabled
+□ No cache issues
+□ Test every important page
+
+==================================================
+PHASE 2 — FOUNDER LAUNCH
+==================================================
+
+After production verification:
+
+• Publish founder LinkedIn post
+• Update personal LinkedIn headline if appropriate
+• Share website
+• Share App Store link
+• Share Google Play link
+
+==================================================
+PHASE 3 — CAROL'S POST
+==================================================
+
+Once founder post is live:
+
+Carol publishes her LinkedIn post.
+
+Goal:
+
+Introduce Dime Time through a trusted recommendation rather than an advertisement.
+
+==================================================
+PHASE 4 — FIRST 3 HOURS
+==================================================
+
+Immediately monitor:
+
+• New registrations
+• New subscriptions
+• Plaid connections
+• Stripe activity
+• Email verification
+• Error logs
+• API latency
+• Server CPU
+• Database health
+• Production exceptions
+• Crash reports
+
+Respond quickly to:
+
+• LinkedIn comments
+• Questions
+• Bug reports
+• Emails
+
+==================================================
+PHASE 5 — FIRST 24 HOURS
+==================================================
+
+Track:
+
+Downloads
+
+Website visitors
+
+Conversion %
+
+Account creation %
+
+Bank connections
+
+Subscription conversion
+
+Email verification rate
+
+Retention
+
+Bounce rate
+
+Crash-free sessions
+
+==================================================
+PHASE 6 — FIRST WEEK
+==================================================
+
+Continue momentum:
+
+• User testimonials
+• Customer stories
+• Behind-the-scenes posts
+• Development journey
+• Product improvements
+• Bug fixes
+• App Store review requests
+
+==================================================
+REQUEST
+==================================================
+
+Review Dime Time's current production architecture and rollout readiness.
+
+Based on everything you know about the codebase, infrastructure, backend, Stripe, Plaid, website, authentication, subscriptions, analytics, monitoring, production deployment, and launch sequence:
+
+1. Identify every technical risk that could impact launch day.
+2. Rank each risk High / Medium / Low.
+3. Recommend mitigation steps for each risk.
+4. Identify any missing launch tasks.
+5. Recommend any "Day 0" monitoring dashboards I should keep open during launch.
+6. Recommend any production alerts that should be enabled.
+7. Produce an ideal hour-by-hour launch timeline from Apple approval through the first 72 hours.
+
+Assume this is Dime Time's single biggest marketing opportunity to date. I want a rollout plan comparable to what a venture-backed fintech startup would execute before a public launch.
