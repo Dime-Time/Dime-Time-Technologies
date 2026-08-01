@@ -295,6 +295,23 @@ type RealTransferStatus = {
   realTransfersBlockedAt: string | null;
   realTransfersBlockedBy: string | null;
   realTransfersNotes: string | null;
+  trust: {
+    tier: "new" | "settled" | "trusted" | "established";
+    flagged: boolean;
+    dailyTotalMaxDollars: number;
+    dailyCountMax: number;
+    firstTransferMaxDollars: number;
+    overrideApplied: boolean;
+    firstSettledAt: string | null;
+  } | null;
+  dailyCapOverride: string | null;
+};
+
+const TIER_LABELS: Record<string, string> = {
+  new: "New (no settled transfer yet)",
+  settled: "Settled (first transfer cleared)",
+  trusted: "Trusted (7+ days clean)",
+  established: "Established (30+ days clean)",
 };
 
 function UserRealMoneyControl({
@@ -350,8 +367,37 @@ function UserRealMoneyControl({
     },
   });
 
+  const [capInput, setCapInput] = useState("");
+  const setCap = useMutation({
+    mutationFn: async (dailyCap: number | null) => {
+      const res = await adminFetch(`/api/admin/users/${encodeURIComponent(userId)}/real-transfer-limit`, {
+        method: "POST",
+        body: { dailyCap, notes: dailyCap === null ? "Override cleared via admin UI" : "Override set via admin UI" },
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || `HTTP ${res.status}`);
+      }
+      return (await res.json()) as RealTransferStatus;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(statusKey, data);
+      setCapInput("");
+      toast({
+        title: data.dailyCapOverride ? "Daily limit override set" : "Daily limit back to automatic",
+        description: data.dailyCapOverride
+          ? `This user's daily cap is now $${Number(data.dailyCapOverride).toFixed(2)} (manual override).`
+          : "Automatic progressive-trust limits apply again.",
+      });
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not update limit", description: String(err?.message ?? err), variant: "destructive" });
+    },
+  });
+
   // Everyone is enabled by default; false only when an admin has blocked.
   const enabled = statusQuery.data?.realTransfersEnabled ?? true;
+  const trust = statusQuery.data?.trust ?? null;
 
   return (
     <div className="space-y-2" data-testid={`admin-realmoney-${userId}`}>
@@ -387,6 +433,53 @@ function UserRealMoneyControl({
           {statusQuery.data.realTransfersNotes && <div>note: {statusQuery.data.realTransfersNotes}</div>}
         </div>
       )}
+
+      {trust && (
+        <div className="text-xs text-slate-600 border rounded-md bg-slate-50 border-slate-200 p-2 space-y-0.5">
+          <div>
+            Trust level: <strong>{TIER_LABELS[trust.tier] ?? trust.tier}</strong>
+            {trust.flagged && <span className="text-red-600 font-semibold"> — RISK FLAGGED (returned/disputed transfer; limits demoted)</span>}
+          </div>
+          <div>
+            Effective limits: ${trust.dailyTotalMaxDollars.toFixed(2)}/day · {trust.dailyCountMax} transfer(s)/day · first transfer ≤ ${trust.firstTransferMaxDollars.toFixed(2)}
+            {trust.overrideApplied && <span className="font-semibold"> (manual override)</span>}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-end gap-2 flex-wrap">
+        <div className="space-y-1">
+          <div className="text-xs text-slate-500">Manual daily cap ($)</div>
+          <Input
+            value={capInput}
+            onChange={(e) => setCapInput(e.target.value)}
+            placeholder={trust ? trust.dailyTotalMaxDollars.toFixed(2) : "e.g. 25"}
+            className="h-8 w-28"
+            inputMode="decimal"
+            data-testid={`admin-realmoney-cap-input-${userId}`}
+          />
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={setCap.isPending || !capInput.trim() || isNaN(Number(capInput)) || Number(capInput) < 0}
+          onClick={() => setCap.mutate(Number(capInput))}
+          data-testid={`admin-realmoney-cap-set-${userId}`}
+        >
+          Set limit
+        </Button>
+        {statusQuery.data?.dailyCapOverride != null && (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={setCap.isPending}
+            onClick={() => setCap.mutate(null)}
+            data-testid={`admin-realmoney-cap-clear-${userId}`}
+          >
+            Clear override
+          </Button>
+        )}
+      </div>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>

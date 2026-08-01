@@ -81,6 +81,7 @@ import {
   type InsertDebtProviderConnection,
   type InsertDebtImportAuditLog
 } from "@shared/schema";
+import { computeRealTransferTrust, type RealTransferTrust } from "@shared/realTransferTrust";
 
 import type { NormalizedLiability } from "./services/debtImport/types";
 import { bumpedOriginalBalance } from "./lib/debtEdit";
@@ -273,6 +274,8 @@ export interface IStorage {
     limits: { firstTransferMaxDollars: number; dailyTotalMaxDollars: number; dailyCountMax: number };
   }): Promise<RealAchGateResult>;
   setUserRealTransfersEnabled(userId: string, enabled: boolean, adminUserId: string, notes?: string): Promise<User | undefined>;
+  setUserRealTransfersDailyCapOverride(userId: string, dailyCap: number | null, adminUserId: string, notes?: string): Promise<User | undefined>;
+  getUserRealTransferTrust(userId: string): Promise<RealTransferTrust | undefined>;
   createRealTransferAuditLog(data: InsertRealTransferAuditLog): Promise<RealTransferAuditLog>;
   getRecentRealTransferAuditLogs(opts: { limit: number; userId?: string }): Promise<RealTransferAuditLog[]>;
   // Admin (read-only operator surface — gated by requireAdmin middleware)
@@ -405,6 +408,7 @@ export class MemStorage implements IStorage {
       realTransfersBlocked: false,
       realTransfersBlockedAt: null,
       realTransfersBlockedBy: null,
+      realTransfersDailyCapOverride: null,
       realTransfersNotes: null,
       createdAt: new Date("2024-01-01"),
       updatedAt: new Date("2024-01-01"),
@@ -1101,6 +1105,7 @@ export class MemStorage implements IStorage {
       realTransfersBlocked: false,
       realTransfersBlockedAt: null,
       realTransfersBlockedBy: null,
+      realTransfersDailyCapOverride: null,
       realTransfersNotes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1137,6 +1142,7 @@ export class MemStorage implements IStorage {
         realTransfersBlocked: false,
         realTransfersBlockedAt: null,
         realTransfersBlockedBy: null,
+        realTransfersDailyCapOverride: null,
         realTransfersNotes: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1912,6 +1918,8 @@ export class MemStorage implements IStorage {
   async getLatestSubscriptionConsent(_userId: string): Promise<SubscriptionConsent | undefined> { return undefined; }
   async reserveRealStripeAchDebit(_args: any): Promise<RealAchGateResult> { throw new Error('MemStorage does not support real ACH gate'); }
   async setUserRealTransfersEnabled(_userId: string, _enabled: boolean, _adminUserId: string, _notes?: string): Promise<User | undefined> { return undefined; }
+  async setUserRealTransfersDailyCapOverride(_userId: string, _dailyCap: number | null, _adminUserId: string, _notes?: string): Promise<User | undefined> { return undefined; }
+  async getUserRealTransferTrust(_userId: string): Promise<RealTransferTrust | undefined> { return undefined; }
   async createRealTransferAuditLog(_data: InsertRealTransferAuditLog): Promise<RealTransferAuditLog> { throw new Error('MemStorage does not support audit logs'); }
   async getRecentRealTransferAuditLogs(_opts: { limit: number; userId?: string }): Promise<RealTransferAuditLog[]> { return []; }
 
@@ -3099,16 +3107,33 @@ export class DatabaseStorage implements IStorage {
         return block(409, "duplicate_pending", "A transfer for this is already in progress. Please wait for it to finish.");
       }
 
-      // 5. Conservative launch limits, computed inside the lock.
-      const prior = await tx.select({ id: transfers.id }).from(transfers).where(and(
+      // 5. Progressive-trust limits, computed inside the lock. Every user
+      // starts at the conservative launch limits (args.limits) and earns
+      // higher daily caps as transfers settle cleanly; a returned/disputed
+      // transfer demotes them back to base until an admin reviews.
+      const history = await tx.select({
+        status: transfers.status,
+        createdAt: transfers.createdAt,
+        updatedAt: transfers.updatedAt,
+      }).from(transfers).where(and(
         eq(transfers.userId, userId),
         eq(transfers.provider, "stripe"),
-        inArray(transfers.status, consumedStatuses),
       ));
+      const capOverride = user.realTransfersDailyCapOverride !== null && user.realTransfersDailyCapOverride !== undefined
+        ? parseFloat(user.realTransfersDailyCapOverride)
+        : null;
+      const trust = computeRealTransferTrust(history, capOverride);
+      const effective = {
+        firstTransferMaxDollars: limits.firstTransferMaxDollars,
+        dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+        dailyCountMax: trust.dailyCountMax,
+      };
+
+      const prior = history.filter((r) => consumedStatuses.includes(r.status));
       const isFirst = prior.length === 0;
-      if (isFirst && amount > limits.firstTransferMaxDollars) {
+      if (isFirst && amount > effective.firstTransferMaxDollars) {
         return block(422, "over_first_transfer_limit",
-          `Your first real transfer is limited to $${limits.firstTransferMaxDollars.toFixed(2)}.`);
+          `Your first real transfer is limited to $${effective.firstTransferMaxDollars.toFixed(2)}.`);
       }
 
       // Daily window is explicitly UTC (documented) so the limit is stable
@@ -3121,14 +3146,14 @@ export class DatabaseStorage implements IStorage {
         inArray(transfers.status, consumedStatuses),
         gte(transfers.createdAt, todayStartUtc),
       ));
-      if (todays.length >= limits.dailyCountMax) {
+      if (todays.length >= effective.dailyCountMax) {
         return block(429, "over_daily_count",
-          `You've reached the daily limit of ${limits.dailyCountMax} transfer(s). Please try again tomorrow.`);
+          `You've reached the daily limit of ${effective.dailyCountMax} transfer(s). Please try again tomorrow.`);
       }
       const todaysSum = todays.reduce((s, r) => s + parseFloat(r.amount), 0);
-      if (todaysSum + amount > limits.dailyTotalMaxDollars) {
+      if (todaysSum + amount > effective.dailyTotalMaxDollars) {
         return block(422, "over_daily_total",
-          `This would exceed the daily transfer limit of $${limits.dailyTotalMaxDollars.toFixed(2)}.`);
+          `This would exceed your current daily transfer limit of $${effective.dailyTotalMaxDollars.toFixed(2)}.`);
       }
 
       // 6. All checks passed — create the ledger row + approval audit, then
@@ -3187,6 +3212,52 @@ export class DatabaseStorage implements IStorage {
       });
       return updated;
     });
+  }
+
+  async setUserRealTransfersDailyCapOverride(
+    userId: string,
+    dailyCap: number | null,
+    adminUserId: string,
+    notes?: string,
+  ): Promise<User | undefined> {
+    return await db.transaction(async (tx) => {
+      // Same per-user advisory lock as the gate so a cap change can never race
+      // past an in-flight reservation.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+      const [updated] = await tx.update(users).set({
+        realTransfersDailyCapOverride: dailyCap === null ? null : dailyCap.toFixed(2),
+        realTransfersNotes: notes ?? null,
+        updatedAt: new Date(),
+      }).where(eq(users.id, userId)).returning();
+      if (!updated) return undefined;
+      await tx.insert(realTransferAuditLogs).values({
+        userId,
+        adminUserId,
+        action: "daily_cap_override_changed",
+        result: dailyCap === null ? "cleared" : `set:$${dailyCap.toFixed(2)}`,
+        reason: notes ?? null,
+        allowlistEnabled: updated.realTransfersBlocked !== true,
+        environment: process.env.NODE_ENV === "production" ? "production" : "development",
+      });
+      return updated;
+    });
+  }
+
+  async getUserRealTransferTrust(userId: string): Promise<RealTransferTrust | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) return undefined;
+    const history = await db.select({
+      status: transfers.status,
+      createdAt: transfers.createdAt,
+      updatedAt: transfers.updatedAt,
+    }).from(transfers).where(and(
+      eq(transfers.userId, userId),
+      eq(transfers.provider, "stripe"),
+    ));
+    const capOverride = user.realTransfersDailyCapOverride !== null && user.realTransfersDailyCapOverride !== undefined
+      ? parseFloat(user.realTransfersDailyCapOverride)
+      : null;
+    return computeRealTransferTrust(history, capOverride);
   }
 
   async createRealTransferAuditLog(data: InsertRealTransferAuditLog): Promise<RealTransferAuditLog> {

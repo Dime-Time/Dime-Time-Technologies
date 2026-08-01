@@ -22,6 +22,12 @@ const realTransfersToggleSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+const dailyCapOverrideSchema = z.object({
+  // null clears the override (automatic tiers apply again).
+  dailyCap: z.number().min(0).max(10000).nullable(),
+  notes: z.string().max(500).optional(),
+});
+
 function publicUserRealTransferStatus(u: {
   id: string;
   realTransfersBlocked: boolean;
@@ -82,14 +88,68 @@ export function registerAdminRoutes(app: Express): void {
     }
   });
 
-  // Real-money allowlist status for a single user (read).
+  // Real-money status for a single user (read) — block state + progressive
+  // trust tier / effective limits.
   app.get("/api/admin/users/:id/real-transfers", requireAdmin, async (req: Request, res: Response) => {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) return res.status(404).json({ message: "User not found" });
-      res.json(publicUserRealTransferStatus(user));
+      const trust = await storage.getUserRealTransferTrust(req.params.id);
+      res.json({
+        ...publicUserRealTransferStatus(user),
+        trust: trust ? {
+          tier: trust.tier,
+          flagged: trust.flagged,
+          dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+          dailyCountMax: trust.dailyCountMax,
+          firstTransferMaxDollars: trust.firstTransferMaxDollars,
+          overrideApplied: trust.overrideApplied,
+          firstSettledAt: trust.firstSettledAt,
+        } : null,
+        dailyCapOverride: user.realTransfersDailyCapOverride,
+      });
     } catch (error) {
       console.error("[admin] GET /api/admin/users/:id/real-transfers error", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Set or clear an admin daily-cap override for a single user (write).
+  // Used to raise, lower, or (after manual review of a risk-flagged user)
+  // release a user's daily real-transfer limit. Audited transactionally.
+  app.post("/api/admin/users/:id/real-transfer-limit", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const adminUserId = (req as any).adminUserId as string;
+      const parsed = dailyCapOverrideSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const { dailyCap, notes } = parsed.data;
+      const updated = await storage.setUserRealTransfersDailyCapOverride(req.params.id, dailyCap, adminUserId, notes);
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      console.log(JSON.stringify({
+        event: "admin_real_transfer_cap_override",
+        severity: "WARN",
+        targetUserId: req.params.id,
+        dailyCap,
+        adminUserId,
+      }));
+      const trust = await storage.getUserRealTransferTrust(req.params.id);
+      res.json({
+        ...publicUserRealTransferStatus(updated),
+        trust: trust ? {
+          tier: trust.tier,
+          flagged: trust.flagged,
+          dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+          dailyCountMax: trust.dailyCountMax,
+          firstTransferMaxDollars: trust.firstTransferMaxDollars,
+          overrideApplied: trust.overrideApplied,
+          firstSettledAt: trust.firstSettledAt,
+        } : null,
+        dailyCapOverride: updated.realTransfersDailyCapOverride,
+      });
+    } catch (error) {
+      console.error("[admin] POST /api/admin/users/:id/real-transfer-limit error", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -108,6 +168,7 @@ export function registerAdminRoutes(app: Express): void {
       const { enabled, notes } = parsed.data;
       const updated = await storage.setUserRealTransfersEnabled(req.params.id, enabled, adminUserId, notes);
       if (!updated) return res.status(404).json({ message: "User not found" });
+      const trust = await storage.getUserRealTransferTrust(req.params.id);
       console.log(
         JSON.stringify({
           event: "admin_real_transfers_toggled",
@@ -117,7 +178,19 @@ export function registerAdminRoutes(app: Express): void {
           adminUserId,
         }),
       );
-      res.json(publicUserRealTransferStatus(updated));
+      res.json({
+        ...publicUserRealTransferStatus(updated),
+        trust: trust ? {
+          tier: trust.tier,
+          flagged: trust.flagged,
+          dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+          dailyCountMax: trust.dailyCountMax,
+          firstTransferMaxDollars: trust.firstTransferMaxDollars,
+          overrideApplied: trust.overrideApplied,
+          firstSettledAt: trust.firstSettledAt,
+        } : null,
+        dailyCapOverride: updated.realTransfersDailyCapOverride,
+      });
     } catch (error) {
       console.error("[admin] POST /api/admin/users/:id/real-transfers error", error);
       res.status(500).json({ message: "Internal server error" });

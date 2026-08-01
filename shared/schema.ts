@@ -33,6 +33,10 @@ export const users = pgTable("users", {
   realTransfersBlocked: boolean("real_transfers_blocked").default(false).notNull(),
   realTransfersBlockedAt: timestamp("real_transfers_blocked_at"),
   realTransfersBlockedBy: varchar("real_transfers_blocked_by"),
+  // Admin-set daily dollar cap override (null = automatic progressive-trust
+  // tiers apply). Always wins when set — used to raise, lower, or release a
+  // risk-flagged user after manual review.
+  realTransfersDailyCapOverride: decimal("real_transfers_daily_cap_override", { precision: 10, scale: 2 }),
   realTransfersNotes: text("real_transfers_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -524,6 +528,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   realTransfersBlocked: true,
   realTransfersBlockedAt: true,
   realTransfersBlockedBy: true,
+  realTransfersDailyCapOverride: true,
   realTransfersNotes: true,
 });
 

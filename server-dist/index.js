@@ -493,6 +493,10 @@ var users = pgTable("users", {
   realTransfersBlocked: boolean("real_transfers_blocked").default(false).notNull(),
   realTransfersBlockedAt: timestamp("real_transfers_blocked_at"),
   realTransfersBlockedBy: varchar("real_transfers_blocked_by"),
+  // Admin-set daily dollar cap override (null = automatic progressive-trust
+  // tiers apply). Always wins when set — used to raise, lower, or release a
+  // risk-flagged user after manual review.
+  realTransfersDailyCapOverride: decimal("real_transfers_daily_cap_override", { precision: 10, scale: 2 }),
   realTransfersNotes: text("real_transfers_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
@@ -927,6 +931,7 @@ var insertUserSchema = createInsertSchema(users).omit({
   realTransfersBlocked: true,
   realTransfersBlockedAt: true,
   realTransfersBlockedBy: true,
+  realTransfersDailyCapOverride: true,
   realTransfersNotes: true
 });
 var insertDebtSchema = createInsertSchema(debts).omit({
@@ -1233,6 +1238,38 @@ var insertEmailVerificationTokenSchema = createInsertSchema(emailVerificationTok
   createdAt: true,
   usedAt: true
 });
+
+// shared/realTransferTrust.ts
+var BASE_LIMITS = { firstTransferMaxDollars: 1, dailyTotalMaxDollars: 5, dailyCountMax: 1 };
+var TIER_LIMITS = {
+  new: { dailyTotalMaxDollars: 5, dailyCountMax: 1 },
+  settled: { dailyTotalMaxDollars: 25, dailyCountMax: 3 },
+  trusted: { dailyTotalMaxDollars: 100, dailyCountMax: 5 },
+  established: { dailyTotalMaxDollars: 250, dailyCountMax: 10 }
+};
+var RISK_STATUSES = /* @__PURE__ */ new Set(["returned", "disputed"]);
+function computeRealTransferTrust(history, dailyCapOverride, now = /* @__PURE__ */ new Date()) {
+  const flagged = history.some((r) => RISK_STATUSES.has(r.status));
+  const settledDates = history.filter((r) => r.status === "settled" && (r.updatedAt || r.createdAt)).map((r) => r.updatedAt ?? r.createdAt);
+  const firstSettledAt = settledDates.length ? new Date(Math.min(...settledDates.map((d) => d.getTime()))) : null;
+  let tier = "new";
+  if (firstSettledAt) {
+    const days = (now.getTime() - firstSettledAt.getTime()) / 864e5;
+    tier = days >= 30 ? "established" : days >= 7 ? "trusted" : "settled";
+  }
+  let { dailyTotalMaxDollars, dailyCountMax } = flagged ? { dailyTotalMaxDollars: BASE_LIMITS.dailyTotalMaxDollars, dailyCountMax: BASE_LIMITS.dailyCountMax } : TIER_LIMITS[tier];
+  const overrideApplied = dailyCapOverride !== null && Number.isFinite(dailyCapOverride);
+  if (overrideApplied) dailyTotalMaxDollars = dailyCapOverride;
+  return {
+    tier,
+    flagged,
+    dailyTotalMaxDollars,
+    dailyCountMax,
+    firstTransferMaxDollars: BASE_LIMITS.firstTransferMaxDollars,
+    overrideApplied,
+    firstSettledAt
+  };
+}
 
 // server/lib/debtEdit.ts
 import { z } from "zod";
@@ -2246,17 +2283,28 @@ var DatabaseStorage = class _DatabaseStorage {
       if (dup.length > 0) {
         return block(409, "duplicate_pending", "A transfer for this is already in progress. Please wait for it to finish.");
       }
-      const prior = await tx.select({ id: transfers.id }).from(transfers).where(and(
+      const history = await tx.select({
+        status: transfers.status,
+        createdAt: transfers.createdAt,
+        updatedAt: transfers.updatedAt
+      }).from(transfers).where(and(
         eq(transfers.userId, userId),
-        eq(transfers.provider, "stripe"),
-        inArray(transfers.status, consumedStatuses)
+        eq(transfers.provider, "stripe")
       ));
+      const capOverride = user.realTransfersDailyCapOverride !== null && user.realTransfersDailyCapOverride !== void 0 ? parseFloat(user.realTransfersDailyCapOverride) : null;
+      const trust = computeRealTransferTrust(history, capOverride);
+      const effective = {
+        firstTransferMaxDollars: limits.firstTransferMaxDollars,
+        dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+        dailyCountMax: trust.dailyCountMax
+      };
+      const prior = history.filter((r) => consumedStatuses.includes(r.status));
       const isFirst = prior.length === 0;
-      if (isFirst && amount > limits.firstTransferMaxDollars) {
+      if (isFirst && amount > effective.firstTransferMaxDollars) {
         return block(
           422,
           "over_first_transfer_limit",
-          `Your first real transfer is limited to $${limits.firstTransferMaxDollars.toFixed(2)}.`
+          `Your first real transfer is limited to $${effective.firstTransferMaxDollars.toFixed(2)}.`
         );
       }
       const now = /* @__PURE__ */ new Date();
@@ -2267,19 +2315,19 @@ var DatabaseStorage = class _DatabaseStorage {
         inArray(transfers.status, consumedStatuses),
         gte(transfers.createdAt, todayStartUtc)
       ));
-      if (todays.length >= limits.dailyCountMax) {
+      if (todays.length >= effective.dailyCountMax) {
         return block(
           429,
           "over_daily_count",
-          `You've reached the daily limit of ${limits.dailyCountMax} transfer(s). Please try again tomorrow.`
+          `You've reached the daily limit of ${effective.dailyCountMax} transfer(s). Please try again tomorrow.`
         );
       }
       const todaysSum = todays.reduce((s, r) => s + parseFloat(r.amount), 0);
-      if (todaysSum + amount > limits.dailyTotalMaxDollars) {
+      if (todaysSum + amount > effective.dailyTotalMaxDollars) {
         return block(
           422,
           "over_daily_total",
-          `This would exceed the daily transfer limit of $${limits.dailyTotalMaxDollars.toFixed(2)}.`
+          `This would exceed your current daily transfer limit of $${effective.dailyTotalMaxDollars.toFixed(2)}.`
         );
       }
       const ledgerId = randomUUID();
@@ -2324,6 +2372,41 @@ var DatabaseStorage = class _DatabaseStorage {
       });
       return updated;
     });
+  }
+  async setUserRealTransfersDailyCapOverride(userId, dailyCap, adminUserId, notes) {
+    return await db.transaction(async (tx) => {
+      await tx.execute(sql2`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
+      const [updated] = await tx.update(users).set({
+        realTransfersDailyCapOverride: dailyCap === null ? null : dailyCap.toFixed(2),
+        realTransfersNotes: notes ?? null,
+        updatedAt: /* @__PURE__ */ new Date()
+      }).where(eq(users.id, userId)).returning();
+      if (!updated) return void 0;
+      await tx.insert(realTransferAuditLogs).values({
+        userId,
+        adminUserId,
+        action: "daily_cap_override_changed",
+        result: dailyCap === null ? "cleared" : `set:$${dailyCap.toFixed(2)}`,
+        reason: notes ?? null,
+        allowlistEnabled: updated.realTransfersBlocked !== true,
+        environment: process.env.NODE_ENV === "production" ? "production" : "development"
+      });
+      return updated;
+    });
+  }
+  async getUserRealTransferTrust(userId) {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) return void 0;
+    const history = await db.select({
+      status: transfers.status,
+      createdAt: transfers.createdAt,
+      updatedAt: transfers.updatedAt
+    }).from(transfers).where(and(
+      eq(transfers.userId, userId),
+      eq(transfers.provider, "stripe")
+    ));
+    const capOverride = user.realTransfersDailyCapOverride !== null && user.realTransfersDailyCapOverride !== void 0 ? parseFloat(user.realTransfersDailyCapOverride) : null;
+    return computeRealTransferTrust(history, capOverride);
   }
   async createRealTransferAuditLog(data) {
     const [row] = await db.insert(realTransferAuditLogs).values(data).returning();
@@ -6361,6 +6444,11 @@ var realTransfersToggleSchema = z7.object({
   enabled: z7.boolean(),
   notes: z7.string().max(500).optional()
 });
+var dailyCapOverrideSchema = z7.object({
+  // null clears the override (automatic tiers apply again).
+  dailyCap: z7.number().min(0).max(1e4).nullable(),
+  notes: z7.string().max(500).optional()
+});
 function publicUserRealTransferStatus(u) {
   return {
     userId: u.id,
@@ -6414,9 +6502,58 @@ function registerAdminRoutes(app2) {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) return res.status(404).json({ message: "User not found" });
-      res.json(publicUserRealTransferStatus(user));
+      const trust = await storage.getUserRealTransferTrust(req.params.id);
+      res.json({
+        ...publicUserRealTransferStatus(user),
+        trust: trust ? {
+          tier: trust.tier,
+          flagged: trust.flagged,
+          dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+          dailyCountMax: trust.dailyCountMax,
+          firstTransferMaxDollars: trust.firstTransferMaxDollars,
+          overrideApplied: trust.overrideApplied,
+          firstSettledAt: trust.firstSettledAt
+        } : null,
+        dailyCapOverride: user.realTransfersDailyCapOverride
+      });
     } catch (error) {
       console.error("[admin] GET /api/admin/users/:id/real-transfers error", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.post("/api/admin/users/:id/real-transfer-limit", requireAdmin, async (req, res) => {
+    try {
+      const adminUserId = req.adminUserId;
+      const parsed = dailyCapOverrideSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const { dailyCap, notes } = parsed.data;
+      const updated = await storage.setUserRealTransfersDailyCapOverride(req.params.id, dailyCap, adminUserId, notes);
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      console.log(JSON.stringify({
+        event: "admin_real_transfer_cap_override",
+        severity: "WARN",
+        targetUserId: req.params.id,
+        dailyCap,
+        adminUserId
+      }));
+      const trust = await storage.getUserRealTransferTrust(req.params.id);
+      res.json({
+        ...publicUserRealTransferStatus(updated),
+        trust: trust ? {
+          tier: trust.tier,
+          flagged: trust.flagged,
+          dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+          dailyCountMax: trust.dailyCountMax,
+          firstTransferMaxDollars: trust.firstTransferMaxDollars,
+          overrideApplied: trust.overrideApplied,
+          firstSettledAt: trust.firstSettledAt
+        } : null,
+        dailyCapOverride: updated.realTransfersDailyCapOverride
+      });
+    } catch (error) {
+      console.error("[admin] POST /api/admin/users/:id/real-transfer-limit error", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -6430,6 +6567,7 @@ function registerAdminRoutes(app2) {
       const { enabled, notes } = parsed.data;
       const updated = await storage.setUserRealTransfersEnabled(req.params.id, enabled, adminUserId, notes);
       if (!updated) return res.status(404).json({ message: "User not found" });
+      const trust = await storage.getUserRealTransferTrust(req.params.id);
       console.log(
         JSON.stringify({
           event: "admin_real_transfers_toggled",
@@ -6439,7 +6577,19 @@ function registerAdminRoutes(app2) {
           adminUserId
         })
       );
-      res.json(publicUserRealTransferStatus(updated));
+      res.json({
+        ...publicUserRealTransferStatus(updated),
+        trust: trust ? {
+          tier: trust.tier,
+          flagged: trust.flagged,
+          dailyTotalMaxDollars: trust.dailyTotalMaxDollars,
+          dailyCountMax: trust.dailyCountMax,
+          firstTransferMaxDollars: trust.firstTransferMaxDollars,
+          overrideApplied: trust.overrideApplied,
+          firstSettledAt: trust.firstSettledAt
+        } : null,
+        dailyCapOverride: updated.realTransfersDailyCapOverride
+      });
     } catch (error) {
       console.error("[admin] POST /api/admin/users/:id/real-transfers error", error);
       res.status(500).json({ message: "Internal server error" });

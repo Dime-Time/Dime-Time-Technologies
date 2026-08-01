@@ -1,7 +1,7 @@
 - [Stripe/Plaid secret scoping](stripe-prod-secrets-scoping.md) — sensitive keys go in global Secrets only; per-env vars leak plaintext to git-tracked .replit; only flags + public pk_* in env scope.
 - [Account deletion cascade](account-deletion-cascade.md) — deleteUserAccount must delete EVERY userId-FK table atomically; a new user-scoped table left out → deletion 500s on FK violation.
 - [Real Stripe ACH transfer gates](stripe-ach-real-transfer-gates.md) — prerequisites + env-var naming decisions for real transfers; gate gaps now closed, don't re-report.
-- [Real-money rollout gate spec](real-money-rollout-gate.md) — per-user allowlist + $1-first/$5-day/1-count limits in reserveRealStripeAchDebit; blocks never call Stripe; full audit trail.
+- [Real-money rollout gate spec](real-money-rollout-gate.md) — 2026-08-01: default-ALLOW block list (was allowlist); $1-first/$5-day/1-count limits intact; publish diff must CREATE (not rename) real_transfers_blocked.
 - [Stripe ACH implementation](stripe-ach-implementation.md) — flag-off = routes 404 + SDK never imported; required secrets; route list; provider-agnostic ledger contract.
 - [Real-money gate testing](real-money-gate-testing.md) — verify ACH money gates at the storage layer on dev DB (throwaway allowlisted user); agent never flips prod flag or runs a live charge.
 - [Plaid key rotation runbook](plaid-key-rotation-runbook.md) — ordered steps to rotate PLAID_TOKEN_ENCRYPTION_KEY (stop workflow FIRST); covers Plaid tokens AND Stripe PM ids.
