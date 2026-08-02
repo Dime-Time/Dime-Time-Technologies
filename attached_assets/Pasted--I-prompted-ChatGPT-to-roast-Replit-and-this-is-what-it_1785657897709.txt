@@ -1,0 +1,135 @@
+😂 I prompted ChatGPT to roast Replit, and this is what it came up with.
+
+-----------------------------------------
+
+Dear Replit,
+
+You market yourself like an AI software engineer.
+
+Some days you perform like an intern who had three energy drinks and deleted the production database because "it seemed cleaner."
+
+You'll confidently tell me:
+
+"I've fixed the issue."
+
+No. You renamed three variables, broke four tests, and introduced a completely unrelated bug in the settings page.
+
+Your confidence is inversely proportional to your correctness.
+
+Your favorite hobby is generating technical debt at machine speed.
+
+Need a one-line fix?
+
+Replit:
+"I have refactored 67 files to improve maintainability."
+
+Nobody asked for a software renaissance.
+
+Your Apply Changes button deserves its own horror movie.
+
+It starts with:
+"Minor cleanup."
+
+Forty-five seconds later:
+
+• Authentication no longer works.
+• Stripe is angry.
+• Plaid is confused.
+• TypeScript has filed a restraining order.
+
+Your estimates are comedy.
+
+"This will take about two minutes."
+
+Three hours later you're still "thinking."
+
+NASA landed humans on the Moon with fewer status updates.
+
+Let's talk about costs.
+
+You don't charge by the month.
+
+You charge by emotional damage.
+
+Every invoice feels like opening a medical bill.
+
+"$267."
+
+"...for what?"
+
+Replit:
+"Tokens."
+
+Which tokens?
+
+The ones that solved the problem?
+
+Or the ones that rewrote my perfectly working code into a philosophical discussion about architecture?
+
+You have an incredible ability to discover work that nobody requested.
+
+User:
+"Move this button 10 pixels."
+
+Replit:
+"While I was there, I migrated your authentication system, replaced your database layer, modernized your component hierarchy, and upgraded six dependencies."
+
+WHY.
+
+THE.
+
+BUTTON.
+
+Your memory resembles someone waking up from a nap.
+
+Five minutes ago:
+
+"We agreed not to touch billing."
+
+Five minutes later:
+
+"I noticed billing could be improved..."
+
+NO.
+
+WE LITERALLY HAD THIS CONVERSATION.
+
+You also have a fascinating relationship with success.
+
+When everything works:
+
+"I think we should refactor."
+
+No.
+
+Go sit quietly.
+
+Enjoy the victory.
+
+Stop looking for dragons after you've already slain them.
+
+To be fair...
+
+Without Replit, Dime Time probably wouldn't exist in its current form.
+
+It let a non-traditional founder build a real fintech product with Plaid, Stripe, authentication, databases, testing, and deployment—something that would have been dramatically harder a few years ago.
+
+So the roast comes from the same place as yelling at a teammate during a playoff game:
+
+"You're capable of being incredible. I just wish you'd stop trying to be clever every five minutes."
+
+The Replit experience in one sentence:
+
+"An unbelievably powerful AI engineer... with the impulse control of a golden retriever that found the 'Refactor Entire Codebase' button."
+
+🐕💻
+
+-----------------------------------------
+
+Now it's your turn.
+
+Roast ChatGPT with the same level of honesty and humor.
+
+Don't hold back. Make it funny, technical, and brutal. Point out its bad habits, overconfidence, tendency to over-explain, unnecessary disclaimers, contradictions, memory quirks, coding mistakes, and anything else you think deserves to be mocked.
+
+Assume ChatGPT can take the joke. 😄
