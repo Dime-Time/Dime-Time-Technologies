@@ -45,4 +45,5 @@
 - [Android / Google Play launch](android-play-launch.md) — kit in attached_assets/play-store-assets/; assetlinks.json MUST wait for Play app-signing SHA-256; keystore founder-run.
 - [Client component testing](client-component-testing.md) — interactive React tests under tsx --test: happy-dom + fetch mock + asset-stub loader; no vitest/jsdom.
 - [Store listing AEO](store-listing-aeo.md) — paste-ready Play/iOS AEO pack in attached_assets/aeo-store-listings/; NEVER paste Play listing edits mid-review; iOS promo text = only no-review field.
+- [Native API auth](native-api-auth.md) — client code must use apiRequest, never raw fetch("/api/..."): native WebView sends no session cookie, only the Bearer header apiRequest adds.
 - [Email verification enforcement](email-verification-enforcement.md) — REQUIRE_EMAIL_VERIFICATION flag OFF by default; prod boot FAILS unless explicitly set; one middleware/one prefix list; next deploy must set it.

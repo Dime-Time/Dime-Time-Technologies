@@ -197,16 +197,10 @@ export default function Settings() {
   // Update round-up settings mutation
   const updateRoundUpSettings = useMutation({
     mutationFn: async (settings: Partial<RoundUpSettings>) => {
-      const response = await fetch("/api/round-up-settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      if (!response.ok) {
-        const err = new Error("Failed to update settings") as Error & { status?: number };
-        err.status = response.status;
-        throw err;
-      }
+      // apiRequest (not raw fetch): attaches the Bearer token on native.
+      // Raw fetch relied on the session cookie, which the native WebView
+      // does not send cross-origin → 401 → "Failed to update settings".
+      const response = await apiRequest("PUT", "/api/round-up-settings", settings);
       return response.json();
     },
     onSuccess: () => {

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -90,13 +91,8 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
       cryptoEnabled: boolean;
       cryptoPercentage: string;
     }) => {
-      const response = await fetch("/api/round-up-settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(settings),
-      });
-      if (!response.ok) throw new Error("Failed to save settings");
+      // apiRequest attaches the native Bearer token; raw fetch did not.
+      const response = await apiRequest("POST", "/api/round-up-settings", settings);
       return response.json();
     },
     onSuccess: () => {
@@ -119,17 +115,9 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
   const createLinkToken = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/plaid/create-link-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setLinkToken(data.linkToken);
-      } else {
-        throw new Error("Failed to create link token");
-      }
+      const response = await apiRequest("POST", "/api/plaid/create-link-token");
+      const data = await response.json();
+      setLinkToken(data.linkToken);
     } catch (error) {
       toast({
         title: "Connection Error",
@@ -146,23 +134,13 @@ export default function BankSetupFlow({ onComplete, onSkip }: BankSetupFlowProps
       setLinkToken(null);
       setIsLoading(true);
       try {
-        const response = await fetch("/api/plaid/exchange-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ publicToken }),
+        await apiRequest("POST", "/api/plaid/exchange-token", { publicToken });
+        toast({
+          title: "Bank Connected!",
+          description: `Successfully linked ${metadata?.institution?.name || "your bank"}`,
         });
-
-        if (response.ok) {
-          toast({
-            title: "Bank Connected!",
-            description: `Successfully linked ${metadata?.institution?.name || "your bank"}`,
-          });
-          await refetchAccounts();
-          setCurrentStep(1);
-        } else {
-          throw new Error("Failed to exchange token");
-        }
+        await refetchAccounts();
+        setCurrentStep(1);
       } catch (error) {
         toast({
           title: "Connection Failed",

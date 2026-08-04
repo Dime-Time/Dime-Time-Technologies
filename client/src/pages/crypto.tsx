@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,16 +81,8 @@ export default function CryptoPage() {
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<RoundUpSettings>) => {
-      const response = await fetch('/api/round-up-settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newSettings),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update settings');
-      }
+      // apiRequest attaches the native Bearer token; raw fetch did not.
+      const response = await apiRequest('PUT', '/api/round-up-settings', newSettings);
       return response.json();
     },
     onSuccess: () => {

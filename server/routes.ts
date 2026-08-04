@@ -1511,6 +1511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(settings);
     } catch (error) {
+      console.error("PUT /api/round-up-settings failed:", error instanceof Error ? error.message : "unknown");
       res.status(500).json({ message: "Internal server error" });
     }
   });

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Bell, 
   DollarSign, 
@@ -20,33 +21,24 @@ export default function NotificationTest() {
   const testNotification = async (type: string, data: any = {}) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/notifications/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type,
-          ...data
-        }),
+      const response = await apiRequest('POST', '/api/notifications/test', {
+        type,
+        ...data
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: "✅ Notification Sent!",
-          description: `Test ${type} notification delivered successfully`,
+      // apiRequest throws on non-2xx, so reaching here means success.
+      await response.json();
+      toast({
+        title: "✅ Notification Sent!",
+        description: `Test ${type} notification delivered successfully`,
+      });
+
+      // Show browser notification if permission granted
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(`Test ${type} notification`, {
+          body: `Successfully tested ${type} notification`,
+          icon: '/favicon.ico'
         });
-        
-        // Show browser notification if permission granted
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(`Test ${type} notification`, {
-            body: `Successfully tested ${type} notification`,
-            icon: '/favicon.ico'
-          });
-        }
-      } else {
-        throw new Error('Failed to send notification');
       }
     } catch (error) {
       toast({
