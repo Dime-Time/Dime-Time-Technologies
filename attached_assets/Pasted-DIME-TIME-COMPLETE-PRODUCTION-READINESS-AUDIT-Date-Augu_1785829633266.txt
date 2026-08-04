@@ -1,0 +1,751 @@
+DIME TIME — COMPLETE PRODUCTION-READINESS AUDIT
+Date: August 4, 2026
+Purpose: Final verification before the public LinkedIn launch
+
+CONTEXT
+
+Dime Time is now live on:
+
+* Web: https://dime-time.com
+* iOS: Apple App Store, bundle ID com.dimetime.mobile
+* Android: Google Play, package com.dimetime.app
+
+A real user recently downloaded Dime Time from Google Play and reported that the authentication/verification email did not work. A fix was subsequently made, but I do not want to assume that the entire flow is now reliable.
+
+There was also a separate historical email-delivery problem in July: Resend had not fully verified dime-time.com, which prevented verification emails from being delivered to recipients other than the founder. That issue was fixed. Do not assume this new Android incident had the same cause. Independently trace and verify the current implementation.
+
+GOAL
+
+Perform a complete, evidence-based, production-readiness audit of the entire Dime Time codebase and current production configuration.
+
+This is a READ-ONLY AUDIT.
+
+DO NOT:
+
+* Modify any source code, configuration, schema, migration, lockfile, secret, environment variable, feature flag, database record, mobile project, or deployment setting.
+* Install or upgrade dependencies if doing so would alter tracked files.
+* Run npm audit fix, formatting commands, migrations, seed commands, or automatic repair tools.
+* Commit, push, merge, deploy, restart production, submit a mobile build, or change App Store/Google Play settings.
+* Send emails to real users.
+* Move real money or initiate Stripe, Plaid, ACH, subscription, or crypto transactions.
+* Print, expose, copy, rotate, or change secret values.
+* Disable production security controls to make a test pass.
+* Delete generated or untracked files.
+* Make “small harmless fixes” during the audit.
+
+Tests may generate disposable build or test output, but no tracked source file may be changed. Record git status before and after testing. Stop after producing the report and wait for explicit authorization before implementing anything.
+
+AUDIT SCOPE
+
+Inspect every first-party source and configuration file. Do not merely sample representative files.
+
+Include:
+
+* client/
+* server/
+* shared/
+* scripts/
+* tests/
+* database schema and migrations
+* package.json and all lockfiles
+* TypeScript, Vite, Tailwind, PostCSS, and build configuration
+* Replit configuration and deployment configuration
+* environment-variable registry and startup validation
+* Capacitor configuration
+* android/ native project
+* ios/ native project
+* Codemagic and other CI/CD configuration
+* public assets
+* .well-known files
+* AASA and Android assetlinks configuration
+* email templates
+* legal and compliance pages
+* admin tooling
+* scheduled jobs and background processes
+* feature-flag definitions and call sites
+* all authentication, payment, bank-linking, debt-import, subscription, and account-deletion paths
+
+Exclude generated dependencies and build output such as node_modules, dist, build, Pods, and Gradle caches from line-by-line source review, but audit how they are produced and inspect dependency manifests and lockfiles.
+
+At the beginning of the report, record:
+
+* Current branch
+* Current commit SHA
+* Whether the working tree was clean before the audit
+* Ahead/behind status relative to origin/main
+* package version
+* iOS version/build found in source
+* Android versionName/versionCode found in source
+* Node and package-manager versions
+* Number of first-party files reviewed
+* Directories or files excluded and the exact reason
+* Whether the audited commit can be proven to match the currently deployed web, iOS, and Android releases
+
+Do not claim that source matches production unless there is evidence.
+
+==================================================
+
+1. AUTHENTICATION AND EMAIL — HIGHEST PRIORITY
+   ==================================================
+
+Trace the complete implementation from UI to server to Resend for:
+
+* Signup
+* Login
+* Logout
+* Email verification
+* Resend-verification email
+* Password reset request
+* Password-reset completion
+* Session creation
+* Session renewal
+* Session invalidation
+* Account deletion
+* Any demo/reviewer login behavior
+* Any mobile-specific authentication handling
+
+For every flow, identify:
+
+* Frontend entry point
+* API endpoint
+* Validation schema
+* Database operation
+* Email-provider call
+* Success response
+* Failure response
+* Rate limiter
+* Logging behavior
+* Test coverage
+* Web behavior
+* Android behavior
+* iOS behavior
+
+EMAIL-DELIVERY VERIFICATION
+
+Confirm through code, redacted configuration status, DNS evidence, provider status, and available logs:
+
+* The production sender uses the verified dime-time.com domain.
+* The configured sender is correct and authorized.
+* No production email uses dimetime.com, a Replit preview URL, localhost, or an obsolete domain.
+* SPF is valid.
+* DKIM is valid.
+* DMARC exists and is appropriately configured.
+* The Resend production API key is present in the correct deployment scope. Report presence only—never its value or recognizable prefix.
+* Production startup fails safely or alerts clearly when the required email configuration is missing.
+* The application does not report “email sent” when Resend returns a failure.
+* Provider exceptions and non-2xx responses are handled correctly.
+* The resend-verification path actually generates and sends a valid new message.
+* Recent production logs contain no unresolved email-send failures. Mask all recipient addresses.
+* If Resend dashboard access exists, inspect recent verification-email events, failures, bounces, complaints, and suppression status read-only. Do not print recipient PII.
+* Email templates render correctly on mobile and desktop.
+* Verification and reset links point only to https://dime-time.com.
+* Links do not expose secrets through Referer headers, analytics, Sentry, or logs.
+* Android users can tap the link from an email and successfully complete verification.
+* iOS users can tap the link and successfully complete verification.
+* Web users can successfully complete verification.
+* The user receives a clear confirmation and can log in afterward.
+* Expired, malformed, previously consumed, and duplicate-click tokens receive safe and understandable responses.
+* Resending a verification message invalidates or safely manages prior tokens.
+* A verified user cannot incorrectly be returned to an unverified state.
+
+TOKEN SECURITY
+
+Verify and report:
+
+* Whether verification and reset tokens are generated using a cryptographically secure source
+* Token entropy
+* Token expiration time
+* Whether tokens are stored hashed rather than in plaintext
+* Atomic, single-use consumption
+* Replay protection
+* Race-condition handling
+* Session invalidation after password reset
+* URL token removal using history.replaceState or equivalent
+* No token values in logs, analytics, database-error output, or Sentry
+* No user enumeration through signup, login, resend, or password-reset responses
+
+PASSWORD SECURITY
+
+Identify the exact password-hashing algorithm and parameters currently used.
+
+If passwords use plain SHA-256, SHA-1, MD5, or another fast non-adaptive hash, classify that as a P0 security issue. Passwords should use an adaptive password-hashing algorithm such as Argon2id, scrypt, or appropriately configured bcrypt.
+
+Do not change or migrate password hashes during this audit. Report the exact evidence and recommend a safe migration strategy if necessary.
+
+LIVE AUTHENTICATION TEST
+
+If an existing authorized test account and safe test inbox are already configured, perform one controlled end-to-end test of:
+
+1. New signup
+2. Verification email delivery
+3. Verification-link click
+4. First verified login
+5. Logout
+6. Login again
+7. Resend verification
+8. Password-reset request
+9. Password-reset completion
+10. Confirmation that old sessions and consumed tokens no longer work
+
+Run this through the deployed web experience and, if the environment supports it safely, through the current Google Play Android build.
+
+Do not send messages to real users or invent an email address.
+
+If a controlled live test cannot be performed, mark the flow “NOT PROVEN,” explain why, and provide exact manual testing steps. Code inspection alone is not proof of email delivery.
+
+==================================================
+2. ANDROID / GOOGLE PLAY AUDIT
+==============================
+
+Audit the current Android release path, including:
+
+* package name com.dimetime.app
+* namespace
+* applicationId
+* MainActivity path and package declaration
+* AndroidManifest
+* Gradle files
+* versionName and versionCode
+* target SDK and minimum SDK
+* Capacitor-generated configuration
+* bundled web assets
+* production API URL
+* INTERNET permission
+* cleartext-traffic policy
+* network-security configuration
+* app signing configuration without exposing key material
+* Play App Signing alignment
+* deep links and Android App Links
+* assetlinks.json
+* verification-email link handling
+* password-reset link handling
+* Plaid OAuth return handling
+* cold start and resumed-app behavior
+* cookie/session persistence inside the Capacitor WebView
+* keyboard and form behavior
+* back-button behavior
+* loading, offline, timeout, and retry states
+* release-build minification or ProGuard/R8 risks
+* Android-only console errors
+* stale web assets or source/build mismatches
+
+Pay special attention to whether the Google Play build could be running older bundled frontend assets than production web.
+
+Enumerate the exact current values of:
+
+* capacitor.config appId
+* Android namespace
+* Android applicationId
+* MainActivity package
+* versionName
+* versionCode
+
+If identifiers differ, determine the actual runtime effect and classify the risk with evidence. Do not automatically change them.
+
+Verify that the current Google Play reviewer/demo credentials and instructions are active and accurate, but never print the password in the report.
+
+==================================================
+3. iOS AUDIT
+============
+
+Audit:
+
+* Bundle ID com.dimetime.mobile
+* Current version/build
+* Info.plist authority
+* project.pbxproj alignment
+* Capacitor configuration
+* Native bundled web assets
+* Universal Links
+* AASA file
+* Plaid OAuth return
+* Verification and reset links
+* App Transport Security
+* Session/cookie persistence
+* Cold-start behavior
+* Release build guards
+* Codemagic build-number checks
+* App Store privacy configuration represented in source
+* Any source-to-live-build mismatch
+
+Do not alter server.url, Info.plist, build numbers, bundle identifiers, or Codemagic configuration.
+
+==================================================
+4. WEB AND CORE USER-JOURNEY AUDIT
+==================================
+
+Trace and assess every major user journey:
+
+* Landing page
+* Signup
+* Verification
+* Login
+* Password reset
+* Onboarding
+* Dashboard
+* Bank connection
+* Funding-account selection
+* Plaid OAuth
+* Transaction import
+* Round-up calculation
+* Debt creation
+* Automatic debt import
+* Debt editing and deletion
+* Payment scheduling
+* ACH authorization
+* Transfer status
+* Subscription
+* Settings
+* Privacy Policy
+* Terms
+* Support/contact form
+* Account deletion
+* Logout
+
+For each journey, report:
+
+* PASS
+* FAIL
+* PARTIAL
+* NOT TESTED
+* NOT VERIFIABLE
+
+Provide evidence for every status. Do not use “appears correct” as a substitute for proof.
+
+Check responsive behavior at representative mobile, tablet, and desktop sizes. Identify blank states, misleading success messages, broken navigation, invisible buttons, clipped content, runtime exceptions, loading loops, and inaccessible controls.
+
+==================================================
+5. STRIPE, ACH, SUBSCRIPTIONS, AND MONEY SAFETY
+===============================================
+
+This section is inspection and safe automated testing only.
+
+DO NOT create or confirm any live transaction.
+
+Audit:
+
+* ENABLE_STRIPE_ACH
+* ENABLE_REAL_TRANSFERS
+* ENABLE_AUTO_ROUNDUP_SWEEPS
+* Per-user transfer allowlist
+* First-transfer limit
+* Daily limit
+* Transfer-frequency limit
+* Duplicate-pending protection
+* Idempotency keys
+* Atomic enforcement
+* ACH mandate evidence
+* Stripe Financial Connections
+* PaymentIntent creation and confirmation
+* Webhook raw-body handling
+* Webhook signature verification
+* Webhook deduplication
+* Ledger state transitions
+* Failure and recovery states
+* Subscription feature flag
+* Subscription status enforcement
+* Refund/cancellation paths, if present
+* Admin approval and revocation
+* Audit logging
+* Production/test-mode separation
+
+Historical documents disagree about whether ENABLE_REAL_TRANSFERS is currently on or off. Report the actual current code default and redacted production configuration state without changing either.
+
+Confirm that no single feature flag can accidentally allow unrestricted public money movement. Verify that the per-user allowlist and monetary limits fail closed even if a master flag is enabled.
+
+Verify that internal admin endpoints remain properly authorized and do not return tokens, raw provider payloads, encrypted payment identifiers, raw requests, or raw responses.
+
+==================================================
+6. PLAID AND BANK-LINKING AUDIT
+===============================
+
+Audit:
+
+* Production versus sandbox configuration
+* Link-token creation
+* User ownership checks
+* Access-token encryption
+* OAuth persistence and resume
+* Redirect URI
+* iOS Universal Links
+* Android App Links
+* Transactions
+* Auth
+* Identity
+* Liabilities/debt import
+* Feature gating
+* Institution disconnect
+* Refresh behavior
+* Error recovery
+* Duplicate account/debt prevention
+* Logging and redaction
+* Webhook verification, if applicable
+* Safe handling of unavailable products or provider outages
+
+Do not expose access tokens or initiate a real bank connection.
+
+==================================================
+7. SECURITY AUDIT
+=================
+
+Inspect for:
+
+* Hard-coded secrets
+* Accidentally committed environment files
+* Secrets in tracked files or Git history
+* Weak password hashing
+* Authentication bypasses
+* Missing authorization checks
+* IDOR vulnerabilities
+* CSRF
+* XSS
+* SQL injection
+* Command injection
+* SSRF
+* Open redirects
+* Unsafe file access
+* Prototype pollution exposure
+* Insecure deserialization
+* Session fixation
+* Session theft
+* Cookie Secure, HttpOnly, SameSite, domain, and expiration settings
+* CORS policy
+* CSP
+* HSTS
+* Security headers
+* Brute-force protection
+* Rate limits
+* User enumeration
+* Token leakage
+* Sensitive error responses
+* PII in logs
+* Sentry redaction
+* Analytics redaction
+* Dependency vulnerabilities
+* Outdated or unsupported runtime versions
+* Supply-chain risks
+* Unsafe admin endpoints
+* Development/debug routes exposed in production
+* Test or demo bypasses available to ordinary users
+
+Run available secret and dependency scanners in non-mutating mode. Never include an actual secret in the report. Report only secret type, file, line, status, and remediation requirement.
+
+Run npm audit or the appropriate package-manager audit without the fix flag. Separate production dependency vulnerabilities from development-only vulnerabilities.
+
+Evaluate the current absence or presence of MFA/2FA. If SMS 2FA through Twilio Verify has not yet been implemented, report it accurately and assess whether it is launch-blocking based on the sensitive actions currently exposed. Do not implement Twilio during this audit.
+
+==================================================
+8. DATABASE AND DATA-INTEGRITY AUDIT
+====================================
+
+Inspect:
+
+* Schema consistency
+* Migration ordering
+* Pending migrations
+* Unique constraints
+* Foreign keys
+* Indexes
+* Transaction boundaries
+* Monetary precision
+* Time-zone handling
+* Soft deletion
+* Cascade behavior
+* Orphaned records
+* Duplicate transfer prevention
+* Duplicate debt import prevention
+* Token cleanup
+* Session cleanup
+* Audit-log integrity
+* Concurrency risks
+* Retry safety
+* Backup/restore configuration evidence, if available
+
+Do not run migrations or destructive queries. Production database checks must be read-only and aggregated. Do not print PII or financial-account details.
+
+==================================================
+9. FEATURE FLAGS AND CONFIGURATION
+==================================
+
+Create a complete table of every feature flag showing:
+
+* Flag name
+* Code default
+* Production presence
+* Current redacted production state
+* Every important call site
+* What happens when absent
+* Whether it fails open or closed
+* User-facing effect
+* Safety risk
+* Test coverage
+
+Verify that required environment variables are validated at startup and optional variables fail safely.
+
+Never display secret values.
+
+==================================================
+10. EMAIL, CONTACT, OBSERVABILITY, AND OPERATIONS
+=================================================
+
+Audit:
+
+* Resend integration
+* Contact-form notification delivery to [tim@dime-time.com](mailto:tim@dime-time.com)
+* Turnstile behavior
+* Contact-form rate limit
+* Sentry initialization
+* Sentry PII redaction
+* Source-map behavior
+* Structured logging
+* Correlation IDs
+* Health endpoints
+* Startup validation
+* Graceful shutdown
+* Database connection handling
+* Retry and timeout policies
+* Provider-outage behavior
+* Scheduled jobs
+* Duplicate job prevention
+* Alerting for failed emails, payments, webhooks, and database errors
+* Whether production failures are visible to the founder without exposing user data
+
+Verify that Turnstile and other required production controls fail closed when secrets are absent.
+
+==================================================
+11. LEGAL, PRIVACY, AND STORE CONSISTENCY
+=========================================
+
+Confirm:
+
+* Official domain is only dime-time.com.
+* Official contact email is only [tim@dime-time.com](mailto:tim@dime-time.com).
+* Privacy Policy and Terms are reachable.
+* Legal effective date remains May 27, 2026.
+* Account deletion works from inside the app.
+* Fintech disclaimer is present where required.
+* No unapproved partner logos are displayed.
+* Plaid, Stripe, Mercury, bank, exchange, Apple, or Google branding is not used improperly.
+* Store descriptions match actual functionality.
+* Crypto “Preview” or simulated functionality is not represented as live real-money crypto.
+* iOS, Android, and web claims are consistent.
+* Marketing claims do not promise guaranteed debt reduction, savings, returns, approval, or financial outcomes.
+* App Store and Google Play download links are correct.
+* Privacy disclosures align with actual code behavior and collected data.
+
+==================================================
+12. BUILD, TEST, AND QUALITY VERIFICATION
+=========================================
+
+Discover the repository’s official scripts before running commands.
+
+Run every safe, relevant non-mutating check available, including as applicable:
+
+* Unit tests
+* Integration tests
+* Authentication tests
+* Email tests
+* Payment-safety tests
+* Webhook tests
+* Security/redaction tests
+* TypeScript typecheck
+* Lint
+* Production web build
+* Android compile/lint/test checks
+* iOS static configuration checks
+* Dependency audit
+* Secret scan
+* Dead-code or unused-export analysis
+* Duplicate route analysis
+
+Do not silently skip a failing command. Record:
+
+* Exact command
+* Exit code
+* Tests passed
+* Tests failed
+* Tests skipped
+* Warnings
+* Duration
+* Whether the command altered the working tree
+
+Compare test coverage against the actual critical flows. Passing tests are not enough if the production Android verification-email path is untested.
+
+==================================================
+REQUIRED FINAL REPORT
+=====================
+
+Return one self-contained plain-text report titled:
+
+DIME TIME — COMPLETE PRODUCTION-READINESS AUDIT
+Audit date:
+Commit:
+Auditor:
+Mode: READ-ONLY
+
+Use these sections:
+
+1. EXECUTIVE VERDICT
+
+Choose exactly one:
+
+* GO — ready for LinkedIn launch
+* CONDITIONAL GO — launch only after named items are manually verified
+* NO-GO — production blockers must be fixed first
+
+GO is allowed only when:
+
+* There are no unresolved P0 or P1 findings.
+* Android signup and verification email are proven end to end.
+* Login and password reset are proven.
+* No public money-movement bypass exists.
+* Production builds can be tied to audited source or the mismatch is fully explained.
+* Critical tests pass.
+* No secret exposure exists.
+* Store and marketing claims match actual behavior.
+
+2. TOP FINDINGS
+
+List every P0 and P1 finding first.
+
+Severity definitions:
+
+* P0 — active security exposure, money-movement risk, credential exposure, data-loss risk, or core production flow broken
+* P1 — launch blocker, including broken signup/login/email verification/reset, mobile release mismatch, serious authorization weakness, or misleading financial behavior
+* P2 — important reliability, security-hardening, or user-experience issue
+* P3 — minor issue, cleanup, or enhancement
+
+3. ANDROID EMAIL-VERIFICATION INCIDENT
+
+State:
+
+* Most likely root cause
+* Evidence
+* Whether the recent fix addresses the root cause
+* Whether the fix is present in the audited source
+* Whether it is present in the deployed backend
+* Whether it is present in the Google Play build, if a mobile change was required
+* Whether delivery was proven with a real controlled test
+* Remaining risks
+* Final PASS/FAIL/NOT PROVEN status
+
+Do not confuse the prior Resend domain-verification incident with the recent Android report unless evidence proves they are connected.
+
+4. CRITICAL USER-JOURNEY MATRIX
+
+Provide a table for Web, iOS, and Android covering:
+
+* Signup
+* Verification email
+* Verification-link completion
+* Login
+* Logout
+* Password reset
+* Bank connection
+* Debt import
+* Round-up calculation
+* Payment scheduling
+* Transfer-status display
+* Subscription
+* Contact form
+* Account deletion
+
+Use PASS, FAIL, PARTIAL, NOT TESTED, or NOT VERIFIABLE with brief evidence.
+
+5. SECURITY FINDINGS TABLE
+
+Columns:
+
+* ID
+* Severity
+* Component
+* Exact file and line
+* Finding
+* Production impact
+* Evidence
+* Recommended remediation
+* Confidence
+
+6. TEST AND BUILD RESULTS
+
+Include all commands, counts, failures, warnings, and exit codes.
+
+7. EMAIL AND AUTHENTICATION DEEP-DIVE
+
+Document the complete flow and every validation result.
+
+8. PAYMENTS AND BANKING SAFETY
+
+State the actual current flags and whether every safety layer fails closed.
+
+9. MOBILE RELEASE ALIGNMENT
+
+Compare source, iOS, Android, and production web versions and configurations.
+
+10. FEATURE-FLAG TABLE
+
+Include every feature flag.
+
+11. CONFIGURATION AND SECRET STATUS
+
+Report only present/missing/mis-scoped/uncertain. Never show values.
+
+12. DEPENDENCY AND SECURITY-SCAN RESULTS
+
+Separate production and development dependencies.
+
+13. FILE-COVERAGE SUMMARY
+
+Report the number of first-party files reviewed by directory, all exclusions, and anything that could not be inspected.
+
+14. MANUAL VERIFICATION STILL REQUIRED
+
+Give exact numbered steps for anything that could not be safely proven.
+
+15. PRIORITIZED REMEDIATION PLAN
+
+For every finding, provide:
+
+* Recommended order
+* Expected risk reduction
+* Files likely affected
+* Whether server-only, web deploy, iOS release, Android release, or multiple releases are required
+* Tests required after fixing
+
+Do not make the fixes.
+
+16. COPY-PASTE HANDOFF FOR CHATGPT
+
+End with a concise but complete handoff containing:
+
+* Verdict
+* Commit/version audited
+* Android email incident result
+* P0/P1/P2/P3 counts
+* Failed or unproven user journeys
+* Test totals
+* Production/source alignment
+* Exact recommended next action
+* Confirmation that no files, secrets, database records, flags, or deployments were changed
+
+QUALITY STANDARD
+
+Be skeptical and evidence-driven.
+
+Do not say “everything looks good,” “production ready,” “fixed,” or “secure” without direct evidence.
+
+Clearly distinguish:
+
+* VERIFIED
+* INFERRED
+* NOT VERIFIED
+* NOT TESTED
+* NOT ACCESSIBLE
+
+A passing build does not prove runtime behavior.
+A passing unit test does not prove email delivery.
+Code inspection does not prove the Google Play release contains the same code.
+A provider configuration does not prove deliverability.
+The absence of logged errors does not prove success.
+
+Complete the audit, return the report, and stop. Wait for explicit authorization before making any changes.
