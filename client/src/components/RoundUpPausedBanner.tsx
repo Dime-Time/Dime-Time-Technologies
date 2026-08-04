@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { Capacitor } from "@capacitor/core";
 import { Button } from "@/components/ui/button";
 import { useFlag } from "@/hooks/useFlag";
 import { Sparkles } from "lucide-react";
@@ -52,15 +53,18 @@ export function RoundUpPausedBanner() {
             automatic collection is paused because you don't have an active
             Dime Time Debt subscription. Debt tracking stays free.
           </p>
-          <Link href="/subscription">
-            <Button
-              size="sm"
-              className="bg-dime-purple hover:bg-dime-accent text-white press-scale"
-              data-testid="button-resume-roundups"
-            >
-              Subscribe to Resume
-            </Button>
-          </Link>
+          {/* No purchase steering in native builds (Apple 3.1.1 / Play Payments). */}
+          {!Capacitor.isNativePlatform() && (
+            <Link href="/subscription">
+              <Button
+                size="sm"
+                className="bg-dime-purple hover:bg-dime-accent text-white press-scale"
+                data-testid="button-resume-roundups"
+              >
+                Subscribe to Resume
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </div>

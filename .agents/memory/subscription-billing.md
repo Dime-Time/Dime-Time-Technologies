@@ -87,3 +87,18 @@ Subscribe route and webhook both land on `storage.upsertSubscription()` keyed
 on `stripeSubscriptionId`, so delivery order can't race. Invoice events
 re-fetch the subscription from Stripe rather than trusting event ordering.
 User resolution: `metadata.dimeTimeUserId` first, local row second.
+
+## Native store compliance (2026-08-04)
+Native (Capacitor) builds must NEVER show the subscribe flow, price-with-CTA,
+or a link out to a purchase page (Apple 3.1.1 / Play Payments policy).
+Implementation: `Capacitor.isNativePlatform()` branches in subscription.tsx
+(informational card, testid card-native-unavailable), settings.tsx and
+RoundUpPausedBanner.tsx (CTA hidden, informational text kept). Existing
+subscribers still see status + cancel/reactivate on native — managing an
+already-purchased subscription is permitted. Web purchase + native
+entitlement recognition = the compliant "multiplatform services" pattern.
+**Why:** the founder's locked decision is Stripe-only (no StoreKit/Play
+Billing products exist); exposing web-processor purchase inside native apps
+is a rejection/removal vector.
+**How to apply:** any new upsell surface (banner, notification, onboarding)
+must either omit price+purchase-CTA on native or be gated the same way.

@@ -1,0 +1,607 @@
+DIME TIME — SUBSCRIPTION ACTIVATION AND FINAL PRODUCTION RELEASE
+Date: August 4, 2026
+Current status: P1 remediation complete locally; nothing deployed
+Business requirement: Subscriptions must be enabled before the LinkedIn launch
+Canonical price: $2.99 per month
+
+PRIMARY OBJECTIVE
+
+Complete the safe, production-ready, store-compliant activation of Dime Time’s $2.99/month subscription.
+
+This task must preserve all completed authentication remediations, email-verification protections, payment safety gates, and synchronized native assets.
+
+Do not simply change ENABLE_SUBSCRIPTIONS from false to true. First prove that purchasing, server-side entitlement verification, renewals, cancellations, failed payments, restoration, and platform billing compliance are complete.
+
+PLATFORM REQUIREMENTS
+
+Dime Time provides digital functionality consumed inside its web, iOS, and Android applications.
+
+The required billing routes are:
+
+* Web: Stripe Billing
+* iOS: Apple StoreKit / App Store auto-renewable subscription unless the exact current App Store policy and Dime Time’s approved configuration permit another route
+* Android: Google Play Billing subscription unless Dime Time is formally enrolled in an approved alternative-billing program
+* Backend: One provider-neutral entitlement system that recognizes valid Stripe, Apple, and Google subscriptions
+
+Do not expose a Stripe checkout form or external Stripe purchase link inside the native applications unless exact current store policy and Dime Time’s approved store configuration conclusively permit it.
+
+Do not invent Apple or Google product identifiers. If subscription products are not configured in App Store Connect or Google Play Console, provide the exact required console setup and stop before production activation.
+
+AUTHORIZATION
+
+You are authorized to:
+
+* Inspect the complete existing subscription implementation
+* Make scoped source and test changes
+* Correct subscription bugs
+* Implement missing server-side verification
+* Add compliant native billing support where required
+* Add or correct subscription lifecycle handling
+* Remove an unused vulnerable Coinbase dependency if proven unnecessary
+* Rebuild and synchronize web, Android, and iOS assets
+* Prepare the controlled deployment and store-release plan
+
+You are not authorized to:
+
+* Automatically bill any existing user
+* Start a paid subscription for a user
+* Run a real $2.99 charge without Tim’s explicit approval
+* Change production environment variables yet
+* Deploy, republish, commit, push, or submit store builds without a final checkpoint
+* Change Stripe price amounts or create duplicate live Stripe products
+* Create Apple or Google subscription products with invented identifiers
+* Enroll Dime Time in alternative-billing programs
+* Lock existing users out without an approved access-transition policy
+* Change ACH, Plaid, debt-payment, or real-transfer architecture
+* Enable automatic round-up sweeps
+* Change ENABLE_REAL_TRANSFERS or any transfer limit
+* Enable ENABLE_DEBT_IMPORT during this task
+* Expose secrets, purchase tokens, receipts, bank data, or customer information
+
+==================================================
+PHASE 1 — BASELINE AND EXISTING IMPLEMENTATION
+==============================================
+
+Record:
+
+* Branch
+* Commit SHA
+* Git status
+* Current test count
+* Current web version
+* Current iOS version/build
+* Current Android versionName/versionCode
+* Current ENABLE_SUBSCRIPTIONS code default
+* Current production flag presence/state
+* Existing Stripe subscription product/price configuration by redacted identifier status
+* Existing Apple subscription implementation
+* Existing Google Play subscription implementation
+* Existing database subscription and entitlement tables
+* Existing subscription UI and feature-gating behavior
+
+Trace every subscription-related file, route, table, webhook, component, feature flag, provider call, and test.
+
+Produce a current-state matrix:
+
+* Capability
+* Web/Stripe
+* iOS/Apple
+* Android/Google
+* Backend
+* Implemented
+* Tested
+* Production configured
+* Missing
+* Store-compliant
+* Evidence
+
+Determine exactly what the $2.99 subscription unlocks today.
+
+Do not invent or redesign the product benefits. If the paid-feature entitlement map is ambiguous or not encoded, stop and ask Tim to approve the feature matrix before implementing paywall enforcement.
+
+Subscription purchasing can be enabled without automatically removing existing-user access. Do not invent a grandfathering, free-trial, grace-period, or lockout policy.
+
+==================================================
+PHASE 2 — REMOVE REMAINING CRITICAL VULNERABILITIES
+===================================================
+
+The previous audit reported three critical production vulnerabilities, all inherited through the simulated-only `coinbase` package.
+
+Before subscription deployment:
+
+* Identify every import and runtime use of the `coinbase` package.
+* Determine whether it is required for the public unauthenticated price feed.
+* Confirm that no Coinbase credentials or authenticated client remain.
+* Confirm that no real crypto purchases are possible.
+* Confirm that Crypto remains clearly labeled Preview/simulated.
+* Determine whether the existing public Bitcoin-price request can operate without this package.
+
+If the package is unused or unnecessary:
+
+* Remove it completely.
+* Regenerate the lockfile.
+* Run the production dependency audit again.
+* Run all crypto-preview and price-display tests.
+* Confirm no user-visible regression.
+
+If it is still required:
+
+* Do not dismiss the vulnerabilities because the feature is simulated.
+* Replace the vulnerable integration with a safe maintained method or isolate it from production runtime.
+* Report each vulnerability and whether its vulnerable code path is reachable.
+
+The target before deployment is zero unresolved critical production dependency vulnerabilities.
+
+Do not run npm audit fix or broad dependency upgrades.
+
+==================================================
+PHASE 3 — PROVIDER-NEUTRAL ENTITLEMENTS
+=======================================
+
+Dime Time needs one authoritative backend entitlement model across Stripe, Apple, and Google.
+
+Audit or implement a provider-neutral record containing only the fields necessary to determine access, such as:
+
+* User ID
+* Provider: stripe, apple, or google
+* Provider customer/subscription reference stored safely
+* Product identifier
+* Entitlement/plan identifier
+* Subscription status
+* Start time
+* Current period expiration
+* Cancellation state
+* Grace-period state
+* Last provider verification time
+* Created and updated timestamps
+
+The backend—not the client—must determine entitlement.
+
+Required protections:
+
+* Never trust a client-supplied “active” status.
+* Never unlock features solely from a success redirect.
+* Allow only approved product and price identifiers.
+* Prevent one provider event from changing another provider’s subscription.
+* Prevent duplicate subscriptions where practical and clearly warn users if an active subscription already exists through another provider.
+* Ensure webhook/notification processing is idempotent.
+* Deduplicate replayed events.
+* Handle out-of-order lifecycle events.
+* Preserve an audit trail.
+* Never log full receipts, purchase tokens, checkout URLs, customer PII, or secrets.
+* Use monetary values safely.
+* Use UTC timestamps.
+* Fail closed when provider verification is unavailable.
+* Do not accidentally revoke access during a temporary provider outage if a previously verified entitlement remains within an approved grace window.
+
+Define normalized states including, as applicable:
+
+* incomplete
+* trialing
+* active
+* grace_period
+* past_due
+* paused
+* canceled_at_period_end
+* canceled
+* expired
+* refunded
+* revoked
+
+Document exactly which normalized states grant paid access.
+
+==================================================
+PHASE 4 — WEB SUBSCRIPTIONS THROUGH STRIPE
+==========================================
+
+Audit and complete the Stripe Billing implementation.
+
+Required behavior:
+
+* Price: $2.99/month using one approved live Stripe Price.
+* The client cannot submit an arbitrary price or product ID.
+* Checkout Session is created server-side.
+* Checkout uses the authenticated Dime Time user.
+* Stripe Customer records are safely associated with one Dime Time user.
+* The success URL uses https://dime-time.com.
+* The cancel URL uses https://dime-time.com.
+* Subscription access is not granted from the success-page redirect alone.
+* Access is granted only after authoritative server verification/webhook processing.
+* Webhook raw-body handling is preserved.
+* Webhook signatures are verified.
+* Events are deduplicated and processed idempotently.
+* Customer and subscription events cannot be reassigned to another user.
+* Stripe test and live identifiers cannot be mixed.
+* Customer Portal access is authenticated and scoped to the correct user.
+* Users can manage or cancel their subscription.
+* Cancellation-at-period-end retains access through the paid period.
+* Immediate revocation/refund behavior is correct.
+* Failed, incomplete, past-due, canceled, and expired subscriptions have accurate access.
+* Payment failure presents a clear recovery path.
+* Subscription status appears accurately in Settings.
+* No full Stripe payload is stored or logged.
+
+Cover at least:
+
+* checkout.session.completed
+* customer.subscription.created
+* customer.subscription.updated
+* customer.subscription.deleted
+* invoice.paid or invoice.payment_succeeded, according to the current API version
+* invoice.payment_failed
+* refunds or disputes if they affect entitlement
+
+Use the project’s pinned Stripe API version and current SDK behavior. Do not silently change API versions.
+
+Test entirely in Stripe test mode until Tim separately approves one controlled live $2.99 subscription.
+
+==================================================
+PHASE 5 — iOS SUBSCRIPTIONS
+===========================
+
+Determine whether StoreKit subscription purchasing is already implemented.
+
+For a standard native subscription rollout, require:
+
+* One App Store Connect subscription group
+* One $2.99/month auto-renewable subscription product
+* Exact product ID supplied from App Store Connect
+* StoreKit purchase flow
+* Restore Purchases
+* Server-side verification of signed transactions
+* App Store Server API integration where required
+* App Store Server Notifications V2
+* Transaction-finish handling
+* Renewal, expiration, revocation, refund, grace period, and billing-retry handling
+* Manage Subscription link
+* Accurate localized price from StoreKit
+* Required subscription disclosures
+* Terms and Privacy links
+* Sandbox testing
+* TestFlight testing
+* Entitlement synchronization after reinstall or device change
+
+Do not trust a local StoreKit success result without backend verification.
+
+If the App Store subscription product does not exist, provide exact App Store Connect steps including:
+
+* Subscription group
+* Proposed reference name
+* Product-ID field requiring Tim’s chosen exact identifier
+* One-month duration
+* $2.99 U.S. price tier
+* Display name
+* Description
+* Review screenshot
+* Availability
+* App Review notes
+* Required agreements, banking, and tax status
+* Sandbox tester setup
+
+Do not create or submit the product without Tim’s approval.
+
+If Dime Time intends to use an external web subscription route in the U.S. storefront, report the exact current Apple rule, required configuration, disclosure, fees, and review risk. Do not assume that a U.S. external-link rule applies globally.
+
+==================================================
+PHASE 6 — ANDROID SUBSCRIPTIONS
+===============================
+
+Determine whether Google Play Billing is already implemented.
+
+For a standard Google Play subscription rollout, require:
+
+* Exact subscription product ID supplied from Play Console
+* Auto-renewing monthly base plan
+* $2.99 U.S. price
+* Current supported Play Billing Library
+* ProductDetails query
+* Billing purchase flow
+* Server-side purchase-token verification
+* Google Play Developer API integration
+* purchases.subscriptionsv2.get as the authoritative subscription state
+* Purchase acknowledgement within Google’s required deadline
+* Real-time developer notifications
+* Renewal, expiration, cancellation, revocation, refund, pause, grace period, account hold, and resubscribe handling
+* Restore/reconcile purchase after reinstall or device change
+* Manage Subscription link
+* Accurate Play-provided localized price
+* License-tester testing
+* Closed/internal-track purchase testing
+
+Never grant entitlement solely from a client purchase callback.
+
+If the Play Console product does not exist, provide exact console steps including:
+
+* Product-ID field requiring Tim’s exact identifier
+* Monthly base-plan ID
+* Auto-renew setting
+* $2.99 U.S. price
+* Regional availability
+* Grace period/account-hold decisions
+* Benefits and description
+* License testers
+* Real-time developer notification topic and permissions
+* Google Play Developer API access
+* Service-account configuration
+* Store listing disclosure
+
+Do not create the product or enroll in alternative billing without Tim’s approval.
+
+==================================================
+PHASE 7 — SUBSCRIPTION USER EXPERIENCE
+======================================
+
+Audit or implement:
+
+* Subscription offer screen
+* Exact $2.99/month price
+* What the subscription unlocks
+* Auto-renewal disclosure
+* Cancellation disclosure
+* Restore Purchases on iOS and Android
+* Manage Subscription
+* Current status
+* Renewal date
+* Cancellation-at-period-end message
+* Billing-failure recovery
+* Already-subscribed state
+* Cross-provider duplicate warning
+* Loading and provider-unavailable states
+* No false success
+* No misleading free-trial claim
+* Terms link
+* Privacy Policy link
+* Support link
+* Accessibility
+* Android back-button behavior
+* iOS restore behavior
+* Responsive web behavior
+
+Do not advertise a free trial unless a real approved trial is configured through every applicable provider.
+
+Do not automatically subscribe or bill any existing account.
+
+If existing-user access policy is not already defined, prepare these options for Tim without choosing one:
+
+* Grandfather existing users
+* Time-limited founder grace period
+* Immediate subscription requirement after verification
+* Limited free tier with paid automation features
+
+Continue implementing billing infrastructure, but stop before enforcing a paywall until Tim selects the policy.
+
+==================================================
+PHASE 8 — FEATURE FLAGS AND PRODUCTION CONFIGURATION
+====================================================
+
+Required planned production state for the controlled subscription release:
+
+* ENABLE_SUBSCRIPTIONS=true
+* REQUIRE_EMAIL_VERIFICATION=false for the initial fixed-backend deployment
+* ENABLE_DEBT_IMPORT remains unchanged pending separate approval
+* All money-movement flags and limits remain unchanged
+
+ENABLE_SUBSCRIPTIONS must:
+
+* Be explicitly configured in production.
+* Have deterministic behavior.
+* Be validated at startup.
+* Never default silently in production.
+* Control purchase availability without bypassing provider entitlement validation.
+* Not grant premium access merely because the flag is on.
+* Fail safely when provider configuration is incomplete.
+
+Before recommending ENABLE_SUBSCRIPTIONS=true, confirm the required Stripe configuration is present and correct.
+
+For native subscriptions, do not expose a nonfunctional Apple or Google purchase button before the associated product is configured and approved.
+
+Do not change production flags during local implementation.
+
+==================================================
+PHASE 9 — AUTHENTICATION AND EMAIL RELEASE SEQUENCE
+===================================================
+
+Preserve all completed authentication work:
+
+* Truthful verificationEmailSent behavior
+* Resend cooldown
+* Bcrypt-12
+* Legacy-hash migration
+* Centralized verification enforcement
+* Recovery screen
+* Restricted server-side gate
+* Redaction
+* Token safety
+
+The production sequence must be:
+
+1. Explicitly add REQUIRE_EMAIL_VERIFICATION=false.
+2. Add ENABLE_SUBSCRIPTIONS=true only after billing readiness is proven.
+3. Deploy the fixed backend and web application.
+4. Run authentication, subscription, and money-safety smoke tests.
+5. Have Franco perform the live Android resend-verification test.
+6. Confirm receipt and successful verification.
+7. Release updated Android and iOS builds containing the recovery and subscription UI.
+8. Wait until both builds are available from the actual stores.
+9. Verify StoreKit and Play Billing using authorized sandbox/license-test accounts.
+10. Enable REQUIRE_EMAIL_VERIFICATION=true only after the updated mobile builds and recovery path are live.
+11. Run final verified and unverified account tests.
+12. Approve the LinkedIn launch only after the final report returns GO.
+
+Do not ask Franco to test before the fixed backend is deployed.
+
+==================================================
+PHASE 10 — TESTING
+==================
+
+Add complete tests for:
+
+STRIPE
+
+* Approved-price allowlist
+* Arbitrary-price rejection
+* Checkout creation
+* Wrong-user protection
+* Webhook signature
+* Deduplication
+* Out-of-order events
+* Active entitlement
+* Failed payment
+* Cancellation at period end
+* Expiration
+* Refund/revocation
+* Customer Portal authorization
+* Test/live separation
+
+APPLE
+
+* Valid signed transaction
+* Invalid transaction
+* Wrong product
+* Wrong bundle
+* Renewal
+* Expiration
+* Revocation
+* Refund
+* Restore
+* Duplicate notification
+* Out-of-order notification
+
+GOOGLE
+
+* Valid purchase token
+* Invalid token
+* Wrong product/package
+* Unacknowledged purchase
+* Acknowledgement
+* Renewal
+* Grace period
+* Account hold
+* Cancellation
+* Expiration
+* Revocation
+* Restore
+* Duplicate RTDN
+* Out-of-order RTDN
+
+ENTITLEMENTS
+
+* Provider-neutral normalization
+* Cross-provider isolation
+* Duplicate-subscription warning
+* Provider outage
+* Grace period
+* Idempotency
+* Concurrent events
+* No client-trusted entitlement
+* Feature-flag behavior
+
+REGRESSION
+
+* All authentication tests
+* Email verification
+* Password migration
+* Payment safety
+* ACH limits
+* Webhooks
+* Plaid
+* Redaction
+* Typecheck
+* Lint
+* Isolated production build
+* Android checks
+* iOS configuration checks
+* Dependency audit
+* Secret scan
+
+The prior baseline was 158/158 tests. Report all new totals, failures, skips, commands, warnings, and exit codes.
+
+==================================================
+FINAL CHECKPOINT — DO NOT DEPLOY YET
+====================================
+
+Before changing production or submitting builds, return:
+
+DIME TIME — SUBSCRIPTION ACTIVATION READINESS REPORT
+
+Include:
+
+1. Verdict:
+
+   * READY FOR CONTROLLED ACTIVATION
+   * MORE WORK REQUIRED
+   * BLOCKED ON STORE CONFIGURATION
+   * BLOCKED ON BUSINESS DECISION
+
+2. Existing implementation summary
+
+3. Subscription feature/entitlement matrix
+
+4. Web/Stripe readiness
+
+5. iOS/StoreKit readiness
+
+6. Android/Play Billing readiness
+
+7. Provider-neutral entitlement status
+
+8. Exact Stripe product/price status without exposing sensitive values
+
+9. Apple product and subscription-group status
+
+10. Google product and base-plan status
+
+11. Files changed
+
+12. Test totals and commands
+
+13. Production vulnerabilities before and after Coinbase remediation
+
+14. Required production environment changes
+
+15. Required App Store Connect actions
+
+16. Required Google Play Console actions
+
+17. Existing-user access decision still required, if any
+
+18. Exact controlled deployment sequence
+
+19. Remaining P0/P1/P2/P3 counts
+
+20. Copy-paste handoff for ChatGPT containing:
+
+* Verdict
+* Subscription price
+* Web readiness
+* iOS readiness
+* Android readiness
+* Billing providers
+* Entitlement status
+* Coinbase vulnerability status
+* Authentication status
+* Email manual-test status
+* Test results
+* Required console actions
+* Required production flags
+* Remaining blockers
+* Confirmation that nothing was deployed, billed, submitted, or changed in production
+
+STOP CONDITIONS
+
+Stop and report before continuing if:
+
+* Stripe is the only native-app purchase route.
+* Apple or Google subscription products do not exist.
+* Store product IDs are unknown.
+* Paid-feature entitlements are undefined.
+* Existing users would be unexpectedly locked out.
+* A client can grant itself paid access.
+* Any provider webhook/notification lacks verification or idempotency.
+* A live charge would be required.
+* Critical production dependency vulnerabilities remain.
+* Subscription changes weaken authentication or ACH safety.
+* The correct implementation requires a store-policy choice from Tim.
+* Unrelated files are modified.
+
+Complete the subscription implementation and readiness validation, then stop for Tim’s activation approval. Do not deploy, enable production flags, bill users, or submit store builds yet.

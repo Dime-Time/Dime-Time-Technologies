@@ -26,11 +26,11 @@
 - [Automatic debt import](debt-import-feature.md) — LIVE-PROVEN 2026-07-28: founder's first real import succeeded on web (Chase, 1 debt) after the Plaid-Link-in-dialog fix; native needs build ≥210 for that fix.
 - [Stripe Financial Connections registration](stripe-financial-connections-registration.md) — LOOP CLOSED 2026-07-25: link flow live-verified; four 502 failure modes inside.
 - [Stripe payout destination](stripe-payout-destination.md) — CLOSED 2026-07-21: Stripe→Mercury auto-payouts live, $0.99 confirmed in bank; fa_ payout pattern = "transfer to financial account" radio setting.
-- [Crypto preview & Coinbase plan](coinbase-crypto-preview.md) — SIMULATED by design; company-key trading client REMOVED 2026-07-25 (never re-add); outreach to Coinbase/Alpaca/ZeroHash pending.
+- [Crypto preview & Coinbase plan](coinbase-crypto-preview.md) — SIMULATED by design; company-key client REMOVED 2026-07-25; unused `coinbase` npm pkg removed 2026-08-04 (prod criticals→0, price feed is axios+public API); never re-add either.
 - [Tracked build artifacts](tracked-build-artifacts.md) — server-dist/ is git-tracked and lags source; grep only server/ client/ shared/ as source of truth.
 - [Forced white-text theme](forced-white-text-theme.md) — index.css forces white text + remaps bg-white→lavender; readable inputs need a scoped opt-out (.dt-marketing / .dt-auth).
 - [Stripe diagnostics removal](stripe-diagnostics-removal.md) — admin Stripe capability tab deliberately deleted post go/no-go; verdict logic lives in shared/stripeVerdict.ts; don't re-add.
-- [Subscription billing](subscription-billing.md) — $2.99/mo Stripe Billing; incomplete+past_due ARE entitled (ACH lag); consent row precedes Stripe calls; founder prod-enable checklist inside.
+- [Subscription billing](subscription-billing.md) — $2.99/mo Stripe Billing; incomplete+past_due ARE entitled (ACH lag); consent row precedes Stripe calls; native apps show NO purchase UI/CTA (store compliance); founder prod-enable checklist inside.
 - [Sentry config](sentry-config.md) — DSN-gated dynamic import (no SDK without DSN); test-enforced PII redaction incl. /verify-email & /reset-password must never carry query strings.
 - [Internal admin surface](internal-admin.md) — ADMIN_USER_IDS fails closed; GET-only reads strip raw payloads; Real Money tab is UI over audited allowlist endpoints.
 - [Plaid plan downgrade](plaid-billing-contract.md) — downgrade Plaid to pay-as-you-go before prod reapplication; billing standing affects approval; specifics are founder-run, never stored.

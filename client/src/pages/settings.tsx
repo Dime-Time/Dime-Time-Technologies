@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { useState, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -400,11 +401,14 @@ export default function Settings() {
                     Automatic round-ups and debt payments are part of the Dime Time
                     Debt plan. Debt tracking stays free.
                   </p>
-                  <Link href="/subscription">
-                    <Button size="sm" className="bg-dime-purple hover:bg-dime-accent text-white press-scale" data-testid="button-view-plan">
-                      View Plan
-                    </Button>
-                  </Link>
+                  {/* No purchase steering in native builds (Apple 3.1.1 / Play Payments). */}
+                  {!Capacitor.isNativePlatform() && (
+                    <Link href="/subscription">
+                      <Button size="sm" className="bg-dime-purple hover:bg-dime-accent text-white press-scale" data-testid="button-view-plan">
+                        View Plan
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { Capacitor } from "@capacitor/core";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient, getApiErrorMessage } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -245,8 +246,30 @@ export default function SubscriptionPage() {
               )}
             </div>
           </div>
+        ) : Capacitor.isNativePlatform() ? (
+          /* ── NATIVE (iOS/Android): no purchase flow in the app ─────────
+             Store policy (Apple 3.1.1 / Play Payments) prohibits selling
+             digital subscriptions in-app through an external processor.
+             Native builds therefore show NO price, NO subscribe CTA, and
+             NO link out to a purchase page. Existing subscribers (row
+             above) can still view status and cancel — managing an already
+             purchased subscription is permitted. */
+          <div className="bg-card rounded-2xl border border-slate-200 shadow-sm p-6 animate-fade-in-up" data-testid="card-native-unavailable">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 text-dime-purple flex items-center justify-center shrink-0">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900 text-sm mb-1">Premium isn't available in the app</p>
+                <p className="text-xs text-slate-500">
+                  Subscription purchases aren't offered in the mobile app. All of
+                  your existing features keep working exactly as they do today.
+                </p>
+              </div>
+            </div>
+          </div>
         ) : (
-          /* ── SUBSCRIBE VIEW ──────────────────────────────────────────── */
+          /* ── SUBSCRIBE VIEW (web only) ──────────────────────────────── */
           <div className="space-y-6">
             <div className="bg-card rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in-up">
               <div className="p-6 border-b border-slate-100">
