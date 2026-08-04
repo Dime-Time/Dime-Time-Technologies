@@ -443,6 +443,22 @@ export const subscriptions = pgTable("subscriptions", {
   canceledAt: timestamp("canceled_at"),
   latestInvoiceId: text("latest_invoice_id"),
   lastPaymentError: text("last_payment_error"),
+  // --- Entitlement correction fields (2026-08-04) ---
+  // Finite server-persisted deadline for provisional access while the FIRST
+  // verified ACH debit is `processing`. NULL = no provisional access. Set
+  // only after server-side PaymentIntent verification; never extended by
+  // duplicate events.
+  provisionalAccessUntil: timestamp("provisional_access_until"),
+  // Finite server-computed grace deadline set ONCE when a previously-active
+  // subscription enters past_due. NULL = no grace. Cleared on return to
+  // active; never extended by duplicate/out-of-order webhooks.
+  graceUntil: timestamp("grace_until"),
+  // Last authoritatively-verified PaymentIntent status for the latest
+  // invoice (from an expanded Stripe fetch, never from the client).
+  lastPaymentIntentStatus: text("last_payment_intent_status"),
+  // Stripe event timestamp of the newest event applied to this row — the
+  // out-of-order guard: older events cannot overwrite newer state.
+  lastStripeEventAt: timestamp("last_stripe_event_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

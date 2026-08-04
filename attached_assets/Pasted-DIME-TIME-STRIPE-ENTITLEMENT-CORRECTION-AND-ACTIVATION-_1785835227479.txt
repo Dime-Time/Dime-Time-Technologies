@@ -1,0 +1,535 @@
+DIME TIME — STRIPE ENTITLEMENT CORRECTION AND ACTIVATION GATE
+Date: August 4, 2026
+Current status: Subscription implementation complete locally; nothing deployed
+Current tests: 169/169 passing
+Subscription: Dime Time Debt — $2.99/month
+Billing route: Web/Stripe only
+Objective: Eliminate the unpaid-access path before controlled activation
+
+CRITICAL FINDING
+
+The current entitlement logic reportedly grants subscription access for these Stripe statuses:
+
+* active
+* trialing
+* incomplete
+* past_due
+
+This is too broad.
+
+Stripe’s `incomplete` status generally means the first subscription invoice has not been successfully completed. Granting entitlement from `subscription.status === "incomplete"` alone could allow a user to begin creating a subscription, never complete payment, and still receive paid access.
+
+ACH is a delayed-notification payment method, so Dime Time may provide limited provisional access while a legitimate ACH payment is processing—but that access must be based on the authoritative PaymentIntent and mandate state, not the `incomplete` subscription status alone.
+
+AUTHORIZATION
+
+You are authorized to:
+
+* Correct the local entitlement implementation
+* Add a separate provisional-access state for legitimate ACH processing
+* Add or update database fields if necessary through a reviewed migration
+* Add tests
+* Run the complete test/build/security suite
+* Rebuild and synchronize web/Android/iOS assets if client-visible state changes
+* Update the readiness report
+
+You are not authorized to:
+
+* Deploy or republish
+* Commit, push, or merge
+* Change production environment variables
+* Set ENABLE_SUBSCRIPTIONS=true in production
+* Run a real charge
+* Create a subscription for any user
+* Change Stripe Dashboard configuration
+* Modify existing production subscriptions
+* Migrate production database records
+* Bill or lock out existing users
+* Submit Apple or Google builds
+* Change ACH debt-payment architecture or limits
+* Change REQUIRE_EMAIL_VERIFICATION
+* Enable debt import
+* Add a free trial
+* Add StoreKit or Google Play Billing
+* Reintroduce the Coinbase package
+
+Complete the correction locally, test it, and stop for Tim’s approval.
+
+==================================================
+
+1. DOCUMENT THE CURRENT ENTITLEMENT LOGIC
+   ==================================================
+
+Before changing anything, report:
+
+* Branch
+* Commit SHA
+* Git status
+* Current entitlement implementation file and line
+* Current normalized subscription statuses
+* Current database fields
+* Current tests
+* Current past-due grace duration
+* Whether provisional ACH access already has its own state
+* Whether PaymentIntent status is currently stored
+* Whether the latest invoice and PaymentIntent are verified as belonging to the subscription and user
+* Whether mandate status is checked
+* Whether provisional access has an expiration
+* Whether a reconciliation process exists
+
+Trace every call site that answers any version of:
+
+* Is this user subscribed?
+* Does this user have paid access?
+* Should premium features be unlocked?
+* Is this subscription active?
+* Is this payment still processing?
+* Is the account in a grace period?
+
+The backend must remain the only authority. The client must never self-grant access.
+
+==================================================
+2. REQUIRED ENTITLEMENT POLICY
+==============================
+
+Implement one centralized entitlement evaluator used by every server route and every client-facing subscription-status response.
+
+Required policy:
+
+ACTIVE
+
+Grant normal paid entitlement only when:
+
+* Stripe subscription status is `active`.
+* The subscription belongs to the authenticated Dime Time user.
+* The subscription uses the approved Dime Time Debt product/price.
+* The subscription has not been revoked.
+* Provider data passes integrity checks.
+
+TRIALING
+
+Grant trial entitlement only when:
+
+* Stripe status is `trialing`.
+* The trial belongs to the approved product.
+* A trial is explicitly configured and approved by Tim.
+* The trial expiration is valid.
+
+Dime Time currently has no approved free trial. Do not create or advertise one. If no approved trial exists, a `trialing` state must be reported prominently as unexpected and must not silently grant permanent access.
+
+INCOMPLETE
+
+Do not grant normal paid entitlement solely because:
+
+subscription.status === "incomplete"
+
+An incomplete subscription without a qualifying ACH payment in progress must receive no paid access.
+
+The following PaymentIntent states must not grant provisional or paid access:
+
+* requires_payment_method
+* requires_confirmation
+* requires_action
+* canceled
+* failed or equivalent
+* missing PaymentIntent
+* PaymentIntent belonging to another invoice, subscription, customer, or user
+* unsupported payment method
+* absent or invalid mandate
+* arbitrary client-supplied status
+
+ACH PROCESSING — PROVISIONAL ACCESS
+
+If Dime Time intentionally provides instant provisional access while the first ACH debit is processing, create a separate normalized state such as:
+
+provisional_ach
+
+Grant this state only when every condition is true:
+
+* Subscription is for the approved Dime Time Debt price.
+* Subscription belongs to the authenticated user.
+* Latest invoice belongs to the same subscription.
+* PaymentIntent belongs to the same invoice and customer.
+* Payment method type is `us_bank_account`.
+* PaymentIntent status is authoritatively `processing`.
+* A valid ACH mandate/authorization exists.
+* Processing began within the configured provisional-access window.
+* No payment-failure, cancellation, dispute, refund, reversal, or revocation event has been received.
+* The provisional-access expiration is persisted server-side.
+* The client did not supply any trusted status field.
+
+The provisional window must be explicit, finite, and documented. Use the existing approved duration if one already exists. If no duration is currently defined, do not invent one—return a business-decision requirement for Tim.
+
+When provisional access expires without successful payment:
+
+* Remove premium entitlement.
+* Preserve the user’s account and data.
+* Display an accurate payment-pending or payment-failed state.
+* Provide a safe retry/recovery path.
+* Do not create another subscription automatically.
+* Do not initiate another debit automatically.
+
+When the ACH payment succeeds:
+
+* Process the signature-verified Stripe event.
+* Transition the normalized entitlement to active.
+* Clear the provisional expiration.
+* Record the transition idempotently.
+
+When the ACH payment fails, is canceled, disputed, returned, refunded, or reversed:
+
+* Revoke provisional entitlement immediately.
+* Preserve the account and user data.
+* Display a truthful recovery message.
+* Never leave the user entitled merely because the subscription remains incomplete.
+
+PAST_DUE
+
+Past-due access may be granted only through a defined, finite grace period.
+
+Required conditions:
+
+* The subscription was previously legitimately active.
+* The subscription belongs to the authenticated user.
+* The approved price is still attached.
+* A server-computed `graceUntil` value exists.
+* Current time is before `graceUntil`.
+* The subscription has not become unpaid, canceled, revoked, or expired.
+* Grace does not reset indefinitely when duplicate or out-of-order webhooks arrive.
+
+After `graceUntil`, remove premium entitlement while preserving account data.
+
+Do not grant indefinite access from `status === "past_due"`.
+
+CANCELED AT PERIOD END
+
+If the user cancels at period end and Stripe still reports the subscription as active:
+
+* Continue access only through the verified paid current-period end.
+* Display the cancellation date.
+* Do not renew entitlement beyond that date without a valid renewal.
+
+If Stripe status is fully canceled:
+
+* Do not grant entitlement unless authoritative evidence proves a previously paid period remains valid under the pinned Stripe behavior.
+* Do not rely on a client date.
+
+NO ACCESS
+
+These statuses must not grant normal paid entitlement:
+
+* incomplete
+* incomplete_expired
+* unpaid
+* canceled after valid access ends
+* paused
+* revoked
+* refunded when the refund terminates entitlement
+* missing
+* unknown
+* malformed
+* unsupported product or price
+
+Unknown provider states must fail closed and trigger safe diagnostics.
+
+==================================================
+3. WEBHOOK AND EVENT REQUIREMENTS
+=================================
+
+List the five webhook events currently registered in both Stripe dashboards.
+
+Compare them against the events required to maintain accurate entitlement for:
+
+* Subscription creation
+* Subscription updates
+* Subscription deletion
+* Successful invoice payment
+* Failed invoice payment
+* ACH payment processing
+* ACH payment success
+* ACH payment failure
+* Payment cancellation
+* Refund
+* Dispute
+* ACH return/reversal, where represented by Stripe
+* Mandate changes, if they affect future billing
+
+Do not modify Stripe Dashboard endpoints during this task.
+
+If the five existing events do not cover the required lifecycle, report the exact missing event types Tim must add before activation.
+
+Preserve:
+
+* Raw-body handling
+* Signature verification
+* Event deduplication
+* Out-of-order protection
+* Idempotency
+* Per-user locking
+* Server-computed entitlement
+* No raw provider payload storage
+* PII and secret redaction
+
+An old webhook must not overwrite a newer entitlement state.
+
+==================================================
+4. DATABASE AND RECONCILIATION
+==============================
+
+If the current schema cannot safely represent provisional access and grace periods, prepare the smallest necessary migration.
+
+Potential fields must be justified, such as:
+
+* normalized entitlement status
+* provisionalAccessUntil
+* graceUntil
+* latest verified Stripe event time
+* latest verified PaymentIntent status
+* lastProviderVerificationAt
+
+Do not duplicate existing fields.
+
+Do not run migrations against production.
+
+Add a reconciliation path that can retrieve authoritative Stripe state for a single authenticated user or controlled background process.
+
+Reconciliation must:
+
+* Verify the approved price.
+* Verify customer/user ownership.
+* Normalize status centrally.
+* Correct missed or delayed webhook state.
+* Be rate-limited.
+* Avoid provider-wide scans on normal requests.
+* Never trust client state.
+* Never expose Stripe objects to the client.
+* Avoid overwriting newer state with older data.
+
+==================================================
+5. EXISTING-USER POLICY
+=======================
+
+Use this policy for controlled activation:
+
+* Existing users are not automatically billed.
+* Existing users are not immediately locked out.
+* No subscription is created without explicit user consent.
+* Subscription purchasing becomes available on the web.
+* Existing-user access remains as-is during the controlled activation.
+* Do not implement a free trial.
+* Do not choose a permanent grandfathering policy.
+* Do not enforce a paywall until Tim separately approves the final access-transition policy.
+
+This allows Dime Time to activate subscription purchasing and prove the payment lifecycle without unexpectedly harming the current 24 users.
+
+==================================================
+6. NATIVE-APP POLICY STATUS
+===========================
+
+Preserve the locked founder decision for this release:
+
+* Stripe web subscriptions only
+* No StoreKit implementation
+* No Google Play Billing implementation
+* No price or purchase CTA inside the native apps
+* Native clients may recognize backend entitlement after login
+* No external Stripe checkout link added to iOS or Android
+* No Apple or Google subscription products created
+
+Change the readiness language from:
+
+“compliant multiplatform pattern”
+
+to:
+
+“Native purchase UI is suppressed; no external purchase CTA is present. Store-policy compliance has not been independently guaranteed and remains a documented future-review risk.”
+
+Do not claim that automated tests prove Apple or Google policy compliance.
+
+==================================================
+7. REQUIRED TESTS
+=================
+
+Add tests for at least:
+
+* Active approved subscription grants access
+* Active wrong-price subscription does not grant access
+* Active wrong-user subscription does not grant access
+* Incomplete without PaymentIntent does not grant access
+* Incomplete with requires_payment_method does not grant access
+* Incomplete with requires_confirmation does not grant access
+* Incomplete with requires_action does not grant access
+* Incomplete with canceled PaymentIntent does not grant access
+* Incomplete with unsupported payment method does not grant access
+* Incomplete with wrong invoice/customer/user does not grant access
+* Incomplete with missing mandate does not grant access
+* Incomplete with legitimate ACH processing creates provisional access
+* Provisional ACH access has a finite expiration
+* Provisional access becomes active after verified success
+* Provisional access is revoked after failure
+* Provisional access is revoked after cancellation
+* Provisional access is revoked after dispute/return/reversal
+* Expired provisional access does not grant entitlement
+* Past-due within grace grants temporary access
+* Past-due after grace does not grant access
+* Duplicate events do not extend grace
+* Out-of-order events do not restore expired access
+* Unpaid does not grant access
+* Incomplete-expired does not grant access
+* Paused does not grant access
+* Fully canceled subscription does not grant access
+* Unknown status fails closed
+* Client cannot self-grant entitlement
+* Existing users are not automatically billed
+* ENABLE_SUBSCRIPTIONS flag does not itself grant entitlement
+* Subscription creation requires explicit consent
+* Provider outage does not create new entitlement
+* Reconciliation cannot overwrite newer state with older data
+
+Rerun:
+
+* Entire test suite
+* Typecheck
+* Lint
+* Isolated production build
+* In-place production build
+* Android checks
+* iOS configuration checks
+* Cap sync verification if assets change
+* Dependency audit
+* Secret scan
+* Git status and diff review
+
+Previous baseline: 169/169 tests passing.
+
+Report:
+
+* Total tests
+* New tests
+* Passed
+* Failed
+* Skipped
+* Commands
+* Exit codes
+* Warnings
+* Files changed
+* Whether native asset hashes changed
+* Production vulnerability counts
+
+The target remains zero critical production dependency vulnerabilities.
+
+==================================================
+8. PRODUCTION ACTIVATION PLAN — DO NOT EXECUTE
+==============================================
+
+After the correction is complete, prepare but do not execute this plan:
+
+1. Confirm zero P0/P1 subscription findings.
+2. Confirm all tests pass.
+3. Confirm required Stripe webhook events are registered in both test and live dashboards.
+4. Add production REQUIRE_EMAIL_VERIFICATION=false.
+5. Add production ENABLE_SUBSCRIPTIONS=true.
+6. Deploy the corrected backend and web application.
+7. Run authentication and subscription smoke tests.
+8. Have Tim explicitly authorize one founder-controlled live $2.99 subscription.
+9. Complete the web consent and ACH mandate flow.
+10. Confirm no entitlement is granted before the qualifying provider state.
+11. If ACH is processing, confirm only finite provisional access is granted.
+12. Confirm webhook receipt and normalized state.
+13. Confirm successful settlement converts entitlement to active.
+14. Confirm failed or returned payment revokes provisional access.
+15. Test cancel-at-period-end.
+16. Test reactivation.
+17. Have Franco run the live Google Play resend-verification test.
+18. Keep REQUIRE_EMAIL_VERIFICATION=false until updated native recovery-screen builds are live.
+19. Run the final launch-gate audit.
+20. Publish the LinkedIn announcement only after a final GO.
+
+Do not perform the live charge or deployment during this task.
+
+==================================================
+FINAL REPORT REQUIRED
+=====================
+
+Return:
+
+DIME TIME — SUBSCRIPTION ENTITLEMENT CORRECTION REPORT
+
+Include:
+
+1. Verdict:
+
+   * READY FOR CONTROLLED ACTIVATION
+   * MORE WORK REQUIRED
+   * BLOCKED ON BUSINESS DECISION
+   * BLOCKED ON STRIPE CONFIGURATION
+
+2. Starting branch, commit, and git status
+
+3. Exact old entitlement policy
+
+4. Exact new entitlement matrix
+
+5. Files changed
+
+6. ACH provisional-access design
+
+7. Provisional-access duration or required Tim decision
+
+8. Past-due grace duration and expiration behavior
+
+9. Database changes or migration required
+
+10. Webhook events currently registered
+
+11. Missing Stripe events or configuration actions
+
+12. Existing-user treatment
+
+13. Native policy-risk wording
+
+14. Test totals and commands
+
+15. Production vulnerability count
+
+16. Remaining P0/P1/P2/P3 findings
+
+17. Exact production flags required
+
+18. Controlled deployment plan
+
+19. Copy-paste ChatGPT handoff containing:
+
+* Verdict
+* Tests
+* Files changed
+* Active entitlement rule
+* Incomplete entitlement rule
+* ACH provisional rule
+* Past-due grace rule
+* Webhook readiness
+* Existing-user policy
+* Authentication status
+* Coinbase vulnerability status
+* Native-app billing status
+* Required flags
+* Remaining blockers
+* Confirmation that nothing was deployed, billed, submitted, or changed in production
+
+STOP CONDITIONS
+
+Stop and report if:
+
+* `incomplete` still grants unconditional access.
+* Provisional access has no expiration.
+* Past-due access is indefinite.
+* A client-controlled value affects entitlement.
+* The required ACH-processing state cannot be verified authoritatively.
+* Required webhook events are missing.
+* A migration would alter production data.
+* Any critical production vulnerability remains.
+* Existing users would be billed or locked out.
+* Payment or authentication safety controls regress.
+* A live charge or production change is required.
+
+Complete the local correction and validation, return the report, and wait for Tim’s approval. Do not deploy, enable flags, bill anyone, or change Stripe Dashboard configuration.

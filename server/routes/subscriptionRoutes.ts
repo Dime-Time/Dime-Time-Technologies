@@ -26,7 +26,7 @@ import { setCorrelationTag } from "../lib/sentry";
 import {
   PLAN_CATALOG,
   DEFAULT_PLAN_ID,
-  isSubscriptionEntitled,
+  evaluateEntitlement,
   isSubscriptionTerminal,
 } from "@shared/subscriptionPlans";
 import {
@@ -39,8 +39,15 @@ import {
   createRecurringAchMandate,
   createPlanSubscription,
   setCancelAtPeriodEnd,
-  subscriptionRowFromStripe,
+  buildSubscriptionRow,
+  retrieveStripeSubscription,
+  authoritativeEventAt,
 } from "../services/subscriptionService";
+import { provisionalAchWindowDays, pastDueGraceDays } from "../lib/entitlementWindows";
+
+function entitlementWindows() {
+  return { provisionalDays: provisionalAchWindowDays(), graceDays: pastDueGraceDays() };
+}
 
 const subscribeSchema = z.object({
   // Explicit re-statement that the user checked the consent box. The
@@ -95,11 +102,18 @@ export function registerSubscriptionRoutes(app: Express): void {
         storage.getStripeAccountsByUserId(userId),
       ]);
       const linkedAccounts = accounts.filter((a) => a.isActive && a.status === "linked");
+      const entitlement = evaluateEntitlement(subscription ?? null);
+      if (entitlement.unexpected) {
+        subLog(randomUUID(), "unexpected_entitlement_state", {
+          severity: "WARN", userId, reason: entitlement.reason, status: subscription?.status,
+        });
+      }
 
       return res.json({
         plan: PLAN_CATALOG[DEFAULT_PLAN_ID],
         subscription: subscription ?? null,
-        entitled: isSubscriptionEntitled(subscription?.status),
+        entitled: entitlement.entitled,
+        entitlementState: entitlement.state,
         bankLinked: linkedAccounts.length > 0,
         bankAccounts: linkedAccounts.map((a) => ({
           id: a.id,
@@ -256,16 +270,31 @@ export function registerSubscriptionRoutes(app: Express): void {
       });
 
       // 5. Local ledger (upsert keyed on stripeSubscriptionId — webhook-safe).
-      const row = await storage.upsertSubscription(subscriptionRowFromStripe(stripeSub, userId));
+      // The subscribe response included `latest_invoice.payment_intent`
+      // expanded, so provisional-ACH qualification runs against the
+      // authoritative provider object: access is granted ONLY if the first
+      // debit is verifiably `processing` on a us_bank_account AND a finite
+      // provisional window is configured. Otherwise the response is a
+      // truthful "payment pending" state with no access.
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub,
+        userId,
+        existing: null,
+        eventAt: authoritativeEventAt(null),
+        windows: entitlementWindows(),
+      }));
+      const entitlement = evaluateEntitlement(row);
       subLog(correlationId, "subscribe_complete", {
         subscriptionId: row.id,
         stripeSubscriptionId: row.stripeSubscriptionId,
         status: row.status,
+        entitlementState: entitlement.state,
       });
 
       const body = {
         subscription: row,
-        entitled: isSubscriptionEntitled(row.status),
+        entitled: entitlement.entitled,
+        entitlementState: entitlement.state,
         correlationId,
       };
       await storage.finalizeIdempotencyKey(idempotencyKey, userId, endpoint, 201, JSON.stringify(body));
@@ -301,7 +330,9 @@ export function registerSubscriptionRoutes(app: Express): void {
       }
 
       const updated = await setCancelAtPeriodEnd(sub.stripeSubscriptionId, true);
-      const row = await storage.upsertSubscription(subscriptionRowFromStripe(updated, userId));
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub: updated, userId, existing: sub, eventAt: authoritativeEventAt(sub), windows: entitlementWindows(),
+      }));
       subLog(correlationId, "subscription_cancel_scheduled", {
         userId,
         stripeSubscriptionId: sub.stripeSubscriptionId,
@@ -326,7 +357,9 @@ export function registerSubscriptionRoutes(app: Express): void {
       }
 
       const updated = await setCancelAtPeriodEnd(sub.stripeSubscriptionId, false);
-      const row = await storage.upsertSubscription(subscriptionRowFromStripe(updated, userId));
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub: updated, userId, existing: sub, eventAt: authoritativeEventAt(sub), windows: entitlementWindows(),
+      }));
       subLog(correlationId, "subscription_reactivated", {
         userId,
         stripeSubscriptionId: sub.stripeSubscriptionId,
@@ -335,6 +368,68 @@ export function registerSubscriptionRoutes(app: Express): void {
     } catch (err: any) {
       subLog(correlationId, "subscription_reactivate_failed", { severity: "ERROR", error: err?.message });
       return res.status(502).json({ message: "Failed to resume subscription. Please try again.", correlationId });
+    }
+  });
+
+  // Reconciliation: pull the authoritative subscription state from Stripe
+  // for the AUTHENTICATED user only (no provider-wide scans), verify
+  // ownership, and converge the local row through the same single write
+  // path (the out-of-order guard prevents regressing newer state). Used to
+  // repair missed/delayed webhooks. Rate-limited; never exposes Stripe
+  // objects to the client; a provider outage changes nothing locally.
+  const reconcileLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 3,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+      const uid = getUserIdFromRequest(req);
+      return uid ? `u:${uid}` : `ip:${ipKeyGenerator(req.ip ?? "")}`;
+    },
+    message: { message: "Too many refresh attempts. Try again in a minute." },
+  });
+  app.post("/api/subscription/reconcile", reconcileLimiter, async (req: Request, res: Response) => {
+    const correlationId = randomUUID();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+      const local = await storage.getLatestSubscriptionByUserId(userId);
+      if (!local) return res.status(404).json({ message: "No subscription to refresh." });
+
+      const fresh = await retrieveStripeSubscription(local.stripeSubscriptionId);
+      if (!fresh) {
+        // Provider unavailable — local state stands; no new entitlement.
+        return res.status(502).json({ message: "Couldn't reach billing. Try again shortly.", correlationId });
+      }
+      // Ownership integrity: the provider object must reference OUR user
+      // (metadata) when present AND our stored customer. Fail closed.
+      const freshCustomer = typeof fresh.customer === "string" ? fresh.customer : fresh.customer?.id;
+      const metaUser = fresh.metadata?.dimeTimeUserId as string | undefined;
+      if ((metaUser && metaUser !== userId) || freshCustomer !== local.stripeCustomerId) {
+        subLog(correlationId, "reconcile_ownership_mismatch", {
+          severity: "ERROR", userId, stripeSubscriptionId: local.stripeSubscriptionId,
+        });
+        return res.status(409).json({ message: "Subscription ownership mismatch. Contact support.", correlationId });
+      }
+
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub: fresh, userId, existing: local, eventAt: authoritativeEventAt(local), windows: entitlementWindows(),
+      }));
+      const entitlement = evaluateEntitlement(row);
+      subLog(correlationId, "subscription_reconciled", {
+        userId, stripeSubscriptionId: row.stripeSubscriptionId,
+        status: row.status, entitlementState: entitlement.state,
+      });
+      return res.json({
+        subscription: row,
+        entitled: entitlement.entitled,
+        entitlementState: entitlement.state,
+        correlationId,
+      });
+    } catch (err: any) {
+      subLog(correlationId, "subscription_reconcile_failed", { severity: "ERROR", error: err?.message });
+      return res.status(502).json({ message: "Failed to refresh subscription.", correlationId });
     }
   });
 }

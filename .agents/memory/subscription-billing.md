@@ -11,15 +11,36 @@ lookup_key `dime_time_debt_299_monthly`, ACH billing off the same linked bank
 account as round-ups, anniversary billing, immediate first charge, no trial.
 Free tier = debt tracking; paid = round-up automation. Ships OFF in iOS 207+.
 
-## Entitlement policy (the one judgment call)
-`shared/subscriptionPlans.ts` is the single source of truth. Entitled:
-`active`, `trialing`, `incomplete`, `past_due`. The non-obvious ones:
-- **`incomplete` is entitled** — first ACH debit takes 2–4 business days;
-  we unlock on subscribe ("unlock on processing") and revoke via webhook if
-  the payment fails. Verified in test mode: Stripe actually reports the sub
-  `active` immediately with the PaymentIntent still `processing`.
-- **`past_due` is entitled** — grace period during Stripe's retries; `unpaid`/
-  `canceled` (retries exhausted) revoke.
+## Entitlement policy — CORRECTED 2026-08-04
+`shared/subscriptionPlans.ts#evaluateEntitlement(sub, now)` is the single
+source of truth (`{state, entitled, reason, unexpected}`). The old broad
+allowlist (active/trialing/incomplete/past_due all entitled) is GONE — do not
+reintroduce `isSubscriptionEntitled`/status-only checks.
+- **`active`** is the only status that entitles by itself.
+- **`incomplete`** entitles ONLY while a server-persisted, unexpired
+  `provisionalAccessUntil` exists. It is set once (never extended) by
+  `buildSubscriptionRow` when `verifyProvisionalAchEligibility` confirms a
+  real us_bank_account PaymentIntent in `processing` with matching
+  invoice/customer ownership, AND `SUBSCRIPTION_PROVISIONAL_ACH_DAYS` > 0.
+  **Default is 0 = NO provisional access** — the window length is a founder
+  business decision (recommended 7); until he sets it, new subscribers wait
+  for the first ACH debit to settle.
+- **`past_due`** entitles ONLY while `graceUntil` is unexpired; set once on a
+  local active→past_due transition (`SUBSCRIPTION_PAST_DUE_GRACE_DAYS`,
+  default 14, bounds Stripe's retry cycle), never reset by duplicate events.
+- **`trialing` fails closed** (no approved trial exists) and is flagged
+  `unexpected`; unknown/malformed statuses and non-catalog prices
+  (`plan: "unsupported"` via lookup_key check) also fail closed.
+Revocation: invoice.payment_failed, charge.refunded/failed, dispute.created
+all clear `provisionalAccessUntil` via a fresh Stripe re-fetch. Out-of-order
+webhooks are dropped by `upsertSubscription`'s `lastStripeEventAt` setWhere
+guard; authoritative writes (subscribe/reconcile/invoice re-fetch) stamp
+`authoritativeEventAt()` (max(now, stored+1s)) so clock skew can't skip them.
+`POST /api/subscription/reconcile` (auth, rate-limited, ownership-checked)
+lets a user force a fresh Stripe sync.
+DB: 4 nullable columns (provisional_access_until, grace_until,
+last_payment_intent_status, last_stripe_event_at) — pushed to dev only;
+**prod needs a schema push at deploy time before this code runs there.**
 Terminal (a NEW subscription may be created): `canceled`, `incomplete_expired`,
 `unpaid`.
 

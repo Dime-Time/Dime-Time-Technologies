@@ -4,9 +4,11 @@
  * Contract (founder-locked):
  *   - Flag OFF  → returns true for everyone. ZERO behavior change; today's
  *     users keep round-up automation exactly as-is.
- *   - Flag ON   → true only when the user's latest subscription status grants
- *     entitlement (active / trialing / incomplete-first-charge-in-flight /
- *     past_due grace — see shared/subscriptionPlans.ts).
+ *   - Flag ON   → true only when the central entitlement evaluator grants
+ *     access from the user's latest subscription row: `active`, a verified
+ *     finite provisional-ACH window, or a finite past-due grace window
+ *     (see shared/subscriptionPlans.ts evaluateEntitlement). The flag itself
+ *     never grants entitlement — it only decides whether gating applies.
  *
  * Free tier (never gated): debt tracking, payoff projections, transaction
  * recording (round-up amounts are still COMPUTED and displayed — only the
@@ -15,12 +17,23 @@
 
 import { isFlagEnabled } from "./flags";
 import { storage } from "../storage";
-import { isSubscriptionEntitled } from "@shared/subscriptionPlans";
+import { evaluateEntitlement } from "@shared/subscriptionPlans";
 
 export async function hasRoundUpAutomationAccess(userId: string): Promise<boolean> {
   if (!isFlagEnabled("ENABLE_SUBSCRIPTIONS")) return true;
   const sub = await storage.getLatestSubscriptionByUserId(userId);
-  return isSubscriptionEntitled(sub?.status);
+  const result = evaluateEntitlement(sub ?? null);
+  if (result.unexpected) {
+    console.warn(JSON.stringify({
+      service: "SubscriptionGate",
+      event: "unexpected_entitlement_state",
+      severity: "WARN",
+      userId,
+      reason: result.reason,
+      status: sub?.status ?? null,
+    }));
+  }
+  return result.entitled;
 }
 
 /** Standard 402 payload so every gated endpoint speaks the same language. */

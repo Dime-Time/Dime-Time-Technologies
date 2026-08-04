@@ -33,8 +33,42 @@ import {
 } from "../services/stripeService";
 import {
   retrieveStripeSubscription,
-  subscriptionRowFromStripe,
+  buildSubscriptionRow,
+  authoritativeEventAt,
 } from "../services/subscriptionService";
+import { provisionalAchWindowDays, pastDueGraceDays } from "../lib/entitlementWindows";
+
+/**
+ * Revoke provisional subscription access when a charge on a subscription
+ * invoice is refunded / returned / failed / disputed. The subscriptions
+ * table is keyed by invoice via latestInvoiceId; a miss means the charge
+ * was not a (tracked) subscription invoice — a normal no-op for one-off
+ * round-up debits. Authoritative state comes from a fresh Stripe fetch.
+ */
+async function revokeSubscriptionAccessForInvoice(
+  correlationId: string,
+  invoiceId: string | null | undefined,
+  eventContext: { eventId: string; type: string },
+): Promise<void> {
+  if (!invoiceId || !isFlagEnabled("ENABLE_SUBSCRIPTIONS")) return;
+  const existing = await storage.getSubscriptionByLatestInvoiceId(invoiceId);
+  if (!existing) return;
+  const fresh = await retrieveStripeSubscription(existing.stripeSubscriptionId);
+  if (!fresh) return;
+  const row = await storage.upsertSubscription(buildSubscriptionRow({
+    stripeSub: fresh,
+    userId: existing.userId,
+    existing,
+    eventAt: authoritativeEventAt(existing),
+    revokeProvisional: true,
+    windows: { provisionalDays: provisionalAchWindowDays(), graceDays: pastDueGraceDays() },
+  }));
+  stripeLog(correlationId, "subscription_provisional_revoked", {
+    ...eventContext,
+    stripeSubscriptionId: existing.stripeSubscriptionId,
+    status: row.status,
+  });
+}
 
 const MAX_DEBT_PAYMENT_DOLLARS = 500;
 
@@ -857,6 +891,13 @@ export function registerStripeWebhook(app: Express): void {
               newStatus: "refunded",
             });
           }
+          // If the refunded charge paid a subscription invoice, revoke any
+          // provisional access — a refunded first debit must not stay entitled.
+          await revokeSubscriptionAccessForInvoice(
+            correlationId,
+            (charge.invoice as string | undefined) ?? null,
+            { eventId: event.id, type: event.type },
+          );
         } else if (event.type === "charge.failed") {
           // ACH debit failed, or a late ACH return after the charge was
           // created. Map to terminal `failed` so the user sees funds were NOT
@@ -887,6 +928,12 @@ export function registerStripeWebhook(app: Express): void {
               newStatus: "failed",
             });
           }
+          // ACH return/failure on a subscription invoice → revoke provisional.
+          await revokeSubscriptionAccessForInvoice(
+            correlationId,
+            (charge.invoice as string | undefined) ?? null,
+            { eventId: event.id, type: event.type },
+          );
         } else if (event.type === "charge.dispute.created") {
           // ACH return/dispute (e.g. R10 unauthorized). Flag for operator
           // follow-up — collapses to `requires_action` in the status mapper.
@@ -911,6 +958,17 @@ export function registerStripeWebhook(app: Express): void {
               newStatus: "disputed",
             });
           }
+          // A dispute on a subscription invoice's charge revokes provisional
+          // access. The dispute payload carries no invoice id, so resolve it
+          // through the ledger row's transfer → not possible for subscription
+          // invoices (they have no transfers row); fall back to matching the
+          // charge's PaymentIntent against tracked subscriptions via a fresh
+          // authoritative fetch keyed by the charge's invoice when present.
+          await revokeSubscriptionAccessForInvoice(
+            correlationId,
+            ((dispute as any).invoice as string | undefined) ?? null,
+            { eventId: event.id, type: event.type },
+          );
         } else if (event.type === "charge.dispute.closed") {
           // Dispute resolved. Stripe closes a dispute as won / lost /
           // warning_closed. Won => our charge stands and the funds are
@@ -964,15 +1022,33 @@ export function registerStripeWebhook(app: Express): void {
             });
           } else {
             const sub = event.data.object as any;
+            const existing = await storage.getSubscriptionByStripeSubscriptionId(sub.id);
             const userId =
-              (sub.metadata?.dimeTimeUserId as string | undefined) ||
-              (await storage.getSubscriptionByStripeSubscriptionId(sub.id))?.userId;
+              (sub.metadata?.dimeTimeUserId as string | undefined) || existing?.userId;
             if (!userId) {
               stripeLog(correlationId, "webhook_subscription_user_miss", {
                 severity: "WARN", eventId: event.id, stripeSubscriptionId: sub.id,
               });
             } else {
-              const row = await storage.upsertSubscription(subscriptionRowFromStripe(sub, userId));
+              if (sub.status === "trialing") {
+                // No approved trial exists — fails closed in the evaluator;
+                // surface loudly so it can be investigated.
+                stripeLog(correlationId, "unexpected_trialing_subscription", {
+                  severity: "WARN", eventId: event.id, stripeSubscriptionId: sub.id,
+                });
+              }
+              const row = await storage.upsertSubscription(buildSubscriptionRow({
+                stripeSub: sub,
+                userId,
+                existing,
+                // Stripe's event timestamp — the out-of-order guard in the
+                // upsert rejects writes older than the row's newest event.
+                eventAt: new Date((event.created as number) * 1000),
+                windows: {
+                  provisionalDays: provisionalAchWindowDays(),
+                  graceDays: pastDueGraceDays(),
+                },
+              }));
               stripeLog(correlationId, "subscription_upserted", {
                 eventId: event.id, type: event.type,
                 stripeSubscriptionId: sub.id, status: row.status,
@@ -1006,18 +1082,34 @@ export function registerStripeWebhook(app: Express): void {
               });
             } else {
               const fresh = await retrieveStripeSubscription(subId);
+              const existing = await storage.getSubscriptionByStripeSubscriptionId(subId);
               const userId =
-                (fresh?.metadata?.dimeTimeUserId as string | undefined) ||
-                (await storage.getSubscriptionByStripeSubscriptionId(subId))?.userId;
+                (fresh?.metadata?.dimeTimeUserId as string | undefined) || existing?.userId;
               if (!fresh || !userId) {
                 stripeLog(correlationId, "webhook_subscription_user_miss", {
                   severity: "WARN", eventId: event.id, stripeSubscriptionId: subId,
                 });
               } else {
-                const row = await storage.upsertSubscription(subscriptionRowFromStripe(fresh, userId));
+                const row = await storage.upsertSubscription(buildSubscriptionRow({
+                  stripeSub: fresh,
+                  userId,
+                  existing,
+                  // Authoritative re-fetch from Stripe — newest state by
+                  // definition, so stamp "now" for the out-of-order guard.
+                  eventAt: authoritativeEventAt(existing),
+                  // A failed invoice payment revokes any provisional access
+                  // immediately — the subscription may still read
+                  // `incomplete` while the failure notice arrives.
+                  revokeProvisional: event.type === "invoice.payment_failed",
+                  windows: {
+                    provisionalDays: provisionalAchWindowDays(),
+                    graceDays: pastDueGraceDays(),
+                  },
+                }));
                 stripeLog(correlationId, "subscription_upserted", {
                   eventId: event.id, type: event.type,
                   stripeSubscriptionId: subId, status: row.status,
+                  revokedProvisional: event.type === "invoice.payment_failed" || undefined,
                 });
               }
             }

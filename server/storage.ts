@@ -314,6 +314,7 @@ export interface IStorage {
   upsertSubscription(data: InsertSubscription): Promise<Subscription>;
   getLatestSubscriptionByUserId(userId: string): Promise<Subscription | undefined>;
   getSubscriptionByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription | undefined>;
+  getSubscriptionByLatestInvoiceId(invoiceId: string): Promise<Subscription | undefined>;
   createSubscriptionConsent(data: InsertSubscriptionConsent): Promise<SubscriptionConsent>;
   getLatestSubscriptionConsent(userId: string): Promise<SubscriptionConsent | undefined>;
 
@@ -1914,6 +1915,7 @@ export class MemStorage implements IStorage {
   async upsertSubscription(_data: InsertSubscription): Promise<Subscription> { throw new Error('MemStorage does not support subscriptions'); }
   async getLatestSubscriptionByUserId(_userId: string): Promise<Subscription | undefined> { return undefined; }
   async getSubscriptionByStripeSubscriptionId(_stripeSubscriptionId: string): Promise<Subscription | undefined> { return undefined; }
+  async getSubscriptionByLatestInvoiceId(_invoiceId: string): Promise<Subscription | undefined> { return undefined; }
   async createSubscriptionConsent(_data: InsertSubscriptionConsent): Promise<SubscriptionConsent> { throw new Error('MemStorage does not support subscription consents'); }
   async getLatestSubscriptionConsent(_userId: string): Promise<SubscriptionConsent | undefined> { return undefined; }
   async reserveRealStripeAchDebit(_args: any): Promise<RealAchGateResult> { throw new Error('MemStorage does not support real ACH gate'); }
@@ -2929,6 +2931,9 @@ export class DatabaseStorage implements IStorage {
   async upsertSubscription(data: InsertSubscription): Promise<Subscription> {
     // Single race-free write path shared by the subscribe route and the
     // webhook handler. Whichever arrives first inserts; the other updates.
+    // Out-of-order guard: an event older than the row's lastStripeEventAt
+    // must never overwrite newer entitlement state — the conditional update
+    // silently skips stale writes and we return the (newer) existing row.
     const [result] = await db
       .insert(subscriptions)
       .values(data)
@@ -2945,11 +2950,22 @@ export class DatabaseStorage implements IStorage {
           canceledAt: data.canceledAt ?? null,
           latestInvoiceId: data.latestInvoiceId ?? null,
           lastPaymentError: data.lastPaymentError ?? null,
+          provisionalAccessUntil: data.provisionalAccessUntil ?? null,
+          graceUntil: data.graceUntil ?? null,
+          lastPaymentIntentStatus: data.lastPaymentIntentStatus ?? null,
+          lastStripeEventAt: data.lastStripeEventAt ?? null,
           updatedAt: new Date(),
         },
+        setWhere: sql`${subscriptions.lastStripeEventAt} IS NULL OR ${subscriptions.lastStripeEventAt} <= ${data.lastStripeEventAt ?? new Date()}`,
       })
       .returning();
-    return result;
+    if (result) return result;
+    // Stale write skipped by the guard — return the authoritative newer row.
+    const [current] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.stripeSubscriptionId, data.stripeSubscriptionId));
+    return current;
   }
 
   async getLatestSubscriptionByUserId(userId: string): Promise<Subscription | undefined> {
@@ -2967,6 +2983,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(subscriptions)
       .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId))
+      .limit(1);
+    return result;
+  }
+
+  async getSubscriptionByLatestInvoiceId(invoiceId: string): Promise<Subscription | undefined> {
+    const [result] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.latestInvoiceId, invoiceId))
       .limit(1);
     return result;
   }

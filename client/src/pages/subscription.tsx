@@ -44,27 +44,36 @@ interface SubscriptionState {
   };
   subscription: SubscriptionRow | null;
   entitled: boolean;
+  entitlementState?: "active" | "provisional_ach" | "past_due_grace" | "none";
   bankLinked: boolean;
   bankAccounts: { id: string; institutionName: string | null; last4: string | null }[];
   consent: { text: string; version: string };
 }
 
-function statusBadge(sub: SubscriptionRow) {
+function statusBadge(sub: SubscriptionRow, entitled: boolean) {
   if (sub.cancelAtPeriodEnd) {
     return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Ends at period close</Badge>;
   }
   switch (sub.status) {
     case "active":
-    case "trialing":
       return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Active</Badge>;
     case "incomplete":
-      return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Active — first payment processing</Badge>;
+      // Truthful state: premium is only on when the server has verified the
+      // first ACH debit is processing AND granted a provisional window.
+      return entitled
+        ? <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Active — first payment processing</Badge>
+        : <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Payment pending</Badge>;
     case "past_due":
-      return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Payment issue — retrying</Badge>;
+      return entitled
+        ? <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Payment issue — retrying</Badge>
+        : <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Payment issue — premium paused</Badge>;
     default:
       return <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100">{sub.status}</Badge>;
   }
 }
+
+/** Statuses where the subscription is over and a new one may be purchased. */
+const TERMINAL_STATUSES = new Set(["canceled", "incomplete_expired", "unpaid"]);
 
 export default function SubscriptionPage() {
   const { toast } = useToast();
@@ -93,11 +102,15 @@ export default function SubscriptionPage() {
       );
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (result: { entitled?: boolean }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
+      // Truthful toast: only claim premium is unlocked when the server says
+      // so. Otherwise the first ACH payment must complete first.
       toast({
         title: "Welcome to Dime Time Debt!",
-        description: "Round-up automation is unlocked. Your first payment is processing via bank transfer (2\u20134 business days).",
+        description: result?.entitled
+          ? "Round-up automation is unlocked. Your first payment is processing via bank transfer (2\u20134 business days)."
+          : "Your subscription has started. Premium features unlock once your first bank transfer payment completes (typically 2\u20134 business days).",
       });
     },
     onError: (err) => {
@@ -164,7 +177,11 @@ export default function SubscriptionPage() {
   }
 
   const { plan, subscription, entitled, bankLinked, bankAccounts, consent } = data;
-  const hasLiveSubscription = subscription && entitled;
+  // Show the MANAGE view for any non-terminal subscription — even when not
+  // currently entitled (e.g. payment pending/failed). Re-showing the
+  // subscribe form mid-lifecycle would invite duplicate subscriptions; the
+  // server would 409 them, but the UI should never offer it.
+  const hasLiveSubscription = subscription && !TERMINAL_STATUSES.has(subscription.status);
   const price = formatPlanPrice(plan.priceCents);
 
   return (
@@ -188,17 +205,32 @@ export default function SubscriptionPage() {
                     <p className="text-sm text-slate-500">{price}/{plan.interval}</p>
                   </div>
                 </div>
-                <div data-testid="badge-subscription-status">{statusBadge(subscription)}</div>
+                <div data-testid="badge-subscription-status">{statusBadge(subscription, entitled)}</div>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
-              {subscription.status === "incomplete" && (
+              {subscription.status === "incomplete" && entitled && (
                 <div className="flex items-start gap-3 rounded-xl bg-blue-50 p-4">
                   <CalendarClock className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-sm text-blue-900">
                     Your first payment is processing via bank transfer (ACH). This
                     typically takes 2–4 business days — premium features are already unlocked.
+                  </p>
+                </div>
+              )}
+
+              {subscription.status === "incomplete" && !entitled && (
+                <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4" data-testid="text-payment-pending">
+                  <CalendarClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-900">
+                    Your first payment hasn't completed yet. Bank transfers (ACH)
+                    typically take 2–4 business days — premium features unlock once
+                    the payment is confirmed. If this takes longer than expected,
+                    check that your linked bank account has funds available.
+                    {subscription.lastPaymentError && (
+                      <> Last payment issue: {subscription.lastPaymentError}</>
+                    )}
                   </p>
                 </div>
               )}

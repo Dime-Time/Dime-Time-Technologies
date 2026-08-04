@@ -105,18 +105,51 @@ test("subscribe fails closed (503) when billing is unavailable — before key or
   assert.equal(r.status, 503);
 });
 
-test("GET /api/subscription: entitlement is computed server-side from stored status", async () => {
-  fakeSubRow = { id: "s1", status: "active", cancelAtPeriodEnd: false };
+test("GET /api/subscription: entitlement is computed server-side from stored state", async () => {
+  fakeSubRow = { id: "s1", plan: "debt", status: "active", cancelAtPeriodEnd: false };
   let r = await call("GET", "/api/subscription", { user: "u1" });
   assert.equal(r.status, 200);
   assert.equal(r.body.entitled, true);
+  assert.equal(r.body.entitlementState, "active");
 
-  fakeSubRow = { id: "s1", status: "canceled", cancelAtPeriodEnd: false };
+  fakeSubRow = { id: "s1", plan: "debt", status: "canceled", cancelAtPeriodEnd: false };
+  r = await call("GET", "/api/subscription", { user: "u1" });
+  assert.equal(r.body.entitled, false);
+
+  // CORRECTED POLICY: bare `incomplete` and `past_due` no longer entitle —
+  // only server-persisted, unexpired windows can.
+  fakeSubRow = { id: "s1", plan: "debt", status: "incomplete", cancelAtPeriodEnd: false };
+  r = await call("GET", "/api/subscription", { user: "u1" });
+  assert.equal(r.body.entitled, false);
+  assert.equal(r.body.entitlementState, "none");
+
+  fakeSubRow = {
+    id: "s1", plan: "debt", status: "incomplete", cancelAtPeriodEnd: false,
+    provisionalAccessUntil: new Date(Date.now() + 3600_000).toISOString(),
+  };
+  r = await call("GET", "/api/subscription", { user: "u1" });
+  assert.equal(r.body.entitled, true);
+  assert.equal(r.body.entitlementState, "provisional_ach");
+
+  fakeSubRow = { id: "s1", plan: "debt", status: "past_due", cancelAtPeriodEnd: false };
+  r = await call("GET", "/api/subscription", { user: "u1" });
+  assert.equal(r.body.entitled, false);
+
+  fakeSubRow = {
+    id: "s1", plan: "debt", status: "past_due", cancelAtPeriodEnd: false,
+    graceUntil: new Date(Date.now() + 3600_000).toISOString(),
+  };
+  r = await call("GET", "/api/subscription", { user: "u1" });
+  assert.equal(r.body.entitled, true);
+  assert.equal(r.body.entitlementState, "past_due_grace");
+
+  // Trialing fails closed (no approved trial exists).
+  fakeSubRow = { id: "s1", plan: "debt", status: "trialing", cancelAtPeriodEnd: false };
   r = await call("GET", "/api/subscription", { user: "u1" });
   assert.equal(r.body.entitled, false);
 
   // A stored status can't be forged into entitlement by naming tricks.
-  fakeSubRow = { id: "s1", status: "ACTIVE", cancelAtPeriodEnd: false };
+  fakeSubRow = { id: "s1", plan: "debt", status: "ACTIVE", cancelAtPeriodEnd: false };
   r = await call("GET", "/api/subscription", { user: "u1" });
   assert.equal(r.body.entitled, false);
 
@@ -124,6 +157,27 @@ test("GET /api/subscription: entitlement is computed server-side from stored sta
   r = await call("GET", "/api/subscription", { user: "u1" });
   assert.equal(r.body.entitled, false);
   assert.equal(r.body.subscription, null);
+});
+
+test("client-supplied fields can never influence entitlement", async () => {
+  // Even if a client sends entitled/status/window fields in the body or
+  // query, GET derives everything from the server-stored row.
+  fakeSubRow = { id: "s1", plan: "debt", status: "incomplete", cancelAtPeriodEnd: false };
+  const r = await fetch(
+    base + "/api/subscription?entitled=true&status=active&provisionalAccessUntil=2099-01-01",
+    { headers: { "x-test-user": "u1" } },
+  );
+  const body: any = await r.json();
+  assert.equal(body.entitled, false);
+});
+
+test("reconcile requires auth and 404s with no subscription", async () => {
+  assert.equal((await call("POST", "/api/subscription/reconcile")).status, 401);
+  fakeSubRow = null;
+  assert.equal(
+    (await call("POST", "/api/subscription/reconcile", { user: "u9" })).status,
+    404,
+  );
 });
 
 test("GET /api/subscription: plan copy pins the $2.99 price and never exposes a price ID to choose", async () => {

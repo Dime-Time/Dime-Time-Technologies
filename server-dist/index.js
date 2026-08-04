@@ -881,6 +881,22 @@ var subscriptions = pgTable("subscriptions", {
   canceledAt: timestamp("canceled_at"),
   latestInvoiceId: text("latest_invoice_id"),
   lastPaymentError: text("last_payment_error"),
+  // --- Entitlement correction fields (2026-08-04) ---
+  // Finite server-persisted deadline for provisional access while the FIRST
+  // verified ACH debit is `processing`. NULL = no provisional access. Set
+  // only after server-side PaymentIntent verification; never extended by
+  // duplicate events.
+  provisionalAccessUntil: timestamp("provisional_access_until"),
+  // Finite server-computed grace deadline set ONCE when a previously-active
+  // subscription enters past_due. NULL = no grace. Cleared on return to
+  // active; never extended by duplicate/out-of-order webhooks.
+  graceUntil: timestamp("grace_until"),
+  // Last authoritatively-verified PaymentIntent status for the latest
+  // invoice (from an expanded Stripe fetch, never from the client).
+  lastPaymentIntentStatus: text("last_payment_intent_status"),
+  // Stripe event timestamp of the newest event applied to this row — the
+  // out-of-order guard: older events cannot overwrite newer state.
+  lastStripeEventAt: timestamp("last_stripe_event_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 }, (table) => ({
@@ -2175,10 +2191,17 @@ var DatabaseStorage = class _DatabaseStorage {
         canceledAt: data.canceledAt ?? null,
         latestInvoiceId: data.latestInvoiceId ?? null,
         lastPaymentError: data.lastPaymentError ?? null,
+        provisionalAccessUntil: data.provisionalAccessUntil ?? null,
+        graceUntil: data.graceUntil ?? null,
+        lastPaymentIntentStatus: data.lastPaymentIntentStatus ?? null,
+        lastStripeEventAt: data.lastStripeEventAt ?? null,
         updatedAt: /* @__PURE__ */ new Date()
-      }
+      },
+      setWhere: sql2`${subscriptions.lastStripeEventAt} IS NULL OR ${subscriptions.lastStripeEventAt} <= ${data.lastStripeEventAt ?? /* @__PURE__ */ new Date()}`
     }).returning();
-    return result;
+    if (result) return result;
+    const [current] = await db.select().from(subscriptions).where(eq(subscriptions.stripeSubscriptionId, data.stripeSubscriptionId));
+    return current;
   }
   async getLatestSubscriptionByUserId(userId) {
     const [result] = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).orderBy(desc(subscriptions.createdAt)).limit(1);
@@ -2186,6 +2209,10 @@ var DatabaseStorage = class _DatabaseStorage {
   }
   async getSubscriptionByStripeSubscriptionId(stripeSubscriptionId) {
     const [result] = await db.select().from(subscriptions).where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).limit(1);
+    return result;
+  }
+  async getSubscriptionByLatestInvoiceId(invoiceId) {
+    const [result] = await db.select().from(subscriptions).where(eq(subscriptions.latestInvoiceId, invoiceId)).limit(1);
     return result;
   }
   async createSubscriptionConsent(data) {
@@ -4467,15 +4494,54 @@ var PLAN_CATALOG = {
   }
 };
 var DEFAULT_PLAN_ID = "debt";
-var ENTITLED_SUBSCRIPTION_STATUSES = /* @__PURE__ */ new Set([
-  "active",
-  "trialing",
-  "incomplete",
-  "past_due"
-]);
-function isSubscriptionEntitled(status) {
-  if (!status) return false;
-  return ENTITLED_SUBSCRIPTION_STATUSES.has(status);
+function toDate(v) {
+  if (!v) return null;
+  const d = v instanceof Date ? v : new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function evaluateEntitlement(sub, now = /* @__PURE__ */ new Date()) {
+  if (!sub || !sub.status) {
+    return { state: "none", entitled: false, reason: "no_subscription" };
+  }
+  const plan = sub.plan ?? DEFAULT_PLAN_ID;
+  if (!(plan in PLAN_CATALOG)) {
+    return { state: "none", entitled: false, reason: "unsupported_plan", unexpected: true };
+  }
+  switch (sub.status) {
+    case "active":
+      return { state: "active", entitled: true, reason: "status_active" };
+    case "trialing":
+      return { state: "none", entitled: false, reason: "unexpected_trialing", unexpected: true };
+    case "incomplete": {
+      const until = toDate(sub.provisionalAccessUntil);
+      if (until && now < until) {
+        return { state: "provisional_ach", entitled: true, reason: "verified_ach_processing" };
+      }
+      return {
+        state: "none",
+        entitled: false,
+        reason: until ? "provisional_window_expired" : "incomplete_without_verified_payment"
+      };
+    }
+    case "past_due": {
+      const until = toDate(sub.graceUntil);
+      if (until && now < until) {
+        return { state: "past_due_grace", entitled: true, reason: "within_grace_period" };
+      }
+      return {
+        state: "none",
+        entitled: false,
+        reason: until ? "grace_period_expired" : "past_due_without_grace"
+      };
+    }
+    case "incomplete_expired":
+    case "unpaid":
+    case "canceled":
+    case "paused":
+      return { state: "none", entitled: false, reason: `status_${sub.status}` };
+    default:
+      return { state: "none", entitled: false, reason: "unknown_status", unexpected: true };
+  }
 }
 var TERMINAL_SUBSCRIPTION_STATUSES = /* @__PURE__ */ new Set([
   "canceled",
@@ -4595,13 +4661,92 @@ async function retrieveStripeSubscription(stripeSubscriptionId) {
   const stripe = await getStripe();
   if (!stripe) return null;
   try {
-    return await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    return await stripe.subscriptions.retrieve(stripeSubscriptionId, {
+      expand: ["latest_invoice.payment_intent"]
+    });
   } catch {
     return null;
   }
 }
 function tsFromUnix(seconds) {
   return typeof seconds === "number" ? new Date(seconds * 1e3) : null;
+}
+function verifyProvisionalAchEligibility(sub) {
+  const fail = (reason, piStatus2 = null) => ({
+    eligible: false,
+    paymentIntentStatus: piStatus2,
+    reason
+  });
+  if (!sub || sub.status !== "incomplete") return fail("not_incomplete");
+  const subCustomer = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+  const invoice = sub.latest_invoice;
+  if (!invoice || typeof invoice !== "object") return fail("invoice_not_expanded");
+  const invoiceSubRaw = invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+  const invoiceSub = typeof invoiceSubRaw === "string" ? invoiceSubRaw : invoiceSubRaw?.id;
+  if (!invoiceSub || invoiceSub !== sub.id) return fail("invoice_subscription_mismatch");
+  const invoiceCustomer = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+  if (!invoiceCustomer || invoiceCustomer !== subCustomer) return fail("invoice_customer_mismatch");
+  const pi = invoice.payment_intent;
+  if (!pi || typeof pi !== "object") return fail("missing_payment_intent");
+  const piStatus = typeof pi.status === "string" ? pi.status : null;
+  const piCustomer = typeof pi.customer === "string" ? pi.customer : pi.customer?.id;
+  if (!piCustomer || piCustomer !== subCustomer) {
+    return fail("payment_intent_customer_mismatch", piStatus);
+  }
+  const piInvoice = typeof pi.invoice === "string" ? pi.invoice : pi.invoice?.id;
+  if (piInvoice && invoice.id && piInvoice !== invoice.id) {
+    return fail("payment_intent_invoice_mismatch", piStatus);
+  }
+  const methodTypes = Array.isArray(pi.payment_method_types) ? pi.payment_method_types : [];
+  if (!methodTypes.includes("us_bank_account")) {
+    return fail("unsupported_payment_method", piStatus);
+  }
+  if (!pi.payment_method) return fail("no_payment_method_attached", piStatus);
+  if (piStatus !== "processing") return fail(`payment_intent_${piStatus ?? "unknown"}`, piStatus);
+  return { eligible: true, paymentIntentStatus: piStatus, reason: "ach_processing_verified" };
+}
+function authoritativeEventAt(existing, now = /* @__PURE__ */ new Date()) {
+  const prev = existing?.lastStripeEventAt?.getTime() ?? 0;
+  return new Date(Math.max(now.getTime(), prev + 1e3));
+}
+function buildSubscriptionRow(args) {
+  const { stripeSub, userId, existing, eventAt, revokeProvisional, windows } = args;
+  const now = args.now ?? /* @__PURE__ */ new Date();
+  const base = subscriptionRowFromStripe(stripeSub, userId);
+  const item = stripeSub.items?.data?.[0];
+  const lookupKey = item?.price?.lookup_key ?? void 0;
+  const approved = PLAN_CATALOG[base.plan ?? "debt"];
+  if (!approved || lookupKey !== void 0 && lookupKey !== null && lookupKey !== approved.stripeLookupKey) {
+    base.plan = "unsupported";
+  }
+  const verification = verifyProvisionalAchEligibility(stripeSub);
+  const piExpanded = typeof stripeSub.latest_invoice === "object" && typeof stripeSub.latest_invoice?.payment_intent === "object";
+  const lastPaymentIntentStatus = piExpanded ? verification.paymentIntentStatus : existing?.lastPaymentIntentStatus ?? null;
+  let provisionalAccessUntil = null;
+  if (base.status === "incomplete" && !revokeProvisional) {
+    if (existing?.provisionalAccessUntil) {
+      provisionalAccessUntil = existing.provisionalAccessUntil;
+    } else if (verification.eligible && windows.provisionalDays > 0) {
+      provisionalAccessUntil = new Date(
+        now.getTime() + windows.provisionalDays * 24 * 60 * 60 * 1e3
+      );
+    }
+  }
+  let graceUntil = null;
+  if (base.status === "past_due") {
+    if (existing?.graceUntil) {
+      graceUntil = existing.graceUntil;
+    } else if (existing?.status === "active" && windows.graceDays > 0) {
+      graceUntil = new Date(now.getTime() + windows.graceDays * 24 * 60 * 60 * 1e3);
+    }
+  }
+  return {
+    ...base,
+    provisionalAccessUntil,
+    graceUntil,
+    lastPaymentIntentStatus,
+    lastStripeEventAt: eventAt
+  };
 }
 function subscriptionRowFromStripe(sub, userId) {
   const item = sub.items?.data?.[0];
@@ -4626,7 +4771,42 @@ function subscriptionRowFromStripe(sub, userId) {
   };
 }
 
+// server/lib/entitlementWindows.ts
+function daysFromEnv(name, fallbackDays) {
+  const raw = process.env[name];
+  if (raw === void 0 || raw === "") return fallbackDays;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0 || n > 60) return fallbackDays;
+  return n;
+}
+function provisionalAchWindowDays() {
+  return daysFromEnv("SUBSCRIPTION_PROVISIONAL_ACH_DAYS", 0);
+}
+function pastDueGraceDays() {
+  return daysFromEnv("SUBSCRIPTION_PAST_DUE_GRACE_DAYS", 14);
+}
+
 // server/routes/stripeRoutes.ts
+async function revokeSubscriptionAccessForInvoice(correlationId, invoiceId, eventContext) {
+  if (!invoiceId || !isFlagEnabled("ENABLE_SUBSCRIPTIONS")) return;
+  const existing = await storage.getSubscriptionByLatestInvoiceId(invoiceId);
+  if (!existing) return;
+  const fresh = await retrieveStripeSubscription(existing.stripeSubscriptionId);
+  if (!fresh) return;
+  const row = await storage.upsertSubscription(buildSubscriptionRow({
+    stripeSub: fresh,
+    userId: existing.userId,
+    existing,
+    eventAt: authoritativeEventAt(existing),
+    revokeProvisional: true,
+    windows: { provisionalDays: provisionalAchWindowDays(), graceDays: pastDueGraceDays() }
+  }));
+  stripeLog(correlationId, "subscription_provisional_revoked", {
+    ...eventContext,
+    stripeSubscriptionId: existing.stripeSubscriptionId,
+    status: row.status
+  });
+}
 var MAX_DEBT_PAYMENT_DOLLARS2 = 500;
 var REAL_FIRST_TRANSFER_MAX_DOLLARS = 1;
 var REAL_DAILY_TOTAL_MAX_DOLLARS = 5;
@@ -5260,6 +5440,11 @@ function registerStripeWebhook(app2) {
               newStatus: "refunded"
             });
           }
+          await revokeSubscriptionAccessForInvoice(
+            correlationId,
+            charge.invoice ?? null,
+            { eventId: event.id, type: event.type }
+          );
         } else if (event.type === "charge.failed") {
           const charge = event.data.object;
           let ledger = charge.payment_intent ? await storage.getTransferByStripePaymentIntentId(charge.payment_intent) : void 0;
@@ -5285,6 +5470,11 @@ function registerStripeWebhook(app2) {
               newStatus: "failed"
             });
           }
+          await revokeSubscriptionAccessForInvoice(
+            correlationId,
+            charge.invoice ?? null,
+            { eventId: event.id, type: event.type }
+          );
         } else if (event.type === "charge.dispute.created") {
           const dispute = event.data.object;
           const ledger = await storage.getTransferByStripeChargeId(dispute.charge);
@@ -5307,6 +5497,11 @@ function registerStripeWebhook(app2) {
               newStatus: "disputed"
             });
           }
+          await revokeSubscriptionAccessForInvoice(
+            correlationId,
+            dispute.invoice ?? null,
+            { eventId: event.id, type: event.type }
+          );
         } else if (event.type === "charge.dispute.closed") {
           const dispute = event.data.object;
           const outcome = dispute.status;
@@ -5346,7 +5541,8 @@ function registerStripeWebhook(app2) {
             });
           } else {
             const sub = event.data.object;
-            const userId = sub.metadata?.dimeTimeUserId || (await storage.getSubscriptionByStripeSubscriptionId(sub.id))?.userId;
+            const existing = await storage.getSubscriptionByStripeSubscriptionId(sub.id);
+            const userId = sub.metadata?.dimeTimeUserId || existing?.userId;
             if (!userId) {
               stripeLog(correlationId, "webhook_subscription_user_miss", {
                 severity: "WARN",
@@ -5354,7 +5550,25 @@ function registerStripeWebhook(app2) {
                 stripeSubscriptionId: sub.id
               });
             } else {
-              const row = await storage.upsertSubscription(subscriptionRowFromStripe(sub, userId));
+              if (sub.status === "trialing") {
+                stripeLog(correlationId, "unexpected_trialing_subscription", {
+                  severity: "WARN",
+                  eventId: event.id,
+                  stripeSubscriptionId: sub.id
+                });
+              }
+              const row = await storage.upsertSubscription(buildSubscriptionRow({
+                stripeSub: sub,
+                userId,
+                existing,
+                // Stripe's event timestamp — the out-of-order guard in the
+                // upsert rejects writes older than the row's newest event.
+                eventAt: new Date(event.created * 1e3),
+                windows: {
+                  provisionalDays: provisionalAchWindowDays(),
+                  graceDays: pastDueGraceDays()
+                }
+              }));
               stripeLog(correlationId, "subscription_upserted", {
                 eventId: event.id,
                 type: event.type,
@@ -5382,7 +5596,8 @@ function registerStripeWebhook(app2) {
               });
             } else {
               const fresh = await retrieveStripeSubscription(subId);
-              const userId = fresh?.metadata?.dimeTimeUserId || (await storage.getSubscriptionByStripeSubscriptionId(subId))?.userId;
+              const existing = await storage.getSubscriptionByStripeSubscriptionId(subId);
+              const userId = fresh?.metadata?.dimeTimeUserId || existing?.userId;
               if (!fresh || !userId) {
                 stripeLog(correlationId, "webhook_subscription_user_miss", {
                   severity: "WARN",
@@ -5390,12 +5605,28 @@ function registerStripeWebhook(app2) {
                   stripeSubscriptionId: subId
                 });
               } else {
-                const row = await storage.upsertSubscription(subscriptionRowFromStripe(fresh, userId));
+                const row = await storage.upsertSubscription(buildSubscriptionRow({
+                  stripeSub: fresh,
+                  userId,
+                  existing,
+                  // Authoritative re-fetch from Stripe — newest state by
+                  // definition, so stamp "now" for the out-of-order guard.
+                  eventAt: authoritativeEventAt(existing),
+                  // A failed invoice payment revokes any provisional access
+                  // immediately — the subscription may still read
+                  // `incomplete` while the failure notice arrives.
+                  revokeProvisional: event.type === "invoice.payment_failed",
+                  windows: {
+                    provisionalDays: provisionalAchWindowDays(),
+                    graceDays: pastDueGraceDays()
+                  }
+                }));
                 stripeLog(correlationId, "subscription_upserted", {
                   eventId: event.id,
                   type: event.type,
                   stripeSubscriptionId: subId,
-                  status: row.status
+                  status: row.status,
+                  revokedProvisional: event.type === "invoice.payment_failed" || void 0
                 });
               }
             }
@@ -6084,6 +6315,9 @@ var SUBSCRIPTION_CONSENT_VERSION = "2026-07-14.v1";
 var SUBSCRIPTION_CONSENT_TEXT = "By selecting \u201CSubscribe\u201D, you agree to the Dime Time Terms of Service and authorize Dime Time to electronically debit your linked bank account via the ACH network for the recurring monthly subscription fee shown above, on or about the same day each month, beginning today, and, if necessary, to electronically credit your account to correct any erroneous debit. This authorization remains in effect until you cancel your subscription in the app or contact us at tim@dime-time.com. Canceling stops future charges at the end of your current billing period; fees already charged are non-refundable except as required by law. You agree that ACH transactions you authorize comply with applicable U.S. law. Dime Time is a financial technology platform and is not a bank; banking services and payment infrastructure are provided through regulated financial partners.";
 
 // server/routes/subscriptionRoutes.ts
+function entitlementWindows() {
+  return { provisionalDays: provisionalAchWindowDays(), graceDays: pastDueGraceDays() };
+}
 var subscribeSchema = z6.object({
   // Explicit re-statement that the user checked the consent box. The
   // authoritative evidence row is written server-side with server-observed
@@ -6128,10 +6362,20 @@ function registerSubscriptionRoutes(app2) {
         storage.getStripeAccountsByUserId(userId)
       ]);
       const linkedAccounts = accounts.filter((a) => a.isActive && a.status === "linked");
+      const entitlement = evaluateEntitlement(subscription ?? null);
+      if (entitlement.unexpected) {
+        subLog(randomUUID5(), "unexpected_entitlement_state", {
+          severity: "WARN",
+          userId,
+          reason: entitlement.reason,
+          status: subscription?.status
+        });
+      }
       return res.json({
         plan: PLAN_CATALOG[DEFAULT_PLAN_ID],
         subscription: subscription ?? null,
-        entitled: isSubscriptionEntitled(subscription?.status),
+        entitled: entitlement.entitled,
+        entitlementState: entitlement.state,
         bankLinked: linkedAccounts.length > 0,
         bankAccounts: linkedAccounts.map((a) => ({
           id: a.id,
@@ -6260,15 +6504,24 @@ function registerSubscriptionRoutes(app2) {
         userId,
         idempotencyKey
       });
-      const row = await storage.upsertSubscription(subscriptionRowFromStripe(stripeSub, userId));
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub,
+        userId,
+        existing: null,
+        eventAt: authoritativeEventAt(null),
+        windows: entitlementWindows()
+      }));
+      const entitlement = evaluateEntitlement(row);
       subLog(correlationId, "subscribe_complete", {
         subscriptionId: row.id,
         stripeSubscriptionId: row.stripeSubscriptionId,
-        status: row.status
+        status: row.status,
+        entitlementState: entitlement.state
       });
       const body = {
         subscription: row,
-        entitled: isSubscriptionEntitled(row.status),
+        entitled: entitlement.entitled,
+        entitlementState: entitlement.state,
         correlationId
       };
       await storage.finalizeIdempotencyKey(idempotencyKey, userId, endpoint, 201, JSON.stringify(body));
@@ -6303,7 +6556,13 @@ function registerSubscriptionRoutes(app2) {
         return res.json({ subscription: sub, correlationId });
       }
       const updated = await setCancelAtPeriodEnd(sub.stripeSubscriptionId, true);
-      const row = await storage.upsertSubscription(subscriptionRowFromStripe(updated, userId));
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub: updated,
+        userId,
+        existing: sub,
+        eventAt: authoritativeEventAt(sub),
+        windows: entitlementWindows()
+      }));
       subLog(correlationId, "subscription_cancel_scheduled", {
         userId,
         stripeSubscriptionId: sub.stripeSubscriptionId
@@ -6324,7 +6583,13 @@ function registerSubscriptionRoutes(app2) {
         return res.status(404).json({ message: "No cancellation to undo." });
       }
       const updated = await setCancelAtPeriodEnd(sub.stripeSubscriptionId, false);
-      const row = await storage.upsertSubscription(subscriptionRowFromStripe(updated, userId));
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub: updated,
+        userId,
+        existing: sub,
+        eventAt: authoritativeEventAt(sub),
+        windows: entitlementWindows()
+      }));
       subLog(correlationId, "subscription_reactivated", {
         userId,
         stripeSubscriptionId: sub.stripeSubscriptionId
@@ -6335,13 +6600,81 @@ function registerSubscriptionRoutes(app2) {
       return res.status(502).json({ message: "Failed to resume subscription. Please try again.", correlationId });
     }
   });
+  const reconcileLimiter = rateLimit3({
+    windowMs: 60 * 1e3,
+    max: 3,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+      const uid = getUserIdFromRequest(req);
+      return uid ? `u:${uid}` : `ip:${ipKeyGenerator3(req.ip ?? "")}`;
+    },
+    message: { message: "Too many refresh attempts. Try again in a minute." }
+  });
+  app2.post("/api/subscription/reconcile", reconcileLimiter, async (req, res) => {
+    const correlationId = randomUUID5();
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const local = await storage.getLatestSubscriptionByUserId(userId);
+      if (!local) return res.status(404).json({ message: "No subscription to refresh." });
+      const fresh = await retrieveStripeSubscription(local.stripeSubscriptionId);
+      if (!fresh) {
+        return res.status(502).json({ message: "Couldn't reach billing. Try again shortly.", correlationId });
+      }
+      const freshCustomer = typeof fresh.customer === "string" ? fresh.customer : fresh.customer?.id;
+      const metaUser = fresh.metadata?.dimeTimeUserId;
+      if (metaUser && metaUser !== userId || freshCustomer !== local.stripeCustomerId) {
+        subLog(correlationId, "reconcile_ownership_mismatch", {
+          severity: "ERROR",
+          userId,
+          stripeSubscriptionId: local.stripeSubscriptionId
+        });
+        return res.status(409).json({ message: "Subscription ownership mismatch. Contact support.", correlationId });
+      }
+      const row = await storage.upsertSubscription(buildSubscriptionRow({
+        stripeSub: fresh,
+        userId,
+        existing: local,
+        eventAt: authoritativeEventAt(local),
+        windows: entitlementWindows()
+      }));
+      const entitlement = evaluateEntitlement(row);
+      subLog(correlationId, "subscription_reconciled", {
+        userId,
+        stripeSubscriptionId: row.stripeSubscriptionId,
+        status: row.status,
+        entitlementState: entitlement.state
+      });
+      return res.json({
+        subscription: row,
+        entitled: entitlement.entitled,
+        entitlementState: entitlement.state,
+        correlationId
+      });
+    } catch (err) {
+      subLog(correlationId, "subscription_reconcile_failed", { severity: "ERROR", error: err?.message });
+      return res.status(502).json({ message: "Failed to refresh subscription.", correlationId });
+    }
+  });
 }
 
 // server/lib/subscriptionGate.ts
 async function hasRoundUpAutomationAccess(userId) {
   if (!isFlagEnabled("ENABLE_SUBSCRIPTIONS")) return true;
   const sub = await storage.getLatestSubscriptionByUserId(userId);
-  return isSubscriptionEntitled(sub?.status);
+  const result = evaluateEntitlement(sub ?? null);
+  if (result.unexpected) {
+    console.warn(JSON.stringify({
+      service: "SubscriptionGate",
+      event: "unexpected_entitlement_state",
+      severity: "WARN",
+      userId,
+      reason: result.reason,
+      status: sub?.status ?? null
+    }));
+  }
+  return result.entitled;
 }
 var SUBSCRIPTION_REQUIRED_RESPONSE = {
   message: "An active Dime Time subscription is required for round-up automation.",

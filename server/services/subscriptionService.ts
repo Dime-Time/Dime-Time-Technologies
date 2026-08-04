@@ -187,12 +187,19 @@ export async function cancelSubscriptionImmediately(stripeSubscriptionId: string
   await stripe.subscriptions.cancel(stripeSubscriptionId);
 }
 
-/** Retrieve the live subscription object from Stripe (webhook resync path). */
+/**
+ * Retrieve the live subscription object from Stripe (webhook resync +
+ * reconciliation path). Expands the latest invoice's PaymentIntent so the
+ * caller can authoritatively verify ACH payment state — provisional access
+ * decisions are only ever made from this expanded, provider-fetched shape.
+ */
 export async function retrieveStripeSubscription(stripeSubscriptionId: string): Promise<any | null> {
   const stripe: StripeInstance = await getStripe();
   if (!stripe) return null;
   try {
-    return await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    return await stripe.subscriptions.retrieve(stripeSubscriptionId, {
+      expand: ["latest_invoice.payment_intent"],
+    });
   } catch {
     return null;
   }
@@ -200,6 +207,190 @@ export async function retrieveStripeSubscription(stripeSubscriptionId: string): 
 
 function tsFromUnix(seconds: number | null | undefined): Date | null {
   return typeof seconds === "number" ? new Date(seconds * 1000) : null;
+}
+
+/**
+ * Authoritative provisional-ACH qualification. Runs against a subscription
+ * object FETCHED FROM STRIPE with `latest_invoice.payment_intent` expanded —
+ * never against client input. Every condition must hold:
+ *
+ *   - subscription status is `incomplete`
+ *   - the latest invoice is an object belonging to THIS subscription and
+ *     THIS customer
+ *   - the PaymentIntent is an object belonging to the same invoice/customer
+ *   - the payment method type is `us_bank_account`
+ *   - the PaymentIntent status is authoritatively `processing`
+ *
+ * The ACH mandate precondition is structural: createRecurringAchMandate
+ * throws unless the SetupIntent (with Nacha online acceptance evidence)
+ * reached `succeeded` BEFORE the subscription is ever created, so a
+ * processing us_bank_account PaymentIntent on our subscription implies a
+ * confirmed mandate. Missing/failed/requires_* /canceled PaymentIntents,
+ * cross-object mismatches, and unsupported methods all disqualify.
+ */
+export function verifyProvisionalAchEligibility(sub: any): {
+  eligible: boolean;
+  paymentIntentStatus: string | null;
+  reason: string;
+} {
+  const fail = (reason: string, piStatus: string | null = null) => ({
+    eligible: false,
+    paymentIntentStatus: piStatus,
+    reason,
+  });
+  if (!sub || sub.status !== "incomplete") return fail("not_incomplete");
+
+  const subCustomer = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+  const invoice = sub.latest_invoice;
+  if (!invoice || typeof invoice !== "object") return fail("invoice_not_expanded");
+
+  // Invoice must belong to this subscription (tolerate 2025 "basil" shape).
+  const invoiceSubRaw =
+    invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+  const invoiceSub = typeof invoiceSubRaw === "string" ? invoiceSubRaw : invoiceSubRaw?.id;
+  if (!invoiceSub || invoiceSub !== sub.id) return fail("invoice_subscription_mismatch");
+  const invoiceCustomer =
+    typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+  if (!invoiceCustomer || invoiceCustomer !== subCustomer) return fail("invoice_customer_mismatch");
+
+  // PaymentIntent must be an expanded object on this invoice.
+  const pi = invoice.payment_intent;
+  if (!pi || typeof pi !== "object") return fail("missing_payment_intent");
+  const piStatus = typeof pi.status === "string" ? pi.status : null;
+  const piCustomer = typeof pi.customer === "string" ? pi.customer : pi.customer?.id;
+  if (!piCustomer || piCustomer !== subCustomer) {
+    return fail("payment_intent_customer_mismatch", piStatus);
+  }
+  const piInvoice = typeof pi.invoice === "string" ? pi.invoice : pi.invoice?.id;
+  if (piInvoice && invoice.id && piInvoice !== invoice.id) {
+    return fail("payment_intent_invoice_mismatch", piStatus);
+  }
+
+  const methodTypes: string[] = Array.isArray(pi.payment_method_types)
+    ? pi.payment_method_types
+    : [];
+  if (!methodTypes.includes("us_bank_account")) {
+    return fail("unsupported_payment_method", piStatus);
+  }
+  if (!pi.payment_method) return fail("no_payment_method_attached", piStatus);
+
+  // Only the single authoritative in-flight state qualifies. Explicitly NOT
+  // qualifying: requires_payment_method, requires_confirmation,
+  // requires_action, canceled, failed states, or anything unknown.
+  if (piStatus !== "processing") return fail(`payment_intent_${piStatus ?? "unknown"}`, piStatus);
+
+  return { eligible: true, paymentIntentStatus: piStatus, reason: "ach_processing_verified" };
+}
+
+/**
+ * Event stamp for AUTHORITATIVE writes (subscribe response, invoice-driven
+ * re-fetch, reconcile) — these carry state freshly fetched from Stripe and
+ * must never be skipped by the out-of-order guard, even if the server clock
+ * lags the row's newest webhook timestamp. Returns max(now, newest+1s).
+ */
+export function authoritativeEventAt(
+  existing?: { lastStripeEventAt?: Date | null } | null,
+  now: Date = new Date(),
+): Date {
+  const prev = existing?.lastStripeEventAt?.getTime() ?? 0;
+  return new Date(Math.max(now.getTime(), prev + 1000));
+}
+
+/** Windows injected so tests stay pure; defaults come from server config. */
+export interface EntitlementWindowConfig {
+  provisionalDays: number;
+  graceDays: number;
+}
+
+/**
+ * Build the authoritative local row for a Stripe subscription, deriving the
+ * server-persisted entitlement windows from the previous row state:
+ *
+ *   provisionalAccessUntil — set ONCE (never extended) when a verified ACH
+ *     `processing` PaymentIntent qualifies AND a provisional window is
+ *     configured (> 0 days); carried forward while still `incomplete` and
+ *     not explicitly revoked; cleared on any other status or on revocation
+ *     (payment failure / cancellation / dispute / refund / return).
+ *
+ *   graceUntil — set ONCE when a previously-ACTIVE subscription enters
+ *     `past_due`; carried forward unchanged on duplicate/repeat past_due
+ *     events (grace never resets); cleared when the subscription leaves
+ *     past_due. A subscription that appears as past_due with no local
+ *     active history gets NO grace (fail closed).
+ */
+export function buildSubscriptionRow(args: {
+  stripeSub: any;
+  userId: string;
+  existing?: {
+    status?: string | null;
+    provisionalAccessUntil?: Date | null;
+    graceUntil?: Date | null;
+    lastPaymentIntentStatus?: string | null;
+  } | null;
+  /** Stripe event timestamp (event.created) or "now" for authoritative re-fetches. */
+  eventAt: Date;
+  /** Force-revoke provisional access (payment failed/canceled/disputed/refunded/returned). */
+  revokeProvisional?: boolean;
+  windows: EntitlementWindowConfig;
+  now?: Date;
+}): InsertSubscription {
+  const { stripeSub, userId, existing, eventAt, revokeProvisional, windows } = args;
+  const now = args.now ?? new Date();
+  const base = subscriptionRowFromStripe(stripeSub, userId);
+
+  // Product/price integrity: the approved plan's lookup_key must match when
+  // the provider includes one. A mismatch marks the row's plan as
+  // "unsupported", which the central evaluator fails closed on.
+  const item = stripeSub.items?.data?.[0];
+  const lookupKey: string | undefined = item?.price?.lookup_key ?? undefined;
+  const approved = PLAN_CATALOG[(base.plan as PlanId) ?? "debt"];
+  if (!approved || (lookupKey !== undefined && lookupKey !== null && lookupKey !== approved.stripeLookupKey)) {
+    base.plan = "unsupported" as any;
+  }
+
+  // Verified PaymentIntent status (only available when the invoice+PI were
+  // expanded by a provider fetch; otherwise carry the last verified value).
+  const verification = verifyProvisionalAchEligibility(stripeSub);
+  const piExpanded =
+    typeof stripeSub.latest_invoice === "object" &&
+    typeof stripeSub.latest_invoice?.payment_intent === "object";
+  const lastPaymentIntentStatus = piExpanded
+    ? verification.paymentIntentStatus
+    : existing?.lastPaymentIntentStatus ?? null;
+
+  // --- provisionalAccessUntil ---
+  let provisionalAccessUntil: Date | null = null;
+  if (base.status === "incomplete" && !revokeProvisional) {
+    if (existing?.provisionalAccessUntil) {
+      // Never extended — duplicates/out-of-order events keep the original.
+      provisionalAccessUntil = existing.provisionalAccessUntil;
+    } else if (verification.eligible && windows.provisionalDays > 0) {
+      provisionalAccessUntil = new Date(
+        now.getTime() + windows.provisionalDays * 24 * 60 * 60 * 1000,
+      );
+    }
+    // No configured window (founder decision pending) or not verified → null.
+  }
+
+  // --- graceUntil ---
+  let graceUntil: Date | null = null;
+  if (base.status === "past_due") {
+    if (existing?.graceUntil) {
+      // Grace never resets on duplicate/repeat events.
+      graceUntil = existing.graceUntil;
+    } else if (existing?.status === "active" && windows.graceDays > 0) {
+      graceUntil = new Date(now.getTime() + windows.graceDays * 24 * 60 * 60 * 1000);
+    }
+    // past_due without a previously-active local history → no grace.
+  }
+
+  return {
+    ...base,
+    provisionalAccessUntil,
+    graceUntil,
+    lastPaymentIntentStatus,
+    lastStripeEventAt: eventAt,
+  };
 }
 
 /**
