@@ -12,11 +12,11 @@
 - [iOS build versioning](ios-build-versioning.md) — Info.plist is ONLY version source of truth; never reintroduce version-overwrite build phases; never set server.url; build+cap sync before CI.
 - [Android package ID](android-package-id.md) — Android is com.dimetime.app, iOS is com.dimetime.mobile; mismatch is INTENTIONAL+permanent, never reconcile.
 - [Google Play prep](google-play-prep.md) — versionCode=iOS build number; minimum-permission manifest; env-var-only signing (release fails loudly, debug works); founder steps inside.
-- [Production email delivery config](email-delivery-config.md) — email needs RESEND_API_KEY + PUBLIC_APP_URL (prod) + verified domain/EMAIL_FROM + republish; missing pieces fail (some silently).
+- [Production email delivery config](email-delivery-config.md) — RESEND_API_KEY rotated Aug 4 2026 (tested 200); requestSecrets never returns values to agent — test via $ENV in shell; signup now returns verificationEmailSent (no false success).
 - [Design subagent restyle audit](design-subagent-restyle-audit.md) — after DESIGN-subagent restyles, diff data-testids vs HEAD and scan for silently deleted logic before declaring done.
 - [Turnstile contact form](turnstile-contact-form.md) — captcha keys scoped to dime-time.com; dev error 110200 is EXPECTED; proof = founder submits live form → contact_submissions.
 - [Maintenance-phase spend directive](spend-freeze-2026-07.md) — 2026-07-29: no tasks/optional dev without explicit ask; backlog-only suggestions; approval = spending real money.
-- [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 review deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, PLAID_WEBHOOK_SECRET, no CSP.
+- [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, no CSP. PLAID_WEBHOOK_SECRET now fail-closed (resolved).
 - [Masked Plaid token contract](masked-plaid-tokens.md) — listed bank accounts carry '[encrypted]' placeholder tokens; live Plaid calls must use getPlaidAccessToken(id) or they silently fail.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
 - [Auto-sweep removed](auto-sweep-removed.md) — dormant sweep engine deliberately deleted 2026-07-26; flag+schema vestigial; live round-up system is separate, untouched.
@@ -45,3 +45,4 @@
 - [Android / Google Play launch](android-play-launch.md) — kit in attached_assets/play-store-assets/; assetlinks.json MUST wait for Play app-signing SHA-256; keystore founder-run.
 - [Client component testing](client-component-testing.md) — interactive React tests under tsx --test: happy-dom + fetch mock + asset-stub loader; no vitest/jsdom.
 - [Store listing AEO](store-listing-aeo.md) — paste-ready Play/iOS AEO pack in attached_assets/aeo-store-listings/; NEVER paste Play listing edits mid-review; iOS promo text = only no-review field.
+- [Email verification enforcement](email-verification-enforcement.md) — REQUIRE_EMAIL_VERIFICATION flag OFF by default; prod boot FAILS unless explicitly set; one middleware/one prefix list; next deploy must set it.

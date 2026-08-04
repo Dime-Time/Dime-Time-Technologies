@@ -36,6 +36,16 @@ export function validateProductionSecrets(): void {
     missing.push("PLAID_TOKEN_ENCRYPTION_KEY");
   }
 
+  // REQUIRE_EMAIL_VERIFICATION must be EXPLICITLY configured in production —
+  // never silently guessed. Set it to "false" for the initial controlled
+  // deployment, smoke-test resend/verify, then flip to "true" to activate
+  // server-side enforcement. Any of 1/true/yes/on/0/false/no/off is valid.
+  const remv = (process.env.REQUIRE_EMAIL_VERIFICATION ?? "").trim().toLowerCase();
+  const remvValid = ["1", "true", "yes", "on", "0", "false", "no", "off"].includes(remv);
+  if (!remvValid) {
+    missing.push("REQUIRE_EMAIL_VERIFICATION (must be explicitly 'true' or 'false' in production)");
+  }
+
   // Plaid production mode requires its own secret (Plaid issues different
   // secrets per environment). Fail boot hard rather than letting every Plaid
   // feature 500 at runtime with only a console warning.

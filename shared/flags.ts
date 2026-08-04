@@ -24,7 +24,8 @@ export type FlagName =
   | "ENABLE_BETA_BANNER"
   | "ENABLE_AUTO_ROUNDUP_SWEEPS"
   | "ENABLE_DEBT_IMPORT"
-  | "ENABLE_SUBSCRIPTIONS";
+  | "ENABLE_SUBSCRIPTIONS"
+  | "REQUIRE_EMAIL_VERIFICATION";
 
 export interface FlagDefinition {
   /** Production default when the env var is unset or invalid. */
@@ -81,6 +82,15 @@ export const FLAG_DEFINITIONS: Record<FlagName, FlagDefinition> = {
       "applied anywhere (today's behavior is unchanged), and all subscription UI " +
       "is hidden. Requires ENABLE_STRIPE_ACH — the server refuses to boot if " +
       "SUBSCRIPTIONS is on while STRIPE_ACH is off.",
+  },
+  REQUIRE_EMAIL_VERIFICATION: {
+    defaultValue: false,
+    description:
+      "Server-side enforcement of email verification. ON blocks unverified " +
+      "users (403 EMAIL_VERIFICATION_REQUIRED) from all financial/sensitive " +
+      "routes while keeping the recovery surface (resend, verify, logout, " +
+      "support, account deletion) available. Production startup REQUIRES this " +
+      "var to be explicitly set (validateEnv) — it is never silently guessed.",
   },
 };
 

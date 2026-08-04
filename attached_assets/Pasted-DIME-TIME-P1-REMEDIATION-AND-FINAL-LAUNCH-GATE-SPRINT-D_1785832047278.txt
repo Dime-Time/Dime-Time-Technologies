@@ -1,0 +1,566 @@
+DIME TIME — P1 REMEDIATION AND FINAL LAUNCH-GATE SPRINT
+Date: August 4, 2026
+Starting commit: 5f11d4b
+Current audit verdict: CONDITIONAL GO
+Objective: Resolve or conclusively downgrade every P1 finding before the LinkedIn launch
+
+AUTHORIZATION
+
+You are authorized to make carefully scoped local code and test changes needed to remediate the five P1 findings identified in the August 4 audit.
+
+You are NOT authorized to:
+
+* Deploy or republish production
+* Commit, push, or merge
+* Change production environment variables or feature flags
+* Change Stripe, Plaid, ACH, subscription, or money-movement settings
+* Initiate real payments, transfers, subscriptions, or bank connections
+* Modify production database records
+* Bulk-update users
+* Send emails to real users
+* Rotate or expose secrets
+* Increment mobile build numbers
+* Submit builds to Apple or Google
+* Make unrelated UI, architecture, or feature changes
+
+Complete the local remediation, testing, and release preparation, then stop and return a report for approval.
+
+Protect all existing payment guardrails. Do not modify:
+
+* ENABLE_REAL_TRANSFERS
+* ENABLE_STRIPE_ACH
+* ENABLE_AUTO_ROUNDUP_SWEEPS
+* Per-user transfer authorization
+* $1 first-transfer limit
+* $5 daily limit
+* One-transfer-per-day limit
+* Idempotency
+* Webhook signature verification
+* Webhook deduplication
+* ACH mandate evidence
+* Audit logging
+
+==================================================
+PHASE 0 — BASELINE AND CHANGE CONTROL
+=====================================
+
+Before changing anything, record:
+
+* Current branch
+* Current commit SHA
+* Git status
+* Ahead/behind status relative to origin/main
+* Existing test count
+* Existing P0/P1/P2/P3 counts
+* Current web, Android, and iOS version/build values
+* Current first-party file count
+
+Confirm the starting tree is clean.
+
+Create a precise change plan tied only to these five P1 findings:
+
+1. Android verification-email delivery is not proven.
+2. Legacy users still have unsalted SHA-256 password hashes.
+3. Email verification is not enforced; only 4 of 24 users were verified during the audit.
+4. Native bundled assets are stale before the next mobile release.
+5. Production vulnerability results are distorted by build/CLI packages located in production dependencies.
+
+Do not expand the scope unless another P0 or P1 issue is discovered. If a new P0 is found, stop and report it before continuing.
+
+==================================================
+PHASE 1 — CLOSE THE ANDROID EMAIL INCIDENT
+==========================================
+
+Do not assume that spam-folder placement was the root cause. Do not assume the new Resend key permanently fixed the problem. Trace the current path using evidence.
+
+Inspect and verify:
+
+* Android signup UI
+* Android resend-verification UI
+* Frontend API request
+* Server endpoint
+* Request validation
+* Rate limiting
+* Token creation
+* Token storage
+* Resend API call
+* Provider response handling
+* User-facing success and failure messages
+* Production base URL
+* Email template
+* Verification URL
+* Verification completion endpoint
+* Android link-opening behavior
+* Login behavior after verification
+* Redacted logs and correlation IDs
+* Existing automated test coverage
+
+Confirm that the application cannot show “email sent” when Resend returns an error, timeout, rejected request, or other non-success response.
+
+Confirm that:
+
+* Sender domain is dime-time.com.
+* Links use only https://dime-time.com.
+* No Replit preview, localhost, or dimetime.com URL exists in production email paths.
+* Tokens are cryptographically secure, time-limited, hashed at rest, atomically consumed, and single-use.
+* Tokens, recipient addresses, and reset links are excluded from logs, Sentry, and analytics.
+* Resend works for an already-created but unverified Android account.
+* Resend has a reasonable cooldown and abuse limit.
+* Expired and consumed links produce understandable messages.
+* A successful verification immediately updates the account and allows the correct login flow.
+
+Add or improve automated tests covering:
+
+* Successful initial verification email
+* Successful resend
+* Provider failure
+* Provider timeout
+* Invalid provider response
+* Missing provider configuration
+* Expired token
+* Consumed token
+* Duplicate click
+* Concurrent token consumption
+* Resend cooldown
+* Rate limiting
+* Correct production URL
+* No false-success response
+* No token or email leakage
+
+MANUAL TEST CHECKPOINT
+
+The final production proof must come from Franco using the live Google Play application:
+
+1. Open the installed Google Play version.
+2. Attempt login with the unverified account.
+3. Tap “Resend verification email” exactly once.
+4. Record the exact Central Time timestamp.
+5. Check inbox, spam, junk, and promotions.
+6. Open the verification link.
+7. Confirm the success page.
+8. Return to Dime Time.
+9. Log in successfully.
+10. Log out and log in again.
+
+Do not perform this test on Franco’s behalf and do not request his password.
+
+Continue working on the independent local remediation items while waiting for this manual result. Mark the incident NOT PROVEN until Tim supplies the result.
+
+If the test fails, provide the exact timestamp and masked-email lookup procedure needed to trace the request through application logs and Resend events.
+
+==================================================
+PHASE 2 — REPLACE LEGACY SHA-256 PASSWORD SECURITY
+==================================================
+
+First document the current password implementation precisely:
+
+* Current algorithm for new users
+* Current algorithm for password resets
+* How legacy SHA-256 hashes are recognized
+* Number of legacy accounts, using an aggregate read-only query
+* Whether any legacy account is currently active
+* Whether login-time migration already exists
+* Test coverage
+
+Do not expose hashes or user identities.
+
+Implement an adaptive password-hashing standard for every new or changed password. Prefer Argon2id with well-supported production-safe parameters. If the project already has an approved adaptive hashing dependency, use the existing standard instead of adding a second one.
+
+Required behavior:
+
+* New signups use the adaptive hash.
+* Password resets use the adaptive hash.
+* Password changes use the adaptive hash.
+* Existing adaptive hashes continue working.
+* Legacy SHA-256 users have a safe migration path.
+* Successful authentication of a valid legacy password immediately replaces the legacy hash with an adaptive hash in the same controlled operation.
+* Failed login never changes the hash.
+* Logs never identify which hashing algorithm a specific named user has.
+* Timing differences do not create an obvious user-enumeration or hash-type oracle.
+* No plaintext password is stored, logged, cached, or returned.
+* A database failure during migration does not leave a corrupt credential.
+* Sessions behave correctly after migration.
+* Password-reset completion invalidates prior sessions and tokens.
+
+For dormant legacy accounts that cannot be transparently migrated without a successful login, prepare a safe forced-reset policy. Do not bulk-change database records or activate the policy without approval.
+
+Add tests for:
+
+* New adaptive password
+* Correct adaptive login
+* Incorrect adaptive login
+* Correct legacy login and migration
+* Incorrect legacy login without migration
+* Database failure during migration
+* Password reset producing an adaptive hash
+* Session invalidation
+* Concurrent legacy login attempts
+* Malformed stored hash
+* No plaintext or hash leakage
+
+Report the exact post-remediation number of legacy hashes that would remain until those users return or complete a reset. Do not claim this finding is closed unless the remaining risk and forced-reset path are explicit.
+
+==================================================
+PHASE 3 — ENFORCE EMAIL VERIFICATION SAFELY
+===========================================
+
+The current state of 4 verified users out of 24 is not acceptable for a public fintech launch. Implement server-side enforcement with a safe recovery path.
+
+Required behavior:
+
+* New users may create an account but cannot access financial or sensitive functionality until verified.
+* An unverified user may establish only a restricted session sufficient to:
+
+  * View the verification-required screen
+  * Resend verification
+  * Check verification status
+  * Log out
+  * Access support and legal pages
+* Unverified users must be blocked server-side—not only hidden in the UI—from:
+
+  * Bank linking
+  * Plaid
+  * Financial Connections
+  * Debt import
+  * Account and transaction data
+  * Payment scheduling
+  * ACH authorization
+  * Real transfers
+  * Subscription activation
+  * Crypto functionality
+  * Admin functionality
+  * Sensitive settings
+* A verified user retains normal access.
+* Verification takes effect immediately and safely.
+* A user cannot change email and retain the old verified status without re-verification.
+* Resend has a clear button, cooldown, rate limit, and accurate error state.
+* Existing unverified users are routed to the recovery screen rather than encountering a blank page, redirect loop, generic 401, or silent failure.
+
+Use the existing centralized feature-flag and startup-validation architecture.
+
+If staged enforcement requires a new flag, use an explicit name such as:
+
+REQUIRE_EMAIL_VERIFICATION
+
+Requirements for the flag:
+
+* It must be explicitly configured in production.
+* Production startup must not silently guess its value.
+* Non-production behavior must be deterministic.
+* All sensitive server routes must use a centralized enforcement mechanism.
+* Do not scatter inconsistent checks across unrelated route handlers.
+* Deployment must initially occur under a controlled setting, followed by testing, before enforcement is activated.
+* Do not change the production value during this task.
+
+Add tests proving:
+
+* Verified users retain access.
+* Unverified users receive restricted access only.
+* Every sensitive route is blocked server-side.
+* Resend remains available.
+* Verification unlocks access.
+* Email change removes or correctly re-establishes verification.
+* Feature-flag behavior is deterministic.
+* Missing production configuration is detected.
+* No redirect loop exists on web, Android, or iOS.
+* Payment and bank-linking controls remain independently enforced.
+
+Produce a complete list of protected routes and evidence that none were missed.
+
+==================================================
+PHASE 4 — VERIFY PRODUCTION FEATURE FLAGS
+=========================================
+
+Read and report presence and current state—without values for secrets—for:
+
+* ENABLE_SUBSCRIPTIONS
+* ENABLE_DEBT_IMPORT
+
+Also report:
+
+* Code default
+* Production presence
+* Current production state
+* Startup-validation behavior
+* Call sites
+* User-facing effect
+* Behavior when absent
+* Whether the flag fails open or closed
+* Whether current App Store and Google Play descriptions match the enabled behavior
+
+Do not change either flag.
+
+If a flag is missing, do not add it to production. Report the exact safe configuration action Tim must approve.
+
+==================================================
+PHASE 5 — CORRECT DEPENDENCY CLASSIFICATION
+===========================================
+
+Identify every package currently listed as a production dependency that is used only for:
+
+* Building
+* Linting
+* Testing
+* Code generation
+* Database CLI operations
+* Type checking
+* Local development
+* Release tooling
+
+Do not move packages based only on their names. Trace actual runtime imports and deployment requirements.
+
+Before moving anything, determine:
+
+* Whether Replit installs devDependencies during the build phase
+* Whether production startup occurs after a production-only install
+* Whether the package is imported by server runtime code
+* Whether Codemagic depends on the package
+* Whether Android or iOS build scripts depend on it
+* Whether moving it would break deployment
+
+Move only packages proven to be build/CLI/development-only. Update the lockfile using the correct package manager.
+
+Then run the dependency vulnerability scan again and report separately:
+
+* Production vulnerabilities
+* Development-only vulnerabilities
+* Severity
+* Exploitability in Dime Time
+* Direct versus transitive dependency
+* Available safe upgrade
+* Breaking-change risk
+
+Do not run npm audit fix or perform broad version upgrades.
+
+If the P1 count was inflated and the true runtime count is lower, show the evidence required to downgrade or close the finding.
+
+==================================================
+PHASE 6 — REBUILD AND SYNCHRONIZE MOBILE ASSETS
+===============================================
+
+After the approved source changes are complete:
+
+* Build the current web frontend.
+* Synchronize the correct bundled web assets into Android.
+* Synchronize the correct bundled web assets into iOS.
+* Verify the contents and hashes correspond to the newly built frontend.
+* Confirm no server.url is introduced.
+* Confirm production API routing remains correct.
+* Confirm Android package remains com.dimetime.app.
+* Confirm iOS bundle remains com.dimetime.mobile.
+* Confirm MainActivity package alignment.
+* Confirm AASA remains correct.
+* Confirm assetlinks.json remains correct.
+* Confirm Plaid OAuth links remain correct.
+* Confirm verification and password-reset links remain correct.
+
+Do not increment versionName, versionCode, iOS version, or iOS build number yet.
+
+Report the exact versions currently present and recommend the next build numbers, but wait for approval before changing them.
+
+Because the prior production build was skipped due to tracked server-dist mutation, validate the complete production build in an isolated temporary copy or worktree.
+
+Required isolated-build checks:
+
+* Production build completes successfully.
+* The source working tree remains unchanged.
+* Generated output is recorded.
+* Unexpected differences are reported.
+* No secrets are embedded in client assets.
+* No development or preview URL is embedded.
+* Android and iOS assets match the intended frontend.
+* The resulting app can reach the production backend.
+
+Do not refactor the entire build pipeline solely to make the audit easier. Report any build-discipline concern separately.
+
+==================================================
+PHASE 7 — COMPLETE VALIDATION
+=============================
+
+Run all existing and new safe checks:
+
+* Entire unit-test suite
+* Integration tests
+* Authentication tests
+* Email tests
+* Password-migration tests
+* Verification-enforcement tests
+* Payment-safety tests
+* Webhook tests
+* Redaction tests
+* TypeScript typecheck
+* Lint
+* Isolated production build
+* Android build/lint/test checks available in the environment
+* iOS static configuration checks
+* Dependency audit
+* Secret scan
+* Git diff and git status
+
+The previous baseline was 134/134 passing. The new result must include:
+
+* Total tests
+* Passed
+* Failed
+* Skipped
+* New tests added
+* Exact commands
+* Exit codes
+* Warnings
+* Duration
+* Whether tracked files changed as intended
+* Whether any unrelated files changed
+
+Review every changed file manually after automated testing.
+
+==================================================
+FINAL RESPONSE REQUIRED
+=======================
+
+Return one self-contained report titled:
+
+DIME TIME — P1 REMEDIATION AND FINAL LAUNCH-GATE REPORT
+
+Include:
+
+1. EXECUTIVE VERDICT
+
+Choose exactly one:
+
+* READY FOR CONTROLLED DEPLOYMENT
+* MORE WORK REQUIRED
+* BLOCKED ON MANUAL VERIFICATION
+
+Do not call Dime Time ready for LinkedIn launch yet. This phase only determines whether the fixes are ready for controlled deployment.
+
+2. BASELINE
+
+* Starting commit
+* Branch
+* Initial test count
+* Initial findings
+* Initial versions
+* Initial git status
+
+3. FILES CHANGED
+
+For every file:
+
+* Path
+* Purpose
+* Finding addressed
+* Important behavior changed
+
+4. ANDROID EMAIL INCIDENT
+
+* Evidence found
+* Code fixes, if any
+* Automated results
+* Franco manual-test status
+* Whether root cause is proven
+* PASS/FAIL/NOT PROVEN
+
+5. PASSWORD SECURITY
+
+* Old behavior
+* New algorithm and parameters
+* Migration behavior
+* Aggregate legacy-account count
+* Remaining dormant-account plan
+* Tests
+* Whether P1 is closed
+
+6. EMAIL-VERIFICATION ENFORCEMENT
+
+* Restricted-session behavior
+* Complete protected-route list
+* Feature-flag behavior
+* Existing-user recovery
+* Tests
+* Whether P1 is closed
+
+7. FEATURE-FLAG STATUS
+
+Report ENABLE_SUBSCRIPTIONS and ENABLE_DEBT_IMPORT without exposing secrets.
+
+8. DEPENDENCY FINDINGS
+
+* Packages moved
+* Evidence they are non-runtime
+* Vulnerability counts before and after
+* Remaining production vulnerabilities
+* Whether P1 is closed
+
+9. MOBILE ASSET ALIGNMENT
+
+* Web build identifier
+* Android asset status
+* iOS asset status
+* Current versions
+* Recommended next versions/builds
+* Whether P1 is closed
+
+10. TEST RESULTS
+
+Provide every command, count, failure, warning, and exit code.
+
+11. SECURITY AND MONEY-SAFETY REGRESSION CHECK
+
+Explicitly confirm whether any payment flag, limit, allowlist, webhook, idempotency, mandate, or audit behavior changed.
+
+The expected answer is “no.” If anything changed, explain it prominently.
+
+12. REMAINING P0/P1/P2/P3 COUNTS
+
+For each remaining P0 or P1:
+
+* Evidence
+* Exact blocker
+* Required next action
+
+13. DEPLOYMENT PLAN — DO NOT EXECUTE
+
+Give the precise sequence for:
+
+* Controlled web/backend deployment
+* Required production environment configuration
+* Smoke tests
+* Enabling verification enforcement
+* Android build
+* iOS build
+* Store submissions
+* Post-deployment verification
+* LinkedIn launch approval
+
+14. COPY-PASTE HANDOFF FOR CHATGPT
+
+End with a concise handoff containing:
+
+* Verdict
+* Files changed
+* Test results
+* Android email proof status
+* Password migration status
+* Verification-enforcement status
+* Feature flags
+* Dependency vulnerability count
+* Native asset status
+* Remaining P0/P1 count
+* Exact next action
+* Confirmation that nothing was deployed, pushed, submitted, or changed in production
+
+STOP CONDITIONS
+
+Stop immediately and report before proceeding if:
+
+* A new P0 is discovered.
+* A payment or transfer safety control fails.
+* Password migration could lock out users.
+* Verification enforcement would remove the resend/recovery path.
+* Production dependency cleanup would break deployment.
+* Native sync would change package or bundle identifiers.
+* A secret appears in tracked files or generated client assets.
+* The working tree contains unrelated user changes.
+* The correct remediation requires production database mutation.
+
+Complete the scoped remediation and validation, return the report, and wait for Tim’s approval. Do not deploy, push, modify production, or submit store builds.

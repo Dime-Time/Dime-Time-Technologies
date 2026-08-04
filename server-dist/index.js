@@ -210,6 +210,10 @@ var FLAG_DEFINITIONS = {
   ENABLE_SUBSCRIPTIONS: {
     defaultValue: false,
     description: "Gate the Stripe Billing subscription feature (Dime Time Debt $2.99/mo). OFF means /api/subscription routes are not mounted, no premium gating is applied anywhere (today's behavior is unchanged), and all subscription UI is hidden. Requires ENABLE_STRIPE_ACH \u2014 the server refuses to boot if SUBSCRIPTIONS is on while STRIPE_ACH is off."
+  },
+  REQUIRE_EMAIL_VERIFICATION: {
+    defaultValue: false,
+    description: "Server-side enforcement of email verification. ON blocks unverified users (403 EMAIL_VERIFICATION_REQUIRED) from all financial/sensitive routes while keeping the recovery surface (resend, verify, logout, support, account deletion) available. Production startup REQUIRES this var to be explicitly set (validateEnv) \u2014 it is never silently guessed."
   }
 };
 var FLAG_NAMES = Object.keys(FLAG_DEFINITIONS);
@@ -258,6 +262,11 @@ function validateProductionSecrets() {
   const missing = [];
   if (!process.env.PLAID_TOKEN_ENCRYPTION_KEY) {
     missing.push("PLAID_TOKEN_ENCRYPTION_KEY");
+  }
+  const remv = (process.env.REQUIRE_EMAIL_VERIFICATION ?? "").trim().toLowerCase();
+  const remvValid = ["1", "true", "yes", "on", "0", "false", "no", "off"].includes(remv);
+  if (!remvValid) {
+    missing.push("REQUIRE_EMAIL_VERIFICATION (must be explicitly 'true' or 'false' in production)");
   }
   const plaidEnv = (process.env.PLAID_ENV || "sandbox").toLowerCase();
   if (plaidEnv === "production") {
@@ -2542,8 +2551,7 @@ var DimeTokenService = class {
 var dimeTokenService = new DimeTokenService();
 
 // server/routes.ts
-import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
-import bcrypt from "bcrypt";
+import { createHash as createHash3 } from "crypto";
 import rateLimit4 from "express-rate-limit";
 import { z as z8 } from "zod";
 
@@ -6612,6 +6620,118 @@ function stripRaw(t) {
   return rest;
 }
 
+// server/lib/passwords.ts
+import bcrypt from "bcrypt";
+import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "crypto";
+var BCRYPT_COST = 12;
+function hashPasswordSha256(password) {
+  return createHash2("sha256").update(password).digest("hex");
+}
+async function hashPasswordBcrypt(password) {
+  return bcrypt.hash(password, BCRYPT_COST);
+}
+function constantTimeCompare(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual2(bufA, bufB);
+}
+async function verifyPassword(password, hash, algo) {
+  try {
+    if (algo === "bcrypt") {
+      return await bcrypt.compare(password, hash);
+    }
+    const sha256Hash = hashPasswordSha256(password);
+    return constantTimeCompare(sha256Hash, hash);
+  } catch {
+    return false;
+  }
+}
+
+// server/lib/verificationCooldown.ts
+var RESEND_COOLDOWN_SECONDS = 60;
+var lastSendByUser = /* @__PURE__ */ new Map();
+function checkAndTouchResendCooldown(userId, now = Date.now()) {
+  const last = lastSendByUser.get(userId);
+  if (last !== void 0) {
+    const elapsed = (now - last) / 1e3;
+    if (elapsed < RESEND_COOLDOWN_SECONDS) {
+      return {
+        allowed: false,
+        retryAfterSeconds: Math.ceil(RESEND_COOLDOWN_SECONDS - elapsed)
+      };
+    }
+  }
+  lastSendByUser.set(userId, now);
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+function clearResendCooldown(userId) {
+  lastSendByUser.delete(userId);
+}
+
+// server/middleware/requireVerifiedEmail.ts
+var VERIFICATION_PROTECTED_PREFIXES = [
+  "/api/debts",
+  // debt CRUD + /api/debts/import + /api/debts/provider + refresh
+  "/api/transactions",
+  "/api/transfers",
+  "/api/payments",
+  "/api/accelerated-payment",
+  "/api/round-up-settings",
+  "/api/apply-round-ups",
+  "/api/dashboard-summary",
+  "/api/crypto-purchases",
+  "/api/crypto-summary",
+  "/api/plaid",
+  // link tokens, exchange, accounts, balances, transactions
+  "/api/coinbase",
+  "/api/axos",
+  "/api/mercury",
+  "/api/stripe",
+  // ACH authorize/debit, financial connections (webhook exempted below)
+  "/api/subscription",
+  "/api/dime-token",
+  // Dime Time Token balance/stake/award
+  "/api/notifications",
+  "/api/admin"
+];
+var EXEMPT_PATHS = [
+  "/webhooks/stripe",
+  "/webhooks/plaid"
+];
+function isProtectedPath(path4) {
+  if (EXEMPT_PATHS.some((p) => path4 === p || path4.startsWith(p + "/"))) return false;
+  return VERIFICATION_PROTECTED_PREFIXES.some(
+    (p) => path4 === p || path4.startsWith(p + "/")
+  );
+}
+var EMAIL_VERIFICATION_REQUIRED_RESPONSE = {
+  code: "EMAIL_VERIFICATION_REQUIRED",
+  message: "Please verify your email address to use this feature."
+};
+async function requireVerifiedEmail(req, res, next) {
+  if (!isFlagEnabled("REQUIRE_EMAIL_VERIFICATION")) return next();
+  if (!isProtectedPath(req.path)) return next();
+  const userId = getUserIdFromRequest(req);
+  if (!userId) return next();
+  try {
+    const user = await storage.getUser(userId);
+    if (!user) return next();
+    if (!user.emailVerifiedAt) {
+      res.status(403).json(EMAIL_VERIFICATION_REQUIRED_RESPONSE);
+      return;
+    }
+    return next();
+  } catch (err) {
+    console.error(
+      "requireVerifiedEmail lookup failed:",
+      err instanceof Error ? err.message : "unknown"
+    );
+    res.status(503).json({ message: "Please try again in a moment." });
+    return;
+  }
+}
+
 // server/routes/notificationRoutes.ts
 import { Router } from "express";
 
@@ -8108,7 +8228,7 @@ async function issueAndSendVerificationEmail(req, user) {
     console.error("Failed to invalidate prior verification tokens", err instanceof Error ? err.message : "unknown");
   }
   const rawToken = randomBytes2(32).toString("base64url");
-  const tokenHash = createHash2("sha256").update(rawToken).digest("hex");
+  const tokenHash = createHash3("sha256").update(rawToken).digest("hex");
   const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MINUTES * 60 * 1e3);
   try {
     await storage.createEmailVerificationToken({
@@ -8139,26 +8259,6 @@ async function issueAndSendVerificationEmail(req, user) {
     return { ok: false, reason: "send_failed", error: sendResult.error };
   }
   return { ok: true, provider: sendResult.provider };
-}
-var BCRYPT_COST = 12;
-function hashPasswordSha256(password) {
-  return createHash2("sha256").update(password).digest("hex");
-}
-async function hashPasswordBcrypt(password) {
-  return bcrypt.hash(password, BCRYPT_COST);
-}
-function constantTimeCompare(a, b) {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual2(bufA, bufB);
-}
-async function verifyPassword(password, hash, algo) {
-  if (algo === "bcrypt") {
-    return bcrypt.compare(password, hash);
-  }
-  const sha256Hash = hashPasswordSha256(password);
-  return constantTimeCompare(sha256Hash, hash);
 }
 function stripSensitiveFields(user) {
   if (!user) return user;
@@ -8222,7 +8322,7 @@ async function verifyTurnstileToken(token, req) {
 function generateAuthToken(userId) {
   const timestamp2 = Date.now();
   const payload = `${userId}:${timestamp2}`;
-  const signature = createHash2("sha256").update(payload + getSessionSecret2()).digest("hex").substring(0, 16);
+  const signature = createHash3("sha256").update(payload + getSessionSecret2()).digest("hex").substring(0, 16);
   return Buffer.from(`${payload}:${signature}`).toString("base64");
 }
 async function registerRoutes(app2) {
@@ -8240,6 +8340,7 @@ async function registerRoutes(app2) {
     res.sendFile(assetlinksPath);
   });
   app2.use(express2.static(publicDir, { index: false }));
+  app2.use(requireVerifiedEmail);
   const guidesDir = path.resolve(process.cwd(), "server", "guides");
   const guideFiles = {
     "_style.css": "_style.css",
@@ -8329,11 +8430,25 @@ async function registerRoutes(app2) {
       }
       req.session.userId = user.id;
       const authToken = generateAuthToken(user.id);
-      void issueAndSendVerificationEmail(req, {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName
-      });
+      let verificationEmailSent = false;
+      try {
+        const sendOutcome = await Promise.race([
+          issueAndSendVerificationEmail(req, {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName
+          }),
+          new Promise(
+            (resolve) => setTimeout(() => resolve({ ok: false }), 1e4).unref?.()
+          )
+        ]);
+        verificationEmailSent = sendOutcome.ok;
+      } catch (sendErr) {
+        console.error(
+          "Signup verification email failed:",
+          sendErr instanceof Error ? sendErr.message : "unknown"
+        );
+      }
       req.session.save((err) => {
         if (err) {
           console.error("Session save error");
@@ -8342,7 +8457,8 @@ async function registerRoutes(app2) {
         res.status(201).json({
           success: true,
           user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-          authToken
+          authToken,
+          verificationEmailSent
         });
       });
     } catch (error) {
@@ -8417,7 +8533,7 @@ async function registerRoutes(app2) {
           baseUrl = `${proto}://${host}`;
         }
         const rawToken = randomBytes2(32).toString("base64url");
-        const tokenHash = createHash2("sha256").update(rawToken).digest("hex");
+        const tokenHash = createHash3("sha256").update(rawToken).digest("hex");
         const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 * 1e3);
         await storage.createPasswordResetToken({
           userId: user.id,
@@ -8457,7 +8573,7 @@ async function registerRoutes(app2) {
       if (password.length < 8) {
         return res.status(400).json({ message: "Password must be at least 8 characters" });
       }
-      const tokenHash = createHash2("sha256").update(token).digest("hex");
+      const tokenHash = createHash3("sha256").update(token).digest("hex");
       const record = await storage.consumePasswordResetToken(tokenHash);
       if (!record) {
         return res.status(400).json({ message: "Invalid, expired, or already-used reset link" });
@@ -8492,12 +8608,20 @@ async function registerRoutes(app2) {
       if (!user.email) {
         return res.status(400).json({ message: "No email on file for this account" });
       }
+      const cooldown = checkAndTouchResendCooldown(user.id);
+      if (!cooldown.allowed) {
+        res.setHeader("Retry-After", String(cooldown.retryAfterSeconds));
+        return res.status(429).json({
+          message: `Please wait ${cooldown.retryAfterSeconds}s before requesting another verification email.`
+        });
+      }
       const result = await issueAndSendVerificationEmail(req, {
         id: user.id,
         email: user.email,
         firstName: user.firstName
       });
       if (!result.ok) {
+        clearResendCooldown(user.id);
         return res.status(503).json({
           message: "We couldn't send the verification email right now. Please try again in a moment."
         });
@@ -8514,7 +8638,7 @@ async function registerRoutes(app2) {
       if (!token) {
         return res.status(400).json({ message: "Verification token is required" });
       }
-      const tokenHash = createHash2("sha256").update(token).digest("hex");
+      const tokenHash = createHash3("sha256").update(token).digest("hex");
       const record = await storage.consumeEmailVerificationToken(tokenHash);
       if (!record) {
         return res.status(400).json({ message: "Invalid, expired, or already-used verification link" });

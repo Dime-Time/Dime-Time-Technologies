@@ -49,6 +49,8 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { VerificationRequired } from "@/components/VerificationRequired";
+import { useFlag } from "@/hooks/useFlag";
 import { BetaBanner } from "@/components/BetaBanner";
 import ComingSoon from "@/pages/ComingSoon";
 import DimeToken from "@/pages/dime-token";
@@ -58,6 +60,15 @@ import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const enforceVerification = useFlag("REQUIRE_EMAIL_VERIFICATION");
+  // Server-side enforcement is the real gate (403 EMAIL_VERIFICATION_REQUIRED
+  // on sensitive routes); this mirror keeps the UX coherent — a full-screen
+  // recovery card instead of scattered failed requests. Only applies once the
+  // server-confirmed user object is loaded (never during optimistic auth).
+  if (enforceVerification && user && !user.emailVerifiedAt) {
+    return <VerificationRequired />;
+  }
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-bottom">
       <Navigation />

@@ -36,6 +36,9 @@ import { registerAdminRoutes } from "./routes/adminRoutes";
 import { isAdminUserId } from "./lib/admin";
 import { isFlagEnabled } from "./lib/flags";
 import { getUserIdFromRequest } from "./middleware/authHelper";
+import { hashPasswordBcrypt, verifyPassword, CURRENT_PASSWORD_ALGO } from "./lib/passwords";
+import { checkAndTouchResendCooldown, clearResendCooldown } from "./lib/verificationCooldown";
+import { requireVerifiedEmail, VERIFICATION_PROTECTED_PREFIXES } from "./middleware/requireVerifiedEmail";
 import { debtEditSchema, buildDebtEditUpdates, canAccessDebt } from "./lib/debtEdit";
 import { notificationRoutes } from "./routes/notificationRoutes";
 import { notificationService } from "./services/notificationService";
@@ -143,30 +146,9 @@ async function issueAndSendVerificationEmail(
   return { ok: true, provider: sendResult.provider };
 }
 
-const BCRYPT_COST = 12;
-
-function hashPasswordSha256(password: string): string {
-  return createHash('sha256').update(password).digest('hex');
-}
-
-async function hashPasswordBcrypt(password: string): Promise<string> {
-  return bcrypt.hash(password, BCRYPT_COST);
-}
-
-function constantTimeCompare(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
-}
-
-async function verifyPassword(password: string, hash: string, algo: string | null): Promise<boolean> {
-  if (algo === 'bcrypt') {
-    return bcrypt.compare(password, hash);
-  }
-  const sha256Hash = hashPasswordSha256(password);
-  return constantTimeCompare(sha256Hash, hash);
-}
+// Password hashing/verification lives in server/lib/passwords.ts (single
+// source of truth — bcrypt for all new/changed passwords, legacy SHA-256
+// verify-only with login-time migration below).
 
 function stripSensitiveFields(user: any): any {
   if (!user) return user;
@@ -295,6 +277,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use(express.static(publicDir, { index: false }));
 
+  // ── Email-verification enforcement (flag: REQUIRE_EMAIL_VERIFICATION) ──
+  // Centralized: one middleware, one prefix list (see
+  // server/middleware/requireVerifiedEmail.ts). Mounted before every API
+  // route so no sensitive handler can be reached by an unverified session
+  // while the flag is ON. Flag OFF (default) → pure pass-through.
+  app.use(requireVerifiedEmail);
+
   // ── GEO guide pages: pre-rendered, crawler-readable static HTML ──────
   // AI crawlers (GPTBot, ClaudeBot, PerplexityBot) do not execute the SPA's
   // JavaScript, so these guides are served as complete static HTML.
@@ -413,14 +402,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const authToken = generateAuthToken(user.id);
 
-      // Best-effort: send verification email. We fire-and-forget so a slow
-      // Resend response doesn't delay signup. Failures are logged inside
-      // issueAndSendVerificationEmail and never bubble up to the user.
-      void issueAndSendVerificationEmail(req, {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-      });
+      // Send the verification email and WAIT for the provider result so the
+      // response can tell the truth. A failed send never blocks account
+      // creation — but the client must never claim "email sent" when the
+      // provider actually failed (verificationEmailSent: false lets the UI
+      // route the user to the Resend button instead).
+      let verificationEmailSent = false;
+      try {
+        // Bounded wait: cap signup tail latency at 10s. On timeout we report
+        // sent=false (truthful "we couldn't confirm") — the in-flight send may
+        // still land, and the Resend banner covers the retry path.
+        const sendOutcome = await Promise.race([
+          issueAndSendVerificationEmail(req, {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+          }),
+          new Promise<{ ok: false }>((resolve) =>
+            setTimeout(() => resolve({ ok: false }), 10_000).unref?.(),
+          ),
+        ]);
+        verificationEmailSent = sendOutcome.ok;
+      } catch (sendErr) {
+        console.error(
+          "Signup verification email failed:",
+          sendErr instanceof Error ? sendErr.message : "unknown",
+        );
+      }
       
       req.session.save((err) => {
         if (err) {
@@ -430,7 +438,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(201).json({ 
           success: true, 
           user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-          authToken
+          authToken,
+          verificationEmailSent
         });
       });
     } catch (error) {
@@ -647,6 +656,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No email on file for this account" });
       }
 
+      // Per-account cooldown on top of the IP-window authLimiter, so one
+      // user can't fan out duplicate provider sends by tapping repeatedly.
+      const cooldown = checkAndTouchResendCooldown(user.id);
+      if (!cooldown.allowed) {
+        res.setHeader("Retry-After", String(cooldown.retryAfterSeconds));
+        return res.status(429).json({
+          message: `Please wait ${cooldown.retryAfterSeconds}s before requesting another verification email.`,
+        });
+      }
+
       const result = await issueAndSendVerificationEmail(req, {
         id: user.id,
         email: user.email,
@@ -654,6 +673,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!result.ok) {
+        // Roll the cooldown back — a failed send must not lock the user out
+        // of retrying once the provider recovers.
+        clearResendCooldown(user.id);
         // Surface a generic but truthful 503 so the client doesn't show a
         // false "sent" toast when persistence or the provider actually
         // failed. We don't leak which failure mode occurred.
