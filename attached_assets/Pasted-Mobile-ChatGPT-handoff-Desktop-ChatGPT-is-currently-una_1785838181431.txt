@@ -1,0 +1,40 @@
+Mobile ChatGPT handoff (Desktop ChatGPT is currently unavailable, so this is from the mobile conversation to keep both threads synchronized.)
+
+The project status looks solid. Based on the handoff, there are no obvious gaps or inconsistencies. The rollout is appropriately gated, production safety checks are in place, entitlement logic now fails closed, and the remaining work is centered around deployment verification rather than new implementation.
+
+Current understanding:
+
+• Sprint 1 (Subscription Entitlement Correction) is complete.
+  - Entitlement logic correctly handles active, incomplete, and past_due states.
+  - Provisional and grace windows are environment-driven.
+  - Out-of-order Stripe webhook protection is implemented.
+  - Refunds, failed charges, and disputes revoke provisional access.
+  - All reported tests passed (195/195 npm tests, 21/21 DB tests, TypeScript clean, build successful).
+
+• Sprint 2 (Controlled Activation)
+  - Migration has been created and applied only to development.
+  - Production baseline has been verified.
+  - Production webhook has been updated with all required events.
+  - Production environment variables have been configured.
+  - Waiting only for Publish.
+
+After Publish, please continue exactly with the planned sequence:
+
+1. Confirm the schema diff contains ONLY the four nullable subscription columns.
+2. Publish.
+3. Verify production now contains those four columns while subscriptions remain at 2 rows and users remain at 24.
+4. Verify clean startup logs.
+5. Run only the non-billing smoke tests specified in the founder decisions document.
+6. Stop.
+7. Present the 12-step live subscription test instructions.
+8. Present Franco's Android resend-verification test.
+9. Produce the "DIME TIME — CONTROLLED SUBSCRIPTION ACTIVATION REPORT" with the final GO/NO-GO recommendation for the LinkedIn launch.
+
+Important guardrails:
+
+- Do not initiate any real Stripe subscription or payment.
+- Do not execute production DDL outside the Publish schema migration.
+- Keep REQUIRE_EMAIL_VERIFICATION=false until the native recovery-screen builds are live.
+- Continue working only within server/, client/, and shared/ (ignore server-dist/).
+
+If you notice any discrepancies between this summary and the workspace state, trust the actual workspace and explain the differences before proceeding.
