@@ -1,0 +1,253 @@
+DIME TIME — FOUNDER SUBSCRIPTION ACTIVATION DECISIONS
+Date: August 4, 2026
+Local commit: 809b148
+Decision: APPROVED FOR CONTROLLED PRODUCTION ACTIVATION
+
+FOUNDER DECISIONS
+
+I approve the following:
+
+1. ACH PROVISIONAL ACCESS
+
+Set:
+
+SUBSCRIPTION_PROVISIONAL_ACH_DAYS=7
+
+A qualifying ACH subscription may receive a maximum of seven calendar days of provisional access only when the server independently verifies:
+
+* Approved $2.99 Dime Time Debt price
+* Correct authenticated user/customer ownership
+* Matching subscription, invoice, and PaymentIntent
+* us_bank_account payment method
+* PaymentIntent status of processing
+* Valid mandate
+* Server-persisted provisionalAccessUntil
+* No failure, cancellation, refund, return, reversal, or dispute
+
+An ordinary `incomplete` subscription must never grant access.
+
+Provisional access must expire automatically after seven calendar days unless Stripe confirms successful payment.
+
+2. PAST-DUE GRACE PERIOD
+
+Set:
+
+SUBSCRIPTION_PAST_DUE_GRACE_DAYS=14
+
+I approve the existing 14-day grace period.
+
+Requirements:
+
+* Grace starts only once on active → past_due.
+* Duplicate or out-of-order webhooks cannot extend it.
+* Access ends automatically at grace expiration.
+* unpaid, canceled, revoked, refunded, or expired subscriptions receive no entitlement.
+* A later successful payment may restore active access through authoritative Stripe state.
+
+3. EXISTING USERS
+
+Use the controlled-rollout policy:
+
+* Do not bill any existing user automatically.
+* Do not create subscriptions for existing users.
+* Do not lock existing users out.
+* Do not enforce the subscription paywall yet.
+* Preserve current access while paid web subscriptions are activated and tested.
+* Permanent grandfathering or paywall enforcement will be a separate founder decision.
+
+4. STRIPE WEBHOOK EVENTS
+
+I approve registering these additional events on both the Stripe test and live subscription webhook endpoints:
+
+* charge.refunded
+* charge.failed
+* charge.dispute.created
+
+Before changing the dashboard:
+
+* Confirm the destination is the existing signature-verified subscription webhook endpoint.
+* Confirm the correct endpoint-secret environment variable already corresponds to each test/live endpoint.
+* Do not expose or rotate webhook secrets.
+* Do not create duplicate webhook endpoints.
+* Preserve the five existing registered events.
+* After registration, report the complete event list for both test and live endpoints.
+
+If the existing handler also requires another Stripe event to detect ACH returns or PaymentIntent failure reliably, report it before adding it. Do not subscribe to broad wildcard events.
+
+5. PRODUCTION SCHEMA MIGRATION
+
+I approve the four additive nullable subscription columns, but do not use an unreviewed ad hoc production schema push.
+
+Required process:
+
+* Generate a named, version-controlled Drizzle/SQL migration.
+* Show the exact SQL before applying it.
+* Confirm it contains only the four expected nullable-column additions and any necessary safe indexes.
+* Confirm there are no drops, renames, type changes, destructive defaults, table rewrites, or data backfills.
+* Record production row counts before migration.
+* Confirm a current database backup or recovery point exists.
+* Apply the migration once through the normal production migration process.
+* Verify the four columns afterward.
+* Confirm row counts and existing subscription records are unchanged.
+* Provide a safe rollback statement, but do not run it unless the migration fails.
+* Stop immediately if the generated migration contains an unexpected operation.
+
+6. PRODUCTION FLAGS
+
+Required production state for the initial controlled deployment:
+
+ENABLE_SUBSCRIPTIONS=1
+SUBSCRIPTION_PROVISIONAL_ACH_DAYS=7
+SUBSCRIPTION_PAST_DUE_GRACE_DAYS=14
+REQUIRE_EMAIL_VERIFICATION=false
+
+Requirements:
+
+* REQUIRE_EMAIL_VERIFICATION must remain false until the updated native recovery-screen builds are approved and live.
+* ENABLE_DEBT_IMPORT remains unchanged.
+* Do not modify ENABLE_REAL_TRANSFERS, ENABLE_STRIPE_ACH, ENABLE_AUTO_ROUNDUP_SWEEPS, transfer allowlists, limits, idempotency, mandates, or webhook safety.
+* Confirm every required variable is present before republishing.
+* Do not print secret values.
+
+7. NATIVE BILLING DECISION
+
+Preserve the current founder decision for this release:
+
+* Web/Stripe subscriptions only
+* No StoreKit
+* No Google Play Billing
+* No native price or purchase CTA
+* No external Stripe purchase link inside iOS or Android
+* Native apps may recognize a valid backend entitlement after login
+* Store-policy compliance remains a documented future-review risk and must not be described as independently guaranteed
+
+8. COINBASE
+
+Confirm the removed Coinbase package remains absent.
+
+Required target:
+
+* Zero critical production dependency vulnerabilities
+* Crypto remains simulated Preview
+* Public price feed still works
+* No Coinbase credentials or authenticated client
+* No real crypto purchasing
+
+CONTROLLED ACTIVATION AUTHORIZATION
+
+After all preflight checks pass, I approve:
+
+1. Creating the reviewed versioned migration.
+2. Registering the three approved Stripe events on both existing endpoints.
+3. Setting the approved production environment variables.
+4. Applying the additive production migration.
+5. Republishing the fixed backend and web application.
+6. Running non-billing production smoke tests.
+
+I do not authorize Replit to initiate a real $2.99 charge or subscription on my behalf.
+
+After deployment, stop and tell me when the system is ready for me to perform the founder-controlled live subscription test manually.
+
+POST-DEPLOYMENT SMOKE TESTS
+
+Without creating a real subscription, verify:
+
+* Production boots successfully.
+* Health endpoint passes.
+* Signup works.
+* Login works.
+* Resend verification returns truthful status.
+* Subscription page loads on web.
+* The approved $2.99 plan is displayed.
+* Native apps contain no purchase CTA.
+* Unauthenticated checkout is blocked.
+* Arbitrary price IDs are rejected.
+* Client-supplied entitlement is rejected.
+* Existing users remain accessible and unbilled.
+* Payment and ACH debt-transfer controls are unchanged.
+* Stripe webhook endpoint remains signature-verified.
+* Database migration is present.
+* No secrets appear in client assets or logs.
+* Sentry and production logs show no new errors.
+
+FOUNDER-CONTROLLED LIVE TEST — WAIT FOR TIM
+
+When the smoke tests pass, provide exact steps for Tim to:
+
+1. Sign into the founder account on the web.
+2. Review the $2.99/month terms.
+3. Provide explicit subscription consent.
+4. Complete one live Stripe ACH subscription.
+5. Verify the subscription enters the correct provider state.
+6. Confirm ordinary incomplete status does not grant access.
+7. Confirm legitimate ACH processing grants no more than seven days of provisional access.
+8. Confirm the webhook is received and processed once.
+9. Confirm successful settlement changes entitlement to active.
+10. Confirm cancellation-at-period-end.
+11. Confirm reactivation behavior.
+12. Confirm no other user is billed or changed.
+
+Do not perform these actions automatically.
+
+FRANCO TEST
+
+After the fixed backend is live, have Tim ask Franco to:
+
+* Open the live Google Play app.
+* Tap resend verification once.
+* Record the timestamp.
+* Check inbox, spam, junk, and promotions.
+* Open the verification link.
+* Confirm verification success.
+* Log in, log out, and log in again.
+
+If it fails, use the timestamp and masked recipient to trace the request through production logs and Resend events.
+
+FINAL REPORT
+
+Return:
+
+DIME TIME — CONTROLLED SUBSCRIPTION ACTIVATION REPORT
+
+Include:
+
+* Deployment commit
+* Production URL
+* Migration name and exact operations
+* Pre/post row-count verification
+* Production flags and non-secret values
+* Stripe test webhook event list
+* Stripe live webhook event list
+* Deployment result
+* Smoke-test results
+* Test totals
+* Production vulnerability count
+* Existing-user status
+* ACH provisional configuration
+* Past-due grace configuration
+* Email verification flag status
+* Franco-test status
+* Founder live-test status
+* Remaining P0/P1/P2/P3 findings
+* Confirmation that no existing user was billed or locked out
+* Confirmation that no real subscription was created by Replit
+* Exact next action for Tim
+* GO/NO-GO recommendation for the LinkedIn launch
+
+STOP AND REPORT IF:
+
+* The migration contains anything besides expected additive nullable changes and safe indexes.
+* A backup or recovery point cannot be confirmed.
+* A webhook endpoint or signing secret does not match.
+* Any critical production dependency vulnerability returns.
+* Production fails startup validation.
+* An existing user would be billed or locked out.
+* `incomplete` grants unconditional access.
+* Provisional access exceeds seven days or lacks expiration.
+* Past-due grace can extend indefinitely.
+* Any payment/ACH safety gate changes.
+* A real charge would be initiated.
+* Store-policy compliance requires a founder decision.
+* Deployment produces authentication, subscription, database, or security errors.
+
+Proceed with the approved controlled activation, stop before the live founder subscription test, and return the complete report.
