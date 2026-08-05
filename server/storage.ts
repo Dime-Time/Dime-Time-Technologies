@@ -70,6 +70,13 @@ import {
   contactSubmissions,
   roundUpCollections,
   distributionPayments,
+  weeklyDistributions,
+  businessAccount,
+  type BusinessAccount,
+  type WeeklyDistribution,
+  type InsertWeeklyDistribution,
+  type DistributionPayment,
+  type InsertDistributionPayment,
   sweepAccounts,
   sweepDeposits,
   weeklyDispersals,
@@ -88,7 +95,7 @@ import { bumpedOriginalBalance } from "./lib/debtEdit";
 import { encryptToken, decryptToken } from "./services/encryptionService";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray, gte } from "drizzle-orm";
+import { eq, desc, and, or, sql, inArray, gte } from "drizzle-orm";
 
 /**
  * Result of the real-money ACH rollout gate. `ok:true` means a `created`
@@ -256,11 +263,35 @@ export interface IStorage {
   createTransfer(data: InsertTransfer): Promise<Transfer>;
   getTransfer(id: string): Promise<Transfer | undefined>;
   getTransferByCorrelationId(correlationId: string): Promise<Transfer | undefined>;
+  getTransferByIdempotencyKey(idempotencyKey: string): Promise<Transfer | undefined>;
   getTransferByPlaidTransferId(plaidTransferId: string): Promise<Transfer | undefined>;
   updateTransferStatus(id: string, status: string, updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'stripePaymentIntentId' | 'stripeChargeId' | 'provider' | 'errorCode' | 'errorMessage' | 'rawResponse'>>): Promise<Transfer | undefined>;
   getTransfersByUserId(userId: string): Promise<Transfer[]>;
   getTransferByStripePaymentIntentId(paymentIntentId: string): Promise<Transfer | undefined>;
   getTransferByStripeChargeId(chargeId: string): Promise<Transfer | undefined>;
+  // Weekly round-up disbursement (Mercury → target debt, Fridays)
+  getAllEnabledRoundUpSettings(): Promise<RoundUpSettings[]>;
+  getOrCreateMercuryBusinessAccount(): Promise<BusinessAccount>;
+  getWeeklyDistributionByDate(distributionDate: Date): Promise<WeeklyDistribution | undefined>;
+  createWeeklyDistribution(data: InsertWeeklyDistribution): Promise<WeeklyDistribution>;
+  /**
+   * Atomically claim the weekly run for a Friday: INSERT ... ON CONFLICT
+   * (distribution_date) DO NOTHING. Returns the created row when THIS caller
+   * won the claim, undefined when another run already holds the week.
+   */
+  claimWeeklyDistribution(data: InsertWeeklyDistribution): Promise<WeeklyDistribution | undefined>;
+  /**
+   * Atomically resume a stalled or failed weekly run (single-winner CAS):
+   * UPDATE ... SET status='processing', last_claimed_at=now() WHERE id = ?
+   * AND (status='failed' OR (status='processing' AND
+   * COALESCE(last_claimed_at, created_at) < staleBefore)). Returns the row
+   * only for the ONE caller whose predicate matched; everyone else gets
+   * undefined (the winner's fresh last_claimed_at fails their staleness check).
+   */
+  resumeWeeklyDistribution(id: string, staleBefore: Date): Promise<WeeklyDistribution | undefined>;
+  updateWeeklyDistribution(id: string, updates: Partial<Pick<WeeklyDistribution, 'status' | 'totalAmount' | 'paymentCount' | 'completedDate' | 'interestEarned'>>): Promise<WeeklyDistribution | undefined>;
+  createDistributionPayment(data: InsertDistributionPayment): Promise<DistributionPayment>;
+  updateDistributionPaymentStatus(id: string, status: string, updates?: { failureReason?: string; mercuryTransferId?: string }): Promise<DistributionPayment | undefined>;
   // Real-money ACH rollout gate + allowlist + audit
   reserveRealStripeAchDebit(args: {
     userId: string;
@@ -1891,6 +1922,7 @@ export class MemStorage implements IStorage {
   }
   async getTransfer(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getTransferByCorrelationId(_correlationId: string): Promise<Transfer | undefined> { return undefined; }
+  async getTransferByIdempotencyKey(_idempotencyKey: string): Promise<Transfer | undefined> { return undefined; }
   async getTransferByPlaidTransferId(_plaidTransferId: string): Promise<Transfer | undefined> { return undefined; }
   async updateTransferStatus(_id: string, _status: string, _updates?: any): Promise<Transfer | undefined> { return undefined; }
   async getTransfersByUserId(_userId: string): Promise<Transfer[]> { return []; }
@@ -1898,6 +1930,112 @@ export class MemStorage implements IStorage {
   async getRecentStripeWebhookEvents(_limit: number): Promise<Array<{ eventId: string; type: string; receivedAt: Date }>> { return []; }
   async getTransferByStripePaymentIntentId(_id: string): Promise<Transfer | undefined> { return undefined; }
   async getTransferByStripeChargeId(_id: string): Promise<Transfer | undefined> { return undefined; }
+
+  // Weekly disbursement — MemStorage keeps simple in-memory records so dev
+  // dry runs work without a database.
+  private weeklyDistributionsMem: Map<string, WeeklyDistribution> = new Map();
+  private distributionPaymentsMem: Map<string, DistributionPayment> = new Map();
+  private mercuryBusinessAccountMem: BusinessAccount | null = null;
+
+  async getAllEnabledRoundUpSettings(): Promise<RoundUpSettings[]> {
+    return Array.from(this.roundUpSettings.values()).filter((s) => s.isEnabled);
+  }
+  async getOrCreateMercuryBusinessAccount(): Promise<BusinessAccount> {
+    if (!this.mercuryBusinessAccountMem) {
+      this.mercuryBusinessAccountMem = {
+        id: randomUUID(),
+        bankName: 'Mercury',
+        accountId: 'mercury-primary',
+        accountNumber: '[configured-in-env]',
+        routingNumber: '[configured-in-env]',
+        accountType: 'business_savings',
+        currentBalance: '0.00',
+        interestRate: '0.0325',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
+    return this.mercuryBusinessAccountMem;
+  }
+  async getWeeklyDistributionByDate(distributionDate: Date): Promise<WeeklyDistribution | undefined> {
+    const key = distributionDate.toISOString().slice(0, 10);
+    return Array.from(this.weeklyDistributionsMem.values()).find(
+      (d) => d.distributionDate.toISOString().slice(0, 10) === key,
+    );
+  }
+  async createWeeklyDistribution(data: InsertWeeklyDistribution): Promise<WeeklyDistribution> {
+    const row: WeeklyDistribution = {
+      id: randomUUID(),
+      lastClaimedAt: data.lastClaimedAt ?? null,
+      distributionDate: data.distributionDate,
+      totalAmount: data.totalAmount,
+      paymentCount: data.paymentCount,
+      businessAccountId: data.businessAccountId,
+      axosBulkTransferId: data.axosBulkTransferId ?? null,
+      provider: data.provider ?? null,
+      status: data.status ?? 'scheduled',
+      scheduledDate: data.scheduledDate,
+      completedDate: data.completedDate ?? null,
+      interestEarned: data.interestEarned ?? '0.00',
+      createdAt: new Date(),
+    };
+    this.weeklyDistributionsMem.set(row.id, row);
+    return row;
+  }
+  async claimWeeklyDistribution(data: InsertWeeklyDistribution): Promise<WeeklyDistribution | undefined> {
+    const existing = await this.getWeeklyDistributionByDate(data.distributionDate);
+    if (existing) return undefined;
+    return this.createWeeklyDistribution(data);
+  }
+  async resumeWeeklyDistribution(id: string, staleBefore: Date): Promise<WeeklyDistribution | undefined> {
+    const row = this.weeklyDistributionsMem.get(id);
+    if (!row) return undefined;
+    const clock = row.lastClaimedAt ?? row.createdAt;
+    const resumable = row.status === "failed" || (row.status === "processing" && clock < staleBefore);
+    if (!resumable) return undefined;
+    const updated = { ...row, status: "processing", lastClaimedAt: new Date() };
+    this.weeklyDistributionsMem.set(id, updated);
+    return updated;
+  }
+  async updateWeeklyDistribution(id: string, updates: Partial<Pick<WeeklyDistribution, 'status' | 'totalAmount' | 'paymentCount' | 'completedDate' | 'interestEarned'>>): Promise<WeeklyDistribution | undefined> {
+    const row = this.weeklyDistributionsMem.get(id);
+    if (!row) return undefined;
+    const next = { ...row, ...updates };
+    this.weeklyDistributionsMem.set(id, next);
+    return next;
+  }
+  async createDistributionPayment(data: InsertDistributionPayment): Promise<DistributionPayment> {
+    const row: DistributionPayment = {
+      id: randomUUID(),
+      distributionId: data.distributionId,
+      userId: data.userId,
+      debtId: data.debtId,
+      amount: data.amount,
+      debtAccountId: data.debtAccountId,
+      debtRoutingNumber: data.debtRoutingNumber,
+      axosTransferId: data.axosTransferId ?? null,
+      mercuryTransferId: data.mercuryTransferId ?? null,
+      transferId: data.transferId ?? null,
+      status: data.status ?? 'scheduled',
+      failureReason: data.failureReason ?? null,
+      createdAt: new Date(),
+    };
+    this.distributionPaymentsMem.set(row.id, row);
+    return row;
+  }
+  async updateDistributionPaymentStatus(id: string, status: string, updates?: { failureReason?: string; mercuryTransferId?: string }): Promise<DistributionPayment | undefined> {
+    const row = this.distributionPaymentsMem.get(id);
+    if (!row) return undefined;
+    const next = {
+      ...row,
+      status,
+      failureReason: updates?.failureReason ?? row.failureReason,
+      mercuryTransferId: updates?.mercuryTransferId ?? row.mercuryTransferId,
+    };
+    this.distributionPaymentsMem.set(id, next);
+    return next;
+  }
   async getPlaidAccessToken(bankAccountId: string): Promise<string | undefined> {
     // MemStorage keeps tokens in plaintext — return the stored value directly.
     return this.bankAccounts.get(bankAccountId)?.plaidAccessToken;
@@ -2708,6 +2846,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getTransferByIdempotencyKey(idempotencyKey: string): Promise<Transfer | undefined> {
+    const [result] = await db.select().from(transfers).where(eq(transfers.idempotencyKey, idempotencyKey));
+    return result;
+  }
+
   async getTransferByPlaidTransferId(plaidTransferId: string): Promise<Transfer | undefined> {
     const [result] = await db.select().from(transfers).where(eq(transfers.plaidTransferId, plaidTransferId));
     return result;
@@ -2716,7 +2859,7 @@ export class DatabaseStorage implements IStorage {
   async updateTransferStatus(
     id: string,
     status: string,
-    updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'stripePaymentIntentId' | 'stripeChargeId' | 'provider' | 'errorCode' | 'errorMessage' | 'rawResponse'>>
+    updates?: Partial<Pick<Transfer, 'plaidTransferId' | 'plaidAuthorizationId' | 'mercuryTransferId' | 'stripePaymentIntentId' | 'stripeChargeId' | 'provider' | 'errorCode' | 'errorMessage' | 'rawResponse' | 'rawRequest' | 'correlationId' | 'amount'>>
   ): Promise<Transfer | undefined> {
     const [result] = await db
       .update(transfers)
@@ -2839,6 +2982,100 @@ export class DatabaseStorage implements IStorage {
   async getTransferByStripeChargeId(chargeId: string): Promise<Transfer | undefined> {
     const [result] = await db.select().from(transfers).where(eq(transfers.stripeChargeId, chargeId));
     return result;
+  }
+
+  // ----- Weekly round-up disbursement (Mercury → target debt, Fridays) -----
+  async getAllEnabledRoundUpSettings(): Promise<RoundUpSettings[]> {
+    return await db.select().from(roundUpSettings).where(eq(roundUpSettings.isEnabled, true));
+  }
+
+  async getOrCreateMercuryBusinessAccount(): Promise<BusinessAccount> {
+    const [existing] = await db
+      .select()
+      .from(businessAccount)
+      .where(eq(businessAccount.bankName, 'Mercury'));
+    if (existing) return existing;
+    // Account/routing numbers live ONLY in env secrets — never persisted.
+    const [created] = await db
+      .insert(businessAccount)
+      .values({
+        bankName: 'Mercury',
+        accountId: 'mercury-primary',
+        accountNumber: '[configured-in-env]',
+        routingNumber: '[configured-in-env]',
+        accountType: 'business_savings',
+        interestRate: '0.0325',
+      })
+      .returning();
+    return created;
+  }
+
+  async getWeeklyDistributionByDate(distributionDate: Date): Promise<WeeklyDistribution | undefined> {
+    const [result] = await db
+      .select()
+      .from(weeklyDistributions)
+      .where(eq(weeklyDistributions.distributionDate, distributionDate));
+    return result;
+  }
+
+  async createWeeklyDistribution(data: InsertWeeklyDistribution): Promise<WeeklyDistribution> {
+    const [created] = await db.insert(weeklyDistributions).values(data).returning();
+    return created;
+  }
+
+  async claimWeeklyDistribution(data: InsertWeeklyDistribution): Promise<WeeklyDistribution | undefined> {
+    const [created] = await db
+      .insert(weeklyDistributions)
+      .values(data)
+      .onConflictDoNothing({ target: weeklyDistributions.distributionDate })
+      .returning();
+    return created; // undefined when another run already claimed this Friday
+  }
+
+  async resumeWeeklyDistribution(id: string, staleBefore: Date): Promise<WeeklyDistribution | undefined> {
+    const [resumed] = await db
+      .update(weeklyDistributions)
+      .set({ status: "processing", lastClaimedAt: new Date() })
+      .where(
+        and(
+          eq(weeklyDistributions.id, id),
+          or(
+            eq(weeklyDistributions.status, "failed"),
+            and(
+              eq(weeklyDistributions.status, "processing"),
+              sql`COALESCE(${weeklyDistributions.lastClaimedAt}, ${weeklyDistributions.createdAt}) < ${staleBefore}`,
+            ),
+          ),
+        ),
+      )
+      .returning();
+    return resumed; // undefined = another run holds the week (or it's completed)
+  }
+
+  async updateWeeklyDistribution(id: string, updates: Partial<Pick<WeeklyDistribution, 'status' | 'totalAmount' | 'paymentCount' | 'completedDate' | 'interestEarned'>>): Promise<WeeklyDistribution | undefined> {
+    const [updated] = await db
+      .update(weeklyDistributions)
+      .set(updates)
+      .where(eq(weeklyDistributions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async createDistributionPayment(data: InsertDistributionPayment): Promise<DistributionPayment> {
+    const [created] = await db.insert(distributionPayments).values(data).returning();
+    return created;
+  }
+
+  async updateDistributionPaymentStatus(id: string, status: string, updates?: { failureReason?: string; mercuryTransferId?: string }): Promise<DistributionPayment | undefined> {
+    const set: Record<string, unknown> = { status };
+    if (updates?.failureReason !== undefined) set.failureReason = updates.failureReason;
+    if (updates?.mercuryTransferId !== undefined) set.mercuryTransferId = updates.mercuryTransferId;
+    const [updated] = await db
+      .update(distributionPayments)
+      .set(set)
+      .where(eq(distributionPayments.id, id))
+      .returning();
+    return updated;
   }
 
   // ----- Stripe ACH (BETA, flagged) -----

@@ -19,6 +19,7 @@
 - [Pre-launch residual risks](pre-launch-residual-risks.md) — 2026-07 deferrals: non-atomic idempotency outside Stripe ACH, Axos/Coinbase ownership checks, no CSP. PLAID_WEBHOOK_SECRET now fail-closed (resolved).
 - [Masked Plaid token contract](masked-plaid-tokens.md) — listed bank accounts carry '[encrypted]' placeholder tokens; live Plaid calls must use getPlaidAccessToken(id) or they silently fail.
 - [Storage impl divergence](storage-impl-divergence.md) — MemStorage vs DatabaseStorage silently drift; update BOTH; debts soft-delete not hard-delete.
+- [Weekly disbursement engine](weekly-disbursement-engine.md) — Friday-midnight ET Mercury payouts; ledger-first, claim/CAS idempotency, unknown statuses count as spent; flag OFF by default.
 - [Auto-sweep removed](auto-sweep-removed.md) — dormant sweep engine deliberately deleted 2026-07-26; flag+schema vestigial; live round-up system is separate, untouched.
 - [Task-agent merge verification](task-merge-verification.md) — agents snapshot current main (dup tasks merge as no-ops); after every Apply: stat + sentinel greps + suite + restart + live probe.
 - [AWS fully removed](aws-removed.md) — zero AWS dependency; account CLOSED 2026-07-26 (0 buckets verified); never reintroduce SDKs or S3/Dynamo code.

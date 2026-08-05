@@ -244,15 +244,22 @@ export const roundUpCollections = pgTable("round_up_collections", {
 // Weekly Bulk Distributions (Every Friday)
 export const weeklyDistributions = pgTable("weekly_distributions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  distributionDate: timestamp("distribution_date").notNull(), // Friday date
+  // Friday date — UNIQUE so concurrent runs cannot both claim the same week
+  // (enforced by uq_weekly_distributions_date; claim is insert-on-conflict).
+  distributionDate: timestamp("distribution_date").notNull().unique("uq_weekly_distributions_date"),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
   paymentCount: integer("payment_count").notNull(),
   businessAccountId: varchar("business_account_id").notNull().references(() => businessAccount.id),
-  axosBulkTransferId: text("axos_bulk_transfer_id"), // Axos bulk payment ID
+  axosBulkTransferId: text("axos_bulk_transfer_id"), // Axos bulk payment ID (legacy, unused)
+  provider: text("provider"), // 'mercury' — set by the live weekly disbursement
   status: text("status").default('scheduled').notNull(), // scheduled, processing, completed, failed
   scheduledDate: timestamp("scheduled_date").notNull(),
   completedDate: timestamp("completed_date"),
   interestEarned: decimal("interest_earned", { precision: 10, scale: 2 }).default('0.00').notNull(),
+  // Set every time a run claims/resumes this week — the staleness clock for
+  // the atomic resume CAS (a crashed 'processing' run becomes resumable only
+  // after this timestamp is older than the cool-off window).
+  lastClaimedAt: timestamp("last_claimed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -265,8 +272,10 @@ export const distributionPayments = pgTable("distribution_payments", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   debtAccountId: text("debt_account_id").notNull(), // Debt account number
   debtRoutingNumber: text("debt_routing_number").notNull(),
-  axosTransferId: text("axos_transfer_id"), // Individual transfer ID
-  status: text("status").default('scheduled').notNull(), // scheduled, completed, failed
+  axosTransferId: text("axos_transfer_id"), // Individual transfer ID (legacy, unused)
+  mercuryTransferId: text("mercury_transfer_id"), // Mercury ACH transfer ID (live path)
+  transferId: varchar("transfer_id"), // transfers-ledger row backing this payment
+  status: text("status").default('scheduled').notNull(), // scheduled, skipped, completed, failed
   failureReason: text("failure_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -309,7 +318,9 @@ export const transfers = pgTable("transfers", {
   stripeAccountId: varchar("stripe_account_id"),
   debtId: varchar("debt_id"),
   correlationId: varchar("correlation_id").notNull(),
-  idempotencyKey: text("idempotency_key"),
+  // UNIQUE (nulls exempt) — defense-in-depth: even if run-claim logic ever
+  // regresses, a duplicate weekly-disbursement line insert fails loudly.
+  idempotencyKey: text("idempotency_key").unique("uq_transfers_idempotency_key"),
   errorCode: text("error_code"),
   errorMessage: text("error_message"),
   rawRequest: text("raw_request"),

@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { requireAdmin } from "../lib/admin";
+import { previewDisbursement, runWeeklyDisbursement } from "../services/weeklyDisbursementService";
+import { isFlagEnabled } from "../lib/flags";
 
 /**
  * Internal operator surface. Gated by `ADMIN_USER_IDS` env (Replit Secret).
@@ -48,6 +50,49 @@ function publicUserRealTransferStatus(u: {
 export function registerAdminRoutes(app: Express): void {
   app.get("/api/admin/me", requireAdmin, (_req: Request, res: Response) => {
     res.json({ isAdmin: true });
+  });
+
+  // Weekly round-up disbursement — preview what WOULD be paid out.
+  // Read-only: computes balances and eligibility, moves nothing.
+  app.get("/api/admin/weekly-disbursement/preview", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const lines = await previewDisbursement();
+      const eligible = lines.filter((l) => l.status === "would_disburse");
+      res.json({
+        flags: {
+          weeklyDisbursementEnabled: isFlagEnabled("ENABLE_WEEKLY_DISBURSEMENT"),
+          realTransfersEnabled: isFlagEnabled("ENABLE_REAL_TRANSFERS"),
+        },
+        eligibleCount: eligible.length,
+        eligibleTotal: Number(eligible.reduce((s, l) => s + l.amount, 0).toFixed(2)),
+        lines,
+      });
+    } catch (error: any) {
+      console.error("weekly-disbursement preview error:", error?.message || error);
+      res.status(500).json({ message: "Failed to compute disbursement preview" });
+    }
+  });
+
+  // Manual run. Body: { dryRun: boolean } — dryRun defaults to TRUE; a real
+  // run must be explicitly requested and still passes every flag gate inside
+  // the service (ENABLE_WEEKLY_DISBURSEMENT + ENABLE_REAL_TRANSFERS + Mercury
+  // configured), so this endpoint can never move money while flags are off.
+  app.post("/api/admin/weekly-disbursement/run", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const parsed = z.object({ dryRun: z.boolean().optional() }).parse(req.body ?? {});
+      const dryRun = parsed.dryRun !== false; // default true
+      const result = await runWeeklyDisbursement({
+        dryRun,
+        triggeredBy: (req as any).adminUserId || "admin",
+      });
+      res.json(result);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("weekly-disbursement run error:", error?.message || error);
+      res.status(422).json({ message: error?.message || "Disbursement run failed" });
+    }
   });
 
   app.get("/api/admin/transfers", requireAdmin, async (req: Request, res: Response) => {

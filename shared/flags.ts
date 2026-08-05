@@ -25,6 +25,7 @@ export type FlagName =
   | "ENABLE_AUTO_ROUNDUP_SWEEPS"
   | "ENABLE_DEBT_IMPORT"
   | "ENABLE_SUBSCRIPTIONS"
+  | "ENABLE_WEEKLY_DISBURSEMENT"
   | "REQUIRE_EMAIL_VERIFICATION";
 
 export interface FlagDefinition {
@@ -82,6 +83,15 @@ export const FLAG_DEFINITIONS: Record<FlagName, FlagDefinition> = {
       "applied anywhere (today's behavior is unchanged), and all subscription UI " +
       "is hidden. Requires ENABLE_STRIPE_ACH — the server refuses to boot if " +
       "SUBSCRIPTIONS is on while STRIPE_ACH is off.",
+  },
+  ENABLE_WEEKLY_DISBURSEMENT: {
+    defaultValue: false,
+    description:
+      "Run the weekly Friday-midnight (ET) round-up disbursement: accumulated " +
+      "round-up balances are paid from the Mercury account toward each user's " +
+      "target debt. OFF (default) means the scheduler never fires and the " +
+      "admin run endpoint only permits dry runs. Real money additionally " +
+      "requires ENABLE_REAL_TRANSFERS — both must be ON to move funds.",
   },
   REQUIRE_EMAIL_VERIFICATION: {
     defaultValue: false,

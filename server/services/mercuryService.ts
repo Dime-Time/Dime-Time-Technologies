@@ -88,16 +88,23 @@ class MercuryService {
     return this.isConfigured;
   }
 
-  private async resolveCheckingAccountId(): Promise<string> {
+  /**
+   * Resolve the Mercury account used for balance reads and outbound
+   * transfers. The account whose number matches MERCURY_ACCOUNT_NUMBER wins
+   * regardless of kind — the configured account is the SAVINGS account by
+   * design (round-ups earn interest there until the Friday disbursement).
+   * Falls back to checking / first account only when no number matches.
+   */
+  private async resolveFundingAccountId(): Promise<string> {
     if (this.cachedAccountId) return this.cachedAccountId;
     const accounts = await this.listAccounts();
     const accountNumber = process.env.MERCURY_ACCOUNT_NUMBER;
-    const checking =
-      accounts.find(a => a.accountNumber === accountNumber && a.kind === 'checking') ||
+    const funding =
+      accounts.find(a => a.accountNumber === accountNumber) ||
       accounts.find(a => a.kind === 'checking') ||
       accounts[0];
-    if (!checking) throw new Error('No Mercury checking account found');
-    this.cachedAccountId = checking.id;
+    if (!funding) throw new Error('No Mercury account found');
+    this.cachedAccountId = funding.id;
     return this.cachedAccountId;
   }
 
@@ -132,7 +139,7 @@ class MercuryService {
 
   async getTransactions(limit: number = 50): Promise<MercuryTransaction[]> {
     if (!this.isConfigured) throw new Error('Mercury service not configured');
-    const accountId = await this.resolveCheckingAccountId();
+    const accountId = await this.resolveFundingAccountId();
     const response = await this.client.get(`/account/${accountId}/transactions`, { params: { limit } });
     return response.data.transactions || [];
   }
@@ -148,7 +155,7 @@ class MercuryService {
   }): Promise<MercuryTransferResponse> {
     if (!this.isConfigured) throw new Error('Mercury service not configured');
     const { correlationId } = params;
-    const accountId = await this.resolveCheckingAccountId();
+    const accountId = await this.resolveFundingAccountId();
 
     log(correlationId, 'mercury_transfer_request', {
       amount: params.amount,

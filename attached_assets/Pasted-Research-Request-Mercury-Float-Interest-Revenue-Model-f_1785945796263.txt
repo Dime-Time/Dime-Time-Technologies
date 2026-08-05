@@ -1,0 +1,69 @@
+Research Request – Mercury Float / Interest Revenue Model for Dime Time
+
+I need a comprehensive compliance and architecture analysis. Assume the following product flow:
+
+* User links their bank account.
+* Dime Time calculates and collects round-ups.
+* The round-up funds are held until the scheduled weekly sweep (Friday at midnight).
+* The accumulated funds are then sent via ACH to the user’s selected debt account.
+* We are evaluating holding those funds in a Mercury savings account currently earning approximately 3.25% APY before disbursement.
+
+Please answer each question with supporting documentation, links to official sources where possible, and explain any assumptions.
+
+Mercury Account Structure
+
+1. Does Mercury support this business model?
+2. Can Mercury accounts legally hold pooled customer funds pending scheduled disbursement?
+3. Does Mercury offer FBO (For Benefit Of) or custodial account structures for consumer fintechs?
+4. If not, what account structure would be required?
+
+Interest / Float
+
+5. If customer funds are held for several days, who legally owns the interest generated?
+6. Can Dime Time retain the interest earned on those balances?
+7. Would this require explicit customer consent?
+8. Would disclosure in the Terms of Service alone be sufficient, or are there additional requirements?
+9. Does Mercury prohibit retaining interest earned on customer funds?
+
+Regulatory Analysis
+
+10. Does this business model create money transmitter licensing issues?
+11. Does temporarily holding customer funds change our regulatory obligations?
+12. Does the fact that all funds are automatically forwarded to the customer’s chosen debt account materially change the analysis?
+13. Are there federal or state consumer protection rules that specifically apply to retained interest on temporarily held customer funds?
+
+Mercury Agreements
+
+14. Review Mercury’s current legal documentation and determine whether this use case is permitted.
+15. Are there any restrictions on using a Mercury savings account for temporarily holding customer funds?
+16. Does Mercury require these funds to remain in a checking account instead?
+
+Comparable Fintechs
+
+17. Which consumer fintech companies earn revenue from customer float?
+18. How are they structured?
+19. Do they retain interest themselves, share it with customers, or use another arrangement?
+20. Provide specific examples where possible.
+
+Product Architecture
+
+21. Is using a Mercury savings account preferable to a checking account for this use case?
+22. Would using Mercury Treasury or another Mercury product be more appropriate?
+23. If Mercury is not an ideal fit, what banking structure would be?
+
+Risk Assessment
+
+24. Identify every compliance risk associated with this proposed design.
+25. Identify every contractual risk with Mercury.
+26. Identify any operational or accounting implications.
+27. Explain the lowest-risk implementation that still allows Dime Time to earn revenue from temporary customer balances.
+
+Final Recommendation
+
+Based on Mercury’s current products, agreements, and applicable regulations:
+
+* Is this architecture feasible?
+* If yes, what changes are required before implementation?
+* If no, what is the closest compliant alternative that preserves the weekly round-up model and allows Dime Time to monetize customer float where legally permitted?
+
+Please be conservative. Do not assume anything is allowed unless it is supported by Mercury documentation or applicable regulations. If information is uncertain, identify exactly what is unknown instead of speculating.

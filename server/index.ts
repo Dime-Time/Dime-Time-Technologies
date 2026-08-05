@@ -11,6 +11,7 @@ import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
+import { startWeeklyDisbursementScheduler } from "./services/weeklyDisbursementService";
 
 const app = express();
 
@@ -306,6 +307,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
       },
       () => {
         log(`serving on port ${port}`);
+        // Weekly Friday-midnight (ET) round-up disbursement. No-op unless
+        // ENABLE_WEEKLY_DISBURSEMENT is on; real money additionally requires
+        // ENABLE_REAL_TRANSFERS (checked inside every run).
+        startWeeklyDisbursementScheduler();
       },
     );
   } catch (error) {
