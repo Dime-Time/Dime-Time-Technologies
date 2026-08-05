@@ -47,4 +47,5 @@
 - [Client component testing](client-component-testing.md) — interactive React tests under tsx --test: happy-dom + fetch mock + asset-stub loader; no vitest/jsdom.
 - [Store listing AEO](store-listing-aeo.md) — paste-ready Play/iOS AEO pack in attached_assets/aeo-store-listings/; NEVER paste Play listing edits mid-review; iOS promo text = only no-review field.
 - [Native API auth](native-api-auth.md) — client code must use apiRequest, never raw fetch("/api/..."): native WebView sends no session cookie, only the Bearer header apiRequest adds.
+- [Float compliance research](float-compliance-research.md) — 2026-08-05 verdict: keeping interest on pooled Mercury round-ups blocked 3 ways (Mercury ToS, MTL, interest-follows-principal); report in research/.
 - [Email verification enforcement](email-verification-enforcement.md) — REQUIRE_EMAIL_VERIFICATION flag OFF by default; prod boot FAILS unless explicitly set; one middleware/one prefix list; next deploy must set it.
