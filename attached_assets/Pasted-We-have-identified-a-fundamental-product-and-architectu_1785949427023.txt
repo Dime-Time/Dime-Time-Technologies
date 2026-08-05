@@ -1,0 +1,80 @@
+We have identified a fundamental product and architecture issue.
+
+My intended Dime Time experience has always been:
+
+1. The user connects their checking account.
+2. Plaid provides transaction data used to calculate round-ups.
+3. The user’s debts are imported automatically.
+4. The user selects one of the imported debts as the payoff target.
+5. Dime Time collects or initiates the accumulated round-up amount.
+6. The payment is routed automatically to the selected creditor.
+7. The user is not required to manually locate or enter a creditor routing number and ACH account number.
+
+Do not treat manual creditor routing-number and account-number entry as the final solution. Many credit cards and liabilities do not expose ordinary ACH deposit coordinates to consumers, and a credit-card account number is not necessarily a valid ACH destination account number.
+
+Plaid Liabilities appears to provide debt data rather than a complete creditor-payment rail. Plaid Auth provides routing and account numbers for eligible checking, savings and cash-management funding accounts, not necessarily payment coordinates for imported liability accounts.
+
+Please audit the current production implementation and answer:
+
+1. Why was Plaid Liabilities originally selected?
+2. Was it ever represented or assumed in the implementation that imported liabilities could serve directly as creditor payment destinations?
+3. Which exact Plaid Liabilities fields are currently stored for each imported credit card, loan, mortgage or student loan?
+4. Does any stored field provide a validated creditor-payment endpoint?
+5. What does the current app ask the user to enter manually?
+6. Can the current payment engine actually pay an imported debt without manual creditor banking information?
+7. If so, document exactly how.
+8. If not, identify every user-interface screen, database field and backend function built around the incorrect assumption.
+9. Do not modify or remove the working Plaid Liabilities integration until the replacement architecture has been selected.
+
+Research Method and Spinwheel using their current official documentation. Compare them specifically for Dime Time’s use case:
+
+* automatic liability discovery;
+* credit-card support;
+* auto-loan support;
+* student-loan support;
+* mortgage support;
+* creditor-payment routing;
+* whether the user must enter creditor account details;
+* whether payments can be funded from each user’s linked checking account;
+* whether payments must be funded from a Dime Time-controlled partner-payer account;
+* ACH settlement model;
+* returned-payment handling;
+* payment confirmation;
+* account validation;
+* reconciliation;
+* webhooks;
+* compliance responsibilities;
+* money-transmitter implications;
+* FBO or custodial requirements;
+* geographic coverage;
+* pricing and minimum monthly commitments;
+* sandbox availability;
+* production approval requirements;
+* integration effort with the existing Plaid, Stripe and Mercury architecture.
+
+Also determine whether Plaid offers another current product, partner integration or bill-pay capability that would solve the creditor-payment layer without Method or Spinwheel.
+
+Produce three diagrams:
+
+A. The exact current production money and data flow;
+B. A proposed Plaid + Method architecture;
+C. A proposed Plaid + Spinwheel architecture.
+
+For each diagram, show:
+
+* the user;
+* user checking account;
+* Plaid;
+* Stripe;
+* Dime Time;
+* Mercury;
+* Method or Spinwheel;
+* creditor;
+* where funds legally sit;
+* who originates each ACH transaction;
+* who is the payment processor;
+* who maintains the ledger;
+* who bears returned-payment risk;
+* whether Dime Time ever takes possession or control of customer funds.
+
+Do not begin replacing Plaid or changing production payment logic yet. First provide the audit, provider comparison, and a recommended architecture with all unresolved contractual or pricing questions clearly identified.
