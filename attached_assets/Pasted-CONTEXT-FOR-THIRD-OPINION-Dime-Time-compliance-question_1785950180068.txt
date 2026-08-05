@@ -1,0 +1,77 @@
+CONTEXT FOR THIRD OPINION — Dime Time compliance question (Aug 5, 2026)
+
+Company: Dime Time (dime-time.com), live consumer debt-payoff app (iOS/Android/web),
+solo non-technical founder, small user base, $2.99/mo subscription.
+
+How the product works (traced from actual production code, not intended design):
+1. User links checking account via Plaid; app computes spare-change round-ups.
+2. Stripe ACH-debits the user's checking account (Stripe is ACH originator,
+   statement descriptor "DIME TIME"). Funds settle in the company's Stripe balance.
+3. Stripe auto-payouts sweep funds to the company's Mercury BUSINESS SAVINGS account
+   (company-titled, ~3.25% APY). Subscription revenue lands in the SAME account —
+   customer funds and company revenue are commingled.
+4. A weekly engine (currently OFF in production) would, every Friday, ACH each
+   user's accumulated balance from that Mercury savings account to the user's
+   chosen creditor. No contracts exist with any creditor.
+5. Per-user balances exist only in the app's own database ledger; there is no
+   bank-level per-user recordkeeping and no automated reconciliation to the bank
+   balance. Users skipped in a weekly run roll over indefinitely.
+
+The founder's original revenue idea: keep the ~3.25% interest earned while user
+funds sit in the savings account awaiting Friday disbursement.
+
+An AI research analysis (2 rounds, 45+ sources incl. fincen.gov primary texts,
+Mercury's ToS, SCOTUS case law) concluded the interest-retention model fails
+three independent ways:
+
+A. Mercury contract: Terms of Use §1.4 prohibits using the account "for any third
+   parties"; Mercury support docs list "facilitating payments for third parties"
+   as an account-closure ground. Mercury offers no FBO/custodial product.
+
+B. Federal money transmission: FIN-2009-R004 held a bill-payment provider paying
+   billers WITHOUT contracts IS a money transmitter ("there is no transaction
+   other than a money transmission itself"). FinCEN Ruling 2004-4 exempted a
+   debt-management company only because payments were ancillary to a substantive
+   service (negotiating repayment plans/creditor concessions) — Dime Time only
+   forwards money, doesn't negotiate. The payee-agent exemptions (2003-8,
+   2008-R006, 2014-R009) all require creditor-side agreements Dime Time lacks.
+   Conclusion: the accept→hold→forward flow likely = money transmission.
+
+C. State licensing: 49 states license money transmission; agent-of-payee
+   exemptions require appointment by the CREDITOR, not the consumer. Active
+   multistate enforcement exists (Kraken 2024, Block/Cash App 2025).
+
+D. Interest ownership: Phillips v. Washington Legal Foundation (SCOTUS 1998) —
+   "interest follows principal"; interest on funds held for others belongs to
+   the owners. PayPal/Venmo keep float only as licensed transmitters with
+   segregated funds, permissible investments, and explicit user-agreement terms.
+
+E. FDIC: company-titled account gives users no pass-through insurance
+   (12 CFR 330.5/330.7); the app's unreconciled internal ledger is the Synapse
+   failure pattern the FDIC's proposed custodial-records rule targets.
+
+Recommendations the analysis produced:
+1. Don't enable the weekly disbursement leg in production until reviewed by a
+   fintech attorney (founder currently has none).
+2. Segregate customer round-ups from subscription revenue; stop treating savings
+   interest as revenue.
+3. Move the payment leg to a bill-pay rail with creditor connectivity
+   (Method Financial or Spinwheel — both sales-gated, unpublished pricing,
+   estimated ~$0.50–$2/payment + possible monthly minimums). This also fixes
+   the UX gap: big card issuers don't accept raw ACH, so today an admin would
+   have to hand-enter creditor bank details per debt.
+4. Long-term legitimate deposit revenue: FBO account at a sponsor bank via BaaS
+   (Unit/Treasury Prime/etc.) where the BANK earns interest and pays the program
+   a contractual revenue share.
+
+QUESTIONS FOR YOU (third opinion):
+1. Do you agree the interest-retention model is not viable as structured?
+2. Do you agree with the FinCEN category analysis (FIN-2009-R004 non-contract
+   branch applies; 2004-4 exemption does not)?
+3. Is anything overstated or understated in the risk assessment?
+4. Given a solo founder with no attorney and limited budget: what is the
+   cheapest defensible path to operating the weekly creditor-payment feature?
+5. How urgent is fixing the CURRENT state (round-up collection into a commingled
+   interest-bearing company savings account) even before payouts ever launch?
+6. Are Method Financial / Spinwheel the right rails, or is there a cheaper
+   alternative (e.g., returning funds to the user's own checking account)?
