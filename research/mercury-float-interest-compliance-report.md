@@ -1,6 +1,7 @@
 # Mercury Float / Interest Revenue Model — Compliance & Architecture Analysis for Dime Time
 
-**Research Date:** August 5, 2026
+**Research Date:** August 5, 2026 (Revision 2 — same date)
+**Revision note:** Rev 2 corrects a material error in the original: FinCEN Ruling 2004-4 held the debt-management company was **NOT** an MSB (its transmission was ancillary to a substantive debt-plan negotiation service). The corrected authority for Dime Time's fact pattern is FIN-2009-R004, whose no-creditor-contract branch classifies the activity **as** money transmission. Rev 2 also adds a code-level trace of the actual production money flow and a restructured conclusion (§A–F). The overall conclusions are unchanged in direction but now rest on the correct rulings.
 **Depth:** Deep (6 parallel research workstreams, cross-referenced)
 **Sources Consulted:** 40+ (regulators, statutes, court filings, Mercury's own legal documents, law-firm analyses)
 **Standard applied:** Conservative — nothing assumed permitted unless supported by documentation.
@@ -13,7 +14,7 @@ The proposed architecture — pooling customer round-ups in a Dime Time-owned Me
 
 1. **Mercury's own Terms of Use prohibit it.** Mercury's Terms (updated June 25, 2026) list "Use the Account or the Services for any third parties" as a prohibited use [1], and Mercury's support documentation lists "using your Mercury account to facilitate payments for third parties" as an account-closure trigger [3]. Mercury offers standard business deposit accounts through partner banks — it does not offer FBO, custodial, or omnibus structures to its customers [2]. Continuing the current flow risks sudden account closure of the company's primary bank account.
 
-2. **The flow is very likely unlicensed money transmission.** Accepting consumer funds by ACH, holding them, and forwarding them to a third party is the textbook federal definition of money transmission (31 CFR §1010.100(ff)) [9], and FinCEN has a ruling directly on point classifying a debt-management company that collects and disburses consumer funds as a money transmitter (Ruling 2004-4) [11]. The two commonly used exemptions — the federal payment-processor exemption and the state agent-of-payee exemption — both require an agreement with the *creditor* (payee), which Dime Time does not have [10][12]. 49 states now regulate money transmission and coordinate enforcement (e.g., the 2024–2025 multistate Kraken and Block/Cash App actions) [26][27][28].
+2. **The flow is very likely unlicensed money transmission.** Accepting consumer funds by ACH, holding them, and forwarding them to a third party is the textbook federal definition of money transmission (31 CFR §1010.100(ff)) [9]. The directly analogous authority is FIN-2009-R004: FinCEN held that a bill-payment provider transmitting consumer payments to billers **with whom it has no contractual relationship** "qualif[ies] as [a] money transmitter" — because "there is no transaction 'other than a money transmission itself'" [42]. Dime Time contracts only with the consumer and has no creditor agreements, which is exactly that fact pattern. The exemptions all fail for the same reason: the payment-processor / payee-agent exemptions (FIN-2014-R009, FIN-2008-R006, Ruling 2003-8) require an agreement with the *creditor*, and the "integral part of another service" exemption that saved the debt-management company in Ruling 2004-4 requires a substantive non-payment service (there, negotiating debt plans and creditor concessions) that Dime Time's forward-the-round-ups flow does not provide [10][11][12][42][43]. 49 states now regulate money transmission and coordinate enforcement (e.g., the 2024–2025 multistate Kraken and Block/Cash App actions) [26][27][28].
 
 3. **The interest presumptively belongs to the users, not Dime Time.** The controlling rule is the Supreme Court's "interest follows principal" doctrine (Phillips v. Washington Legal Foundation, 1998): interest earned on funds held for others is the property of the funds' owners [15]. The only well-documented model where a fintech keeps float (PayPal/Venmo) rests on being a licensed money transmitter, investing customer funds only in statutorily permissible investments, segregating them from corporate funds, and explicitly disclosing "you will not receive interest; we own the interest" in the user agreement [19][20][21]. A ToS line alone, without licensing and proper custody, does not replicate that model.
 
@@ -43,9 +44,18 @@ There is also a structural fragility worth naming: Mercury is itself a fintech l
 
 ### Finding 2: The flow likely constitutes money transmission (Questions 10–13)
 
-Federally, a "money transmitter" is one who accepts funds from one person and transmits them to another location or person by any means — expressly including ACH [9]. Dime Time's accept → hold → forward flow fits the definition on its face. FinCEN's Ruling 2004-4 classified a debt-management company collecting consumer funds and disbursing them to creditors as a money services business — the closest fact pattern on record to a round-up debt-payoff app [11].
+Federally, a "money transmitter" is one who accepts funds from one person and transmits them to another location or person by any means — expressly including ACH [9]. Dime Time's accept → hold → forward flow fits the definition on its face.
 
-The two main escape hatches likely fail as currently structured:
+**The FinCEN ruling taxonomy (corrected in Rev 2) — four categories, and where Dime Time falls:**
+
+1. **Debt-management company negotiating substantive repayment plans with creditors — NOT an MSB (Ruling 2004-4).** FinCEN's actual conclusion: "The general service that [the business] provides is to help debtors create a plan for payment and/or adjustment of their debts, and to obtain the agreement of creditors to accept payment under that plan. FinCEN views the money transmission that [the business] conducts as ancillary to the debt management service… To the extent that the money transmission conducted by [the business] is limited to submitting payments to creditors on behalf of debtors in conjunction with a debt management plan, FinCEN would not deem [the business] a money transmitter" [11]. The exemption (now 31 CFR 1010.100(ff)(5)(ii)(F)) turned on a *genuine separate service* — plan creation and negotiated creditor concessions — to which payment was incidental.
+2. **Bill-payment provider WITH creditor/biller contracts — NOT a money transmitter (FIN-2009-R004 "Contract Clients" branch; FIN-2008-R006; Ruling 2003-8).** An agent processing payments "as an agent of the merchant to whom the consumers owe money – rather than on behalf of the consumers themselves" is exempt [42][43].
+3. **Bill-payment provider WITHOUT creditor contracts — IS a money transmitter (FIN-2009-R004 non-contract branch).** FinCEN's words: "when the Companies transmit any given payment from a bill payer to a Biller, there is no transaction 'other than a money transmission itself'… because the Companies do not have an ongoing contractual relationship with the Billers… that exception does not apply… To the extent that they transmit such payments, therefore, the Companies qualify as money transmitters" [42].
+4. **Dime Time's actual architecture:** contracts only with the consumer; collects round-ups by ACH; holds up to 7+ days; forwards to creditors with whom it has no agreement; provides no debt-plan negotiation or creditor-concession service (the app tracks and pays — it does not negotiate). **This is category 3.** Dime Time cannot claim 2004-4's ancillary-service exemption (no substantive non-payment service; payment *is* the service) and cannot claim the payee-agent line (no creditor contracts). The conservative conclusion is that the flow is money transmission, and the 7-day interest-earning hold only strengthens that characterization.
+
+This taxonomy also shows the fix: **moving to category 1 or 2 changes the federal answer.** Creditor agency agreements (category 2) or routing payments through a provider that holds those relationships (e.g., a bill-pay rail with creditor connectivity) is the structural cure — consistent with the agent-of-payee analysis below.
+
+The state-law escape hatches likely fail for the same structural reason:
 
 - **Federal payment-processor exemption** (FIN-2014-R009): requires, among four conditions, a formal agreement with the *seller or creditor that receives the funds*. Dime Time's agreement is with the consumer, not the creditor [10].
 - **State agent-of-payee exemption**: exempts an agent appointed by the *payee* to collect on its behalf; California's DFPI has specifically indicated consumer-appointed bill-pay does not qualify [12][13]. Roughly half the states have some version of this exemption, with varying language; Montana aside, 49 states now regulate money transmission, 26+ under the harmonizing Model Money Transmission Modernization Act as of early 2025 [14][29].
@@ -100,6 +110,81 @@ Per-state licenses, surety bonds, net-worth minimums, permissible-investment rul
 
 ---
 
+## Traced Production Money Flow (Rev 2 — from deployed code, not intended architecture)
+
+Code inspection (source of truth: `server/`, `shared/`, `client/`; the git-tracked `server-dist/` build artifact was excluded). Answers to the specific questions:
+
+| Question | Answer (with code basis) |
+|---|---|
+| ACH originator when a round-up is debited | **Stripe**, via ACH debit PaymentIntents (`payment_method_types: ["us_bank_account"]`, `server/services/stripeService.ts`). Stripe is the processor/originator of record through its bank partners; Dime Time is the merchant of record. |
+| ACH authorization & statement descriptor | Stripe's ACH mandate framework; statement descriptor configured as **"DIME TIME"** (22-char cap) in `stripeService.ts`. |
+| Where funds settle first | **Stripe balance** (standard ACH settlement, ~3–5 business days). |
+| Do they enter a Stripe balance? | Yes — all collected round-ups pass through it. |
+| Do they enter a Dime Time Mercury account? | Yes — Stripe auto-payouts (dashboard-configured, not in code) sweep the Stripe balance to the Mercury account matched by `MERCURY_ACCOUNT_NUMBER`. Per code comments and account-type records, this is the **business savings** account, held to earn interest until disbursement. |
+| Mercury: operating account or pooled end-user funds? | **It receives pooled end-user funds.** The savings account is both the payout destination for customer round-ups and the funding source for creditor payments — it is not a mere operating account. |
+| Who initiates the final creditor payment | Dime Time's own scheduler (`weeklyDisbursementService.runWeeklyDisbursement`), calling `mercuryService.initiateTransfer` — Mercury ACH from the company savings account to the creditor. |
+| Same money or separately funded? | **Same commingled pool.** Creditor payments draw on the accumulated round-up balance in the savings account; there is no separate corporate funding + reimbursement pattern. |
+| What does the transfers ledger represent? | **Accounting records of processor events**, not custodial balances. Per-user "balance" is computed by summing settled collections minus non-void payments; there is **no automated reconciliation against the actual bank balance**. It is best characterized as a receivable owed by Dime Time to each user. |
+| Commingled with subscription revenue / operating funds? | **Yes.** Subscription revenue (Stripe Billing, $2.99/mo) settles into the *same* Stripe balance and the *same* Mercury payout destination as customer round-ups. No segregation exists in code or configuration. |
+| How long can customer funds remain under Dime Time's control? | Minimum: until the next Friday 00:00 ET run (up to ~7 days after settlement). **Maximum: indefinitely** — users skipped for any reason (balance under $1, missing creditor payment details, failed transfers) roll over week after week with no upper bound. |
+| Insolvency exposure | If **Dime Time** fails: funds in the company-titled savings account are corporate assets available to Dime Time's general creditors; users hold unsecured claims. If **Stripe** fails mid-settlement: in-flight funds are subject to Stripe's own custodial arrangements. If **Mercury/its partner bank** fails: FDIC coverage runs to *Dime Time* as the deposit owner (up to applicable limits) — users have **no pass-through coverage** because the account is not custodially titled with per-beneficiary records (12 CFR §§330.5/330.7). |
+
+**Transaction-flow diagram (every entity, account, and ledger step):**
+
+```
+[User]                  [Stripe (processor)]           [Dime Time]                     [Creditor]
+User's checking acct    Stripe platform balance        Mercury *savings* acct           Creditor's bank
+at user's bank          (Dime Time merchant acct)      (company-titled, ~3.25% APY)     (e.g., card issuer)
+      │                        │                              │                              │
+      │ 1. ACH DEBIT           │                              │                              │
+      │ (Stripe originates;    │                              │                              │
+      │ descriptor "DIME TIME")│                              │                              │
+      ├───────────────────────►│                              │                              │
+      │   ledger: transfers row (roundup collection,          │                              │
+      │   created→pending→settled via Stripe webhooks)        │                              │
+      │                        │ 2. Stripe AUTO-PAYOUT (batch,│                              │
+      │                        │ commingles round-ups +       │                              │
+      │                        │ subscription revenue)        │                              │
+      │                        ├─────────────────────────────►│                              │
+      │                        │                              │ 3. HOLD ≥0–7+ days           │
+      │                        │                              │ (interest accrues to company)│
+      │                        │                              │ 4. Friday 00:00 ET:          │
+      │                        │                              │ weekly_distributions claim,  │
+      │                        │                              │ per-user balance = Σ settled │
+      │                        │                              │ collections − non-void       │
+      │                        │                              │ payments (app ledger only,   │
+      │                        │                              │ unreconciled to bank)        │
+      │                        │                              │ 5. Mercury ACH CREDIT        │
+      │                        │                              │ (Dime Time originates via    │
+      │                        │                              │ Mercury API; idempotency-    │
+      │                        │                              │ keyed transfers + distribution│
+      │                        │                              │ _payments rows)              │
+      │                        │                              ├─────────────────────────────►│
+Legal entities: User ─ User's bank ─ Stripe, Inc. (+ its bank partners) ─ Dime Time (Mercury fintech
+layer → partner bank Choice/Column/Patriot holds the actual deposit) ─ Creditor's bank.
+```
+
+**Two code-level facts sharpen the legal analysis:** (i) the same dollars received from users are later transmitted to creditors out of one commingled, interest-bearing, company-titled pool — the least defensible posture identified in this report; and (ii) the app ledger is the *only* record tying dollars to users, with no bank-level per-beneficiary records and no automated reconciliation — the exact failure mode of the Synapse collapse [23][24][25].
+
+## Revised Conclusion (Rev 2, separated by issue)
+
+**A. Mercury contractual risk.** The traced flow — pooled end-user funds arriving via Stripe payouts and leaving as payments to users' creditors — is third-party fund handling under Mercury's Terms §1.4 and its published account-closure grounds [1][3]. Risk: closure of the company's primary account, potentially mid-cycle with customer funds inside. This risk exists **today** (round-up collections already settle there) regardless of whether the disbursement engine is ever enabled.
+
+**B. Federal FinCEN/MSB analysis (corrected).** Dime Time is category 3 in the ruling taxonomy: a consumer-side payment agent with no creditor contracts and no substantive non-payment service. Under FIN-2009-R004's non-contract branch it "qualif[ies] as [a] money transmitter"; Ruling 2004-4's ancillary exemption is unavailable because Dime Time does not negotiate debt plans or creditor concessions [11][42]. Conservative posture: assume MSB status attaches when the disbursement leg operates → FinCEN registration, AML program, and related obligations — or restructure into category 1/2 before operating the leg.
+
+**C. State money-transmitter analysis.** Unchanged from Rev 1: 49 states regulate the activity; the agent-of-payee exemption fails on the payer side; the interest-earning hold strengthens the "holding as principal" characterization; multistate enforcement is active [12][13][14][26][27][28]. A creditor-agency restructuring (or a licensed rail such as Method/Spinwheel carrying the payment leg) is the cure on the state side as well.
+
+**D. ACH authorization and NACHA issues.** The collection leg's ACH authorization runs to Stripe's mandate framework with Dime Time as merchant; the authorization covers debiting the consumer for the round-up service. Open items for counsel: whether the authorization language adequately discloses that funds will be held (indefinitely for skipped users) and forwarded to third parties; whether the disbursement leg's Mercury-originated credits to creditors correctly identify the *user* as the party on whose behalf payment is made (creditor posting/attribution risk); and WEB-debit-rule compliance on the collection side. These are contract/rule-compliance questions, not licensing questions, but they belong in the same attorney review.
+
+**E. Ownership and treatment of earned interest.** Unchanged and now code-confirmed: interest accrues on a commingled, company-titled savings pool that includes customer funds. Under "interest follows principal" and state statutory-trust regimes, the yield presumptively belongs to users; retaining it without licensing, segregation, permissible-investment compliance, and explicit consent is the least defensible element of the current design [15][16][19][20][21]. Additionally, commingling with subscription revenue makes even *identifying* the customer-funds portion of the interest impossible without ledger work.
+
+**F. Required architecture changes (priority order).**
+1. **Do not enable the disbursement leg in production** until counsel reviews categories B/C — the collection leg alone (money in, held) already raises the custody issues; the transmission leg completes the money-transmitter fact pattern.
+2. **Segregate customer funds from revenue now:** separate Stripe payout destinations (or a manual split) so round-ups and subscription revenue stop landing in one pool; stop holding customer funds in the interest-bearing savings account (or stop treating its interest as revenue).
+3. **Put the payment leg on a rail with creditor relationships** (e.g., Method Financial / Spinwheel — bill-pay networks with biller connectivity) to move the model toward category 2 federally and agent-of-payee treatment at the state level, and to eliminate hand-entered creditor ACH details.
+4. **Adopt custodial-grade fund handling** if Dime Time continues to hold balances: FBO account at a sponsor bank with per-user bank-level records (pass-through FDIC), daily reconciliation of app ledger vs. bank balance, and a cap on how long skipped users' funds may roll over.
+5. **Fix disclosures** to match actual practice (holding periods, who earns interest, insolvency risk) before any marketing claims.
+
 ## Analysis
 
 The three research threads triangulate to one conclusion. Mercury's contract, the money-transmission regime, and the interest-ownership doctrine each independently block the "keep the 3.25%" design, and they reinforce each other: the reason Mercury bans third-party funds is that hosting them would drag its partner banks into custodial obligations; the reason states license transmitters is precisely to impose the trust, investment, and disclosure rules that make float retention conditionally tolerable; and the reason PayPal can print the "we own the interest" sentence is that it built the licensed, segregated structure the rules demand. There is no documented shortcut where an unlicensed app keeps yield on commingled customer money in its own savings account — and the closest structural comparable (Qoins) walled customer funds off in bank-titled custodial accounts even without a float ambition.
@@ -133,7 +218,7 @@ This is research, not legal advice; a fintech attorney must make the final calls
 8. Venable LLP, "FBO Accounts: Maximizing Benefits While Minimizing Risks in Fintech Partnerships" — https://www.venable.com/insights/publications/2024/10/fbo-accounts-max-benefits-while-min-risks — Oct 2024 — Tier 2
 9. 31 CFR §1010.100 (money transmitter definition) — https://www.law.cornell.edu/cfr/text/31/1010.100 — current CFR — Tier 1
 10. FinCEN Ruling FIN-2014-R009 (payment-processor exemption, 4 conditions) — https://www.fincen.gov/resources/statutes-regulations/administrative-rulings/application-money-services-business — Aug 27, 2014 (controlling interpretation) — Tier 1
-11. FinCEN Ruling 2004-4 (Debt Management Company = MSB) — https://www.fincen.gov/resources/statutes-regulations/administrative-rulings/definition-money-services-business-debt — 2004 (controlling) — Tier 1
+11. FinCEN Ruling 2004-4 (Debt Management Company held NOT an MSB — transmission ancillary to debt-plan negotiation service) — https://www.fincen.gov/resources/statutes-regulations/administrative-rulings/definition-money-services-business-debt — 2004 (controlling; full text verified 2026-08-05) — Tier 1
 12. CA DFPI, Agent-of-Payee opinion letters — https://dfpi.ca.gov/rules-enforcement/laws-and-regulations/opinion-letters-by-law-subject/agent-of-payee-exemption/ — 2018–2022 — Tier 1
 13. Cal. Code Regs. Tit. 10 §80.126.10 (Agent of Payee) — https://www.law.cornell.edu/regulations/california/10-CCR-80.126.10 — operative 10/1/2021 — Tier 1
 14. Cooley LLP, "US States Adopt Model Money Transmission Act, But Harmonization Remains Elusive" — https://www.cooley.com/news/insight/2024/2024-08-20-us-states-adopt-model-money-transmission-act-but-harmonization-remains-elusive — Aug 20, 2024 — Tier 2
@@ -164,5 +249,7 @@ This is research, not legal advice; a fintech attorney must make the final calls
 39. Klaros Group, "The Synapse Bankruptcy has Echoes of What SVB Taught Us About FBOs" — https://www.klaros.com/post/the-synapse-bankruptcy-has-echoes-of-what-svb-taught-us-about-fbos — 2024 — Tier 2
 40. Guidehouse, "Preserving the FBO account model" — https://guidehouse.com/insights/financial-services/2026/fbo-account-model — 2026 — Tier 2
 41. Gibson Dunn, "2025 Year-End Developments in Anti-Money Laundering" (DOJ §1960 memo — federal criminal posture only) — https://www.gibsondunn.com/2025-year-end-developments-in-anti-money-laundering/ — 2025 — Tier 2
+42. FinCEN FIN-2009-R004 (bill-payment provider: contract billers exempt; non-contract billers = money transmission) — https://www.fincen.gov/sites/default/files/administrative_ruling/fin-2009-r004.pdf — Nov 20, 2009 (full text verified 2026-08-05) — Tier 1
+43. FinCEN FIN-2008-R006 (authorized agent for utility payments — payee-agent exemption requires creditor contract) — https://www.fincen.gov/sites/default/files/administrative_ruling/fin-2008-r006.pdf — Jun 11, 2008 (full text verified 2026-08-05) — Tier 1
 
 *Raw per-workstream findings with full source notes are saved in `research/raw/` (6 files).*
